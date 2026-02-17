@@ -794,8 +794,8 @@ export async function updateParticipationStatus(
     if (!existingPayments || existingPayments.length === 0) {
       await createPaymentsForRegistration(registrationId, tripId, participantId);
     }
-  } else if (status === 'not_going' && registrationId) {
-    // Admin ustawia "Nie jedzie" — anuluj oczekujące płatności
+  } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
+    // Admin ustawia "Nie jedzie" lub "Niepotwierdzony" — anuluj oczekujące płatności
     await supabaseAdmin
       .from('payments')
       .update({ status: 'cancelled' })
@@ -1071,8 +1071,8 @@ export async function updateParticipationStatusByParent(
     if (!existingPayments || existingPayments.length === 0) {
       await createPaymentsForRegistration(registrationId, tripId, participantId);
     }
-  } else if (status === 'not_going' && registrationId) {
-    // Dziecko nie jedzie — anuluj płatności (pending)
+  } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
+    // Dziecko nie jedzie lub cofnięto potwierdzenie — anuluj płatności (pending)
     await supabaseAdminInner
       .from('payments')
       .update({ status: 'cancelled' })
@@ -1082,6 +1082,7 @@ export async function updateParticipationStatusByParent(
 
   revalidatePath('/parent/trips');
   revalidatePath('/parent/payments');
+  revalidatePath('/admin/payments');
   revalidatePath(`/admin/trips/${tripId}/registrations`);
   return { success: true };
 }
