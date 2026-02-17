@@ -1026,28 +1026,29 @@ export async function updateParticipationStatusByParent(
     registrationId = data?.id || null;
   }
 
-  // Jeśli status = confirmed, utwórz płatności (jeśli jeszcze nie istnieją)
-  if (status === 'confirmed' && registrationId) {
-    console.log('Creating payments for registration:', registrationId, 'trip:', tripId, 'participant:', participantId);
+  // Użyj admin client do operacji na płatnościach
+  const { createAdminClient: createAdminClientInner } = await import('@/lib/supabase/server');
+  const supabaseAdminInner = createAdminClientInner();
 
-    // Użyj admin client do sprawdzenia czy płatności istnieją (omija RLS)
-    const { createAdminClient } = await import('@/lib/supabase/server');
-    const supabaseAdmin = createAdminClient();
-
-    const { data: existingPayments } = await supabaseAdmin
+  if ((status === 'confirmed' || status === 'other') && registrationId) {
+    // Dziecko jedzie (confirmed = autobusem, other = dojazd własny) — utwórz płatności jeśli nie istnieją
+    const { data: existingPayments } = await supabaseAdminInner
       .from('payments')
       .select('id')
       .eq('registration_id', registrationId)
+      .neq('status', 'cancelled')
       .limit(1);
 
-    console.log('Existing payments check:', existingPayments?.length || 0);
-
     if (!existingPayments || existingPayments.length === 0) {
-      const result = await createPaymentsForRegistration(registrationId, tripId, participantId);
-      console.log('Create payments result:', result);
-    } else {
-      console.log('Payments already exist for this registration');
+      await createPaymentsForRegistration(registrationId, tripId, participantId);
     }
+  } else if (status === 'not_going' && registrationId) {
+    // Dziecko nie jedzie — anuluj płatności (pending)
+    await supabaseAdminInner
+      .from('payments')
+      .update({ status: 'cancelled' })
+      .eq('registration_id', registrationId)
+      .eq('status', 'pending');
   }
 
   revalidatePath('/parent/trips');
