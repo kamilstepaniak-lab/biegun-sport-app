@@ -1,19 +1,46 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Users, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Users, X, ChevronDown, Check } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+
+interface ChildOption {
+  id: string;
+  name: string;
+}
 
 interface ChildGuardProps {
   /** ID wybranego dziecka — przekazywane z searchParams po stronie serwera */
   selectedChildId?: string;
   /** Nazwa dziecka do wyświetlenia w bannerze (opcjonalna) */
   selectedChildName?: string;
+  /** Lista wszystkich dzieci rodzica — do dropdownu zmiany dziecka */
+  childrenList?: ChildOption[];
   children: React.ReactNode;
 }
 
-export function ChildGuard({ selectedChildId, selectedChildName, children }: ChildGuardProps) {
+export function ChildGuard({ selectedChildId, selectedChildName, childrenList, children }: ChildGuardProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Zamknij dropdown po kliknięciu poza nim
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function handleSelectChild(child: ChildOption) {
+    setDropdownOpen(false);
+    router.push(`${pathname}?child=${child.id}&childName=${encodeURIComponent(child.name)}`);
+  }
 
   if (!selectedChildId) {
     return (
@@ -24,16 +51,47 @@ export function ChildGuard({ selectedChildId, selectedChildName, children }: Chi
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Wybierz dziecko</h3>
           <p className="text-sm text-gray-500 max-w-sm">
-            Aby zobaczyć tę sekcję, najpierw wybierz dziecko w zakładce <strong>Moje dzieci</strong>.
+            Aby zobaczyć tę sekcję, najpierw wybierz dziecko.
           </p>
         </div>
-        <Link
-          href="/parent/children"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
-        >
-          <Users className="h-4 w-4" />
-          Przejdź do Moje dzieci
-        </Link>
+
+        {/* Jeśli mamy listę dzieci, pokaż dropdown zamiast linku do Moje dzieci */}
+        {childrenList && childrenList.length > 0 ? (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownOpen(v => !v)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              <Users className="h-4 w-4" />
+              Wybierz dziecko
+              <ChevronDown className="h-4 w-4" />
+            </button>
+            {dropdownOpen && (
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[180px] z-50">
+                {childrenList.map(child => (
+                  <button
+                    key={child.id}
+                    onClick={() => handleSelectChild(child)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
+                      {child.name.charAt(0)}
+                    </div>
+                    {child.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link
+            href="/parent/children"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+          >
+            <Users className="h-4 w-4" />
+            Przejdź do Moje dzieci
+          </Link>
+        )}
       </div>
     );
   }
@@ -52,12 +110,37 @@ export function ChildGuard({ selectedChildId, selectedChildName, children }: Chi
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/parent/children"
-            className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors"
-          >
-            Zmień
-          </Link>
+          {/* Dropdown zmiany dziecka */}
+          {childrenList && childrenList.length > 1 && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors"
+              >
+                Zmień
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute top-full mt-2 right-0 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[180px] z-50">
+                  {childrenList.map(child => (
+                    <button
+                      key={child.id}
+                      onClick={() => handleSelectChild(child)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
+                        {child.name.charAt(0)}
+                      </div>
+                      <span className="flex-1">{child.name}</span>
+                      {child.id === selectedChildId && (
+                        <Check className="h-3.5 w-3.5 text-gray-900 flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {/* Link "X" czyści child z URL */}
           <Link
             href={pathname}

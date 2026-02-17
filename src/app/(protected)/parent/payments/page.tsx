@@ -5,6 +5,7 @@ import { CreditCard } from 'lucide-react';
 import { PageHeader, EmptyState } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
 import { getPaymentsForParent, getBankAccountsForParent } from '@/lib/actions/payments';
+import { getMyChildren } from '@/lib/actions/participants';
 import { ParentPaymentsList } from './payments-list';
 
 interface Props {
@@ -14,10 +15,16 @@ interface Props {
 export default async function ParentPaymentsPage({ searchParams }: Props) {
   const { child: selectedChildId, childName } = await searchParams;
 
-  const [payments, bankAccounts] = await Promise.all([
+  const [payments, bankAccounts, myChildren] = await Promise.all([
     getPaymentsForParent(selectedChildId),
     getBankAccountsForParent(),
+    getMyChildren(),
   ]);
+
+  const childrenList = myChildren.map(c => ({
+    id: c.id,
+    name: `${c.first_name} ${c.last_name}`,
+  }));
 
   const pendingPayments = payments.filter(p => p.status !== 'paid');
   const paidPayments = payments.filter(p => p.status === 'paid');
@@ -29,7 +36,7 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
         description="Zarządzaj płatnościami za wyjazdy swoich dzieci"
       />
 
-      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName}>
+      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
         {payments.length === 0 ? (
           <EmptyState
             icon={CreditCard}

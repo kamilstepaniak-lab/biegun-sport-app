@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
 import { getTripsForParentWithChildren } from '@/lib/actions/trips';
 import { getUserProfile } from '@/lib/actions/auth';
+import { getMyChildren } from '@/lib/actions/participants';
 import { ParentCalendarView } from './calendar-view';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,15 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
 
   const { child: selectedChildId, childName } = await searchParams;
 
-  const trips = await getTripsForParentWithChildren(profile.id, selectedChildId);
+  const [trips, myChildren] = await Promise.all([
+    getTripsForParentWithChildren(profile.id, selectedChildId),
+    getMyChildren(),
+  ]);
+
+  const childrenList = myChildren.map(c => ({
+    id: c.id,
+    name: `${c.first_name} ${c.last_name}`,
+  }));
 
   // Znajdź grupę dziecka z pierwszego wyjazdu (do domyślnego filtra kalendarza)
   const defaultGroupId = selectedChildId && trips.length > 0
@@ -31,7 +40,7 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
         description="Widok kalendarza z wyjazdami"
       />
 
-      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName}>
+      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
         <ParentCalendarView trips={trips} defaultGroupId={defaultGroupId} />
       </ChildGuard>
     </div>

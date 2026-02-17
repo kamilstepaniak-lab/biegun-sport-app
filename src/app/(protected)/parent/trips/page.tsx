@@ -6,6 +6,7 @@ import { PageHeader, EmptyState } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
 import { getTripsForParentWithChildren } from '@/lib/actions/trips';
 import { getUser } from '@/lib/actions/auth';
+import { getMyChildren } from '@/lib/actions/participants';
 import { ParentTripsList } from './trips-list';
 
 interface Props {
@@ -18,7 +19,15 @@ export default async function ParentTripsPage({ searchParams }: Props) {
 
   const { child: selectedChildId, childName } = await searchParams;
 
-  const trips = await getTripsForParentWithChildren(user.id, selectedChildId);
+  const [trips, myChildren] = await Promise.all([
+    getTripsForParentWithChildren(user.id, selectedChildId),
+    getMyChildren(),
+  ]);
+
+  const childrenList = myChildren.map(c => ({
+    id: c.id,
+    name: `${c.first_name} ${c.last_name}`,
+  }));
 
   return (
     <div className="space-y-6">
@@ -27,7 +36,7 @@ export default async function ParentTripsPage({ searchParams }: Props) {
         description="Przeglądaj wyjazdy i potwierdź uczestnictwo dzieci"
       />
 
-      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName}>
+      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
         {trips.length === 0 ? (
           <EmptyState
             icon={MapPin}
