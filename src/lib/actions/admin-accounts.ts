@@ -37,6 +37,26 @@ export async function resetParentPasswords(): Promise<{
   let reset = 0;
   let errors = 0;
 
+  // Pobierz wszystkich użytkowników auth jednorazowo (z paginacją)
+  const allAuthUsers: { id: string; email?: string }[] = [];
+  let page = 1;
+  while (true) {
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (listError || !listData) break;
+    allAuthUsers.push(...listData.users);
+    if (listData.users.length < 1000) break;
+    page++;
+  }
+
+  // Zbuduj mapę email -> auth user id
+  const emailToAuthId = new Map<string, string>();
+  for (const u of allAuthUsers) {
+    if (u.email) emailToAuthId.set(u.email.toLowerCase(), u.id);
+  }
+
   for (const parent of parents) {
     if (!parent.email) {
       results.push({
@@ -50,25 +70,10 @@ export async function resetParentPasswords(): Promise<{
       continue;
     }
 
-    // Pobierz użytkownika z auth.users po emailu
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    const authUserId = emailToAuthId.get(parent.email.toLowerCase());
 
-    if (listError) {
-      results.push({
-        email: parent.email,
-        firstName: parent.first_name || '',
-        lastName: parent.last_name || '',
-        status: 'error',
-        error: listError.message,
-      });
-      errors++;
-      continue;
-    }
-
-    const authUser = listData.users.find(u => u.email === parent.email);
-
-    if (!authUser) {
-      // Konto nie istnieje — utwórz je
+    if (!authUserId) {
+      // Konto nie istnieje w auth — utwórz je
       const { error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: parent.email,
         password: DEFAULT_PASSWORD,
@@ -97,7 +102,7 @@ export async function resetParentPasswords(): Promise<{
 
     // Konto istnieje — zaktualizuj hasło
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      authUser.id,
+      authUserId,
       { password: DEFAULT_PASSWORD }
     );
 
