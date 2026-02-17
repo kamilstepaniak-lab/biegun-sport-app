@@ -176,7 +176,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
           isPast && !isOpen && 'opacity-60'
         )}>
           <CollapsibleTrigger asChild>
-            <div className="p-5 cursor-pointer">
+            <div className="p-3 sm:p-5 cursor-pointer">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
@@ -265,10 +265,10 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('stop1')); }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                                 currentStatus === 'confirmed' && currentStop === 'stop1'
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                  : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                               )}
                             >
                               {trip.departure_location?.length > 20
@@ -281,10 +281,10 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 disabled={isUpdating}
                                 onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('stop2')); }}
                                 className={cn(
-                                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                                   currentStatus === 'confirmed' && currentStop === 'stop2'
-                                    ? 'bg-emerald-600 text-white shadow-sm'
-                                    : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                                 )}
                               >
                                 {(trip.departure_stop2_location?.length ?? 0) > 20
@@ -297,10 +297,10 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('own')); }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                                 currentStatus === 'confirmed' && currentStop === 'own'
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                  : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                               )}
                             >
                               Dojazd własny
@@ -310,10 +310,10 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'not_going'); }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
                                 currentStatus === 'not_going'
-                                  ? 'bg-red-500 text-white shadow-sm'
-                                  : 'bg-white border border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600'
+                                  ? 'bg-red-500 text-white border-red-500 shadow-md'
+                                  : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
                               )}
                             >
                               <X className="h-3.5 w-3.5" />
@@ -324,10 +324,10 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); if (isInneOpen) { setShowInneInput(null); setInneMessage(''); } else { setShowInneInput(key); setInneMessage(''); } }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
                                 currentStatus === 'other' || isInneOpen
-                                  ? 'bg-amber-500 text-white shadow-sm'
-                                  : 'bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600'
+                                  ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                                  : 'bg-white border-amber-400 text-amber-600 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md'
                               )}
                             >
                               <HelpCircle className="h-3.5 w-3.5" />
@@ -360,14 +360,14 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
           </CollapsibleTrigger>
 
           <CollapsibleContent>
-            <div className="px-5 pb-5 space-y-4">
+            <div className="px-3 sm:px-5 pb-4 sm:pb-5 space-y-4">
               <div className="h-px bg-gray-100" />
               {trip.description && (
                 <p className="text-sm text-gray-500 leading-relaxed whitespace-pre-line">{trip.description}</p>
               )}
               <div className="grid gap-4 lg:grid-cols-2">
                 {/* Wyjazd + Powrót */}
-                <div className="bg-gray-50 rounded-2xl p-5 space-y-4">
+                <div className="bg-gray-50 rounded-2xl p-3 sm:p-5 space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -430,21 +430,21 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                 {/* Cennik + Przelew */}
                 <div className="space-y-4">
                   {trip.payment_templates && trip.payment_templates.length > 0 && (
-                    <div className="bg-gray-50 rounded-2xl p-5">
+                    <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
                           <Receipt className="h-3.5 w-3.5 text-violet-600" />
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Cennik</h4>
                       </div>
-                      <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
-                        <table className="w-full text-xs sm:text-sm min-w-[320px]">
+                      <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100 -mx-1 sm:mx-0">
+                        <table className="w-full text-xs sm:text-sm min-w-[280px]">
                           <thead>
                             <tr className="border-b border-gray-100">
-                              <th className="px-3 py-2 text-left font-medium text-gray-500">Za co</th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-500">Forma</th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
+                              <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-500">Za co</th>
+                              <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
+                              <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-500">Forma</th>
+                              <th className="px-2 sm:px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-50">
@@ -461,17 +461,17 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 : template.payment_method === 'both' ? 'Przelew/Got.' : '–';
                               return (
                                 <tr key={template.id} className="hover:bg-gray-50/50">
-                                  <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
-                                  <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
+                                  <td className="px-2 sm:px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
+                                  <td className="px-2 sm:px-3 py-2 text-gray-500 whitespace-nowrap">
                                     {template.due_date
                                       ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
                                         ? 'w dniu wyjazdu'
                                         : `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`)
                                       : '–'}
                                   </td>
-                                  <td className="px-3 py-2">
+                                  <td className="px-2 sm:px-3 py-2">
                                     <span className={cn(
-                                      'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
+                                      'inline-flex items-center px-1 sm:px-1.5 py-0.5 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap',
                                       template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
                                         : template.payment_method === 'transfer' ? 'bg-blue-100 text-blue-700'
                                         : 'bg-violet-100 text-violet-700'
@@ -479,7 +479,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                       {methodLabel}
                                     </span>
                                   </td>
-                                  <td className="px-3 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
+                                  <td className="px-2 sm:px-3 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
                                     {template.amount.toFixed(0)} {template.currency}
                                   </td>
                                 </tr>
@@ -492,7 +492,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   )}
 
                   {(trip.bank_account_pln || trip.bank_account_eur) && (
-                    <div className="bg-gray-50 rounded-2xl p-5">
+                    <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
                         <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
                           <Banknote className="h-3.5 w-3.5 text-blue-600" />
