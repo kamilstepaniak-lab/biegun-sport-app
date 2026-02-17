@@ -59,8 +59,8 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
 
   return (
     <div className={`px-4 py-3.5 hover:bg-gray-50/50 transition-colors ${isOverdue ? 'bg-red-50/30' : ''}`}>
-      {/* Linia 1: Wyjazd | Typ + metoda | Status | Kwota */}
-      <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr_1fr] gap-2 md:gap-4 items-center">
+      {/* Linia 1: Wyjazd | Typ + metoda | Termin | Status | Kwota */}
+      <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-2 md:gap-4 items-center">
         {/* Wyjazd */}
         <div className="font-medium text-gray-900 text-sm truncate">
           {payment.trip_title}
@@ -73,6 +73,17 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
             <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodStyle.className}`}>
               {methodStyle.label}
             </span>
+          )}
+        </div>
+
+        {/* Termin */}
+        <div className="text-sm">
+          {payment.due_date ? (
+            <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+              {format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}
+            </span>
+          ) : (
+            <span className="text-gray-300">—</span>
           )}
         </div>
 
@@ -101,16 +112,10 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
         </div>
       </div>
 
-      {/* Linia 2: Termin + tytuł przelewu (tylko dla nieopłaconych) */}
+      {/* Linia 2: Tytuł przelewu (tylko dla nieopłaconych) */}
       {payment.status !== 'paid' && (
         <div className="flex items-center mt-1.5 gap-4">
           <div className="flex items-center gap-3 text-xs text-gray-400 min-w-0">
-            {payment.due_date && (
-              <span className={`flex-shrink-0 ${isOverdue ? 'text-red-600 font-medium' : ''}`}>
-                Termin: {format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}
-              </span>
-            )}
-            <span className="text-gray-200 flex-shrink-0">|</span>
             <span className="flex items-center gap-1 min-w-0">
               <span className="truncate">Tytuł: {transferTitle}</span>
               <button
@@ -221,9 +226,10 @@ function PaymentsGroupedByChild({ payments }: { payments: ParentPayment[] }) {
           </div>
 
           {/* Nagłówek kolumn - tylko desktop */}
-          <div className="hidden md:grid grid-cols-[2fr_2fr_1fr_1fr] gap-4 px-4 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+          <div className="hidden md:grid grid-cols-[2fr_2fr_1fr_1fr_1fr] gap-4 px-4 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
             <div>Wyjazd</div>
             <div>Płatność</div>
+            <div>Termin</div>
             <div>Status</div>
             <div className="text-right">Kwota</div>
           </div>
