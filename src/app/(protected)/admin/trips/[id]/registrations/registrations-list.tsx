@@ -46,6 +46,19 @@ import { EmptyState } from '@/components/shared';
 import { updateParticipationStatus, type TripParticipant, type ParticipantPayment } from '@/lib/actions/trips';
 import type { Group } from '@/types';
 
+// Akcja masowej zmiany statusu
+async function bulkUpdateStatus(
+  tripId: string,
+  participantIds: string[],
+  status: 'confirmed' | 'not_going' | 'unconfirmed'
+) {
+  const results = await Promise.allSettled(
+    participantIds.map(id => updateParticipationStatus(tripId, id, status))
+  );
+  const errors = results.filter(r => r.status === 'rejected').length;
+  return { errors };
+}
+
 interface RegistrationsListProps {
   tripId: string;
   participants: TripParticipant[];
@@ -211,6 +224,10 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
   const [noteText, setNoteText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
   // Kolumny płatności
   const paymentColumns = useMemo(() => getPaymentColumns(participants), [participants]);
 
@@ -235,6 +252,45 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
 
     return result;
   }, [participants, statusFilter, groupFilter, searchQuery]);
+
+  // Bulk selection helpers
+  const allFilteredIds = filteredParticipants.map(p => p.participant_id);
+  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.has(id));
+  const someSelected = allFilteredIds.some(id => selectedIds.has(id));
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allFilteredIds));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedIds(next);
+  }
+
+  async function handleBulkStatus(status: 'confirmed' | 'not_going' | 'unconfirmed') {
+    setIsBulkUpdating(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { errors } = await bulkUpdateStatus(tripId, ids, status);
+      if (errors > 0) {
+        toast.error(`${errors} zmian nie udało się zapisać`);
+      } else {
+        const label = status === 'confirmed' ? 'Jedzie' : status === 'not_going' ? 'Nie jedzie' : 'Niepotwierdzony';
+        toast.success(`Zaktualizowano ${ids.length} uczestników → ${label}`);
+      }
+      setSelectedIds(new Set());
+    } catch {
+      toast.error('Wystąpił błąd');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }
 
   async function copyToClipboard(text: string, field: string) {
     try {
@@ -380,11 +436,62 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
           </div>
         </div>
 
+        {/* Pasek bulk actions */}
+        {someSelected && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 rounded-2xl text-white">
+            <span className="text-sm font-medium">
+              Zaznaczono: {selectedIds.size}
+            </span>
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={() => handleBulkStatus('confirmed')}
+                disabled={isBulkUpdating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Jedzie
+              </button>
+              <button
+                onClick={() => handleBulkStatus('not_going')}
+                disabled={isBulkUpdating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" />
+                Nie jedzie
+              </button>
+              <button
+                onClick={() => handleBulkStatus('unconfirmed')}
+                disabled={isBulkUpdating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                Niepotwierdzony
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                Odznacz
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tabela */}
         <div className="rounded-2xl border border-gray-100 overflow-x-auto bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-gray-50/80">
               <tr>
+                <th className="p-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
+                  />
+                </th>
                 <th className="text-left p-3 font-medium text-gray-600">Nazwisko i imię</th>
                 <th className="text-left p-3 font-medium text-gray-600">Data ur.</th>
                 <th className="text-left p-3 font-medium text-gray-600">Grupa</th>
@@ -403,7 +510,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
             <tbody className="divide-y divide-gray-50">
               {filteredParticipants.length === 0 ? (
                 <tr>
-                  <td colSpan={7 + paymentColumns.length} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={8 + paymentColumns.length} className="text-center py-8 text-muted-foreground">
                     Brak uczestników spełniających kryteria
                   </td>
                 </tr>
@@ -416,11 +523,20 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                   const phoneId = `phone-${participant.id}`;
                   const status = statusConfig[participant.participation_status];
                   const StatusIcon = status.icon;
+                  const isSelected = selectedIds.has(participant.participant_id);
 
                   const stopLabel = parseStopFromNote(participant.participation_note, stop1Name, stop2Name);
 
                   return (
-                    <tr key={participant.id} className="hover:bg-gray-50/50">
+                    <tr key={participant.id} className={`hover:bg-gray-50/50 ${isSelected ? 'bg-blue-50/40' : ''}`}>
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(participant.participant_id)}
+                          className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
+                        />
+                      </td>
                       <td className="p-3 font-medium text-gray-900">
                         {participant.last_name} {participant.first_name}
                       </td>
