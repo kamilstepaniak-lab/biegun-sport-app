@@ -20,10 +20,13 @@ interface ChildGuardProps {
   children: React.ReactNode;
 }
 
+const STORAGE_KEY = 'selectedChild';
+
 export function ChildGuard({ selectedChildId, selectedChildName, childrenList, children }: ChildGuardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Zamknij dropdown po kliknięciu poza nim
@@ -37,12 +40,42 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Zapisz wybrane dziecko do localStorage
+  useEffect(() => {
+    if (selectedChildId && selectedChildName) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name: selectedChildName }));
+    }
+  }, [selectedChildId, selectedChildName]);
+
+  // Jeśli brak dziecka w URL — spróbuj przywrócić z localStorage
+  useEffect(() => {
+    if (!selectedChildId) {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const { id, name } = JSON.parse(stored);
+          // Sprawdź czy to dziecko nadal istnieje na liście
+          if (!childrenList || childrenList.some(c => c.id === id)) {
+            setRedirecting(true);
+            router.replace(`${pathname}?child=${id}&childName=${encodeURIComponent(name)}`);
+          }
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    }
+  }, [selectedChildId, pathname, router, childrenList]);
+
   function handleSelectChild(child: ChildOption) {
     setDropdownOpen(false);
     router.push(`${pathname}?child=${child.id}&childName=${encodeURIComponent(child.name)}`);
   }
 
   if (!selectedChildId) {
+    // Jeśli właśnie przekierowujemy — pokaż loader zamiast "Wybierz dziecko"
+    if (redirecting) {
+      return <div className="h-32" />;
+    }
     return (
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-12 flex flex-col items-center text-center gap-5">
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
