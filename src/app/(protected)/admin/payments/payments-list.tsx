@@ -249,9 +249,10 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         {/* Payments list */}
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
           {/* Header */}
-          <div className="hidden md:grid grid-cols-[2fr_2fr_2fr_auto] gap-4 px-5 py-3 border-b border-gray-100">
+          <div className="hidden md:grid grid-cols-[2fr_2fr_1fr_2fr_auto] gap-4 px-5 py-3 border-b border-gray-100">
             <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">Nazwisko, imię</div>
             <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">Wyjazd</div>
+            <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">Termin</div>
             <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">Za co / Kwota</div>
             <div className="w-36 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Status</div>
           </div>
@@ -266,7 +267,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
               filteredGroups.map((group) => (
                 <div
                   key={group.key}
-                  className="grid grid-cols-1 md:grid-cols-[2fr_2fr_2fr_auto] gap-2 md:gap-4 px-5 py-3.5 items-center hover:bg-gray-50/50 transition-colors"
+                  className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr_2fr_auto] gap-2 md:gap-4 px-5 py-3.5 items-center hover:bg-gray-50/50 transition-colors"
                 >
                   {/* Nazwisko, imię */}
                   <div className="font-medium text-gray-900 text-sm">
@@ -276,6 +277,19 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                   {/* Wyjazd */}
                   <div className="text-sm text-gray-500 truncate">
                     {group.tripTitle}
+                  </div>
+
+                  {/* Termin */}
+                  <div className="text-sm">
+                    {group.dueDate ? (
+                      <span className={
+                        new Date(group.dueDate) < new Date() ? 'text-red-600 font-semibold' : 'text-gray-500'
+                      }>
+                        {new Date(group.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
                   </div>
 
                   {/* Za co / Kwota */}
@@ -315,10 +329,10 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => startEditAmount(payment)}
-                                className="font-semibold text-sm text-gray-900 hover:text-blue-600 cursor-pointer flex items-center gap-1 transition-colors"
+                                className="font-semibold text-sm text-gray-900 hover:text-blue-600 cursor-pointer flex items-center gap-1 transition-colors group"
                               >
                                 {payment.amount} {payment.currency}
-                                <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+                                <Edit2 className="h-3 w-3 text-gray-400 group-hover:text-blue-600 transition-colors" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
