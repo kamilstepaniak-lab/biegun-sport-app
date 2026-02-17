@@ -694,6 +694,24 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                       </div>
                       <div className="space-y-2">
                         <Label>Termin płatności</Label>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <input
+                            type="checkbox"
+                            id={`due-departure-${index}`}
+                            checked={payment.due_date === formData.departure_datetime.split('T')[0]}
+                            onChange={(e) => {
+                              if (e.target.checked && formData.departure_datetime) {
+                                updatePayment(index, { due_date: formData.departure_datetime.split('T')[0] });
+                              } else {
+                                updatePayment(index, { due_date: null });
+                              }
+                            }}
+                            className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
+                          />
+                          <label htmlFor={`due-departure-${index}`} className="text-xs text-gray-500 cursor-pointer select-none">
+                            W dniu wyjazdu
+                          </label>
+                        </div>
                         <Input
                           type="date"
                           value={payment.due_date || ''}

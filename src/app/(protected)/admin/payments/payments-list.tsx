@@ -285,7 +285,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                       <span className={
                         new Date(group.dueDate) < new Date() ? 'text-red-600 font-semibold' : 'text-gray-500'
                       }>
-                        {new Date(group.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                        do {new Date(group.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric', year: 'numeric' })}
                       </span>
                     ) : (
                       <span className="text-gray-300">—</span>

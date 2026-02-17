@@ -442,7 +442,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                           <thead>
                             <tr className="border-b border-gray-100">
                               <th className="px-3 py-2 text-left font-medium text-gray-500">Za co</th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Do kiedy</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
                               <th className="px-3 py-2 text-left font-medium text-gray-500">Forma</th>
                               <th className="px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
                             </tr>
@@ -463,7 +463,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 <tr key={template.id} className="hover:bg-gray-50/50">
                                   <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
                                   <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                                    {template.due_date ? format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl }) : '–'}
+                                    {template.due_date ? `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}` : '–'}
                                   </td>
                                   <td className="px-3 py-2">
                                     <span className={cn(

@@ -80,7 +80,7 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
         <div className="text-sm">
           {payment.due_date ? (
             <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-              {format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}
+              do {format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}
             </span>
           ) : (
             <span className="text-gray-300">—</span>

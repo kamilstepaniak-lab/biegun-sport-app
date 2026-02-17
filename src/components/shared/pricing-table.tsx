@@ -54,7 +54,7 @@ function PricingRow({ template }: { template: TripPaymentTemplate }) {
                     {template.due_date && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-amber-100 text-amber-700 border-amber-300">
                             <Clock className="h-3 w-3" />
-                            Do {format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}
+                            do {format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}
                         </span>
                     )}
                 </div>
