@@ -88,15 +88,26 @@ export async function createParentAccounts(): Promise<{
 
     // Zaktualizuj profil żeby ID było zgodne z nowym auth.users ID
     if (data.user && data.user.id !== parent.id) {
-      // Usuń stary profil i wstaw nowy z poprawnym ID
-      await supabaseAdmin.from('profiles').delete().eq('id', parent.id);
+      const newId = data.user.id;
+      const oldId = parent.id;
+
+      // 1. Najpierw zaktualizuj parent_id w participants (dzieci)
+      await supabaseAdmin
+        .from('participants')
+        .update({ parent_id: newId })
+        .eq('parent_id', oldId);
+
+      // 2. Wstaw nowy profil z nowym ID
       await supabaseAdmin.from('profiles').insert({
-        id: data.user.id,
+        id: newId,
         email: parent.email,
         first_name: parent.first_name,
         last_name: parent.last_name,
         role: 'parent',
       });
+
+      // 3. Usuń stary profil
+      await supabaseAdmin.from('profiles').delete().eq('id', oldId);
     }
 
     results.push({
