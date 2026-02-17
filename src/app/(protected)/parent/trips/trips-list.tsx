@@ -282,8 +282,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                     : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
                                 )}
                               >
-                                {trip.departure_stop2_location?.length > 20
-                                  ? trip.departure_stop2_location.substring(0, 18) + '…'
+                                {(trip.departure_stop2_location?.length ?? 0) > 20
+                                  ? trip.departure_stop2_location!.substring(0, 18) + '…'
                                   : trip.departure_stop2_location || 'Przystanek 2'}
                               </button>
                             )}
