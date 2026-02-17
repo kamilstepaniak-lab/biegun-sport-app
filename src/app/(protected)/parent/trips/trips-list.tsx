@@ -244,7 +244,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
 
                     return (
                       <div key={child.child_id} className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50/80">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-gray-50/80 gap-2">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
                               {child.child_name.charAt(0)}
@@ -259,7 +259,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               )}
                             </div>
                           </div>
-                          <div className="flex gap-1.5 flex-wrap justify-end">
+                          <div className="flex gap-1.5 flex-wrap">
                             {/* Przystanek 1 */}
                             <button
                               disabled={isUpdating}
@@ -437,14 +437,14 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Cennik</h4>
                       </div>
-                      <div className="bg-white rounded-xl overflow-hidden ring-1 ring-gray-100">
-                        <table className="w-full text-sm">
+                      <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
+                        <table className="w-full text-xs sm:text-sm min-w-[320px]">
                           <thead>
                             <tr className="border-b border-gray-100">
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Za co</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Do kiedy</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Forma</th>
-                              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Kwota</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500">Za co</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Do kiedy</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500">Forma</th>
+                              <th className="px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-50">
@@ -458,16 +458,16 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 : template.payment_type;
                               const methodLabel = template.payment_method === 'transfer' ? 'Przelew'
                                 : template.payment_method === 'cash' ? 'Gotówka'
-                                : template.payment_method === 'both' ? 'Przelew/Gotówka' : '–';
+                                : template.payment_method === 'both' ? 'Przelew/Got.' : '–';
                               return (
                                 <tr key={template.id} className="hover:bg-gray-50/50">
-                                  <td className="px-3 py-2 font-medium text-gray-800">{label}</td>
+                                  <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
                                   <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
                                     {template.due_date ? format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl }) : '–'}
                                   </td>
                                   <td className="px-3 py-2">
                                     <span className={cn(
-                                      'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium',
+                                      'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
                                       template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
                                         : template.payment_method === 'transfer' ? 'bg-blue-100 text-blue-700'
                                         : 'bg-violet-100 text-violet-700'

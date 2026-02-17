@@ -363,8 +363,8 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
     <TooltipProvider>
       <div className="space-y-4">
         {/* Filtry */}
-        <div className="flex flex-wrap gap-4">
-          <div className="relative w-64">
+        <div className="flex flex-wrap gap-3">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Szukaj po nazwisku..."
@@ -375,7 +375,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
           </div>
 
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filtruj po statusie" />
             </SelectTrigger>
             <SelectContent>
@@ -408,7 +408,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
           </Select>
 
           <Select value={groupFilter} onValueChange={setGroupFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filtruj po grupie" />
             </SelectTrigger>
             <SelectContent>
@@ -421,7 +421,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
             <span className="text-sm text-muted-foreground">
               Wyświetlono: {filteredParticipants.length} z {participants.length}
             </span>
