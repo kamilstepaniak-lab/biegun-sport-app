@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
+import { TripMessageGenerator } from '@/components/admin/trip-message-generator';
 import { getTrip } from '@/lib/actions/trips';
 
 const statusLabels: Record<string, string> = {
@@ -60,6 +61,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             Powrót
           </Link>
         </Button>
+        <TripMessageGenerator trip={trip} />
         <Button variant="outline" asChild>
           <Link href={`/admin/trips/${id}/registrations`}>
             <Users className="mr-2 h-4 w-4" />
@@ -92,6 +94,14 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {trip.declaration_deadline && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <span className="text-amber-700 text-sm font-medium">⏰ Deklaracja do:</span>
+                <span className="text-amber-800 text-sm font-semibold">
+                  {format(new Date(trip.declaration_deadline), "d MMMM yyyy", { locale: pl })}
+                </span>
+              </div>
+            )}
             <div className="flex items-start gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>

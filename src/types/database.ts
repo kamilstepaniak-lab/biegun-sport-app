@@ -95,6 +95,7 @@ export interface Trip {
   id: string;
   title: string;
   description: string | null;
+  declaration_deadline: string | null;
   departure_datetime: string;
   departure_location: string;
   departure_stop2_datetime: string | null;
@@ -267,6 +268,7 @@ export interface UpdateParticipantInput extends Partial<CreateParticipantInput> 
 export interface CreateTripInput {
   title: string;
   description?: string | null;
+  declaration_deadline?: string | null;
   departure_datetime: string;
   departure_location: string;
   departure_stop2_datetime?: string | null;

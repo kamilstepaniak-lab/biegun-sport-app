@@ -28,11 +28,11 @@ import {
 
 import { createTrip, updateTrip } from '@/lib/actions/trips';
 import type { Group, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
-import { AIAssistant } from './ai-assistant';
 
 export interface TripFormData {
   title: string;
   description: string;
+  declaration_deadline: string;
   status: TripStatus;
   departure_datetime: string;
   departure_location: string;
@@ -153,6 +153,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   const [formData, setFormData] = useState<TripFormData>({
     title: trip?.title || '',
     description: trip?.description || '',
+    declaration_deadline: (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null })?.declaration_deadline || '',
     status: trip?.status || 'draft',
     departure_datetime: formatDateTimeLocal(trip?.departure_datetime),
     departure_location: trip?.departure_location || '',
@@ -198,36 +199,6 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     const newPayments = [...formData.payment_templates];
     newPayments[index] = { ...newPayments[index], ...updates };
     updateFormData({ payment_templates: newPayments });
-  }
-
-  function handleAIFillForm(data: Partial<TripFormData>) {
-    const updates: Partial<TripFormData> = {};
-
-    if (data.title) updates.title = data.title;
-    if (data.description !== undefined) updates.description = data.description;
-    if (data.departure_datetime) updates.departure_datetime = data.departure_datetime;
-    if (data.departure_location) updates.departure_location = data.departure_location;
-    if (data.return_datetime) updates.return_datetime = data.return_datetime;
-    if (data.return_location) updates.return_location = data.return_location;
-    if (data.group_ids && data.group_ids.length > 0) updates.group_ids = data.group_ids;
-    if (data.payment_templates && data.payment_templates.length > 0) {
-      updates.payment_templates = data.payment_templates;
-    }
-    if (data.status) updates.status = data.status;
-
-    // Handle optional stop2 fields
-    if (data.departure_stop2_location) {
-      updates.departure_stop2_location = data.departure_stop2_location;
-      updates.departure_stop2_datetime = data.departure_stop2_datetime || '';
-      setShowStop2Departure(true);
-    }
-    if (data.return_stop2_location) {
-      updates.return_stop2_location = data.return_stop2_location;
-      updates.return_stop2_datetime = data.return_stop2_datetime || '';
-      setShowStop2Return(true);
-    }
-
-    updateFormData(updates);
   }
 
   // Sprawdź co blokuje walidację
@@ -296,11 +267,6 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {/* AI Asystent — tylko w trybie tworzenia */}
-      {mode === 'create' && (
-        <AIAssistant groups={groups} onFillForm={handleAIFillForm} />
-      )}
-
       {/* Podstawowe informacje */}
       <Card>
         <CardHeader>
@@ -329,6 +295,16 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 placeholder="Opcjonalny opis wyjazdu..."
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="declaration_deadline">Deklaracja do</Label>
+              <Input
+                id="declaration_deadline"
+                type="date"
+                value={formData.declaration_deadline}
+                onChange={(e) => updateFormData({ declaration_deadline: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Termin potwierdzenia udziału przez rodzica</p>
             </div>
             <div className="space-y-2">
               <Label>Status</Label>

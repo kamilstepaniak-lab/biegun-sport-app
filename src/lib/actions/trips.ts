@@ -177,6 +177,7 @@ export async function createTrip(input: CreateTripInput) {
   const {
     title,
     description,
+    declaration_deadline,
     departure_datetime,
     departure_location,
     departure_stop2_datetime,
@@ -198,6 +199,7 @@ export async function createTrip(input: CreateTripInput) {
     .insert({
       title,
       description: description || null,
+      declaration_deadline: declaration_deadline || null,
       departure_datetime,
       departure_location,
       departure_stop2_datetime: departure_stop2_datetime || null,
@@ -290,6 +292,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   const {
     title,
     description,
+    declaration_deadline,
     departure_datetime,
     departure_location,
     departure_stop2_datetime,
@@ -312,6 +315,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 
   if (title !== undefined) updateData.title = title;
   if (description !== undefined) updateData.description = description || null;
+  if (declaration_deadline !== undefined) updateData.declaration_deadline = declaration_deadline || null;
   if (departure_datetime !== undefined) updateData.departure_datetime = departure_datetime;
   if (departure_location !== undefined) updateData.departure_location = departure_location;
   if (departure_stop2_datetime !== undefined) updateData.departure_stop2_datetime = departure_stop2_datetime || null;

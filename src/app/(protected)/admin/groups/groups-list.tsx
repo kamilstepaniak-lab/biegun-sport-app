@@ -390,10 +390,32 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           </div>
 
           {selectedParticipants.size > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-500 bg-white rounded-xl px-3 py-1.5 ring-1 ring-gray-100">
                 Zaznaczono: {selectedParticipants.size}
               </span>
+              <button
+                onClick={() => {
+                  // Zbierz unikalne emaile zaznaczonych uczestników
+                  const emails = new Set<string>();
+                  groups.forEach(group => {
+                    group.participants.forEach(p => {
+                      if (selectedParticipants.has(p.id)) {
+                        if (p.parent.email) emails.add(p.parent.email);
+                        if (p.parent.secondary_email) emails.add(p.parent.secondary_email);
+                      }
+                    });
+                  });
+                  const emailList = Array.from(emails).join(', ');
+                  navigator.clipboard.writeText(emailList).then(() => {
+                    toast.success(`Skopiowano ${emails.size} adresów email`);
+                  });
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                <Copy className="h-4 w-4" />
+                Kopiuj emaile
+              </button>
               <button
                 onClick={() => setShowDeleteDialog(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors"
