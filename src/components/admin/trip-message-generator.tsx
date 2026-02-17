@@ -17,6 +17,7 @@ import type { TripWithPaymentTemplates } from '@/types';
 
 interface TripMessageGeneratorProps {
   trip: TripWithPaymentTemplates;
+  compact?: boolean;
 }
 
 function formatDate(iso: string, withTime = true) {
@@ -205,7 +206,7 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   return lines.join('\n');
 }
 
-export function TripMessageGenerator({ trip }: TripMessageGeneratorProps) {
+export function TripMessageGenerator({ trip, compact = false }: TripMessageGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'email' | 'whatsapp'>('email');
   const [copied, setCopied] = useState(false);
@@ -254,10 +255,20 @@ export function TripMessageGenerator({ trip }: TripMessageGeneratorProps) {
 
   return (
     <>
-      <Button variant="outline" onClick={() => setIsOpen(true)}>
-        <Mail className="mr-2 h-4 w-4" />
-        Generuj wiadomość
-      </Button>
+      {compact ? (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-blue-50 text-blue-700 text-sm font-medium rounded-xl ring-1 ring-blue-200 transition-colors"
+        >
+          <Mail className="h-4 w-4" />
+          Wiadomość
+        </button>
+      ) : (
+        <Button variant="outline" onClick={() => setIsOpen(true)}>
+          <Mail className="mr-2 h-4 w-4" />
+          Generuj wiadomość
+        </Button>
+      )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">

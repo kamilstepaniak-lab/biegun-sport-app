@@ -19,6 +19,7 @@ import {
   Trash2,
   CopyPlus,
   Loader2,
+  Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -40,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 import { deleteTrip, duplicateTrip } from '@/lib/actions/trips';
+import { TripMessageGenerator } from '@/components/admin/trip-message-generator';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
 import type { TripWithPaymentTemplates, Group } from '@/types';
@@ -503,6 +505,7 @@ export function TripsList({ trips, groups }: TripsListProps) {
                   <Edit className="h-4 w-4" />
                   Edytuj
                 </Link>
+                <TripMessageGenerator trip={trip} compact />
                 <Link
                   href={`/admin/trips/${trip.id}/registrations`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
