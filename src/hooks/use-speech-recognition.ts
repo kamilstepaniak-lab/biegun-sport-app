@@ -13,24 +13,38 @@ interface UseSpeechRecognitionReturn {
   resetTranscript: () => void;
 }
 
+function getSpeechRecognitionAPI(): (new () => SpeechRecognition) | null {
+  if (typeof window === 'undefined') return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
 export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [isListening, setIsListening] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  const SpeechRecognitionAPI =
-    typeof window !== 'undefined'
-      ? window.SpeechRecognition || window.webkitSpeechRecognition
-      : null;
-
-  const isSupported = !!SpeechRecognitionAPI;
+  // Check support after mount (client-side only)
+  useEffect(() => {
+    setIsSupported(!!getSpeechRecognitionAPI());
+  }, []);
 
   const startListening = useCallback(() => {
+    const SpeechRecognitionAPI = getSpeechRecognitionAPI();
     if (!SpeechRecognitionAPI) {
       setError('Twoja przeglądarka nie obsługuje rozpoznawania mowy');
       return;
+    }
+
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
     }
 
     const recognition = new SpeechRecognitionAPI();
@@ -79,7 +93,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     recognition.start();
     setIsListening(true);
     setError(null);
-  }, [SpeechRecognitionAPI]);
+  }, []);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
