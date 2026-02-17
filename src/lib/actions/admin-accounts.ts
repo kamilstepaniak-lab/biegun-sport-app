@@ -8,8 +8,120 @@ export interface ParentAccountResult {
   email: string;
   firstName: string;
   lastName: string;
-  status: 'created' | 'already_exists' | 'error';
+  status: 'created' | 'already_exists' | 'reset' | 'error';
   error?: string;
+}
+
+export async function resetParentPasswords(): Promise<{
+  results: ParentAccountResult[];
+  reset: number;
+  errors: number;
+}> {
+  const supabaseAdmin = createAdminClient();
+
+  // Pobierz wszystkich rodziców z tabeli profiles
+  const { data: parents, error: fetchError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email, first_name, last_name')
+    .eq('role', 'parent');
+
+  if (fetchError) {
+    throw new Error(`Nie udało się pobrać listy rodziców: ${fetchError.message}`);
+  }
+
+  if (!parents || parents.length === 0) {
+    return { results: [], reset: 0, errors: 0 };
+  }
+
+  const results: ParentAccountResult[] = [];
+  let reset = 0;
+  let errors = 0;
+
+  for (const parent of parents) {
+    if (!parent.email) {
+      results.push({
+        email: '(brak emaila)',
+        firstName: parent.first_name || '',
+        lastName: parent.last_name || '',
+        status: 'error',
+        error: 'Brak adresu email',
+      });
+      errors++;
+      continue;
+    }
+
+    // Pobierz użytkownika z auth.users po emailu
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+
+    if (listError) {
+      results.push({
+        email: parent.email,
+        firstName: parent.first_name || '',
+        lastName: parent.last_name || '',
+        status: 'error',
+        error: listError.message,
+      });
+      errors++;
+      continue;
+    }
+
+    const authUser = listData.users.find(u => u.email === parent.email);
+
+    if (!authUser) {
+      // Konto nie istnieje — utwórz je
+      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: parent.email,
+        password: DEFAULT_PASSWORD,
+        email_confirm: true,
+      });
+      if (createError) {
+        results.push({
+          email: parent.email,
+          firstName: parent.first_name || '',
+          lastName: parent.last_name || '',
+          status: 'error',
+          error: createError.message,
+        });
+        errors++;
+      } else {
+        results.push({
+          email: parent.email,
+          firstName: parent.first_name || '',
+          lastName: parent.last_name || '',
+          status: 'reset',
+        });
+        reset++;
+      }
+      continue;
+    }
+
+    // Konto istnieje — zaktualizuj hasło
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      authUser.id,
+      { password: DEFAULT_PASSWORD }
+    );
+
+    if (updateError) {
+      results.push({
+        email: parent.email,
+        firstName: parent.first_name || '',
+        lastName: parent.last_name || '',
+        status: 'error',
+        error: updateError.message,
+      });
+      errors++;
+    } else {
+      results.push({
+        email: parent.email,
+        firstName: parent.first_name || '',
+        lastName: parent.last_name || '',
+        status: 'reset',
+      });
+      reset++;
+    }
+  }
+
+  return { results, reset, errors };
 }
 
 export async function createParentAccounts(): Promise<{
