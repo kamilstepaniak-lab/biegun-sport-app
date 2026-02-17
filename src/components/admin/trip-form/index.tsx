@@ -28,6 +28,7 @@ import {
 
 import { createTrip, updateTrip } from '@/lib/actions/trips';
 import type { Group, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
+import { AIAssistant } from './ai-assistant';
 
 export interface TripFormData {
   title: string;
@@ -199,6 +200,36 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     updateFormData({ payment_templates: newPayments });
   }
 
+  function handleAIFillForm(data: Partial<TripFormData>) {
+    const updates: Partial<TripFormData> = {};
+
+    if (data.title) updates.title = data.title;
+    if (data.description !== undefined) updates.description = data.description;
+    if (data.departure_datetime) updates.departure_datetime = data.departure_datetime;
+    if (data.departure_location) updates.departure_location = data.departure_location;
+    if (data.return_datetime) updates.return_datetime = data.return_datetime;
+    if (data.return_location) updates.return_location = data.return_location;
+    if (data.group_ids && data.group_ids.length > 0) updates.group_ids = data.group_ids;
+    if (data.payment_templates && data.payment_templates.length > 0) {
+      updates.payment_templates = data.payment_templates;
+    }
+    if (data.status) updates.status = data.status;
+
+    // Handle optional stop2 fields
+    if (data.departure_stop2_location) {
+      updates.departure_stop2_location = data.departure_stop2_location;
+      updates.departure_stop2_datetime = data.departure_stop2_datetime || '';
+      setShowStop2Departure(true);
+    }
+    if (data.return_stop2_location) {
+      updates.return_stop2_location = data.return_stop2_location;
+      updates.return_stop2_datetime = data.return_stop2_datetime || '';
+      setShowStop2Return(true);
+    }
+
+    updateFormData(updates);
+  }
+
   // Sprawdź co blokuje walidację
   const validationErrors: string[] = [];
   if (formData.title.trim().length < 3) validationErrors.push('Tytuł za krótki (min 3 znaki)');
@@ -265,6 +296,11 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {/* AI Asystent — tylko w trybie tworzenia */}
+      {mode === 'create' && (
+        <AIAssistant groups={groups} onFillForm={handleAIFillForm} />
+      )}
+
       {/* Podstawowe informacje */}
       <Card>
         <CardHeader>
