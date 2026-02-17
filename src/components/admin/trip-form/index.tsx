@@ -64,7 +64,7 @@ const emptyPayment: CreatePaymentTemplateInput = {
   amount: 0,
   currency: 'PLN',
   due_date: null,
-  payment_method: 'both',
+  payment_method: 'transfer',
 };
 
 // Predefiniowane przystanki
@@ -708,9 +708,9 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                             checked={!!formData.departure_datetime && !!payment.due_date && payment.due_date === formData.departure_datetime.split('T')[0]}
                             onChange={(e) => {
                               if (e.target.checked && formData.departure_datetime) {
-                                updatePayment(index, { due_date: formData.departure_datetime.split('T')[0] });
+                                updatePayment(index, { due_date: formData.departure_datetime.split('T')[0], payment_method: 'cash' });
                               } else {
-                                updatePayment(index, { due_date: null });
+                                updatePayment(index, { due_date: null, payment_method: 'transfer' });
                               }
                             }}
                             className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
