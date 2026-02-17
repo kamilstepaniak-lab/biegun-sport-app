@@ -463,7 +463,11 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 <tr key={template.id} className="hover:bg-gray-50/50">
                                   <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
                                   <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                                    {template.due_date ? `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}` : '–'}
+                                    {template.due_date
+                                      ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
+                                        ? 'w dniu wyjazdu'
+                                        : `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`)
+                                      : '–'}
                                   </td>
                                   <td className="px-3 py-2">
                                     <span className={cn(

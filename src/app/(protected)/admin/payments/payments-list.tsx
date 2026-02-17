@@ -37,6 +37,7 @@ interface GroupedPayment {
   tripTitle: string;
   tripId: string;
   dueDate: string | null;
+  tripDepartureDate: string;
   payments: PaymentWithDetails[];
 }
 
@@ -68,6 +69,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
           tripTitle: trip.title,
           tripId: trip.id,
           dueDate: payment.due_date,
+          tripDepartureDate: trip.departure_datetime,
           payments: [],
         });
       }
@@ -281,13 +283,15 @@ export function PaymentsList({ payments }: PaymentsListProps) {
 
                   {/* Termin */}
                   <div className="text-sm">
-                    {group.dueDate ? (
-                      <span className={
-                        new Date(group.dueDate) < new Date() ? 'text-red-600 font-semibold' : 'text-gray-500'
-                      }>
-                        do {new Date(group.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric', year: 'numeric' })}
-                      </span>
-                    ) : (
+                    {group.dueDate ? (() => {
+                      const isDepartureDay = group.tripDepartureDate && group.dueDate === group.tripDepartureDate.split('T')[0];
+                      const isOverdue = new Date(group.dueDate) < new Date();
+                      return (
+                        <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+                          {isDepartureDay ? 'w dniu wyjazdu' : `do ${new Date(group.dueDate).toLocaleDateString('pl-PL', { day: 'numeric', month: 'numeric', year: 'numeric' })}`}
+                        </span>
+                      );
+                    })() : (
                       <span className="text-gray-300">—</span>
                     )}
                   </div>

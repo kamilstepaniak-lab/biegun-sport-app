@@ -78,11 +78,14 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
 
         {/* Termin */}
         <div className="text-sm">
-          {payment.due_date ? (
-            <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-              do {format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}
-            </span>
-          ) : (
+          {payment.due_date ? (() => {
+            const isDepartureDay = payment.trip_departure_date && payment.due_date === new Date(payment.trip_departure_date).toISOString().split('T')[0];
+            return (
+              <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+                {isDepartureDay ? 'w dniu wyjazdu' : `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}`}
+              </span>
+            );
+          })() : (
             <span className="text-gray-300">—</span>
           )}
         </div>

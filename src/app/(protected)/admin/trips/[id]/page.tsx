@@ -160,7 +160,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <PricingTable templates={trip.payment_templates} />
+            <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
 
             <Separator className="my-4" />
 

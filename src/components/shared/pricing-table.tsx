@@ -20,7 +20,7 @@ function getMethodStyle(method: string | null): { label: string; className: stri
     return { label: 'Przelew/Gotówka', className: 'bg-violet-100 text-violet-800 border-violet-200' };
 }
 
-function PricingRow({ template }: { template: TripPaymentTemplate }) {
+function PricingRow({ template, departureDate }: { template: TripPaymentTemplate; departureDate?: string }) {
     const methodStyle = getMethodStyle(template.payment_method);
 
     const paymentTypeLabel = template.payment_type === 'installment'
@@ -51,12 +51,15 @@ function PricingRow({ template }: { template: TripPaymentTemplate }) {
 
                 {/* ŚRODEK: Termin (Status) */}
                 <div className="flex justify-start md:justify-center">
-                    {template.due_date && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-amber-100 text-amber-700 border-amber-300">
-                            <Clock className="h-3 w-3" />
-                            do {format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}
-                        </span>
-                    )}
+                    {template.due_date && (() => {
+                        const isDepartureDay = departureDate && template.due_date === new Date(departureDate).toISOString().split('T')[0];
+                        return (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border bg-amber-100 text-amber-700 border-amber-300">
+                                <Clock className="h-3 w-3" />
+                                {isDepartureDay ? 'w dniu wyjazdu' : `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`}
+                            </span>
+                        );
+                    })()}
                 </div>
 
                 {/* PRAWA STRONA: Kwota */}
@@ -91,9 +94,10 @@ function PricingRow({ template }: { template: TripPaymentTemplate }) {
 
 interface PricingTableProps {
     templates: TripPaymentTemplate[];
+    departureDate?: string;
 }
 
-export function PricingTable({ templates }: PricingTableProps) {
+export function PricingTable({ templates, departureDate }: PricingTableProps) {
     if (!templates || templates.length === 0) {
         return (
             <EmptyState
@@ -126,7 +130,7 @@ export function PricingTable({ templates }: PricingTableProps) {
 
             <div className="rounded-lg border bg-card divide-y">
                 {sortedTemplates.map((template) => (
-                    <PricingRow key={template.id} template={template} />
+                    <PricingRow key={template.id} template={template} departureDate={departureDate} />
                 ))}
             </div>
         </div>

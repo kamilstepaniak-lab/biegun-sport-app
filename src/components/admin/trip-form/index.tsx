@@ -694,11 +694,18 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                       </div>
                       <div className="space-y-2">
                         <Label>Termin płatności</Label>
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <Input
+                          type="date"
+                          value={payment.due_date || ''}
+                          onChange={(e) =>
+                            updatePayment(index, { due_date: e.target.value || null })
+                          }
+                        />
+                        <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             id={`due-departure-${index}`}
-                            checked={payment.due_date === formData.departure_datetime.split('T')[0]}
+                            checked={!!formData.departure_datetime && !!payment.due_date && payment.due_date === formData.departure_datetime.split('T')[0]}
                             onChange={(e) => {
                               if (e.target.checked && formData.departure_datetime) {
                                 updatePayment(index, { due_date: formData.departure_datetime.split('T')[0] });
@@ -712,13 +719,6 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                             W dniu wyjazdu
                           </label>
                         </div>
-                        <Input
-                          type="date"
-                          value={payment.due_date || ''}
-                          onChange={(e) =>
-                            updatePayment(index, { due_date: e.target.value || null })
-                          }
-                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Forma płatności</Label>
