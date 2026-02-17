@@ -154,11 +154,17 @@ export function LoginForm() {
         </Form>
       </div>
 
-      <div className="px-8 py-4 bg-gray-50/50 border-t border-gray-100 text-center">
+      <div className="px-8 py-4 bg-gray-50/50 border-t border-gray-100 text-center space-y-1">
         <p className="text-sm text-gray-500">
           Logujesz się pierwszy raz?{' '}
           <Link href="/forgot-password" className="text-gray-900 hover:underline font-medium">
             Ustaw hasło
+          </Link>
+        </p>
+        <p className="text-sm text-gray-500">
+          Nie masz konta?{' '}
+          <Link href="/register" className="text-gray-900 hover:underline font-medium">
+            Zarejestruj się
           </Link>
         </p>
       </div>
