@@ -203,9 +203,9 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-gray-500">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      {format(departureDate, 'd MMM', { locale: pl })}
+                      {format(departureDate, 'EEE d MMM', { locale: pl })}
                       <ArrowRight className="h-3 w-3 text-gray-300" />
-                      {format(returnDate, 'd MMM yyyy', { locale: pl })}
+                      {format(returnDate, 'EEE d MMM yyyy', { locale: pl })}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4 text-gray-400" />
@@ -380,7 +380,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                         <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-gray-800 text-sm">{trip.departure_location}</p>
-                          <p className="text-xs text-gray-500">{format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}</p>
+                          <p className="text-xs text-gray-500">{format(departureDate, 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
                         </div>
                       </div>
                       {trip.departure_stop2_location && (
@@ -389,7 +389,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                           <div>
                             <p className="font-medium text-gray-800 text-sm">{trip.departure_stop2_location}</p>
                             {trip.departure_stop2_datetime && (
-                              <p className="text-xs text-gray-500">{format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}</p>
+                              <p className="text-xs text-gray-500">{format(new Date(trip.departure_stop2_datetime), 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
                             )}
                           </div>
                         </div>
@@ -409,7 +409,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                         <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-gray-800 text-sm">{trip.return_location}</p>
-                          <p className="text-xs text-gray-500">{format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}</p>
+                          <p className="text-xs text-gray-500">{format(returnDate, 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
                         </div>
                       </div>
                       {trip.return_stop2_location && (
@@ -418,7 +418,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                           <div>
                             <p className="font-medium text-gray-800 text-sm">{trip.return_stop2_location}</p>
                             {trip.return_stop2_datetime && (
-                              <p className="text-xs text-gray-500">{format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}</p>
+                              <p className="text-xs text-gray-500">{format(new Date(trip.return_stop2_datetime), 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
                             )}
                           </div>
                         </div>
