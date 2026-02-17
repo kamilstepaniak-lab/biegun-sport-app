@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { PageHeader, Breadcrumbs } from '@/components/shared';
 import { ChildForm } from '@/components/parent';
 import { getSelectableGroups } from '@/lib/actions/groups';

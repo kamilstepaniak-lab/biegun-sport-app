@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { Plus, MapPin, Upload } from 'lucide-react';
 

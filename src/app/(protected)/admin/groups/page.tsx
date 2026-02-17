@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Users } from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';

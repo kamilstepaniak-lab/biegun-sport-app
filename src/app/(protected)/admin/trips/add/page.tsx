@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { PageHeader, Breadcrumbs } from '@/components/shared';
 import { TripForm } from '@/components/admin';
 import { getGroups } from '@/lib/actions/groups';

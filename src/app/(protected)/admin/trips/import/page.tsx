@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { PageHeader, Breadcrumbs } from '@/components/shared';
 import { getTripsImportBuffer } from '@/lib/actions/trips-import';
 import { TripsImportClient } from './trips-import-client';
