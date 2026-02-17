@@ -54,12 +54,12 @@ export default function ForgotPasswordPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
-              {success ? 'Sprawdź email' : 'Resetuj hasło'}
+              {success ? 'Sprawdź email' : 'Ustaw lub resetuj hasło'}
             </CardTitle>
             <CardDescription className="text-center">
               {success
-                ? 'Link do zmiany hasła został wysłany na Twój adres email'
-                : 'Podaj adres email powiązany z Twoim kontem'
+                ? 'Link do ustawienia hasła został wysłany na Twój adres email'
+                : 'Podaj email przypisany do Twojego konta — wyślemy link do ustawienia hasła'
               }
             </CardDescription>
           </CardHeader>
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
                 </div>
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Wysłaliśmy link do resetowania hasła na adres:
+                    Wysłaliśmy link do ustawienia hasła na adres:
                   </p>
                   <p className="font-medium flex items-center justify-center gap-2">
                     <Mail className="h-4 w-4" />
@@ -111,7 +111,7 @@ export default function ForgotPasswordPage() {
                       Wysyłanie...
                     </>
                   ) : (
-                    'Wyślij link do resetu'
+                    'Wyślij link do ustawienia hasła'
                   )}
                 </Button>
               </form>
