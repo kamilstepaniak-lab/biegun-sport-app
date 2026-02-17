@@ -35,15 +35,16 @@ interface ParentTripsListProps {
   trips: TripForParent[];
 }
 
-function getStopFromNote(note: string | null): 'stop1' | 'stop2' | null {
+function getStopFromNote(note: string | null): 'stop1' | 'stop2' | 'own' | null {
   if (!note) return null;
   if (note.startsWith('[STOP2]')) return 'stop2';
   if (note.startsWith('[STOP1]')) return 'stop1';
+  if (note.startsWith('[OWN]')) return 'own';
   return null;
 }
 
-function buildNote(stop: 'stop1' | 'stop2', message?: string): string {
-  const prefix = stop === 'stop1' ? '[STOP1]' : '[STOP2]';
+function buildNote(stop: 'stop1' | 'stop2' | 'own', message?: string): string {
+  const prefix = stop === 'stop1' ? '[STOP1]' : stop === 'stop2' ? '[STOP2]' : '[OWN]';
   return message ? `${prefix} ${message}` : prefix;
 }
 
@@ -236,6 +237,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     const statusLabel = currentStatus === 'confirmed'
                       ? currentStop === 'stop2'
                         ? `Jedzie – ${trip.departure_stop2_location || 'Przystanek 2'}`
+                        : currentStop === 'own'
+                        ? 'Jedzie – Dojazd własny'
                         : `Jedzie – ${trip.departure_location || 'Przystanek 1'}`
                       : status.label;
 
@@ -257,12 +260,13 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             </div>
                           </div>
                           <div className="flex gap-1.5 flex-wrap justify-end">
+                            {/* Przystanek 1 */}
                             <button
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('stop1')); }}
                               className={cn(
                                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                                currentStatus === 'confirmed' && currentStop !== 'stop2'
+                                currentStatus === 'confirmed' && currentStop === 'stop1'
                                   ? 'bg-emerald-600 text-white shadow-sm'
                                   : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
                               )}
@@ -271,6 +275,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 ? trip.departure_location.substring(0, 18) + '…'
                                 : trip.departure_location || 'Przystanek 1'}
                             </button>
+                            {/* Przystanek 2 */}
                             {hasStop2 && (
                               <button
                                 disabled={isUpdating}
@@ -287,6 +292,20 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                   : trip.departure_stop2_location || 'Przystanek 2'}
                               </button>
                             )}
+                            {/* Dojazd własny */}
+                            <button
+                              disabled={isUpdating}
+                              onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('own')); }}
+                              className={cn(
+                                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                                currentStatus === 'confirmed' && currentStop === 'own'
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'
+                              )}
+                            >
+                              Dojazd własny
+                            </button>
+                            {/* Nie jedzie */}
                             <button
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'not_going'); }}
@@ -300,6 +319,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               <X className="h-3.5 w-3.5" />
                               Nie jedzie
                             </button>
+                            {/* Inne — tylko wiadomość tekstowa do admina */}
                             <button
                               disabled={isUpdating}
                               onClick={(e) => { e.stopPropagation(); if (isInneOpen) { setShowInneInput(null); setInneMessage(''); } else { setShowInneInput(key); setInneMessage(''); } }}
@@ -311,14 +331,14 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               )}
                             >
                               <HelpCircle className="h-3.5 w-3.5" />
-                              Inne
+                              Wiadomość
                             </button>
                           </div>
                         </div>
                         {isInneOpen && (
                           <div className="ml-11 p-3 rounded-xl bg-amber-50/50 border border-amber-100 space-y-2">
                             <Textarea
-                              placeholder="Wpisz wiadomość (np. dołączy później, przyjedzie sam, itp.)"
+                              placeholder="Wpisz wiadomość do admina (np. jest chore, dołączy później, itp.)"
                               value={inneMessage}
                               onChange={(e) => setInneMessage(e.target.value)}
                               rows={2}

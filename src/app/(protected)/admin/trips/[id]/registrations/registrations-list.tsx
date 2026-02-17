@@ -69,6 +69,7 @@ function parseStopFromNote(note: string | null | undefined, stop1Name?: string |
   if (!note) return null;
   if (note.startsWith('[STOP1]')) return stop1Name || 'Przystanek 1';
   if (note.startsWith('[STOP2]')) return stop2Name || 'Przystanek 2';
+  if (note.startsWith('[OWN]')) return 'Dojazd własny';
   return null;
 }
 

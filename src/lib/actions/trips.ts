@@ -722,11 +722,15 @@ export async function updateParticipationStatus(
   note?: string
 ) {
   const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
+
+  // Gdy admin ustawia "Jedzie" bez notatki o przystanku — domyślnie Przystanek 1
+  const finalNote = (status === 'confirmed' && !note) ? '[STOP1]' : (note || null);
 
   // Sprawdź czy istnieje rejestracja
   const { data: existing } = await supabase
@@ -736,18 +740,18 @@ export async function updateParticipationStatus(
     .eq('participant_id', participantId)
     .maybeSingle();
 
+  let registrationId: string | null = null;
+
   if (existing) {
+    registrationId = existing.id;
     // Aktualizuj istniejącą
-    const { error, data } = await supabase
+    const { error } = await supabase
       .from('trip_registrations')
       .update({
         participation_status: status,
-        participation_note: note || null,
+        participation_note: finalNote,
       })
-      .eq('id', existing.id)
-      .select();
-
-    console.log('Update result:', { data, error, existingId: existing.id, status });
+      .eq('id', existing.id);
 
     if (error) {
       console.error('Update participation error:', error);
@@ -765,20 +769,44 @@ export async function updateParticipationStatus(
         is_outside_group: false,
         status: 'active',
         participation_status: status,
-        participation_note: note || null,
+        participation_note: finalNote,
       })
-      .select();
-
-    console.log('Insert result:', { data, error, tripId, participantId, status });
+      .select('id')
+      .single();
 
     if (error) {
       console.error('Create registration error:', error);
       return { error: `Nie udało się utworzyć rejestracji: ${error.message}` };
     }
+    registrationId = data?.id || null;
+  }
+
+  // Obsługa płatności
+  if (status === 'confirmed' && registrationId) {
+    // Admin ustawia "Jedzie" — utwórz płatności jeśli nie istnieją
+    const { data: existingPayments } = await supabaseAdmin
+      .from('payments')
+      .select('id')
+      .eq('registration_id', registrationId)
+      .neq('status', 'cancelled')
+      .limit(1);
+
+    if (!existingPayments || existingPayments.length === 0) {
+      await createPaymentsForRegistration(registrationId, tripId, participantId);
+    }
+  } else if (status === 'not_going' && registrationId) {
+    // Admin ustawia "Nie jedzie" — anuluj oczekujące płatności
+    await supabaseAdmin
+      .from('payments')
+      .update({ status: 'cancelled' })
+      .eq('registration_id', registrationId)
+      .eq('status', 'pending');
   }
 
   revalidatePath(`/admin/trips/${tripId}/registrations`);
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/payments');
+  revalidatePath('/admin/payments');
   return { success: true };
 }
 
@@ -1030,8 +1058,9 @@ export async function updateParticipationStatusByParent(
   const { createAdminClient: createAdminClientInner } = await import('@/lib/supabase/server');
   const supabaseAdminInner = createAdminClientInner();
 
-  if ((status === 'confirmed' || status === 'other') && registrationId) {
-    // Dziecko jedzie (confirmed = autobusem, other = dojazd własny) — utwórz płatności jeśli nie istnieją
+  if (status === 'confirmed' && registrationId) {
+    // Dziecko jedzie (confirmed = przystankiem lub dojazdem własnym) — utwórz płatności jeśli nie istnieją
+    // 'other' to tylko wiadomość tekstowa do admina — NIE tworzy płatności
     const { data: existingPayments } = await supabaseAdminInner
       .from('payments')
       .select('id')
