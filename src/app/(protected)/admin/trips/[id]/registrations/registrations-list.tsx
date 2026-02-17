@@ -231,9 +231,9 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
   // Kolumny płatności
   const paymentColumns = useMemo(() => getPaymentColumns(participants), [participants]);
 
-  // Filtruj i sortuj uczestników
+  // Filtruj uczestników (bez sortowania — będziemy grupować)
   const filteredParticipants = useMemo(() => {
-    let result = participants.filter((p) => {
+    return participants.filter((p) => {
       const matchesStatus = statusFilter === 'all' || p.participation_status === statusFilter;
       const matchesGroup = groupFilter === 'all' || p.group_name === groupFilter;
       const matchesSearch = !searchQuery.trim() ||
@@ -241,17 +241,27 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
         p.first_name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesGroup && matchesSearch;
     });
+  }, [participants, statusFilter, groupFilter, searchQuery]);
 
-    // Sortuj wg statusu: Jadą, Nie jadą, Inne, Niepotwierdzeni
-    result.sort((a, b) => {
-      const orderA = statusConfig[a.participation_status].order;
-      const orderB = statusConfig[b.participation_status].order;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.last_name.localeCompare(b.last_name, 'pl');
+  // Grupuj po statusie: Jedzie, Nie jedzie, Inne, Niepotwierdzeni
+  const statusGroups = useMemo(() => {
+    const groups: { key: string; label: string; icon: typeof Check; color: string; bgColor: string; participants: TripParticipant[] }[] = [
+      { key: 'confirmed', label: 'Jedzie', icon: Check, color: 'text-emerald-700', bgColor: 'bg-emerald-50 border-emerald-200', participants: [] },
+      { key: 'not_going', label: 'Nie jedzie', icon: X, color: 'text-red-700', bgColor: 'bg-red-50 border-red-200', participants: [] },
+      { key: 'other', label: 'Inne / Wiadomość', icon: HelpCircle, color: 'text-amber-700', bgColor: 'bg-amber-50 border-amber-200', participants: [] },
+      { key: 'unconfirmed', label: 'Niepotwierdzeni', icon: Clock, color: 'text-gray-500', bgColor: 'bg-gray-50 border-gray-200', participants: [] },
+    ];
+
+    filteredParticipants.forEach(p => {
+      const group = groups.find(g => g.key === p.participation_status);
+      if (group) group.participants.push(p);
     });
 
-    return result;
-  }, [participants, statusFilter, groupFilter, searchQuery]);
+    // Sortuj uczestników w każdej grupie po nazwisku
+    groups.forEach(g => g.participants.sort((a, b) => a.last_name.localeCompare(b.last_name, 'pl')));
+
+    return groups;
+  }, [filteredParticipants]);
 
   // Bulk selection helpers
   const allFilteredIds = filteredParticipants.map(p => p.participant_id);
@@ -478,44 +488,77 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
           </div>
         )}
 
-        {/* Tabela */}
-        <div className="rounded-2xl border border-gray-100 overflow-x-auto bg-white shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50/80">
-              <tr>
-                <th className="p-3 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
-                  />
-                </th>
-                <th className="text-left p-3 font-medium text-gray-600">Nazwisko i imię</th>
-                <th className="text-left p-3 font-medium text-gray-600">Data ur.</th>
-                <th className="text-left p-3 font-medium text-gray-600">Grupa</th>
-                <th className="text-left p-3 font-medium text-gray-600">Email</th>
-                <th className="text-left p-3 font-medium text-gray-600">Telefon</th>
-                <th className="text-left p-3 font-medium text-gray-600">Status</th>
-                {/* Kolumny płatności */}
-                {paymentColumns.map(col => (
-                  <th key={col.key} className="text-center p-3 font-medium text-gray-600 whitespace-nowrap">
-                    {col.label}
-                  </th>
-                ))}
-                <th className="text-center p-3 font-medium text-gray-600 w-[50px]">Notatka</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredParticipants.length === 0 ? (
-                <tr>
-                  <td colSpan={8 + paymentColumns.length} className="text-center py-8 text-muted-foreground">
-                    Brak uczestników spełniających kryteria
-                  </td>
-                </tr>
-              ) : (
-                filteredParticipants.map((participant) => {
+        {/* Sekcje pogrupowane wg statusu */}
+        {filteredParticipants.length === 0 ? (
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-12 text-center text-muted-foreground text-sm">
+            Brak uczestników spełniających kryteria
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {statusGroups.map((group) => {
+              if (group.participants.length === 0) return null;
+              const GroupIcon = group.icon;
+
+              return (
+                <div key={group.key} className="rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+                  {/* Separator / nagłówek sekcji */}
+                  <div className={`flex items-center gap-3 px-5 py-3 border-b ${group.bgColor}`}>
+                    <GroupIcon className={`h-4 w-4 ${group.color}`} />
+                    <span className={`text-sm font-semibold ${group.color}`}>{group.label}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${group.bgColor} ${group.color}`}>
+                      {group.participants.length}
+                    </span>
+                    {/* Select all w tej sekcji */}
+                    <div className="ml-auto flex items-center gap-2">
+                      <label className="text-xs text-gray-400 cursor-pointer select-none">Zaznacz</label>
+                      <input
+                        type="checkbox"
+                        checked={group.participants.every(p => selectedIds.has(p.participant_id))}
+                        ref={el => {
+                          if (el) {
+                            const some = group.participants.some(p => selectedIds.has(p.participant_id));
+                            const all = group.participants.every(p => selectedIds.has(p.participant_id));
+                            el.indeterminate = some && !all;
+                          }
+                        }}
+                        onChange={() => {
+                          const allSelected = group.participants.every(p => selectedIds.has(p.participant_id));
+                          const next = new Set(selectedIds);
+                          if (allSelected) {
+                            group.participants.forEach(p => next.delete(p.participant_id));
+                          } else {
+                            group.participants.forEach(p => next.add(p.participant_id));
+                          }
+                          setSelectedIds(next);
+                        }}
+                        className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50/50">
+                        <tr>
+                          <th className="p-3 w-10">
+                            {/* Pusty — checkbox w wierszu */}
+                          </th>
+                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Nazwisko i imię</th>
+                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Data ur.</th>
+                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Grupa</th>
+                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Email</th>
+                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Telefon</th>
+                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Status</th>
+                          {paymentColumns.map(col => (
+                            <th key={col.key} className="text-center p-3 font-medium text-gray-400 text-xs uppercase tracking-wider whitespace-nowrap">
+                              {col.label}
+                            </th>
+                          ))}
+                          <th className="text-center p-3 font-medium text-gray-400 text-xs uppercase tracking-wider w-[50px]">Notatka</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {group.participants.map((participant) => {
                   const birthDate = participant.birth_date
                     ? format(new Date(participant.birth_date), 'dd.MM.yyyy', { locale: pl })
                     : '—';
@@ -681,11 +724,15 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Dialog notatki */}
         <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
