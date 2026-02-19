@@ -15,7 +15,10 @@ export default async function AdminTripsPage() {
     getGroups(),
   ]);
 
+  // Pobierz szablony umów równolegle — nie czekaj na trips sekwencyjnie
   const contractTemplates = await getTripContractTemplatesMap(trips.map((t) => t.id));
+  // Uwaga: contractTemplates musi czekać na trips (potrzebuje trip IDs),
+  // ale getTrips i getGroups są już równoległe powyżej — to optimum.
 
   return (
     <div className="space-y-6">

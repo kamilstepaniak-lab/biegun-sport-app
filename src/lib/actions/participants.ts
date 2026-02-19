@@ -11,10 +11,15 @@ export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];
 
-  // Pobierz uczestników
+  // Pobierz uczestników wraz z grupą — 1 zapytanie zamiast 1+2N
   const { data: participants, error } = await supabase
     .from('participants')
-    .select('*')
+    .select(`
+      *,
+      participant_groups (
+        group:groups (*)
+      )
+    `)
     .eq('parent_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -23,32 +28,20 @@ export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
     return [];
   }
 
-  // Dla każdego uczestnika pobierz grupę osobno
-  const result = await Promise.all(
-    participants.map(async (p: Participant) => {
-      // Pobierz przypisanie do grupy
-      const { data: pg } = await supabase
-        .from('participant_groups')
-        .select('group_id')
-        .eq('participant_id', p.id)
-        .maybeSingle();
-
-      let group = null;
-      if (pg?.group_id) {
-        const { data: groupData } = await supabase
-          .from('groups')
-          .select('*')
-          .eq('id', pg.group_id)
-          .single();
-        group = groupData;
+  const result = participants.map((p: Participant & { participant_groups: { group: Group }[] | { group: Group } | null }) => {
+    let group = null;
+    const pg = p.participant_groups;
+    if (pg) {
+      if (Array.isArray(pg) && pg.length > 0) {
+        group = pg[0]?.group ?? null;
+      } else if (!Array.isArray(pg) && typeof pg === 'object') {
+        group = (pg as { group: Group }).group ?? null;
       }
-
-      return {
-        ...p,
-        group,
-      };
-    })
-  );
+    }
+    const { participant_groups: _pg, ...rest } = p as typeof p & { participant_groups: unknown };
+    void _pg;
+    return { ...rest, group };
+  });
 
   // Serializuj do plain objects dla Client Components
   return JSON.parse(JSON.stringify(result));
@@ -92,21 +85,15 @@ export async function getParticipant(id: string): Promise<ParticipantWithGroup |
     .eq('participant_id', id)
     .maybeSingle();
 
-  console.log('=== getParticipant DEBUG ===');
-  console.log('Participant ID:', id);
-  console.log('participant_groups result:', participantGroup, 'error:', pgError);
-
   let group = null;
 
   if (participantGroup?.group_id) {
-    // Pobierz dane grupy
     const { data: groupData } = await supabase
       .from('groups')
       .select('*')
       .eq('id', participantGroup.group_id)
       .single();
 
-    console.log('Group data:', groupData);
     group = groupData;
   }
 
@@ -114,8 +101,6 @@ export async function getParticipant(id: string): Promise<ParticipantWithGroup |
     ...participant,
     group,
   };
-
-  console.log('Final result group:', result.group);
 
   // Serializuj do plain objects
   return JSON.parse(JSON.stringify(result));
@@ -310,13 +295,9 @@ export async function updateParticipant(
     .delete()
     .eq('participant_id', id);
 
-  console.log('Delete group result - error:', deleteError);
-
   // Przypisz nową grupę jeśli wybrana
   if (group_id) {
-    console.log('Inserting group:', { participant_id: id, group_id, assigned_by: user.id });
-
-    const { data: insertData, error: groupError } = await supabase
+    const { error: groupError } = await supabase
       .from('participant_groups')
       .insert({
         participant_id: id,
@@ -324,8 +305,6 @@ export async function updateParticipant(
         assigned_by: user.id,
       })
       .select();
-
-    console.log('Insert group result - data:', insertData, 'error:', groupError);
 
     if (groupError) {
       console.error('Group assignment error:', groupError);

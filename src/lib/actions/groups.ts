@@ -127,10 +127,28 @@ export interface GroupWithParticipants extends Group {
 export async function getGroupsWithParticipants(): Promise<GroupWithParticipants[]> {
   const supabase = await createClient();
 
-  // Pobierz wszystkie grupy
+  // Pobierz wszystkie grupy z uczestnikami — 1 zapytanie zamiast 1+N
   const { data: groups, error: groupsError } = await supabase
     .from('groups')
-    .select('*')
+    .select(`
+      *,
+      participant_groups (
+        participant:participants (
+          id,
+          first_name,
+          last_name,
+          birth_date,
+          height_cm,
+          notes,
+          parent:profiles!parent_id (
+            email,
+            phone,
+            secondary_email,
+            secondary_phone
+          )
+        )
+      )
+    `)
     .order('display_order', { ascending: true });
 
   if (groupsError || !groups) {
@@ -138,89 +156,50 @@ export async function getGroupsWithParticipants(): Promise<GroupWithParticipants
     return [];
   }
 
-  // Dla każdej grupy pobierz uczestników
-  const result = await Promise.all(
-    groups.map(async (group: Group) => {
-      const { data: participantGroups, error: pgError } = await supabase
-        .from('participant_groups')
-        .select(`
-          participant:participants (
-            id,
-            first_name,
-            last_name,
-            birth_date,
-            height_cm,
-            notes,
-            parent:profiles!parent_id (
-              email,
-              phone,
-              secondary_email,
-              secondary_phone
-            )
-          )
-        `)
-        .eq('group_id', group.id);
+  const result = groups.map((group: Group & { participant_groups: { participant: unknown }[] }) => {
+    const participants: ParticipantInGroup[] = (group.participant_groups || [])
+      .map((pg: { participant: unknown }) => {
+        let participant = pg.participant;
+        if (Array.isArray(participant)) participant = participant[0];
+        if (!participant || typeof participant !== 'object') return null;
 
-      console.log(`Group ${group.name} (${group.id}):`, {
-        participantGroups,
-        error: pgError,
-        count: participantGroups?.length
-      });
+        const p = participant as {
+          id: string;
+          first_name: string;
+          last_name: string;
+          birth_date: string;
+          height_cm: number | null;
+          notes: string | null;
+          parent: unknown;
+        };
 
-      const participants: ParticipantInGroup[] = (participantGroups || [])
-        .map((pg: unknown) => {
-          const participantData = pg as { participant: unknown };
-          let participant = participantData.participant;
+        let parentData = p.parent;
+        if (Array.isArray(parentData)) parentData = parentData[0];
 
-          if (Array.isArray(participant)) {
-            participant = participant[0];
-          }
+        const parent = parentData as {
+          email: string;
+          phone: string;
+          secondary_email: string | null;
+          secondary_phone: string | null;
+        } | null;
 
-          if (!participant || typeof participant !== 'object') return null;
+        return {
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          birth_date: p.birth_date,
+          height_cm: p.height_cm,
+          notes: p.notes,
+          parent: parent || { email: '', phone: '', secondary_email: null, secondary_phone: null },
+        } as ParticipantInGroup;
+      })
+      .filter((p): p is ParticipantInGroup => p !== null && p !== undefined)
+      .sort((a: ParticipantInGroup, b: ParticipantInGroup) => a.last_name.localeCompare(b.last_name, 'pl'));
 
-          const p = participant as {
-            id: string;
-            first_name: string;
-            last_name: string;
-            birth_date: string;
-            height_cm: number | null;
-            notes: string | null;
-            parent: unknown;
-          };
-
-          // Handle parent which could be array or object
-          let parentData = p.parent;
-          if (Array.isArray(parentData)) {
-            parentData = parentData[0];
-          }
-
-          const parent = parentData as {
-            email: string;
-            phone: string;
-            secondary_email: string | null;
-            secondary_phone: string | null;
-          } | null;
-
-          return {
-            id: p.id,
-            first_name: p.first_name,
-            last_name: p.last_name,
-            birth_date: p.birth_date,
-            height_cm: p.height_cm,
-            notes: p.notes,
-            parent: parent || { email: '', phone: '', secondary_email: null, secondary_phone: null },
-          } as ParticipantInGroup;
-        })
-        .filter((p): p is ParticipantInGroup => p !== null && p !== undefined)
-        .sort((a: ParticipantInGroup, b: ParticipantInGroup) => a.last_name.localeCompare(b.last_name, 'pl'));
-
-      return {
-        ...group,
-        participantCount: participants.length,
-        participants,
-      };
-    })
-  );
+    const { participant_groups: _pg, ...groupRest } = group as typeof group & { participant_groups: unknown };
+    void _pg;
+    return { ...groupRest, participantCount: participants.length, participants };
+  });
 
   // Serializuj dla Client Components
   return JSON.parse(JSON.stringify(result));
