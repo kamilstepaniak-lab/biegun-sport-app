@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/collapsible';
 
 import { createTrip, updateTrip } from '@/lib/actions/trips';
-import type { Group, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
+import type { Group, Trip, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
 
 export interface TripFormData {
   title: string;
@@ -47,6 +47,7 @@ export interface TripFormData {
   payment_templates: CreatePaymentTemplateInput[];
   bank_account_pln: string;
   bank_account_eur: string;
+  allow_own_transport: boolean;
 }
 
 interface TripFormProps {
@@ -172,6 +173,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     })) || [],
     bank_account_pln: trip?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
     bank_account_eur: trip?.bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+    allow_own_transport: (trip as Trip & { allow_own_transport?: boolean })?.allow_own_transport ?? false,
   });
 
   function updateFormData(data: Partial<TripFormData>) {
@@ -242,6 +244,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         departure_stop2_location: formData.departure_stop2_location || null,
         return_stop2_datetime: formData.return_stop2_datetime || null,
         return_stop2_location: formData.return_stop2_location || null,
+        allow_own_transport: formData.allow_own_transport,
       };
 
       const result = mode === 'create'
@@ -369,6 +372,18 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 value={formData.departure_location}
                 onChange={(val) => updateFormData({ departure_location: val })}
               />
+            </div>
+
+            {/* Checkbox dojazd własny */}
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="allow_own_transport"
+                checked={formData.allow_own_transport}
+                onCheckedChange={(checked) => updateFormData({ allow_own_transport: !!checked })}
+              />
+              <Label htmlFor="allow_own_transport" className="font-normal cursor-pointer text-sm text-gray-600">
+                Zezwól na dojazd własny (pojawi się przycisk u rodzica)
+              </Label>
             </div>
 
             {!showStop2Departure ? (

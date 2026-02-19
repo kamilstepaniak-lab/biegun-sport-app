@@ -111,6 +111,7 @@ export interface Trip {
   return_stop2_location: string | null;
   bank_account_pln: string;
   bank_account_eur: string;
+  allow_own_transport: boolean;
   status: TripStatus;
   created_at: string;
   updated_at: string;

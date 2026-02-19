@@ -292,19 +292,21 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                   : trip.departure_stop2_location || 'Przystanek 2'}
                               </button>
                             )}
-                            {/* Dojazd własny */}
-                            <button
-                              disabled={isUpdating}
-                              onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('own')); }}
-                              className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
-                                currentStatus === 'confirmed' && currentStop === 'own'
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                                  : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
-                              )}
-                            >
-                              Dojazd własny
-                            </button>
+                            {/* Dojazd własny — tylko gdy admin zezwolił */}
+                            {trip.allow_own_transport && (
+                              <button
+                                disabled={isUpdating}
+                                onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('own')); }}
+                                className={cn(
+                                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
+                                  currentStatus === 'confirmed' && currentStop === 'own'
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                                )}
+                              >
+                                Dojazd własny
+                              </button>
+                            )}
                             {/* Nie jedzie */}
                             <button
                               disabled={isUpdating}
