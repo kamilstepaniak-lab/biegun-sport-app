@@ -734,3 +734,30 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
 
   return { success: true };
 }
+
+export async function updatePaymentNote(paymentId: string, note: string) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single();
+
+  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+
+  const { error } = await supabase
+    .from('payments')
+    .update({ admin_notes: note || null, updated_at: new Date().toISOString() })
+    .eq('id', paymentId);
+
+  if (error) {
+    console.error('Update payment note error:', error);
+    return { error: `Nie udało się zapisać notatki: ${error.message}` };
+  }
+
+  revalidatePath('/admin/payments');
+  revalidatePath('/admin/trips');
+
+  return { success: true };
+}

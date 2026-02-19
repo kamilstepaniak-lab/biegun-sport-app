@@ -10,6 +10,7 @@ import {
   CreditCard,
   CircleDollarSign,
   CheckCircle2,
+  MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,7 +22,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { updatePaymentStatus, updatePaymentAmount } from '@/lib/actions/payments';
+import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote } from '@/lib/actions/payments';
 import type { PaymentWithDetails } from '@/types';
 
 interface PaymentsListProps {
@@ -46,6 +47,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<string>('');
+  const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [editNote, setEditNote] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   // Grupuj płatności po uczestnik + wyjazd + data
@@ -143,6 +146,23 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       } else {
         toast.success('Kwota zaktualizowana');
         setEditingPayment(null);
+      }
+    } catch {
+      toast.error('Wystąpił błąd');
+    } finally {
+      setIsUpdating(null);
+    }
+  }
+
+  async function saveNote(paymentId: string) {
+    setIsUpdating(paymentId);
+    try {
+      const result = await updatePaymentNote(paymentId, editNote);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Notatka zapisana');
+        setEditingNote(null);
       }
     } catch {
       toast.error('Wystąpił błąd');
@@ -296,51 +316,92 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                     )}
                   </div>
 
-                  {/* Za co / Kwota */}
-                  <div className="space-y-1">
+                  {/* Za co / Kwota / Notatka */}
+                  <div className="space-y-2">
                     {group.payments.map((payment) => (
-                      <div key={payment.id} className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">
-                          {getPaymentLabel(payment)}:
-                        </span>
-                        {editingPayment === payment.id ? (
+                      <div key={payment.id} className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">
+                            {getPaymentLabel(payment)}:
+                          </span>
+                          {editingPayment === payment.id ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={editAmount}
+                                onChange={(e) => setEditAmount(e.target.value)}
+                                className="h-6 w-20 text-xs rounded-lg"
+                                min="0"
+                                step="0.01"
+                              />
+                              <span className="text-xs text-gray-400">{payment.currency}</span>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500"
+                                onClick={() => saveAmount(payment.id)}
+                                disabled={isUpdating === payment.id}
+                              >
+                                <Save className="h-3 w-3" />
+                              </button>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500"
+                                onClick={() => setEditingPayment(null)}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => startEditAmount(payment)}
+                                  className="font-semibold text-sm text-gray-900 hover:text-blue-600 cursor-pointer flex items-center gap-1 transition-colors group"
+                                >
+                                  {payment.amount} {payment.currency}
+                                  <Edit2 className="h-3 w-3 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+
+                        {/* Notatka admina */}
+                        {editingNote === payment.id ? (
                           <div className="flex items-center gap-1">
                             <Input
-                              type="number"
-                              value={editAmount}
-                              onChange={(e) => setEditAmount(e.target.value)}
-                              className="h-6 w-20 text-xs rounded-lg"
-                              min="0"
-                              step="0.01"
+                              value={editNote}
+                              onChange={(e) => setEditNote(e.target.value)}
+                              className="h-6 text-xs rounded-lg flex-1"
+                              placeholder="Wpisz notatkę..."
+                              onKeyDown={(e) => { if (e.key === 'Enter') saveNote(payment.id); if (e.key === 'Escape') setEditingNote(null); }}
+                              autoFocus
                             />
-                            <span className="text-xs text-gray-400">{payment.currency}</span>
                             <button
                               className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500"
-                              onClick={() => saveAmount(payment.id)}
+                              onClick={() => saveNote(payment.id)}
                               disabled={isUpdating === payment.id}
                             >
                               <Save className="h-3 w-3" />
                             </button>
                             <button
                               className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500"
-                              onClick={() => setEditingPayment(null)}
+                              onClick={() => setEditingNote(null)}
                             >
                               <X className="h-3 w-3" />
                             </button>
                           </div>
                         ) : (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => startEditAmount(payment)}
-                                className="font-semibold text-sm text-gray-900 hover:text-blue-600 cursor-pointer flex items-center gap-1 transition-colors group"
-                              >
-                                {payment.amount} {payment.currency}
-                                <Edit2 className="h-3 w-3 text-gray-400 group-hover:text-blue-600 transition-colors" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
-                          </Tooltip>
+                          <button
+                            onClick={() => { setEditingNote(payment.id); setEditNote(payment.admin_notes || ''); }}
+                            className="flex items-center gap-1 text-xs transition-colors group"
+                          >
+                            <MessageSquare className={`h-3 w-3 flex-shrink-0 ${payment.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'}`} />
+                            {payment.admin_notes ? (
+                              <span className="text-amber-700 group-hover:text-amber-900">{payment.admin_notes}</span>
+                            ) : (
+                              <span className="text-gray-300 group-hover:text-gray-400">Dodaj notatkę</span>
+                            )}
+                          </button>
                         )}
                       </div>
                     ))}
