@@ -47,22 +47,27 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     }
   }, [selectedChildId, selectedChildName]);
 
-  // Jeśli brak dziecka w URL — spróbuj przywrócić z localStorage
+  // Jeśli brak dziecka w URL — spróbuj przywrócić z localStorage, a jeśli brak — wybierz pierwsze
   useEffect(() => {
-    if (!selectedChildId) {
+    if (!selectedChildId && childrenList && childrenList.length > 0) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
           const { id, name } = JSON.parse(stored);
           // Sprawdź czy to dziecko nadal istnieje na liście
-          if (!childrenList || childrenList.some(c => c.id === id)) {
+          if (childrenList.some(c => c.id === id)) {
             setRedirecting(true);
             router.replace(`${pathname}?child=${id}&childName=${encodeURIComponent(name)}`);
+            return;
           }
         } catch {
           localStorage.removeItem(STORAGE_KEY);
         }
       }
+      // Brak w localStorage lub dziecko nie istnieje — wybierz pierwsze z listy
+      const first = childrenList[0];
+      setRedirecting(true);
+      router.replace(`${pathname}?child=${first.id}&childName=${encodeURIComponent(first.name)}`);
     }
   }, [selectedChildId, pathname, router, childrenList]);
 
