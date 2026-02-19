@@ -6,6 +6,7 @@ import { Plus, MapPin, Upload } from 'lucide-react';
 import { PageHeader, EmptyState } from '@/components/shared';
 import { getTrips } from '@/lib/actions/trips';
 import { getGroups } from '@/lib/actions/groups';
+import { getTripContractTemplatesMap } from '@/lib/actions/contracts';
 import { TripsList } from './trips-list';
 
 export default async function AdminTripsPage() {
@@ -13,6 +14,8 @@ export default async function AdminTripsPage() {
     getTrips(),
     getGroups(),
   ]);
+
+  const contractTemplates = await getTripContractTemplatesMap(trips.map((t) => t.id));
 
   return (
     <div className="space-y-6">
@@ -53,7 +56,7 @@ export default async function AdminTripsPage() {
           </Link>
         </EmptyState>
       ) : (
-        <TripsList trips={trips} groups={groups} />
+        <TripsList trips={trips} groups={groups} contractTemplates={contractTemplates} />
       )}
     </div>
   );

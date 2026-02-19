@@ -99,10 +99,6 @@ export async function getAvailableTripsForParent(parentId: string): Promise<Trip
     `)
     .eq('parent_id', parentId);
 
-  console.log('Parent ID:', parentId);
-  console.log('Children groups data:', JSON.stringify(childrenGroups, null, 2));
-  console.log('Children error:', childrenError);
-
   if (!childrenGroups || childrenGroups.length === 0) return [];
 
   const groupIds = childrenGroups
@@ -114,8 +110,6 @@ export async function getAvailableTripsForParent(parentId: string): Promise<Trip
       return [c.participant_groups.group_id];
     })
     .filter(Boolean);
-
-  console.log('Group IDs:', groupIds);
 
   if (groupIds.length === 0) return [];
 
@@ -178,6 +172,7 @@ export async function createTrip(input: CreateTripInput) {
     title,
     description,
     declaration_deadline,
+    location,
     departure_datetime,
     departure_location,
     departure_stop2_datetime,
@@ -200,6 +195,7 @@ export async function createTrip(input: CreateTripInput) {
       title,
       description: description || null,
       declaration_deadline: declaration_deadline || null,
+      location: location || null,
       departure_datetime,
       departure_location,
       departure_stop2_datetime: departure_stop2_datetime || null,
@@ -293,6 +289,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     title,
     description,
     declaration_deadline,
+    location,
     departure_datetime,
     departure_location,
     departure_stop2_datetime,
@@ -316,6 +313,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (title !== undefined) updateData.title = title;
   if (description !== undefined) updateData.description = description || null;
   if (declaration_deadline !== undefined) updateData.declaration_deadline = declaration_deadline || null;
+  if (location !== undefined) updateData.location = location || null;
   if (departure_datetime !== undefined) updateData.departure_datetime = departure_datetime;
   if (departure_location !== undefined) updateData.departure_location = departure_location;
   if (departure_stop2_datetime !== undefined) updateData.departure_stop2_datetime = departure_stop2_datetime || null;
@@ -981,7 +979,6 @@ export async function updateParticipationStatusByParent(
   note?: string
 ) {
   const supabase = await createClient();
-  const { createAdminClient } = await import('@/lib/supabase/server');
   const supabaseAdmin = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -1012,24 +1009,15 @@ export async function updateParticipationStatusByParent(
 
   if (existing) {
     registrationId = existing.id;
-    console.log('updateParticipationStatusByParent: Updating existing registration', {
-      registrationId: existing.id,
-      tripId,
-      participantId,
-      newStatus: status,
-    });
 
     // Używamy admin client żeby ominąć RLS dla UPDATE
-    const { error, data } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('trip_registrations')
       .update({
         participation_status: status,
         participation_note: note || null,
       })
-      .eq('id', existing.id)
-      .select();
-
-    console.log('updateParticipationStatusByParent: Update result', { data, error });
+      .eq('id', existing.id);
 
     if (error) {
       console.error('updateParticipationStatusByParent: Update error', error);
@@ -1058,14 +1046,10 @@ export async function updateParticipationStatusByParent(
     registrationId = data?.id || null;
   }
 
-  // Użyj admin client do operacji na płatnościach
-  const { createAdminClient: createAdminClientInner } = await import('@/lib/supabase/server');
-  const supabaseAdminInner = createAdminClientInner();
-
   if (status === 'confirmed' && registrationId) {
     // Dziecko jedzie (confirmed = przystankiem lub dojazdem własnym) — utwórz płatności jeśli nie istnieją
     // 'other' to tylko wiadomość tekstowa do admina — NIE tworzy płatności
-    const { data: existingPayments } = await supabaseAdminInner
+    const { data: existingPayments } = await supabaseAdmin
       .from('payments')
       .select('id')
       .eq('registration_id', registrationId)
@@ -1077,11 +1061,17 @@ export async function updateParticipationStatusByParent(
     }
   } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
     // Dziecko nie jedzie lub cofnięto potwierdzenie — anuluj płatności (pending)
-    await supabaseAdminInner
+    await supabaseAdmin
       .from('payments')
       .update({ status: 'cancelled' })
       .eq('registration_id', registrationId)
       .eq('status', 'pending');
+  }
+
+  // Utwórz umowę automatycznie jeśli wyjazd ma włączony system umów
+  if (status === 'confirmed' && registrationId) {
+    const { createContractForParticipantIfNeeded } = await import('@/lib/actions/contracts');
+    await createContractForParticipantIfNeeded(tripId, participantId, registrationId, user.id);
   }
 
   revalidatePath('/parent/trips');

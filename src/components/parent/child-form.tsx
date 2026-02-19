@@ -190,17 +190,7 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Grupa</CardTitle>
-            <CardDescription>
-              Wybierz grupę treningową dla dziecka
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <FormField
               control={form.control}
               name="group_id"
@@ -315,7 +305,7 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => router.push('/parent/children')}
             disabled={isLoading}
           >
             Anuluj

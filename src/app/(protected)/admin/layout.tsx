@@ -25,6 +25,11 @@ const adminNavItems: SidebarItem[] = [
     icon: 'CreditCard',
   },
   {
+    title: 'Umowy',
+    href: '/admin/contracts',
+    icon: 'FileText',
+  },
+  {
     title: 'Ustawienia',
     href: '/admin/settings/custom-fields',
     icon: 'Settings',

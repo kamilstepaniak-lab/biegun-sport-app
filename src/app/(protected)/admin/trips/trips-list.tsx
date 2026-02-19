@@ -20,6 +20,7 @@ import {
   CopyPlus,
   Loader2,
   Mail,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,13 +43,16 @@ import {
 
 import { deleteTrip, duplicateTrip } from '@/lib/actions/trips';
 import { TripMessageGenerator } from '@/components/admin/trip-message-generator';
+import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
-import type { TripWithPaymentTemplates, Group } from '@/types';
+import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
+import type { TripWithPaymentTemplates, Group, TripContractTemplate } from '@/types';
 
 interface TripsListProps {
   trips: TripWithPaymentTemplates[];
   groups: Group[];
+  contractTemplates: Record<string, { is_active: boolean; template_text: string } | null>;
 }
 
 const statusLabels: Record<string, string> = {
@@ -94,7 +98,10 @@ function groupTripsByMonth(trips: TripWithPaymentTemplates[]) {
   return grouped;
 }
 
-export function TripsList({ trips, groups }: TripsListProps) {
+// Czas inicjalizacji modułu — używamy jako stałej referencji żeby useMemo nie re-kalkulował przy każdym render
+const MODULE_LOAD_TIME = new Date();
+
+export function TripsList({ trips, groups, contractTemplates }: TripsListProps) {
   const router = useRouter();
   const [groupFilter, setGroupFilter] = useState<string>('all');
   const [openTrips, setOpenTrips] = useState<Set<string>>(new Set());
@@ -104,7 +111,7 @@ export function TripsList({ trips, groups }: TripsListProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [duplicatingTripId, setDuplicatingTripId] = useState<string | null>(null);
 
-  const now = new Date();
+  const now = MODULE_LOAD_TIME;
 
   // Filtruj po grupie
   const filteredTrips = useMemo(() => {
@@ -183,24 +190,35 @@ export function TripsList({ trips, groups }: TripsListProps) {
     }
   }
 
-  async function handleDuplicate(tripId: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    setDuplicatingTripId(tripId);
+  async function handleDuplicateSelected() {
+    if (selectedTrips.size === 0) return;
 
-    try {
-      const result = await duplicateTrip(tripId);
+    let successCount = 0;
+    let errorCount = 0;
 
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Wyjazd zduplikowany! Kopia zapisana jako szkic.');
-        router.refresh();
+    for (const tripId of selectedTrips) {
+      setDuplicatingTripId(tripId);
+      try {
+        const result = await duplicateTrip(tripId);
+        if (result.error) {
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      } catch {
+        errorCount++;
       }
-    } catch (err) {
-      toast.error('Błąd podczas duplikowania');
-      console.error('Duplicate error:', err);
-    } finally {
-      setDuplicatingTripId(null);
+    }
+
+    setDuplicatingTripId(null);
+    setSelectedTrips(new Set());
+
+    if (successCount > 0) {
+      toast.success(`Zduplikowano ${successCount} wyjazdów`);
+      router.refresh();
+    }
+    if (errorCount > 0) {
+      toast.error(`Nie udało się zduplikować ${errorCount} wyjazdów`);
     }
   }
 
@@ -506,6 +524,12 @@ export function TripsList({ trips, groups }: TripsListProps) {
                   Edytuj
                 </Link>
                 <TripMessageGenerator trip={trip} compact />
+                <ContractTemplateEditor
+                  tripId={trip.id}
+                  initialTemplate={contractTemplates[trip.id] as TripContractTemplate | null}
+                  defaultTemplateText={CONTRACT_TEMPLATE}
+                  compact
+                />
                 <Link
                   href={`/admin/trips/${trip.id}/registrations`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
@@ -513,23 +537,6 @@ export function TripsList({ trips, groups }: TripsListProps) {
                   <UserCheck className="h-4 w-4" />
                   Zapisani
                 </Link>
-                <button
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors disabled:opacity-50"
-                  onClick={(e) => handleDuplicate(trip.id, e)}
-                  disabled={duplicatingTripId === trip.id}
-                >
-                  {duplicatingTripId === trip.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Duplikowanie...
-                    </>
-                  ) : (
-                    <>
-                      <CopyPlus className="h-4 w-4" />
-                      Duplikuj
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </CollapsibleContent>
@@ -602,6 +609,23 @@ export function TripsList({ trips, groups }: TripsListProps) {
             <span className="text-sm text-gray-500 bg-white rounded-xl px-3 py-1.5 ring-1 ring-gray-100">
               Zaznaczono: {selectedTrips.size}
             </span>
+            <button
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors disabled:opacity-50"
+              onClick={handleDuplicateSelected}
+              disabled={duplicatingTripId !== null}
+            >
+              {duplicatingTripId !== null ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Duplikowanie...
+                </>
+              ) : (
+                <>
+                  <CopyPlus className="h-4 w-4" />
+                  Duplikuj
+                </>
+              )}
+            </button>
             <button
               className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors"
               onClick={() => setShowDeleteDialog(true)}

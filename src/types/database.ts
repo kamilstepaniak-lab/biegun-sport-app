@@ -38,6 +38,10 @@ export interface Profile {
   secondary_phone: string | null;
   first_name: string | null;
   last_name: string | null;
+  address_street: string | null;
+  address_zip: string | null;
+  address_city: string | null;
+  pesel: string | null;
   role: UserRole;
   created_at: string;
   updated_at: string;
@@ -96,6 +100,7 @@ export interface Trip {
   title: string;
   description: string | null;
   declaration_deadline: string | null;
+  location: string | null;
   departure_datetime: string;
   departure_location: string;
   departure_stop2_datetime: string | null;
@@ -250,6 +255,37 @@ export interface PaymentWithDetails extends Payment {
   transactions: PaymentTransaction[];
 }
 
+export interface TripContractTemplate {
+  id: string;
+  trip_id: string;
+  template_text: string;
+  is_active: boolean;
+  activated_at: string | null;
+  activated_by: string | null;
+  created_at: string;
+  created_by: string | null;
+  updated_at: string;
+}
+
+export interface TripContract {
+  id: string;
+  trip_id: string;
+  participant_id: string;
+  registration_id: string | null;
+  contract_text: string;
+  contract_number: string | null;
+  accepted_at: string | null;
+  accepted_by_parent_id: string | null;
+  created_at: string;
+  created_by: string | null;
+}
+
+export interface TripContractWithDetails extends TripContract {
+  trip: Pick<Trip, 'id' | 'title' | 'departure_datetime' | 'return_datetime'>;
+  participant: Pick<Participant, 'id' | 'first_name' | 'last_name' | 'birth_date'>;
+  parent: Pick<Profile, 'id' | 'email' | 'first_name' | 'last_name'>;
+}
+
 // Typy dla formularzy
 
 export interface CreateParticipantInput {
@@ -269,6 +305,7 @@ export interface CreateTripInput {
   title: string;
   description?: string | null;
   declaration_deadline?: string | null;
+  location?: string | null;
   departure_datetime: string;
   departure_location: string;
   departure_stop2_datetime?: string | null;
@@ -313,6 +350,10 @@ export interface UpdateProfileInput {
   phone?: string;
   secondary_email?: string | null;
   secondary_phone?: string | null;
+  address_street?: string | null;
+  address_zip?: string | null;
+  address_city?: string | null;
+  pesel?: string | null;
 }
 
 export interface CreateNotificationInput {

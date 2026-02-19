@@ -33,6 +33,7 @@ export interface TripFormData {
   title: string;
   description: string;
   declaration_deadline: string;
+  location: string;
   status: TripStatus;
   departure_datetime: string;
   departure_location: string;
@@ -154,6 +155,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     title: trip?.title || '',
     description: trip?.description || '',
     declaration_deadline: (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null })?.declaration_deadline || '',
+    location: (trip as TripWithPaymentTemplates & { location?: string | null })?.location || '',
     status: trip?.status || 'draft',
     departure_datetime: formatDateTimeLocal(trip?.departure_datetime),
     departure_location: trip?.departure_location || '',
@@ -235,6 +237,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       const data = {
         ...formData,
         status: saveAsDraft ? 'draft' as TripStatus : formData.status,
+        location: formData.location || null,
         departure_stop2_datetime: formData.departure_stop2_datetime || null,
         departure_stop2_location: formData.departure_stop2_location || null,
         return_stop2_datetime: formData.return_stop2_datetime || null,
@@ -295,6 +298,16 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 placeholder="Opcjonalny opis wyjazdu..."
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Miejsce (hotel / miejscowość)</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => updateFormData({ location: e.target.value })}
+                placeholder="np. Hotel Śnieżka, Zakopane"
+              />
+              <p className="text-xs text-muted-foreground">Pojawi się w umowie uczestnictwa</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="declaration_deadline">Deklaracja do</Label>
@@ -797,7 +810,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       <div className="flex justify-between gap-4 sticky bottom-4 bg-background p-4 rounded-lg border shadow-lg">
         <Button
           variant="outline"
-          onClick={() => router.back()}
+          onClick={() => router.push('/admin/trips')}
           disabled={isSubmitting}
         >
           Anuluj

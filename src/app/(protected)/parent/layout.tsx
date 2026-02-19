@@ -27,6 +27,11 @@ const parentNavItems: SidebarItem[] = [
     icon: 'CreditCard',
   },
   {
+    title: 'Umowy',
+    href: '/parent/contracts',
+    icon: 'FileText',
+  },
+  {
     title: 'Profil',
     href: '/parent/profile',
     icon: 'User',
@@ -42,6 +47,11 @@ export default async function ParentLayout({
 
   if (!profile) {
     redirect('/login');
+  }
+
+  // Admini mają swój panel — nie mają dostępu do panelu rodzica
+  if (profile.role === 'admin') {
+    redirect('/admin/groups');
   }
 
   return (

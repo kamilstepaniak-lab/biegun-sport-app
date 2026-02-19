@@ -29,6 +29,30 @@ export const profileSchema = z.object({
     .nullable()
     .optional()
     .or(z.literal('')),
+  address_street: z
+    .string()
+    .max(100, 'Adres może mieć maksymalnie 100 znaków')
+    .nullable()
+    .optional()
+    .or(z.literal('')),
+  address_zip: z
+    .string()
+    .regex(/^\d{2}-\d{3}$/, 'Format: XX-XXX (np. 30-731)')
+    .nullable()
+    .optional()
+    .or(z.literal('')),
+  address_city: z
+    .string()
+    .max(80, 'Miasto może mieć maksymalnie 80 znaków')
+    .nullable()
+    .optional()
+    .or(z.literal('')),
+  pesel: z
+    .string()
+    .regex(/^\d{11}$/, 'PESEL musi mieć dokładnie 11 cyfr')
+    .nullable()
+    .optional()
+    .or(z.literal('')),
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;

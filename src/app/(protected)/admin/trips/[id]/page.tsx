@@ -12,6 +12,7 @@ import {
   Calendar,
   MapPin,
   Clock,
+  FileText,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
 import { TripMessageGenerator } from '@/components/admin/trip-message-generator';
+import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
 import { getTrip } from '@/lib/actions/trips';
+import { getTripContractTemplate } from '@/lib/actions/contracts';
+import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
 
 const statusLabels: Record<string, string> = {
   draft: 'Szkic',
@@ -35,7 +39,11 @@ interface TripDetailPageProps {
 
 export default async function TripDetailPage({ params }: TripDetailPageProps) {
   const { id } = await params;
-  const trip = await getTrip(id);
+
+  const [trip, contractTemplate] = await Promise.all([
+    getTrip(id),
+    getTripContractTemplate(id),
+  ]);
 
   if (!trip) {
     notFound();
@@ -62,6 +70,17 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </Link>
         </Button>
         <TripMessageGenerator trip={trip} />
+        <ContractTemplateEditor
+          tripId={id}
+          initialTemplate={contractTemplate}
+          defaultTemplateText={CONTRACT_TEMPLATE}
+        />
+        <Button variant="outline" asChild>
+          <Link href={`/admin/trips/${id}/contracts`}>
+            <FileText className="mr-2 h-4 w-4" />
+            Umowy
+          </Link>
+        </Button>
         <Button variant="outline" asChild>
           <Link href={`/admin/trips/${id}/registrations`}>
             <Users className="mr-2 h-4 w-4" />
@@ -186,6 +205,15 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Wzór umowy — pełna szerokość */}
+        <div className="md:col-span-2">
+          <ContractTemplateEditor
+            tripId={id}
+            initialTemplate={contractTemplate}
+            defaultTemplateText={CONTRACT_TEMPLATE}
+          />
+        </div>
       </div>
     </div>
   );

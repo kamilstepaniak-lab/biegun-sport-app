@@ -20,6 +20,7 @@ import {
   UserCog,
   Upload,
   CalendarDays,
+  FileText,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -34,6 +35,7 @@ const iconMap: Record<string, LucideIcon> = {
   UserCog,
   Upload,
   CalendarDays,
+  FileText,
 };
 
 // Map icons to background colors for the modern icon badges
@@ -48,6 +50,7 @@ const iconColorMap: Record<string, string> = {
   UserCog: 'bg-pink-100 text-pink-600',
   Upload: 'bg-teal-100 text-teal-600',
   CalendarDays: 'bg-indigo-100 text-indigo-600',
+  FileText: 'bg-purple-100 text-purple-600',
 };
 
 export interface SidebarItem {

@@ -39,6 +39,10 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       phone: profile.phone || '',
       secondary_email: profile.secondary_email || '',
       secondary_phone: profile.secondary_phone || '',
+      address_street: profile.address_street || '',
+      address_zip: profile.address_zip || '',
+      address_city: profile.address_city || '',
+      pesel: profile.pesel || '',
     },
   });
 
@@ -205,6 +209,100 @@ export function ProfileForm({ profile }: ProfileFormProps) {
                 )}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Dane do umowy</CardTitle>
+            <CardDescription>
+              Wymagane do generowania umów uczestnictwa. Muszą być zgodne z dowodem osobistym.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="address_street"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ulica i numer</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="ul. Kwiatowa 12/3"
+                      disabled={isLoading}
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="address_zip"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kod pocztowy</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="30-731"
+                        disabled={isLoading}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address_city"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Miasto</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Kraków"
+                        disabled={isLoading}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="pesel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>PESEL</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="12345678901"
+                      maxLength={11}
+                      disabled={isLoading}
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    11 cyfr — wymagane do zawarcia umowy uczestnictwa
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

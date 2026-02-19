@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
 
 export async function registerParticipantToTrip(
@@ -146,7 +146,11 @@ export async function registerParticipantToTrip(
     }
 
     if (paymentsToCreate.length > 0) {
-      await supabase.from('payments').insert(paymentsToCreate);
+      const supabaseAdmin = createAdminClient();
+      const { error: paymentsError } = await supabaseAdmin.from('payments').insert(paymentsToCreate);
+      if (paymentsError) {
+        console.error('Payments insert error:', paymentsError);
+      }
     }
   }
 

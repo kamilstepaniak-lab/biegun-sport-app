@@ -369,11 +369,8 @@ export async function createPaymentsForRegistration(registrationId: string, trip
     .eq('trip_id', tripId);
 
   if (!templates || templates.length === 0) {
-    console.log('No payment templates found for trip:', tripId);
     return { success: true, message: 'Brak szablonów płatności' };
   }
-
-  console.log('Found templates:', templates.length, 'for trip:', tripId);
 
   // Pobierz dane uczestnika (do sprawdzenia rocznika dla karnetów)
   const { data: participant } = await supabaseAdmin
@@ -383,7 +380,6 @@ export async function createPaymentsForRegistration(registrationId: string, trip
     .single();
 
   const birthYear = participant ? new Date(participant.birth_date).getFullYear() : null;
-  console.log('Participant birth year:', birthYear);
 
   // Utwórz płatności
   const paymentsToCreate = templates
@@ -397,9 +393,7 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       if (template.payment_type === 'season_pass' && birthYear) {
         const matchesFrom = !template.birth_year_from || birthYear >= template.birth_year_from;
         const matchesTo = !template.birth_year_to || birthYear <= template.birth_year_to;
-        const matches = matchesFrom && matchesTo;
-        console.log(`Season pass filter: category=${template.category_name}, from=${template.birth_year_from}, to=${template.birth_year_to}, birthYear=${birthYear}, matches=${matches}`);
-        return matches;
+        return matchesFrom && matchesTo;
       }
       return true;
     })
@@ -425,15 +419,12 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       amount_paid: 0,
     }));
 
-  console.log('Payments to create:', paymentsToCreate.length);
-
   if (paymentsToCreate.length > 0) {
     const { error } = await supabaseAdmin.from('payments').insert(paymentsToCreate);
     if (error) {
       console.error('Create payments error:', error);
       return { error: 'Nie udało się utworzyć płatności' };
     }
-    console.log('Payments created successfully');
   }
 
   return { success: true };
@@ -594,17 +585,42 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
   return JSON.parse(JSON.stringify(result));
 }
 
-// Pobierz dane do przelewu (konta bankowe)
+// Pobierz dane do przelewu (konta bankowe) — z wyjazdu na który dziecko jest zapisane
 export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
   const supabase = await createClient();
 
-  // Pobierz pierwsze konto z wyjazdów (zakładamy że są wspólne)
-  const { data: trip } = await supabase
-    .from('trips')
-    .select('bank_account_pln, bank_account_eur')
-    .eq('status', 'published')
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return {
+      bank_account_pln: '39 1240 1444 1111 0010 7170 4855',
+      bank_account_eur: 'PL21 1240 1444 1978 0010 7136 2778',
+    };
+  }
+
+  // Pobierz dziecko rodzica
+  const { data: children } = await supabase
+    .from('participants')
+    .select('id')
+    .eq('parent_id', user.id)
+    .limit(1);
+
+  if (!children || children.length === 0) {
+    return {
+      bank_account_pln: '39 1240 1444 1111 0010 7170 4855',
+      bank_account_eur: 'PL21 1240 1444 1978 0010 7136 2778',
+    };
+  }
+
+  // Pobierz konto z wyjazdu na który dziecko jest zapisane
+  const { data: registration } = await supabase
+    .from('trip_registrations')
+    .select('trip:trips(bank_account_pln, bank_account_eur)')
+    .eq('participant_id', children[0].id)
+    .eq('participation_status', 'confirmed')
     .limit(1)
-    .single();
+    .maybeSingle();
+
+  const trip = registration?.trip as unknown as { bank_account_pln: string | null; bank_account_eur: string | null } | null;
 
   return {
     bank_account_pln: trip?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',

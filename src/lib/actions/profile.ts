@@ -19,7 +19,8 @@ export async function updateProfile(formData: ProfileInput) {
     return { error: result.error.issues[0].message };
   }
 
-  const { first_name, last_name, phone, secondary_email, secondary_phone } = result.data;
+  const { first_name, last_name, phone, secondary_email, secondary_phone,
+          address_street, address_zip, address_city, pesel } = result.data;
 
   const { error } = await supabase
     .from('profiles')
@@ -29,6 +30,10 @@ export async function updateProfile(formData: ProfileInput) {
       phone,
       secondary_email: secondary_email || null,
       secondary_phone: secondary_phone || null,
+      address_street: address_street || null,
+      address_zip: address_zip || null,
+      address_city: address_city || null,
+      pesel: pesel || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', user.id);

@@ -46,63 +46,51 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Jeśli użytkownik jest zalogowany i próbuje uzyskać dostęp do logowania/rejestracji
-  // (ale NIE blokujemy /reset-password - użytkownik jest zalogowany przez callback i musi ustawić hasło)
-  if (user && (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password')) {
+  // Dla zalogowanego użytkownika — pobierz profil JEDNORAZOWO tylko gdy potrzebny do przekierowania
+  const needsProfile =
+    user &&
+    (pathname === '/' ||
+      pathname === '/login' ||
+      pathname === '/register' ||
+      pathname === '/forgot-password' ||
+      pathname.startsWith('/admin') ||
+      pathname === '/parent' ||
+      pathname === '/parent/');
+
+  if (needsProfile) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', user!.id)
       .single();
 
+    const role = profile?.role;
     const url = request.nextUrl.clone();
-    url.pathname = profile?.role === 'admin' ? '/admin/groups' : '/parent/children';
-    return NextResponse.redirect(url);
-  }
 
-  // Sprawdź dostęp do panelu admina
-  if (user && pathname.startsWith('/admin')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    // Przekieruj z auth stron gdy już zalogowany
+    // (NIE blokujemy /reset-password - użytkownik jest zalogowany przez callback i musi ustawić hasło)
+    if (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password') {
+      url.pathname = role === 'admin' ? '/admin/groups' : '/parent/children';
+      return NextResponse.redirect(url);
+    }
 
-    if (profile?.role !== 'admin') {
-      const url = request.nextUrl.clone();
+    // Przekieruj z głównej
+    if (pathname === '/') {
+      url.pathname = role === 'admin' ? '/admin/groups' : '/parent/children';
+      return NextResponse.redirect(url);
+    }
+
+    // Blokuj dostęp do panelu admina dla nie-adminów
+    if (pathname.startsWith('/admin') && role !== 'admin') {
       url.pathname = '/parent/children';
       return NextResponse.redirect(url);
     }
-  }
 
-  // Sprawdź dostęp do panelu rodzica
-  if (user && pathname.startsWith('/parent')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profile?.role === 'admin' && !pathname.includes('parent')) {
-      if (pathname === '/parent' || pathname === '/parent/') {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin/groups';
-        return NextResponse.redirect(url);
-      }
+    // Przekieruj admina z /parent lub /parent/ do panelu admina
+    if ((pathname === '/parent' || pathname === '/parent/') && role === 'admin') {
+      url.pathname = '/admin/groups';
+      return NextResponse.redirect(url);
     }
-  }
-
-  // Przekierowanie z głównej strony
-  if (user && pathname === '/') {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const url = request.nextUrl.clone();
-    url.pathname = profile?.role === 'admin' ? '/admin/groups' : '/parent/children';
-    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
