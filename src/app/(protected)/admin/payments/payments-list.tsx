@@ -11,9 +11,6 @@ import {
   CircleDollarSign,
   CheckCircle2,
   MessageSquare,
-  ChevronDown,
-  ChevronUp,
-  MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -53,57 +50,6 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editNote, setEditNote] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [tripsExpanded, setTripsExpanded] = useState(true);
-
-  // Podsumowanie płatności per wyjazd
-  const tripSummaries = useMemo(() => {
-    const tripMap = new Map<string, {
-      tripId: string;
-      tripTitle: string;
-      tripDeparture: string;
-      totalPLN: number;
-      paidPLN: number;
-      totalEUR: number;
-      paidEUR: number;
-      participantCount: Set<string>;
-      paidCount: number;
-      totalCount: number;
-    }>();
-
-    payments.forEach((p) => {
-      if (!p.registration) return;
-      const trip = p.registration.trip;
-      const participantId = p.registration.participant.id;
-
-      if (!tripMap.has(trip.id)) {
-        tripMap.set(trip.id, {
-          tripId: trip.id,
-          tripTitle: trip.title,
-          tripDeparture: trip.departure_datetime,
-          totalPLN: 0, paidPLN: 0,
-          totalEUR: 0, paidEUR: 0,
-          participantCount: new Set(),
-          paidCount: 0,
-          totalCount: 0,
-        });
-      }
-
-      const entry = tripMap.get(trip.id)!;
-      entry.participantCount.add(participantId);
-      entry.totalCount++;
-
-      if (p.currency === 'PLN') {
-        entry.totalPLN += p.amount;
-        if (p.status === 'paid') { entry.paidPLN += p.amount; entry.paidCount++; }
-      } else if (p.currency === 'EUR') {
-        entry.totalEUR += p.amount;
-        if (p.status === 'paid') { entry.paidEUR += p.amount; entry.paidCount++; }
-      }
-    });
-
-    return Array.from(tripMap.values())
-      .sort((a, b) => new Date(a.tripDeparture).getTime() - new Date(b.tripDeparture).getTime());
-  }, [payments]);
 
   // Grupuj płatności po uczestnik + wyjazd + data
   const groupedPayments = useMemo(() => {
@@ -254,131 +200,6 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-
-        {/* Podsumowanie per wyjazd */}
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
-          <button
-            onClick={() => setTripsExpanded(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gray-400" />
-              <span className="font-semibold text-gray-900 text-sm">Podsumowanie per wyjazd</span>
-              <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">{tripSummaries.length}</span>
-            </div>
-            {tripsExpanded ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
-          </button>
-
-          {tripsExpanded && (
-            <div className="border-t border-gray-100 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="px-5 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Wyjazd</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Uczestnicy</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Łącznie PLN</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Opłacono PLN</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Brakuje PLN</th>
-                    {tripSummaries.some(t => t.totalEUR > 0) && <>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Łącznie EUR</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Opłacono EUR</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Brakuje EUR</th>
-                    </>}
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">% opłaconych</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {tripSummaries.map((trip) => {
-                    const missingPLN = trip.totalPLN - trip.paidPLN;
-                    const missingEUR = trip.totalEUR - trip.paidEUR;
-                    const pct = trip.totalCount > 0 ? Math.round((trip.paidCount / trip.totalCount) * 100) : 0;
-                    const hasEUR = tripSummaries.some(t => t.totalEUR > 0);
-                    return (
-                      <tr key={trip.tripId} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-3">
-                          <div className="font-medium text-gray-900">{trip.tripTitle}</div>
-                          <div className="text-xs text-gray-400">
-                            {new Date(trip.tripDeparture).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-right text-gray-700 font-medium">
-                          {trip.participantCount.size}
-                        </td>
-                        <td className="px-4 py-3 text-right text-gray-700 font-medium">
-                          {trip.totalPLN.toFixed(0)} zł
-                        </td>
-                        <td className="px-4 py-3 text-right text-emerald-700 font-semibold">
-                          {trip.paidPLN.toFixed(0)} zł
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={missingPLN > 0 ? 'text-red-600 font-semibold' : 'text-gray-300'}>
-                            {missingPLN > 0 ? `${missingPLN.toFixed(0)} zł` : '—'}
-                          </span>
-                        </td>
-                        {hasEUR && <>
-                          <td className="px-4 py-3 text-right text-gray-700 font-medium">
-                            {trip.totalEUR > 0 ? `${trip.totalEUR.toFixed(0)} €` : '—'}
-                          </td>
-                          <td className="px-4 py-3 text-right text-emerald-700 font-semibold">
-                            {trip.paidEUR > 0 ? `${trip.paidEUR.toFixed(0)} €` : '—'}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <span className={missingEUR > 0 ? 'text-red-600 font-semibold' : 'text-gray-300'}>
-                              {missingEUR > 0 ? `${missingEUR.toFixed(0)} €` : '—'}
-                            </span>
-                          </td>
-                        </>}
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className={`text-xs font-semibold ${pct === 100 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
-                              {pct}%
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                {/* Suma całkowita */}
-                <tfoot className="border-t-2 border-gray-200 bg-gray-50">
-                  <tr>
-                    <td className="px-5 py-3 text-xs font-bold text-gray-500 uppercase">RAZEM</td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-900">
-                      {new Set(payments.filter(p => p.registration).map(p => p.registration!.participant.id)).size}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-900">
-                      {tripSummaries.reduce((s, t) => s + t.totalPLN, 0).toFixed(0)} zł
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-emerald-700">
-                      {tripSummaries.reduce((s, t) => s + t.paidPLN, 0).toFixed(0)} zł
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-red-600">
-                      {tripSummaries.reduce((s, t) => s + (t.totalPLN - t.paidPLN), 0).toFixed(0)} zł
-                    </td>
-                    {tripSummaries.some(t => t.totalEUR > 0) && <>
-                      <td className="px-4 py-3 text-right font-bold text-gray-900">
-                        {tripSummaries.reduce((s, t) => s + t.totalEUR, 0).toFixed(0)} €
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-700">
-                        {tripSummaries.reduce((s, t) => s + t.paidEUR, 0).toFixed(0)} €
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-red-600">
-                        {tripSummaries.reduce((s, t) => s + (t.totalEUR - t.paidEUR), 0).toFixed(0)} €
-                      </td>
-                    </>}
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        </div>
 
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-4">
