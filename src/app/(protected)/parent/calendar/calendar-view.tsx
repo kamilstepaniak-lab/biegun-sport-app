@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from 'lucide-react';
@@ -26,6 +26,11 @@ interface ParentCalendarViewProps {
 export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [groupFilter, setGroupFilter] = useState<string>(defaultGroupId || 'all');
+
+  // Gdy zmienia się dziecko (defaultGroupId) — zaktualizuj filtr
+  useEffect(() => {
+    setGroupFilter(defaultGroupId || 'all');
+  }, [defaultGroupId]);
 
   const availableGroups = useMemo(() => {
     const groupMap = new Map<string, { id: string; name: string }>();
