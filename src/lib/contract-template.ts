@@ -34,6 +34,33 @@ zwanymi dalej łącznie „Stronami".
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+SZCZEGÓŁY OBOZU
+
+┌─────────────────────────────────────────────────────────────────────┐
+│  Lp. │ Wyszczególnienie              │ Opis                         │
+├─────────────────────────────────────────────────────────────────────┤
+│   1  │ Nazwa obozu                   │ {{trip_title}}               │
+│   2  │ Miejsce                       │ {{trip_location}}            │
+│   3  │ Data wyjazdu                  │ {{trip_departure}}           │
+│   4  │ Data powrotu                  │ {{trip_return}}              │
+│   5  │ Imię i nazwisko uczestnika    │ {{child_name}}               │
+│   6  │ Data urodzenia uczestnika     │ {{child_birth_date}}         │
+│   7  │ Imię i nazwisko opiekuna      │ {{parent_name}}              │
+│   8  │ Adres opiekuna                │ {{parent_address}}           │
+│   9  │ PESEL opiekuna                │ {{parent_pesel}}             │
+│  10  │ E-mail opiekuna               │ {{parent_email}}             │
+│  11  │ Telefon opiekuna              │ {{parent_phone}}             │
+│  12  │ Konto PLN                     │ {{trip_bank_pln}}            │
+│  13  │ Konto EUR                     │ {{trip_bank_eur}}            │
+│  14  │ Organizator                   │ BiegunSport Stepaniak        │
+│      │                               │ & Biegun sp. j.              │
+│  15  │ NIP organizatora              │ 6772411396                   │
+│  16  │ Telefon organizatora          │ +48 603 303 619              │
+│  17  │ E-mail organizatora           │ biuro@biegunsport.pl         │
+└─────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 § 1 – Przedmiot Umowy
 
 1. Przedmiotem niniejszej umowy (dalej: „Umowa") jest zorganizowanie przez Organizatora na rzecz Uczestnika
