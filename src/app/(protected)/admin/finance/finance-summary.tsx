@@ -9,6 +9,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Search,
+  X,
 } from 'lucide-react';
 
 import type { PaymentWithDetails } from '@/types';
@@ -39,6 +41,7 @@ interface TripSummary {
 export function FinanceSummary({ payments }: FinanceSummaryProps) {
   const [sortField, setSortField] = useState<keyof TripSummary>('tripDeparture');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const tripSummaries = useMemo<TripSummary[]>(() => {
     const tripMap = new Map<string, {
@@ -126,7 +129,12 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
   }), [tripSummaries]);
 
   const sorted = useMemo(() => {
-    return [...tripSummaries].sort((a, b) => {
+    const query = searchQuery.toLowerCase().trim();
+    const filtered = query
+      ? tripSummaries.filter((t) => t.tripTitle.toLowerCase().includes(query))
+      : tripSummaries;
+
+    return [...filtered].sort((a, b) => {
       const valA = a[sortField];
       const valB = b[sortField];
       if (typeof valA === 'string' && typeof valB === 'string') {
@@ -138,7 +146,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
       const numB = Number(valB);
       return sortDir === 'asc' ? numA - numB : numB - numA;
     });
-  }, [tripSummaries, sortField, sortDir]);
+  }, [tripSummaries, sortField, sortDir, searchQuery]);
 
   function toggleSort(field: keyof TripSummary) {
     if (sortField === field) {
@@ -190,8 +198,32 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
 
       {/* Table */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900 text-sm">Zestawienie per wyjazd</h2>
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
+          <h2 className="font-semibold text-gray-900 text-sm">
+            Zestawienie per wyjazd
+            {searchQuery.trim() && (
+              <span className="ml-2 text-xs font-normal text-gray-400">
+                ({sorted.length} z {tripSummaries.length})
+              </span>
+            )}
+          </h2>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              placeholder="Szukaj wyjazdu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-9 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto">

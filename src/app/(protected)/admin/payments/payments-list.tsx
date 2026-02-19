@@ -90,7 +90,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       result = result.filter((g) =>
-        g.participantName.toLowerCase().includes(query)
+        g.participantName.toLowerCase().includes(query) ||
+        g.tripTitle.toLowerCase().includes(query)
       );
     }
 
@@ -237,7 +238,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
-              placeholder="Szukaj po nazwisku..."
+              placeholder="Szukaj po nazwisku lub wyjeździe..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-10 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
