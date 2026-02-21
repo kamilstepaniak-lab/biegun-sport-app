@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '@/lib/validations/auth';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export async function login(formData: LoginInput) {
   const supabase = await createClient();
@@ -95,6 +96,9 @@ export async function register(formData: RegisterInput) {
       return { error: 'Nie udało się utworzyć profilu' };
     }
   }
+
+  // Wyślij e-mail powitalny (nie blokujemy rejestracji jeśli się nie uda)
+  sendWelcomeEmail(email, firstName).catch(console.error);
 
   revalidatePath('/', 'layout');
   redirect('/parent/children');

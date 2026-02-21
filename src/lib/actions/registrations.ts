@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
+import { sendRegistrationConfirmationEmail } from '@/lib/email';
 
 export async function registerParticipantToTrip(
   tripId: string,
@@ -152,6 +153,35 @@ export async function registerParticipantToTrip(
         console.error('Payments insert error:', paymentsError);
       }
     }
+  }
+
+  // Wyślij e-mail potwierdzający zapis
+  try {
+    const { data: tripData } = await supabase
+      .from('trips')
+      .select('title, departure_datetime, location')
+      .eq('id', tripId)
+      .single();
+
+    const { data: parentData } = await supabase
+      .from('profiles')
+      .select('email, first_name')
+      .eq('id', participant.parent_id)
+      .single();
+
+    if (tripData && parentData?.email) {
+      const childName = `${participant.first_name} ${participant.last_name}`;
+      sendRegistrationConfirmationEmail(
+        parentData.email,
+        parentData.first_name || '',
+        childName,
+        tripData.title,
+        tripData.departure_datetime,
+        tripData.location || '',
+      ).catch(console.error);
+    }
+  } catch {
+    // e-mail nie blokuje zapisu
   }
 
   revalidatePath('/parent/trips');
