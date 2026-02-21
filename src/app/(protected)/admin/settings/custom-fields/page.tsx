@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
-import { Settings, UserPlus } from 'lucide-react';
+import Link from 'next/link';
+import { Settings, UserPlus, Mail } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader, EmptyState } from '@/components/shared';
@@ -16,6 +17,28 @@ export default async function CustomFieldsSettingsPage() {
         title="Ustawienia"
         description="Konfiguracja systemu"
       />
+
+      {/* Szablony e-maili */}
+      <Link href="/admin/settings/email-templates">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                  <Mail className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle>Szablony e-maili</CardTitle>
+                  <CardDescription>
+                    Edytuj treść automatycznych wiadomości wysyłanych do rodziców
+                  </CardDescription>
+                </div>
+              </div>
+              <span className="text-xs text-blue-600 font-medium">Edytuj →</span>
+            </div>
+          </CardHeader>
+        </Card>
+      </Link>
 
       {/* Konta rodziców */}
       <Card>
