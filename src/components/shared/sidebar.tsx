@@ -22,6 +22,7 @@ import {
   CalendarDays,
   FileText,
   BarChart2,
+  Mail,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,6 +39,7 @@ const iconMap: Record<string, LucideIcon> = {
   CalendarDays,
   FileText,
   BarChart2,
+  Mail,
 };
 
 // Map icons to background colors for the modern icon badges
@@ -54,6 +56,7 @@ const iconColorMap: Record<string, string> = {
   CalendarDays: 'bg-indigo-100 text-indigo-600',
   FileText: 'bg-purple-100 text-purple-600',
   BarChart2: 'bg-cyan-100 text-cyan-600',
+  Mail: 'bg-blue-100 text-blue-600',
 };
 
 export interface SidebarItem {

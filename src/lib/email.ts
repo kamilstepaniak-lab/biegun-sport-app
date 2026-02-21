@@ -93,6 +93,101 @@ async function sendEmail(to: string, subject: string, bodyHtml: string) {
   }
 }
 
+// ─── Typy dla maila z danymi wyjazdu ─────────────────────────────────────────
+
+export interface TripEmailData {
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  departure_datetime: string;
+  departure_location: string;
+  departure_stop2_datetime?: string | null;
+  departure_stop2_location?: string | null;
+  return_datetime: string;
+  return_location: string;
+  return_stop2_datetime?: string | null;
+  return_stop2_location?: string | null;
+  bank_account_pln?: string | null;
+  bank_account_eur?: string | null;
+}
+
+export interface PaymentLineItem {
+  payment_type: string;
+  installment_number?: number | null;
+  amount: number;
+  currency: string;
+  due_date?: string | null;
+  payment_method?: string | null;
+}
+
+// ─── Blok HTML z detalami wyjazdu ────────────────────────────────────────────
+
+function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineItem[]): string {
+  const fmt = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('pl-PL', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+  const fmtTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+
+  let html = '';
+
+  if (trip.description) {
+    html += `<p style="color:#6b7280;font-size:14px;margin:0 0 16px;">${trip.description}</p>`;
+  }
+
+  // TERMINY
+  html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;">`;
+  html += `<tr><td colspan="2" style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">📅 TERMINY</td></tr>`;
+
+  html += `<tr><td style="padding:4px 16px 4px 0;color:#6b7280;font-size:13px;white-space:nowrap;vertical-align:top;">📅 Wyjazd</td><td style="padding:4px 0;font-size:14px;font-weight:600;color:#111827;">${fmt(trip.departure_datetime)}</td></tr>`;
+  html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.departure_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.departure_location}</td></tr>`;
+
+  if (trip.departure_stop2_datetime && trip.departure_stop2_location) {
+    html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.departure_stop2_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.departure_stop2_location}</td></tr>`;
+  }
+
+  html += `<tr><td style="padding:12px 16px 4px 0;color:#6b7280;font-size:13px;white-space:nowrap;vertical-align:top;">📅 Powrót</td><td style="padding:12px 0 4px;font-size:14px;font-weight:600;color:#111827;">${fmt(trip.return_datetime)}</td></tr>`;
+  html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.return_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.return_location}</td></tr>`;
+
+  if (trip.return_stop2_datetime && trip.return_stop2_location) {
+    html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.return_stop2_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.return_stop2_location}</td></tr>`;
+  }
+
+  html += `</table>`;
+
+  // PŁATNOŚCI
+  if (payments.length > 0) {
+    html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;">`;
+    html += `<tr><td colspan="2" style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">💰 PŁATNOŚCI</td></tr>`;
+
+    for (const p of payments) {
+      const label = p.payment_type === 'season_pass'
+        ? 'Karnet'
+        : `Rata ${p.installment_number ?? ''}`.trim();
+      const method = p.payment_method === 'cash' ? 'gotówka'
+        : p.payment_method === 'transfer' ? 'przelew'
+        : 'gotówka lub przelew';
+      const dueStr = p.due_date
+        ? ` · termin: ${new Date(p.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`
+        : '';
+      html += `<tr><td colspan="2" style="padding:3px 0;font-size:14px;">• <strong>${label}:</strong> ${p.amount.toFixed(0)} ${p.currency} (${method})${dueStr}</td></tr>`;
+    }
+
+    html += `<tr><td colspan="2" style="padding:12px 0 4px;">`;
+    if (trip.bank_account_pln) {
+      html += `<p style="margin:4px 0;font-size:13px;color:#374151;">🏦 Konto PLN: <span style="font-family:monospace;">${trip.bank_account_pln}</span></p>`;
+    }
+    if (trip.bank_account_eur) {
+      html += `<p style="margin:4px 0;font-size:13px;color:#374151;">🏦 Konto EUR: <span style="font-family:monospace;">${trip.bank_account_eur}</span></p>`;
+    }
+    html += `<p style="margin:10px 0 0;font-size:13px;color:#6b7280;">W tytule przelewu proszę podać: <strong>imię i nazwisko dziecka + nazwa wyjazdu</strong></p>`;
+    html += `</td></tr></table>`;
+  }
+
+  return html;
+}
+
 // ─── Szablony domyślne (fallback gdy brak w bazie) ───────────────────────────
 
 const DEFAULTS = {
@@ -101,8 +196,8 @@ const DEFAULTS = {
     body_html: '<h2>Witaj, {{imie}}! 👋</h2><p>Twoje konto zostało pomyślnie utworzone. Możesz teraz dodać swoje dziecko i zapisać je na wyjazd narciarski.</p>',
   },
   registration: {
-    subject: '✅ {{dziecko}} zapisany/a na: {{wyjazd}}',
-    body_html: '<h2>Potwierdzenie zapisu ✅</h2><p>Cześć {{imie}},</p><p><strong>{{dziecko}}</strong> został/a pomyślnie zapisany/a na wyjazd <strong>{{wyjazd}}</strong>.</p><p>📍 {{miejsce}}</p><p>🗓️ {{data_wyjazdu}}</p>',
+    subject: '{{wyjazd}} – informacja o wyjeździe',
+    body_html: '<h2>Potwierdzenie zapisu ✅</h2><p>Cześć {{imie}},</p><p><strong>{{dziecko}}</strong> został/a pomyślnie zapisany/a na wyjazd <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}',
   },
   payment_confirmed: {
     subject: '✅ Płatność przyjęta — {{wyjazd}}',
@@ -126,22 +221,27 @@ export async function sendRegistrationConfirmationEmail(
   to: string,
   parentFirstName: string,
   childName: string,
-  tripTitle: string,
-  tripDeparture: string,
-  tripLocation: string,
+  trip: TripEmailData,
+  payments: PaymentLineItem[] = [],
 ) {
   const tpl = await getTemplate('registration') ?? DEFAULTS.registration;
-  const departureFormatted = new Date(tripDeparture).toLocaleDateString('pl-PL', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  });
+  const tripDetailsHtml = buildTripDetailsHtml(trip, payments);
   const vars: Record<string, string> = {
     '{{imie}}': parentFirstName,
     '{{dziecko}}': childName,
-    '{{wyjazd}}': tripTitle,
-    '{{miejsce}}': tripLocation,
-    '{{data_wyjazdu}}': departureFormatted,
+    '{{wyjazd}}': trip.title,
+    '{{miejsce}}': trip.location || '',
+    '{{data_wyjazdu}}': new Date(trip.departure_datetime).toLocaleDateString('pl-PL', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    }),
+    '{{szczegoly_wyjazdu}}': tripDetailsHtml,
   };
-  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars));
+  let bodyHtml = interpolate(tpl.body_html, vars);
+  // Dołącz szczegóły jeśli szablon nie zawiera placeholdera
+  if (!tpl.body_html.includes('{{szczegoly_wyjazdu}}')) {
+    bodyHtml += tripDetailsHtml;
+  }
+  await sendEmail(to, interpolate(tpl.subject, vars), bodyHtml);
 }
 
 export async function sendPaymentConfirmedEmail(

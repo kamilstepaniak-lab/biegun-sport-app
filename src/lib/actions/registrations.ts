@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
-import { sendRegistrationConfirmationEmail } from '@/lib/email';
+import { sendRegistrationConfirmationEmail, type TripEmailData, type PaymentLineItem } from '@/lib/email';
 
 export async function registerParticipantToTrip(
   tripId: string,
@@ -100,6 +100,8 @@ export async function registerParticipantToTrip(
     .select('*')
     .eq('trip_id', tripId);
 
+  const emailPaymentLines: PaymentLineItem[] = [];
+
   if (paymentTemplates && paymentTemplates.length > 0) {
     const birthYear = new Date(participant.birth_date).getFullYear();
     const paymentsToCreate = [];
@@ -116,6 +118,15 @@ export async function registerParticipantToTrip(
           currency: template.currency,
           due_date: template.due_date,
           status: 'pending',
+        });
+
+        emailPaymentLines.push({
+          payment_type: 'installment',
+          installment_number: template.installment_number,
+          amount: template.amount,
+          currency: template.currency,
+          due_date: template.due_date,
+          payment_method: template.payment_method,
         });
 
         // Jeśli rata 1 ma dołączony karnet
@@ -141,6 +152,15 @@ export async function registerParticipantToTrip(
               due_date: template.due_date,
               status: 'pending',
             });
+
+            emailPaymentLines.push({
+              payment_type: 'season_pass',
+              installment_number: null,
+              amount: seasonPass.amount,
+              currency: seasonPass.currency,
+              due_date: template.due_date,
+              payment_method: seasonPass.payment_method,
+            });
           }
         }
       }
@@ -159,7 +179,7 @@ export async function registerParticipantToTrip(
   try {
     const { data: tripData } = await supabase
       .from('trips')
-      .select('title, departure_datetime, location')
+      .select('title, description, location, departure_datetime, departure_location, departure_stop2_datetime, departure_stop2_location, return_datetime, return_location, return_stop2_datetime, return_stop2_location, bank_account_pln, bank_account_eur')
       .eq('id', tripId)
       .single();
 
@@ -175,9 +195,8 @@ export async function registerParticipantToTrip(
         parentData.email,
         parentData.first_name || '',
         childName,
-        tripData.title,
-        tripData.departure_datetime,
-        tripData.location || '',
+        tripData as TripEmailData,
+        emailPaymentLines,
       ).catch(console.error);
     }
   } catch {

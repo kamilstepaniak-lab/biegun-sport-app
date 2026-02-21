@@ -563,6 +563,8 @@ export interface TripParticipant {
   first_name: string;
   last_name: string;
   birth_date: string;
+  height_cm: number | null;
+  notes: string | null;
   group_name: string;
   parent_email: string;
   parent_phone: string;
@@ -599,6 +601,8 @@ export async function getTripParticipants(tripId: string): Promise<TripParticipa
         first_name,
         last_name,
         birth_date,
+        height_cm,
+        notes,
         parent:profiles!parent_id (
           email,
           phone
@@ -676,6 +680,8 @@ export async function getTripParticipants(tripId: string): Promise<TripParticipa
         first_name: string;
         last_name: string;
         birth_date: string;
+        height_cm: number | null;
+        notes: string | null;
         parent: unknown;
       };
 
@@ -702,6 +708,8 @@ export async function getTripParticipants(tripId: string): Promise<TripParticipa
         first_name: participant.first_name,
         last_name: participant.last_name,
         birth_date: participant.birth_date,
+        height_cm: participant.height_cm ?? null,
+        notes: participant.notes ?? null,
         group_name: group?.name || 'Brak grupy',
         parent_email: parent.email || '',
         parent_phone: parent.phone || '',

@@ -35,6 +35,11 @@ const adminNavItems: SidebarItem[] = [
     icon: 'FileText',
   },
   {
+    title: 'E-maile',
+    href: '/admin/settings/email-templates',
+    icon: 'Mail',
+  },
+  {
     title: 'Ustawienia',
     href: '/admin/settings/custom-fields',
     icon: 'Settings',

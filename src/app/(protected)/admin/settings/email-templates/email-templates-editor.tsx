@@ -46,6 +46,7 @@ function TemplateEditor({
   const editor = useEditor({
     extensions: [StarterKit],
     content: template.body_html,
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[180px] p-4',

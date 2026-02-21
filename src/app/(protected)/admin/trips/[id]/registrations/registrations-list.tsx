@@ -135,6 +135,7 @@ function getPaymentForColumn(payments: ParticipantPayment[], columnKey: string):
 }
 
 // Eksport do Excel (CSV z BOM dla polskich znaków)
+// Eksportuje TYLKO dzieci które jadą (status: confirmed)
 function exportToExcel(
   participants: TripParticipant[],
   paymentColumns: { key: string; label: string }[],
@@ -142,6 +143,9 @@ function exportToExcel(
   stop1Name?: string | null,
   stop2Name?: string | null,
 ) {
+  // Tylko dzieci których rodzice potwierdzili "jedzie"
+  const confirmed = participants.filter(p => p.participation_status === 'confirmed');
+
   const statusLabels: Record<string, string> = {
     confirmed: 'Jedzie',
     not_going: 'Nie jedzie',
@@ -161,16 +165,14 @@ function exportToExcel(
     'Nazwisko',
     'Imię',
     'Data urodzenia',
-    'Grupa',
-    'Email rodzica',
     'Telefon rodzica',
     'Status',
     'Przystanek',
-    'Notatka',
+    'Notatka przy zapisie',
     ...paymentColumns.map(c => c.label),
   ];
 
-  const rows = participants.map(p => {
+  const rows = confirmed.map(p => {
     const paymentCells = paymentColumns.map(col => {
       const payment = getPaymentForColumn(p.payments, col.key);
       if (!payment) return '-';
@@ -180,15 +182,13 @@ function exportToExcel(
 
     const stopLabel = parseStopFromNote(p.participation_note, stop1Name, stop2Name) || '-';
     const noteWithoutStop = p.participation_note
-      ? p.participation_note.replace(/^\[(STOP1|STOP2)\]/, '').trim()
+      ? p.participation_note.replace(/^\[(STOP1|STOP2|OWN)\]/, '').trim()
       : '';
 
     return [
       p.last_name,
       p.first_name,
       p.birth_date ? format(new Date(p.birth_date), 'dd.MM.yyyy') : '-',
-      p.group_name,
-      p.parent_email,
       p.parent_phone,
       statusLabels[p.participation_status] || p.participation_status,
       stopLabel,
@@ -211,7 +211,7 @@ function exportToExcel(
   link.download = `Zapisani - ${safeTitle}.csv`;
   link.click();
   URL.revokeObjectURL(url);
-  toast.success('Lista wyeksportowana do pliku Excel');
+  toast.success(`Wyeksportowano ${confirmed.length} uczestników (status: Jedzie)`);
 }
 
 export function RegistrationsList({ tripId, participants, groups, tripTitle = 'Wyjazd', stop1Name, stop2Name }: RegistrationsListProps) {
@@ -437,7 +437,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
             </span>
             {/* Eksport do Excel */}
             <button
-              onClick={() => exportToExcel(filteredParticipants, paymentColumns, tripTitle, stop1Name, stop2Name)}
+              onClick={() => exportToExcel(participants, paymentColumns, tripTitle, stop1Name, stop2Name)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <Download className="h-4 w-4" />
