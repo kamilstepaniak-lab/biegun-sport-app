@@ -1,6 +1,6 @@
 'use server';
 
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 const DEFAULT_PASSWORD = 'biegunsport';
 
@@ -237,4 +237,31 @@ export async function createParentAccounts(): Promise<{
   }
 
   return { results, created, alreadyExists, errors };
+}
+
+export async function deleteParentAccount(parentId: string) {
+  const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (callerProfile?.role !== 'admin') {
+    return { error: 'Brak uprawnień' };
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(parentId);
+
+  if (error) {
+    console.error('Delete parent account error:', error);
+    return { error: 'Nie udało się usunąć konta rodzica' };
+  }
+
+  return { success: true };
 }

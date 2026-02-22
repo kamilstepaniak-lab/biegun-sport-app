@@ -14,6 +14,7 @@ import { PageHeader, Breadcrumbs, EmptyState } from '@/components/shared';
 import { getParticipantFull } from '@/lib/actions/participants';
 import { getParticipantRegistrations } from '@/lib/actions/registrations';
 import { ParticipantNotesCard } from './notes-card';
+import { DeleteParentAccountButton } from '@/components/admin/delete-parent-account-button';
 
 interface ParticipantDetailPageProps {
   params: Promise<{ id: string }>;
@@ -129,8 +130,16 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
         {/* Dane rodzica */}
         <Card>
           <CardHeader>
-            <CardTitle>Dane rodzica</CardTitle>
-            <CardDescription>Informacje kontaktowe</CardDescription>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle>Dane rodzica</CardTitle>
+                <CardDescription>Informacje kontaktowe</CardDescription>
+              </div>
+              <DeleteParentAccountButton
+                parentId={participant.parent.id}
+                parentName={`${participant.parent.first_name} ${participant.parent.last_name}`}
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
