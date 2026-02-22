@@ -10,17 +10,44 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { PageHeader, Breadcrumbs } from '@/components/shared';
+import { PageHeader, Breadcrumbs, EmptyState } from '@/components/shared';
 import { getParticipantFull } from '@/lib/actions/participants';
+import { getParticipantRegistrations } from '@/lib/actions/registrations';
 import { ParticipantNotesCard } from './notes-card';
 
 interface ParticipantDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Oczekuje',
+  partially_paid: 'Częściowo',
+  paid: 'Opłacone',
+  overdue: 'Zaległe',
+  partially_paid_overdue: 'Częściowo/Zaległe',
+  cancelled: 'Anulowane',
+};
+
+const PAYMENT_STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  pending: 'secondary',
+  partially_paid: 'outline',
+  paid: 'default',
+  overdue: 'destructive',
+  partially_paid_overdue: 'destructive',
+  cancelled: 'outline',
+};
+
+const REGISTRATION_STATUS_LABELS: Record<string, string> = {
+  active: 'Aktywny',
+  cancelled: 'Anulowany',
+};
+
 export default async function ParticipantDetailPage({ params }: ParticipantDetailPageProps) {
   const { id } = await params;
-  const participant = await getParticipantFull(id);
+  const [participant, registrations] = await Promise.all([
+    getParticipantFull(id),
+    getParticipantRegistrations(id),
+  ]);
 
   if (!participant) {
     notFound();
@@ -179,16 +206,79 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
           </Card>
         )}
 
-        {/* Zapisy na wyjazdy - placeholder */}
+        {/* Zapisy na wyjazdy */}
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Zapisy na wyjazdy</CardTitle>
             <CardDescription>Historia zapisów i płatności</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Brak zapisów na wyjazdy
-            </p>
+            {registrations.length === 0 ? (
+              <EmptyState
+                icon={StickyNote}
+                title="Brak zapisów na wyjazdy"
+                description="Uczestnik nie jest zapisany na żaden wyjazd."
+              />
+            ) : (
+              <div className="divide-y">
+                {registrations.map((reg) => {
+                  const totalAmount = reg.payments.reduce((sum, p) => sum + p.amount, 0);
+                  const totalPaid = reg.payments.reduce((sum, p) => sum + p.amount_paid, 0);
+                  const currencies = [...new Set(reg.payments.map((p) => p.currency))];
+                  const overallStatus = reg.payments.length > 0
+                    ? reg.payments.every((p) => p.status === 'paid')
+                      ? 'paid'
+                      : reg.payments.some((p) => p.status === 'overdue' || p.status === 'partially_paid_overdue')
+                        ? 'overdue'
+                        : reg.payments.some((p) => p.status === 'partially_paid')
+                          ? 'partially_paid'
+                          : 'pending'
+                    : null;
+
+                  return (
+                    <div key={reg.id} className="py-4 flex items-start justify-between gap-4">
+                      <div className="space-y-1 min-w-0">
+                        <Link
+                          href={`/admin/trips/${reg.trip_id}/registrations`}
+                          className="font-medium text-sm hover:underline truncate block"
+                        >
+                          {reg.trip.title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(reg.trip.departure_datetime), 'd MMM yyyy', { locale: pl })}
+                          {' – '}
+                          {format(new Date(reg.trip.return_datetime), 'd MMM yyyy', { locale: pl })}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Zapis: {format(new Date(reg.created_at), 'd MMM yyyy', { locale: pl })}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <Badge
+                          variant={reg.status === 'active' ? 'default' : 'outline'}
+                          className="text-xs"
+                        >
+                          {REGISTRATION_STATUS_LABELS[reg.status] ?? reg.status}
+                        </Badge>
+                        {overallStatus && (
+                          <Badge
+                            variant={PAYMENT_STATUS_VARIANTS[overallStatus] ?? 'secondary'}
+                            className="text-xs"
+                          >
+                            {PAYMENT_STATUS_LABELS[overallStatus] ?? overallStatus}
+                          </Badge>
+                        )}
+                        {reg.payments.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {totalPaid.toFixed(0)}&nbsp;/&nbsp;{totalAmount.toFixed(0)}&nbsp;{currencies.join('/')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

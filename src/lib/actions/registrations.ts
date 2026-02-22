@@ -314,3 +314,39 @@ export async function getMyRegistrations(): Promise<RegistrationWithDetails[]> {
 
   return registrations as RegistrationWithDetails[];
 }
+
+export async function getParticipantRegistrations(participantId: string): Promise<RegistrationWithDetails[]> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') return [];
+
+  const { data: registrations, error } = await supabase
+    .from('trip_registrations')
+    .select(`
+      *,
+      participant:participants (
+        *,
+        parent:profiles!parent_id (*)
+      ),
+      trip:trips (*),
+      payments (*)
+    `)
+    .eq('participant_id', participantId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Participant registrations fetch error:', error);
+    return [];
+  }
+
+  return registrations as RegistrationWithDetails[];
+}

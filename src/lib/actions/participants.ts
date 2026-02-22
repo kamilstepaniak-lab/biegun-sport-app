@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
-import type { Participant, ParticipantWithGroup, ParticipantFull, Group } from '@/types';
+import type { Participant, ParticipantWithGroup, ParticipantFull, Group, CustomFieldDefinition } from '@/types';
 
 export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
   const supabase = await createClient();
@@ -561,3 +561,22 @@ export async function updateParticipantNote(participantId: string, notes: string
 }
 
 // deleteParticipants jest zdefiniowana w groups.ts (lepsza wersja z kontrolą rejestracji)
+
+export async function getCustomFieldDefinitions(): Promise<CustomFieldDefinition[]> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('custom_field_definitions')
+    .select('*')
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    console.error('Custom field definitions fetch error:', error);
+    return [];
+  }
+
+  return data as CustomFieldDefinition[];
+}

@@ -4,12 +4,21 @@ import Link from 'next/link';
 import { Settings, UserPlus, Mail } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { PageHeader, EmptyState } from '@/components/shared';
 import { ParentAccountsManager } from '../parent-accounts-manager';
+import { getCustomFieldDefinitions } from '@/lib/actions/participants';
+
+const FIELD_TYPE_LABELS: Record<string, string> = {
+  text: 'Tekst',
+  number: 'Liczba',
+  date: 'Data',
+  boolean: 'Tak/Nie',
+  select: 'Wybór',
+};
 
 export default async function CustomFieldsSettingsPage() {
-  // TODO: Pobierz definicje pól
-  const customFields: unknown[] = [];
+  const customFields = await getCustomFieldDefinitions();
 
   return (
     <div className="space-y-6">
@@ -83,8 +92,25 @@ export default async function CustomFieldsSettingsPage() {
               description="Nie skonfigurowano jeszcze żadnych dodatkowych pól."
             />
           ) : (
-            <div>
-              {/* Lista pól */}
+            <div className="divide-y">
+              {customFields.map((field) => (
+                <div key={field.id} className="flex items-center justify-between py-3">
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-sm">{field.field_label}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{field.field_name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {FIELD_TYPE_LABELS[field.field_type] ?? field.field_type}
+                    </Badge>
+                    {field.is_required && (
+                      <Badge variant="destructive" className="text-xs">
+                        Wymagane
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
