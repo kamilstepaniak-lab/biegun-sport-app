@@ -302,7 +302,10 @@ export async function createContractForParticipantIfNeeded(
     });
 
   if (error) {
-    console.error('createContractForParticipantIfNeeded error:', error);
+    // 23505 = unique_violation — równoczesny request już wstawił umowę, ignorujemy
+    if ((error as { code?: string }).code !== '23505') {
+      console.error('createContractForParticipantIfNeeded error:', error);
+    }
     return;
   }
 
