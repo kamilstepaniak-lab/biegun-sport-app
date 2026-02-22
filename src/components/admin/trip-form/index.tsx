@@ -48,6 +48,8 @@ export interface TripFormData {
   bank_account_pln: string;
   bank_account_eur: string;
   allow_own_transport: boolean;
+  packing_list: string;
+  additional_info: string;
 }
 
 interface TripFormProps {
@@ -174,6 +176,8 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     bank_account_pln: trip?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
     bank_account_eur: trip?.bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
     allow_own_transport: (trip as Trip & { allow_own_transport?: boolean })?.allow_own_transport ?? false,
+    packing_list: (trip as Trip & { packing_list?: string | null })?.packing_list || '',
+    additional_info: (trip as Trip & { additional_info?: string | null })?.additional_info || '',
   });
 
   function updateFormData(data: Partial<TripFormData>) {
@@ -819,6 +823,42 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             </CardContent>
           </CollapsibleContent>
         </Collapsible>
+      </Card>
+
+      {/* Treść maila */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Treść maila do rodziców
+          </CardTitle>
+          <CardDescription>
+            Te informacje trafią do maila wysyłanego do grupy. Możesz je edytować przed wysyłką.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="packing_list">Co zabrać</Label>
+            <Textarea
+              id="packing_list"
+              value={formData.packing_list}
+              onChange={(e) => updateFormData({ packing_list: e.target.value })}
+              placeholder={"- Kask narciarski (obowiązkowy)\n- Gogle narciarskie\n- Rękawice narciarskie\n- Kurtka i spodnie narciarskie\n- Buty narciarskie (jeśli własne)\n- Narty i kijki (jeśli własne)\n- Ubrania na zmianę / bielizna termiczna\n- Środki higieniczne\n- Legitymacja szkolna / dowód tożsamości\n- Karta EKUZ lub ubezpieczenie"}
+              rows={8}
+            />
+            <p className="text-xs text-muted-foreground">Każda pozycja w nowej linii (ze znakiem - lub bez)</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="additional_info">Dodatkowe informacje</Label>
+            <Textarea
+              id="additional_info"
+              value={formData.additional_info}
+              onChange={(e) => updateFormData({ additional_info: e.target.value })}
+              placeholder="Wyjazd odbywa się pod opieką wykwalifikowanych instruktorów BiegunSport. Prosimy o punktualne stawienie się na miejscu zbiórki."
+              rows={4}
+            />
+          </div>
+        </CardContent>
       </Card>
 
       {/* Przyciski akcji */}

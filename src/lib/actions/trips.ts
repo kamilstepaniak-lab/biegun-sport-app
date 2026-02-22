@@ -191,6 +191,8 @@ export async function createTrip(input: CreateTripInput) {
     status,
     group_ids,
     payment_templates,
+    packing_list,
+    additional_info,
   } = input;
 
   // 1. Utwórz wyjazd
@@ -211,6 +213,8 @@ export async function createTrip(input: CreateTripInput) {
       return_stop2_location: return_stop2_location || null,
       bank_account_pln: bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
       bank_account_eur: bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+      packing_list: packing_list || null,
+      additional_info: additional_info || null,
       status,
       created_by: user.id,
     })
@@ -308,6 +312,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     status,
     group_ids,
     payment_templates,
+    packing_list,
+    additional_info,
   } = input;
 
   // 1. Aktualizuj wyjazd (używamy admin client żeby ominąć RLS)
@@ -330,6 +336,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (bank_account_pln !== undefined) updateData.bank_account_pln = bank_account_pln;
   if (bank_account_eur !== undefined) updateData.bank_account_eur = bank_account_eur;
   if (status !== undefined) updateData.status = status;
+  if (packing_list !== undefined) updateData.packing_list = packing_list || null;
+  if (additional_info !== undefined) updateData.additional_info = additional_info || null;
 
   const { error: updateError } = await supabaseAdmin
     .from('trips')

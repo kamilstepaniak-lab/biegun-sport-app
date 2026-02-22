@@ -112,6 +112,8 @@ export interface Trip {
   bank_account_pln: string;
   bank_account_eur: string;
   allow_own_transport: boolean;
+  packing_list: string | null;
+  additional_info: string | null;
   status: TripStatus;
   created_at: string;
   updated_at: string;
@@ -320,6 +322,8 @@ export interface CreateTripInput {
   status: TripStatus;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
+  packing_list?: string | null;
+  additional_info?: string | null;
 }
 
 export interface CreatePaymentTemplateInput {

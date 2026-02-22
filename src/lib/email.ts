@@ -115,6 +115,8 @@ export interface TripEmailData {
   bank_account_pln?: string | null;
   bank_account_eur?: string | null;
   declaration_deadline?: string | null;
+  packing_list?: string | null;
+  additional_info?: string | null;
 }
 
 export interface PaymentLineItem {
@@ -201,6 +203,30 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
     html += `</td></tr></table>`;
   }
 
+  // CO ZABRAĆ
+  if (trip.packing_list) {
+    html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;">`;
+    html += `<tr><td style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">🎒 CO ZABRAĆ</td></tr>`;
+    html += `<tr><td style="padding:0 0 12px;font-size:14px;color:#374151;"><ul style="margin:8px 0;padding-left:20px;">`;
+    const lines = trip.packing_list.split('\n').map((l) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+    for (const line of lines) {
+      html += `<li>${line}</li>`;
+    }
+    html += `</ul></td></tr></table>`;
+  }
+
+  // DODATKOWE INFORMACJE
+  if (trip.additional_info) {
+    html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:8px;">`;
+    html += `<tr><td style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">ℹ️ DODATKOWE INFORMACJE</td></tr>`;
+    const infoLines = trip.additional_info.split('\n').filter(Boolean);
+    html += `<tr><td style="padding:0 0 12px;font-size:14px;color:#374151;">`;
+    for (const line of infoLines) {
+      html += `<p style="margin:0 0 8px;">${line}</p>`;
+    }
+    html += `</td></tr></table>`;
+  }
+
   return html;
 }
 
@@ -225,7 +251,7 @@ const DEFAULTS = {
   },
   trip_info: {
     subject: '{{wyjazd}} – informacja o wyjeździe',
-    body_html: `<h2>Informacja o wyjeździe 🏔️</h2><p>Szanowni Rodzice,</p><p>Przekazujemy informacje o planowanym wyjeździe <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;"><tr><td style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">🎒 CO ZABRAĆ</td></tr><tr><td style="padding:0 0 12px;font-size:14px;color:#374151;"><ul style="margin:8px 0;padding-left:20px;"><li>Kask narciarski (obowiązkowy)</li><li>Gogle narciarskie</li><li>Rękawice narciarskie</li><li>Kurtka i spodnie narciarskie</li><li>Buty narciarskie (jeśli własne)</li><li>Narty (jeśli własne)</li><li>Kijki narciarskie (jeśli własne)</li><li>Ubrania na zmianę / bielizna termiczna</li><li>Środki higieniczne</li><li>Legitymacja szkolna / dowód tożsamości</li><li>Karta EKUZ lub ubezpieczenie</li></ul></td></tr></table><table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:8px;"><tr><td style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">ℹ️ DODATKOWE INFORMACJE</td></tr><tr><td style="padding:0 0 12px;font-size:14px;color:#374151;"><p style="margin:0 0 8px;">Wyjazd odbywa się pod opieką wykwalifikowanych instruktorów BiegunSport. W przypadku pytań lub wątpliwości prosimy o kontakt.</p><p style="margin:0;">Prosimy o punktualne stawienie się na miejscu zbiórki.</p></td></tr></table><p style="margin-top:20px;">W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>`,
+    body_html: '<h2>Informacja o wyjeździe 🏔️</h2><p>Szanowni Rodzice,</p><p>Przekazujemy informacje o planowanym wyjeździe <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}<p>W razie pytań prosimy o kontakt.</p><p>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>',
   },
 };
 
