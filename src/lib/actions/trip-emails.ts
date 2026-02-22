@@ -4,9 +4,86 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import {
   sendTripEmail,
   sendRegistrationConfirmationEmail,
+  buildTripDetailsHtml,
   type TripEmailData,
   type PaymentLineItem,
 } from '@/lib/email';
+
+// ─── Podgląd e-maila (do edytora w dialogu wyjazdu) ──────────────────────────
+
+/**
+ * Pobiera szablon trip_info z bazy (lub używa domyślnego),
+ * wypełnia zmienne danymi wyjazdu i zwraca gotowy HTML treści maila.
+ * Używane przez dialog "Generuj wiadomość" żeby admin widział co wyśle.
+ */
+export async function getTripEmailPreview(tripId: string): Promise<{
+  html?: string;
+  subject?: string;
+  error?: string;
+}> {
+  const supabaseAdmin = createAdminClient();
+
+  // Pobierz dane wyjazdu
+  const { data: trip } = await supabaseAdmin
+    .from('trips')
+    .select(`
+      title, description, location,
+      departure_datetime, departure_location,
+      departure_stop2_datetime, departure_stop2_location,
+      return_datetime, return_location,
+      return_stop2_datetime, return_stop2_location,
+      bank_account_pln, bank_account_eur
+    `)
+    .eq('id', tripId)
+    .single();
+
+  if (!trip) return { error: 'Nie znaleziono wyjazdu' };
+
+  // Pobierz szablony płatności
+  const { data: paymentTemplates } = await supabaseAdmin
+    .from('trip_payment_templates')
+    .select('payment_type, installment_number, amount, currency, due_date, payment_method')
+    .eq('trip_id', tripId)
+    .order('installment_number', { ascending: true });
+
+  // Pobierz szablon trip_info z bazy (lub użyj domyślnego)
+  const { data: templateRow } = await supabaseAdmin
+    .from('email_templates')
+    .select('subject, body_html')
+    .eq('id', 'trip_info')
+    .maybeSingle();
+
+  const defaultSubject = `${trip.title} – informacja o wyjeździe`;
+  const defaultBody = `<h2>Informacja o wyjeździe 🏔️</h2><p>Szanowni Rodzice,</p><p>Przekazujemy informacje o planowanym wyjeździe <strong>${trip.title}</strong>.</p>{{szczegoly_wyjazdu}}<p>W razie pytań prosimy o kontakt.</p><p>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>`;
+
+  const templateSubject = templateRow?.subject
+    ? templateRow.subject.replaceAll('{{wyjazd}}', trip.title)
+    : defaultSubject;
+
+  let templateBody = templateRow?.body_html || defaultBody;
+
+  // Wygeneruj blok HTML z detalami wyjazdu
+  const payments: PaymentLineItem[] = (paymentTemplates || []).map((pt) => ({
+    payment_type: pt.payment_type,
+    installment_number: pt.installment_number,
+    amount: pt.amount,
+    currency: pt.currency,
+    due_date: pt.due_date,
+    payment_method: pt.payment_method,
+  }));
+
+  const tripDetailsHtml = buildTripDetailsHtml(trip as TripEmailData, payments);
+
+  // Zastąp zmienne
+  templateBody = templateBody
+    .replaceAll('{{wyjazd}}', trip.title)
+    .replaceAll('{{szczegoly_wyjazdu}}', tripDetailsHtml);
+
+  return {
+    html: templateBody,
+    subject: templateSubject,
+  };
+}
 
 /**
  * Wysyła e-mail informacyjny o wyjeździe do wszystkich rodziców

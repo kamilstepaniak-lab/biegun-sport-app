@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { Mail, MessageCircle, Copy, Check, X, Send, Loader2, RotateCcw } from 'lucide-react';
@@ -14,94 +14,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { TripWithPaymentTemplates } from '@/types';
-import { sendTripInfoEmailToGroup } from '@/lib/actions/trip-emails';
+import { sendTripInfoEmailToGroup, getTripEmailPreview } from '@/lib/actions/trip-emails';
 
 interface TripMessageGeneratorProps {
   trip: TripWithPaymentTemplates;
   compact?: boolean;
 }
 
-function fmtDate(iso: string) {
-  try { return format(new Date(iso), 'EEEE, d MMMM yyyy', { locale: pl }); }
-  catch { return iso; }
-}
-
-function fmtTime(iso: string) {
-  try { return format(new Date(iso), 'HH:mm'); }
-  catch { return ''; }
-}
-
 function formatPaymentMethod(method: string | null) {
   if (method === 'cash') return 'gotówka';
   if (method === 'transfer') return 'przelew';
   return 'gotówka lub przelew';
-}
-
-/** Buduje HTML treści e-maila po stronie klienta (bez wrappera BiegunSport) */
-function buildEmailBodyHtml(trip: TripWithPaymentTemplates): string {
-  let html = '';
-
-  html += `<p>Szanowni Rodzice,</p>`;
-  html += `<p>Zapraszamy na wyjazd <strong>${trip.title}</strong>.`;
-  if (trip.description) html += ` ${trip.description}`;
-  html += `</p>`;
-
-  html += `<hr>`;
-  html += `<h3>📅 Terminy</h3>`;
-
-  html += `<p><strong>Wyjazd:</strong> ${fmtDate(trip.departure_datetime)}<br>`;
-  html += `📍 godz. ${fmtTime(trip.departure_datetime)} – ${trip.departure_location}</p>`;
-
-  if (trip.departure_stop2_datetime && trip.departure_stop2_location) {
-    html += `<p>📍 godz. ${fmtTime(trip.departure_stop2_datetime)} – ${trip.departure_stop2_location}</p>`;
-  }
-
-  html += `<p><strong>Powrót:</strong> ${fmtDate(trip.return_datetime)}<br>`;
-  html += `📍 godz. ${fmtTime(trip.return_datetime)} – ${trip.return_location}</p>`;
-
-  if (trip.return_stop2_datetime && trip.return_stop2_location) {
-    html += `<p>📍 godz. ${fmtTime(trip.return_stop2_datetime)} – ${trip.return_stop2_location}</p>`;
-  }
-
-  if (trip.payment_templates && trip.payment_templates.length > 0) {
-    html += `<hr>`;
-    html += `<h3>💰 Płatności</h3>`;
-
-    trip.payment_templates.forEach((pt) => {
-      const label = pt.payment_type === 'installment'
-        ? `Rata ${pt.installment_number}`
-        : `Karnet${pt.category_name ? ` ${pt.category_name}` : ''}`;
-      const method = formatPaymentMethod(pt.payment_method);
-      const departureDateStr = trip.departure_datetime.split('T')[0];
-      const isDepartureDay = pt.due_date && pt.due_date === departureDateStr;
-      const due = pt.due_date
-        ? isDepartureDay
-          ? ' – płatność w dniu wyjazdu'
-          : ` – termin do ${format(new Date(pt.due_date), 'd MMMM yyyy', { locale: pl })}`
-        : '';
-      html += `<p>• <strong>${label}:</strong> ${pt.amount.toLocaleString('pl-PL')} ${pt.currency} (${method})${due}</p>`;
-    });
-
-    if (trip.bank_account_pln) {
-      html += `<p>🏦 <strong>Konto PLN:</strong> ${trip.bank_account_pln}</p>`;
-    }
-    if (trip.bank_account_eur) {
-      html += `<p>🏦 <strong>Konto EUR:</strong> ${trip.bank_account_eur}</p>`;
-    }
-    html += `<p><em>W tytule przelewu proszę podać imię i nazwisko dziecka oraz nazwę wyjazdu.</em></p>`;
-  }
-
-  const dl = (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null }).declaration_deadline;
-  if (dl) {
-    html += `<hr>`;
-    html += `<p>⏰ <strong>Prosimy o potwierdzenie udziału do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}</strong></p>`;
-  }
-
-  html += `<hr>`;
-  html += `<p>W razie pytań prosimy o kontakt.</p>`;
-  html += `<p>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>`;
-
-  return html;
 }
 
 /** Buduje tekst WhatsApp */
@@ -177,31 +100,61 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
   const [activeTab, setActiveTab] = useState<'email' | 'whatsapp'>('email');
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [emailSubject, setEmailSubject] = useState(`${trip.title} – informacja o wyjeździe`);
+  // Zapamiętujemy pobrany HTML z serwera — używany przy resecie
+  const [serverPreviewHtml, setServerPreviewHtml] = useState<string | null>(null);
+  // Klucz do wymuszenia re-inicjalizacji edytora contentEditable
+  const [editorKey, setEditorKey] = useState(0);
 
   // Ref do edytowalnej treści e-maila (contenteditable)
   const editorRef = useRef<HTMLDivElement>(null);
 
   const whatsappText = buildWhatsAppText(trip);
 
-  // Inicjalizuj treść edytora gdy dialog się otwiera
-  useEffect(() => {
-    if (isOpen && editorRef.current) {
-      editorRef.current.innerHTML = buildEmailBodyHtml(trip);
+  /** Otwiera dialog — pobiera podgląd maila z serwera (szablon trip_info + dane wyjazdu) */
+  async function handleOpen() {
+    setIsOpen(true);
+    setIsLoadingPreview(true);
+    try {
+      const result = await getTripEmailPreview(trip.id);
+      if (result.error || !result.html) {
+        toast.error(result.error ?? 'Nie udało się pobrać podglądu maila');
+        return;
+      }
+      setServerPreviewHtml(result.html);
+      if (result.subject) setEmailSubject(result.subject);
+      // Wymuszamy re-render edytora z nową treścią przez zmianę key
+      setEditorKey((k) => k + 1);
+      // Po re-renderze ustaw innerHTML przez ref
+      // (setTimeout 0 daje czas React na re-mount elementu)
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.innerHTML = result.html!;
+        }
+      }, 0);
+    } catch {
+      toast.error('Wystąpił błąd podczas ładowania podglądu');
+    } finally {
+      setIsLoadingPreview(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }
 
+  /** Przywraca treść edytora do szablonu pobranego z serwera */
   function handleReset() {
+    const html = serverPreviewHtml ?? '';
     if (editorRef.current) {
-      editorRef.current.innerHTML = buildEmailBodyHtml(trip);
+      editorRef.current.innerHTML = html;
     }
-    setEmailSubject(`${trip.title} – informacja o wyjeździe`);
-    toast.info('Przywrócono treść domyślną');
+    toast.info('Przywrócono treść szablonu');
   }
 
   async function handleSendToGroup() {
-    const bodyHtml = editorRef.current?.innerHTML || buildEmailBodyHtml(trip);
+    const bodyHtml = editorRef.current?.innerHTML ?? serverPreviewHtml ?? '';
+    if (!bodyHtml) {
+      toast.error('Treść maila jest pusta');
+      return;
+    }
     setIsSending(true);
     try {
       const result = await sendTripInfoEmailToGroup(trip.id, emailSubject, bodyHtml);
@@ -232,14 +185,14 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
     <>
       {compact ? (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={handleOpen}
           className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-blue-50 text-blue-700 text-sm font-medium rounded-xl ring-1 ring-blue-200 transition-colors"
         >
           <Mail className="h-4 w-4" />
           Wiadomość
         </button>
       ) : (
-        <Button variant="outline" onClick={() => setIsOpen(true)}>
+        <Button variant="outline" onClick={handleOpen}>
           <Mail className="mr-2 h-4 w-4" />
           Generuj wiadomość
         </Button>
@@ -300,25 +253,38 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                    disabled={isLoadingPreview}
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-40 transition-colors"
                   >
                     <RotateCcw className="h-3 w-3" />
-                    Przywróć domyślną
+                    Przywróć szablon
                   </button>
                 </div>
-                <div
-                  ref={editorRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 prose prose-sm max-w-none bg-white min-h-[280px]"
-                />
+
+                {/* Loading state */}
+                {isLoadingPreview ? (
+                  <div className="flex-1 flex items-center justify-center border border-gray-200 rounded-xl bg-white min-h-[280px]">
+                    <div className="flex flex-col items-center gap-3 text-gray-400">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <span className="text-sm">Ładowanie szablonu…</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    key={editorKey}
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 prose prose-sm max-w-none bg-white min-h-[280px]"
+                  />
+                )}
               </div>
 
               {/* Akcje */}
               <div className="flex items-center gap-2 pt-1 border-t">
                 <Button
                   onClick={handleSendToGroup}
-                  disabled={isSending}
+                  disabled={isSending || isLoadingPreview}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                 >
                   {isSending ? (

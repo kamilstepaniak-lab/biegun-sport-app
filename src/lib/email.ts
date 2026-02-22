@@ -127,7 +127,7 @@ export interface PaymentLineItem {
 
 // ─── Blok HTML z detalami wyjazdu ────────────────────────────────────────────
 
-function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineItem[]): string {
+export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineItem[]): string {
   const fmt = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('pl-PL', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
