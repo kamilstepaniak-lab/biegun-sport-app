@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/shared';
 import { ProfileForm } from '@/components/parent/profile-form';
+import { DeleteAccountSection } from '@/components/parent/delete-account-section';
 import { getProfile } from '@/lib/actions/profile';
 
 export default async function ParentProfilePage() {
@@ -21,6 +22,7 @@ export default async function ParentProfilePage() {
       />
 
       <ProfileForm profile={profile} />
+      <DeleteAccountSection />
     </div>
   );
 }

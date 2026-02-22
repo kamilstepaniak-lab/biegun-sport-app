@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { profileSchema, type ProfileInput } from '@/lib/validations/profile';
 import type { Profile } from '@/types';
 
@@ -66,6 +66,33 @@ export async function getProfile(): Promise<Profile | null> {
   }
 
   return profile;
+}
+
+export async function deleteAccount() {
+  const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'parent') {
+    return { error: 'Brak uprawnień' };
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+
+  if (error) {
+    console.error('Delete account error:', error);
+    return { error: 'Nie udało się usunąć konta. Spróbuj ponownie.' };
+  }
+
+  return { success: true };
 }
 
 export async function getProfileById(id: string): Promise<Profile | null> {
