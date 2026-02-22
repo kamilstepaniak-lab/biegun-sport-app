@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -19,10 +19,34 @@ import {
 import { login } from '@/lib/actions/auth';
 import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_SECONDS = 30;
+
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockedUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setLockedUntil(null);
+        setCountdown(0);
+        setFailedAttempts(0);
+        clearInterval(interval);
+      } else {
+        setCountdown(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil !== null && Date.now() < lockedUntil;
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -34,13 +58,26 @@ export function LoginForm() {
   });
 
   async function onSubmit(data: LoginInput) {
+    if (isLocked) return;
+
     setIsLoading(true);
     setError(null);
 
     try {
       const result = await login(data);
       if (result?.error) {
-        setError(result.error);
+        const newAttempts = failedAttempts + 1;
+        setFailedAttempts(newAttempts);
+
+        if (newAttempts >= MAX_ATTEMPTS) {
+          const until = Date.now() + LOCKOUT_SECONDS * 1000;
+          setLockedUntil(until);
+          setCountdown(LOCKOUT_SECONDS);
+          setError(`Zbyt wiele nieudanych prób. Odczekaj ${LOCKOUT_SECONDS} sekund.`);
+        } else {
+          const remaining = MAX_ATTEMPTS - newAttempts;
+          setError(`${result.error} (pozostałe próby: ${remaining})`);
+        }
         setIsLoading(false);
       }
       // Jeśli result jest undefined/null to redirect() się wykonał — nie robimy nic
@@ -68,7 +105,9 @@ export function LoginForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {error && (
               <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-600">
-                {error}
+                {isLocked ? (
+                  <span>Zbyt wiele nieudanych prób. Odczekaj <strong>{countdown}s</strong>.</span>
+                ) : error}
               </div>
             )}
 
@@ -155,7 +194,7 @@ export function LoginForm() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isLocked}
               className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
@@ -163,6 +202,8 @@ export function LoginForm() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Logowanie...
                 </>
+              ) : isLocked ? (
+                `Odblokowanie za ${countdown}s`
               ) : (
                 'Zaloguj się'
               )}
