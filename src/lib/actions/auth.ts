@@ -3,19 +3,48 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '@/lib/validations/auth';
 import { sendWelcomeEmail } from '@/lib/email';
 
-export async function login(formData: LoginInput) {
-  const supabase = await createClient();
+const REMEMBER_ME_MAX_AGE = 60 * 60 * 24 * 365; // 365 dni
 
+async function createLoginClient(rememberMe: boolean) {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, rememberMe ? { ...options, maxAge: REMEMBER_ME_MAX_AGE } : options)
+            );
+          } catch {
+            // ignorujemy błąd z Server Component
+          }
+        },
+      },
+    }
+  );
+}
+
+export async function login(formData: LoginInput) {
   // Walidacja
   const result = loginSchema.safeParse(formData);
   if (!result.success) {
     return { error: result.error.issues[0].message };
   }
 
-  const { email, password } = result.data;
+  const { email, password, rememberMe } = result.data;
+
+  const supabase = await createLoginClient(!!rememberMe);
 
   const { error } = await supabase.auth.signInWithPassword({
     email,

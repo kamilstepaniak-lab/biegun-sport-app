@@ -9,6 +9,7 @@ export const loginSchema = z.object({
     .string()
     .min(1, 'Hasło jest wymagane')
     .min(6, 'Hasło musi mieć minimum 6 znaków'),
+  rememberMe: z.boolean().optional(),
 });
 
 export const registerSchema = z.object({
