@@ -277,6 +277,44 @@ export async function markPaymentAsPaid(
     return { error: 'Nie udało się oznaczyć jako opłacone' };
   }
 
+  // Wyślij e-mail potwierdzenia płatności
+  try {
+    const { data: fullPayment } = await supabase
+      .from('payments')
+      .select(`
+        amount, currency, payment_type, installment_number,
+        registration:trip_registrations (
+          participant:participants (first_name, last_name, parent:profiles!parent_id (email, first_name)),
+          trip:trips (title)
+        )
+      `)
+      .eq('id', paymentId)
+      .single();
+
+    const reg = fullPayment?.registration as unknown as {
+      participant: { first_name: string; last_name: string; parent: { email: string; first_name: string } };
+      trip: { title: string };
+    } | null;
+
+    if (reg && fullPayment) {
+      const paymentLabel = fullPayment.payment_type === 'installment'
+        ? `Rata ${fullPayment.installment_number}`
+        : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
+
+      sendPaymentConfirmedEmail(
+        reg.participant.parent.email,
+        reg.participant.parent.first_name,
+        `${reg.participant.first_name} ${reg.participant.last_name}`,
+        reg.trip.title,
+        fullPayment.amount,
+        fullPayment.currency,
+        paymentLabel,
+      ).catch(console.error);
+    }
+  } catch {
+    // e-mail nie blokuje aktualizacji
+  }
+
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');

@@ -3,6 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createPaymentsForRegistration } from './payments';
+import {
+  sendRegistrationConfirmationEmail,
+  type TripEmailData,
+  type PaymentLineItem,
+} from '@/lib/email';
 import type {
   Trip,
   TripWithGroups,
@@ -1080,6 +1085,75 @@ export async function updateParticipationStatusByParent(
   if (status === 'confirmed' && registrationId) {
     const { createContractForParticipantIfNeeded } = await import('@/lib/actions/contracts');
     await createContractForParticipantIfNeeded(tripId, participantId, registrationId, user.id);
+  }
+
+  // Wyślij e-mail potwierdzenia zapisu gdy rodzic klika "Jedzie"
+  if (status === 'confirmed') {
+    try {
+      // Pobierz dane wyjazdu
+      const { data: tripData } = await supabaseAdmin
+        .from('trips')
+        .select(`
+          title, description, location,
+          departure_datetime, departure_location,
+          departure_stop2_datetime, departure_stop2_location,
+          return_datetime, return_location,
+          return_stop2_datetime, return_stop2_location,
+          bank_account_pln, bank_account_eur
+        `)
+        .eq('id', tripId)
+        .single();
+
+      // Pobierz dane rodzica i dziecka
+      const { data: participantData } = await supabaseAdmin
+        .from('participants')
+        .select('first_name, last_name, birth_date, parent:profiles!parent_id (email, first_name)')
+        .eq('id', participantId)
+        .single();
+
+      // Pobierz szablony płatności dla wyjazdu
+      const { data: paymentTemplates } = await supabaseAdmin
+        .from('trip_payment_templates')
+        .select('payment_type, installment_number, amount, currency, due_date, payment_method, birth_year_from, birth_year_to')
+        .eq('trip_id', tripId)
+        .order('installment_number', { ascending: true });
+
+      const parentInfo = participantData?.parent as unknown as { email: string; first_name: string } | null;
+
+      if (tripData && participantData && parentInfo?.email) {
+        const childBirthYear = participantData.birth_date
+          ? new Date(participantData.birth_date).getFullYear()
+          : null;
+
+        // Filtruj raty do szablonów pasujących do rocznika dziecka
+        const emailPaymentLines: PaymentLineItem[] = (paymentTemplates || [])
+          .filter(pt => {
+            if (pt.payment_type !== 'season_pass') return true;
+            if (!childBirthYear) return true;
+            if (pt.birth_year_from && childBirthYear < pt.birth_year_from) return false;
+            if (pt.birth_year_to && childBirthYear > pt.birth_year_to) return false;
+            return true;
+          })
+          .map(pt => ({
+            payment_type: pt.payment_type,
+            installment_number: pt.installment_number,
+            amount: pt.amount,
+            currency: pt.currency,
+            due_date: pt.due_date,
+            payment_method: pt.payment_method,
+          }));
+
+        sendRegistrationConfirmationEmail(
+          parentInfo.email,
+          parentInfo.first_name || '',
+          `${participantData.first_name} ${participantData.last_name}`,
+          tripData as TripEmailData,
+          emailPaymentLines,
+        ).catch(console.error);
+      }
+    } catch (err) {
+      console.error('Registration confirmation email error:', err);
+    }
   }
 
   revalidatePath('/parent/trips');

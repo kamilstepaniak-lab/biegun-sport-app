@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Mail, MessageCircle, Copy, Check, Printer, X } from 'lucide-react';
+import { Mail, MessageCircle, Copy, Check, Printer, X, Send, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { TripWithPaymentTemplates } from '@/types';
+import { sendTripInfoEmailToGroup } from '@/lib/actions/trip-emails';
 
 interface TripMessageGeneratorProps {
   trip: TripWithPaymentTemplates;
@@ -212,8 +213,9 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
 
 export function TripMessageGenerator({ trip, compact = false }: TripMessageGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'email' | 'whatsapp'>('email');
+  const [activeTab, setActiveTab] = useState<'email' | 'whatsapp' | 'send'>('email');
   const [copied, setCopied] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const emailText = buildEmailText(trip);
   const whatsappText = buildWhatsAppText(trip);
@@ -257,6 +259,25 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
     setTimeout(() => win.print(), 300);
   }
 
+  async function handleSendToGroup() {
+    setIsSending(true);
+    try {
+      const result = await sendTripInfoEmailToGroup(trip.id);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(
+          `Wysłano ${result.sent} e-mail${result.sent === 1 ? '' : 'i'} do rodziców${result.skipped ? ` (pominięto: ${result.skipped})` : ''}`,
+          { duration: 6000 }
+        );
+      }
+    } catch {
+      toast.error('Wystąpił błąd podczas wysyłania');
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   return (
     <>
       {compact ? (
@@ -294,7 +315,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
               }`}
             >
               <Mail className="h-4 w-4" />
-              Email
+              Podgląd e-mail
             </button>
             <button
               onClick={() => setActiveTab('whatsapp')}
@@ -307,38 +328,95 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
               <MessageCircle className="h-4 w-4" />
               WhatsApp
             </button>
+            <button
+              onClick={() => setActiveTab('send')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'send'
+                  ? 'bg-indigo-100 text-indigo-700'
+                  : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              <Send className="h-4 w-4" />
+              Wyślij do grupy
+            </button>
           </div>
 
-          {/* Treść wiadomości */}
+          {/* Treść wiadomości / panel wysyłki */}
           <div className="flex-1 overflow-auto min-h-0">
-            <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed bg-gray-50 rounded-lg p-4 border">
-              {activeText}
-            </pre>
+            {activeTab === 'send' ? (
+              <div className="flex flex-col items-center justify-center gap-6 py-8 px-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <Send className="h-8 w-8 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Wyślij e-mail do wszystkich rodziców
+                  </h3>
+                  <p className="text-sm text-gray-500 max-w-sm">
+                    Wiadomość z informacjami o wyjeździe zostanie wysłana do rodziców wszystkich dzieci
+                    z grup przypisanych do tego wyjazdu.
+                  </p>
+                </div>
+                <div className="w-full max-w-sm bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
+                  <p className="text-xs font-semibold text-amber-800 mb-1">Co zostanie wysłane?</p>
+                  <ul className="text-xs text-amber-700 space-y-1">
+                    <li>• Termin i miejsce wyjazdu oraz powrotu</li>
+                    <li>• Harmonogram płatności z terminami</li>
+                    <li>• Numer konta bankowego</li>
+                    <li>• Opis wyjazdu (jeśli podany)</li>
+                  </ul>
+                </div>
+                <Button
+                  onClick={handleSendToGroup}
+                  disabled={isSending}
+                  className="w-full max-w-sm bg-indigo-600 hover:bg-indigo-700"
+                  size="lg"
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Wysyłanie…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Wyślij do grupy
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed bg-gray-50 rounded-lg p-4 border">
+                {activeText}
+              </pre>
+            )}
           </div>
 
-          {/* Przyciski akcji */}
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <Button onClick={handleCopy} className="flex-1">
-              {copied ? (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Skopiowano!
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Kopiuj tekst
-                </>
-              )}
-            </Button>
-            <Button variant="outline" onClick={handlePrint}>
-              <Printer className="mr-2 h-4 w-4" />
-              Drukuj / PDF
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          {/* Przyciski akcji — tylko dla zakładek podglądu */}
+          {activeTab !== 'send' && (
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <Button onClick={handleCopy} className="flex-1">
+                {copied ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Skopiowano!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Kopiuj tekst
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handlePrint}>
+                <Printer className="mr-2 h-4 w-4" />
+                Drukuj / PDF
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
