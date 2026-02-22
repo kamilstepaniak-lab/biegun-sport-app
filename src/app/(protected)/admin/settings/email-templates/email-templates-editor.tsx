@@ -26,10 +26,11 @@ interface Props {
 }
 
 const TEMPLATE_LABELS: Record<string, { label: string; icon: string; desc: string }> = {
-  welcome:           { label: 'Powitalny',               icon: '👋', desc: 'Wysyłany gdy rodzic zakłada konto' },
-  registration:      { label: 'Potwierdzenie zapisu',    icon: '✅', desc: 'Wysyłany gdy dziecko zostaje zapisane na wyjazd' },
-  payment_confirmed: { label: 'Płatność potwierdzona',   icon: '💳', desc: 'Wysyłany gdy admin oznaczy płatność jako opłaconą' },
-  payment_reminder:  { label: 'Przypomnienie o płatności', icon: '⏰', desc: 'Wysyłany ręcznie lub przez crona przed terminem' },
+  welcome:           { label: 'Powitalny',                   icon: '👋', desc: 'Wysyłany gdy rodzic zakłada konto' },
+  trip_info:         { label: 'Info o wyjeździe',            icon: '✈️', desc: 'Bazowy szablon wysyłki info o wyjeździe do grupy (zmienne: {{wyjazd}}, {{szczegoly_wyjazdu}})' },
+  registration:      { label: 'Potwierdzenie zapisu',        icon: '✅', desc: 'Wysyłany gdy rodzic potwierdzi że dziecko jedzie' },
+  payment_confirmed: { label: 'Płatność potwierdzona',       icon: '💳', desc: 'Wysyłany gdy admin oznaczy płatność jako opłaconą' },
+  payment_reminder:  { label: 'Przypomnienie o płatności',   icon: '⏰', desc: 'Wysyłany automatycznie 3 dni przed terminem płatności' },
 };
 
 function TemplateEditor({

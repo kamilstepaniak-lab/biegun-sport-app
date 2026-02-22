@@ -76,6 +76,11 @@ function wrapInTemplate(content: string) {
 
 // ─── Wysyłka ─────────────────────────────────────────────────────────────────
 
+/** Publiczna funkcja wysyłki — dla własnego HTML z wrapperem BiegunSport */
+export async function sendTripEmail(to: string, subject: string, bodyHtml: string) {
+  await sendEmail(to, subject, bodyHtml);
+}
+
 async function sendEmail(to: string, subject: string, bodyHtml: string) {
   if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
     console.warn('Email not configured — skipping send');
@@ -206,6 +211,10 @@ const DEFAULTS = {
   payment_reminder: {
     subject: '⏰ Przypomnienie o płatności — {{wyjazd}}',
     body_html: '<h2>Przypomnienie o płatności ⏰</h2><p>Cześć {{imie}},</p><p>Przypominamy o terminie płatności dla <strong>{{dziecko}}</strong>.</p><p><strong>{{wyjazd}}</strong> · {{rodzaj_platnosci}}</p><p style="font-size:20px;font-weight:bold;color:#ea580c;">{{kwota}} {{waluta}}</p><p>Termin: <strong>{{termin}}</strong></p>',
+  },
+  trip_info: {
+    subject: '{{wyjazd}} – informacja o wyjeździe',
+    body_html: '<h2>Informacja o wyjeździe 🏔️</h2><p>Szanowni Rodzice,</p><p>Przekazujemy informacje o planowanym wyjeździe <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}<p>W razie pytań prosimy o kontakt.</p><p>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>',
   },
 };
 

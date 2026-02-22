@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Mail, MessageCircle, Copy, Check, Printer, X, Send, Loader2 } from 'lucide-react';
+import { Mail, MessageCircle, Copy, Check, X, Send, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -21,126 +21,90 @@ interface TripMessageGeneratorProps {
   compact?: boolean;
 }
 
-function formatDate(iso: string, withTime = true) {
-  try {
-    return format(
-      new Date(iso),
-      withTime ? "EEEE, d MMMM yyyy, HH:mm" : "d MMMM yyyy",
-      { locale: pl }
-    );
-  } catch {
-    return iso;
-  }
+function fmtDate(iso: string) {
+  try { return format(new Date(iso), 'EEEE, d MMMM yyyy', { locale: pl }); }
+  catch { return iso; }
 }
 
-function formatAmount(amount: number, currency: string) {
-  return `${amount.toLocaleString('pl-PL')} ${currency}`;
+function fmtTime(iso: string) {
+  try { return format(new Date(iso), 'HH:mm'); }
+  catch { return ''; }
 }
 
 function formatPaymentMethod(method: string | null) {
   if (method === 'cash') return 'gotówka';
   if (method === 'transfer') return 'przelew';
-  if (method === 'both') return 'gotówka lub przelew';
-  return '';
+  return 'gotówka lub przelew';
 }
 
-function buildEmailText(trip: TripWithPaymentTemplates): string {
-  const lines: string[] = [];
+/** Buduje HTML treści e-maila po stronie klienta (bez wrappera BiegunSport) */
+function buildEmailBodyHtml(trip: TripWithPaymentTemplates): string {
+  let html = '';
 
-  lines.push(`Temat: ${trip.title} – informacja o wyjeździe`);
-  lines.push('');
-  lines.push('Szanowni Rodzice,');
-  lines.push('');
-  lines.push(`Zapraszamy na wyjazd: ${trip.title}`);
+  html += `<p>Szanowni Rodzice,</p>`;
+  html += `<p>Zapraszamy na wyjazd <strong>${trip.title}</strong>.`;
+  if (trip.description) html += ` ${trip.description}`;
+  html += `</p>`;
 
-  if (trip.description) {
-    lines.push('');
-    lines.push(trip.description);
-  }
+  html += `<hr>`;
+  html += `<h3>📅 Terminy</h3>`;
 
-  lines.push('');
-  lines.push('─────────────────────────────');
-  lines.push('📅 TERMINY');
-  lines.push('─────────────────────────────');
-  lines.push('');
-
-  lines.push(`📅 Wyjazd: ${format(new Date(trip.departure_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
-  lines.push(`📍 ${format(new Date(trip.departure_datetime), 'HH:mm')} – ${trip.departure_location}`);
+  html += `<p><strong>Wyjazd:</strong> ${fmtDate(trip.departure_datetime)}<br>`;
+  html += `📍 godz. ${fmtTime(trip.departure_datetime)} – ${trip.departure_location}</p>`;
 
   if (trip.departure_stop2_datetime && trip.departure_stop2_location) {
-    lines.push(`📍 ${format(new Date(trip.departure_stop2_datetime), 'HH:mm')} – ${trip.departure_stop2_location}`);
+    html += `<p>📍 godz. ${fmtTime(trip.departure_stop2_datetime)} – ${trip.departure_stop2_location}</p>`;
   }
 
-  lines.push('');
-  lines.push(`📅 Powrót: ${format(new Date(trip.return_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
-  lines.push(`📍 ${format(new Date(trip.return_datetime), 'HH:mm')} – ${trip.return_location}`);
+  html += `<p><strong>Powrót:</strong> ${fmtDate(trip.return_datetime)}<br>`;
+  html += `📍 godz. ${fmtTime(trip.return_datetime)} – ${trip.return_location}</p>`;
 
   if (trip.return_stop2_datetime && trip.return_stop2_location) {
-    lines.push(`📍 ${format(new Date(trip.return_stop2_datetime), 'HH:mm')} – ${trip.return_stop2_location}`);
+    html += `<p>📍 godz. ${fmtTime(trip.return_stop2_datetime)} – ${trip.return_stop2_location}</p>`;
   }
 
   if (trip.payment_templates && trip.payment_templates.length > 0) {
-    lines.push('');
-    lines.push('─────────────────────────────');
-    lines.push('💰 PŁATNOŚCI');
-    lines.push('─────────────────────────────');
-    lines.push('');
-
-    const departureDateStr = trip.departure_datetime.split('T')[0];
+    html += `<hr>`;
+    html += `<h3>💰 Płatności</h3>`;
 
     trip.payment_templates.forEach((pt) => {
+      const label = pt.payment_type === 'installment'
+        ? `Rata ${pt.installment_number}`
+        : `Karnet${pt.category_name ? ` ${pt.category_name}` : ''}`;
+      const method = formatPaymentMethod(pt.payment_method);
+      const departureDateStr = trip.departure_datetime.split('T')[0];
       const isDepartureDay = pt.due_date && pt.due_date === departureDateStr;
-      const duePart = pt.due_date
+      const due = pt.due_date
         ? isDepartureDay
-          ? 'w dniu wyjazdu'
-          : `do ${format(new Date(pt.due_date), 'd MMMM yyyy', { locale: pl })}`
+          ? ' – płatność w dniu wyjazdu'
+          : ` – termin do ${format(new Date(pt.due_date), 'd MMMM yyyy', { locale: pl })}`
         : '';
-
-      const methodPart = pt.payment_method ? ` (${formatPaymentMethod(pt.payment_method)})` : '';
-
-      if (pt.payment_type === 'installment') {
-        const rataNr = pt.installment_number ? `Rata ${pt.installment_number}` : 'Rata';
-        const categoryPart = pt.category_name ? ` [${pt.category_name}]` : '';
-        const birthPart = pt.birth_year_from && pt.birth_year_to
-          ? ` (roczniki ${pt.birth_year_from}–${pt.birth_year_to})`
-          : pt.birth_year_from
-          ? ` (rocznik ${pt.birth_year_from}+)`
-          : '';
-        lines.push(`• ${rataNr}${categoryPart}${birthPart}: ${formatAmount(pt.amount, pt.currency)}${methodPart}${duePart ? ` — płatność ${duePart}` : ''}`);
-      } else {
-        // season_pass
-        const categoryPart = pt.category_name ? ` ${pt.category_name}` : '';
-        lines.push(`• Karnet${categoryPart}: ${formatAmount(pt.amount, pt.currency)}${methodPart}${duePart ? ` — płatność ${duePart}` : ''}`);
-      }
+      html += `<p>• <strong>${label}:</strong> ${pt.amount.toLocaleString('pl-PL')} ${pt.currency} (${method})${due}</p>`;
     });
 
-    lines.push('');
     if (trip.bank_account_pln) {
-      lines.push(`🏦 Konto PLN: ${trip.bank_account_pln}`);
+      html += `<p>🏦 <strong>Konto PLN:</strong> ${trip.bank_account_pln}</p>`;
     }
     if (trip.bank_account_eur) {
-      lines.push(`🏦 Konto EUR: ${trip.bank_account_eur}`);
+      html += `<p>🏦 <strong>Konto EUR:</strong> ${trip.bank_account_eur}</p>`;
     }
-    lines.push('W tytule przelewu proszę podać: imię i nazwisko dziecka + nazwa wyjazdu');
+    html += `<p><em>W tytule przelewu proszę podać imię i nazwisko dziecka oraz nazwę wyjazdu.</em></p>`;
   }
 
   const dl = (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null }).declaration_deadline;
   if (dl) {
-    lines.push('');
-    lines.push('─────────────────────────────');
-    lines.push(`⏰ Prosimy o potwierdzenie udziału do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}`);
-    lines.push('─────────────────────────────');
+    html += `<hr>`;
+    html += `<p>⏰ <strong>Prosimy o potwierdzenie udziału do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}</strong></p>`;
   }
 
-  lines.push('');
-  lines.push('W razie pytań prosimy o kontakt.');
-  lines.push('');
-  lines.push('Pozdrawiamy,');
-  lines.push('Zespół BiegunSport');
+  html += `<hr>`;
+  html += `<p>W razie pytań prosimy o kontakt.</p>`;
+  html += `<p>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>`;
 
-  return lines.join('\n');
+  return html;
 }
 
+/** Buduje tekst WhatsApp */
 function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   const lines: string[] = [];
 
@@ -163,6 +127,10 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   lines.push(`📅 *Powrót:* ${format(new Date(trip.return_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
   lines.push(`📍 ${format(new Date(trip.return_datetime), 'HH:mm')} – ${trip.return_location}`);
 
+  if (trip.return_stop2_datetime && trip.return_stop2_location) {
+    lines.push(`📍 ${format(new Date(trip.return_stop2_datetime), 'HH:mm')} – ${trip.return_stop2_location}`);
+  }
+
   if (trip.payment_templates && trip.payment_templates.length > 0) {
     lines.push('');
     lines.push('💰 *Płatności:*');
@@ -172,30 +140,23 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
     trip.payment_templates.forEach((pt) => {
       const isDepartureDay = pt.due_date && pt.due_date === departureDateStr;
       const duePart = pt.due_date
-        ? isDepartureDay
-          ? 'w dniu wyjazdu'
-          : `do ${format(new Date(pt.due_date), 'd.MM.yyyy')}`
+        ? isDepartureDay ? 'w dniu wyjazdu' : `do ${format(new Date(pt.due_date), 'd.MM.yyyy')}`
         : '';
-
       const methodPart = pt.payment_method ? ` (${formatPaymentMethod(pt.payment_method)})` : '';
 
       if (pt.payment_type === 'installment') {
         const rataNr = pt.installment_number ? `Rata ${pt.installment_number}` : 'Rata';
         const categoryPart = pt.category_name ? ` [${pt.category_name}]` : '';
-        lines.push(`• ${rataNr}${categoryPart}: *${formatAmount(pt.amount, pt.currency)}*${methodPart}${duePart ? ` – ${duePart}` : ''}`);
+        lines.push(`• ${rataNr}${categoryPart}: *${pt.amount.toLocaleString('pl-PL')} ${pt.currency}*${methodPart}${duePart ? ` – ${duePart}` : ''}`);
       } else {
         const categoryPart = pt.category_name ? ` ${pt.category_name}` : '';
-        lines.push(`• Karnet${categoryPart}: *${formatAmount(pt.amount, pt.currency)}*${methodPart}${duePart ? ` – ${duePart}` : ''}`);
+        lines.push(`• Karnet${categoryPart}: *${pt.amount.toLocaleString('pl-PL')} ${pt.currency}*${methodPart}${duePart ? ` – ${duePart}` : ''}`);
       }
     });
 
     lines.push('');
-    if (trip.bank_account_pln) {
-      lines.push(`🏦 Konto PLN: ${trip.bank_account_pln}`);
-    }
-    if (trip.bank_account_eur) {
-      lines.push(`🏦 Konto EUR: ${trip.bank_account_eur}`);
-    }
+    if (trip.bank_account_pln) lines.push(`🏦 Konto PLN: ${trip.bank_account_pln}`);
+    if (trip.bank_account_eur) lines.push(`🏦 Konto EUR: ${trip.bank_account_eur}`);
     lines.push('_W tytule: imię, nazwisko dziecka + wyjazd_');
   }
 
@@ -213,61 +174,42 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
 
 export function TripMessageGenerator({ trip, compact = false }: TripMessageGeneratorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'email' | 'whatsapp' | 'send'>('email');
+  const [activeTab, setActiveTab] = useState<'email' | 'whatsapp'>('email');
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [emailSubject, setEmailSubject] = useState(`${trip.title} – informacja o wyjeździe`);
 
-  const emailText = buildEmailText(trip);
+  // Ref do edytowalnej treści e-maila (contenteditable)
+  const editorRef = useRef<HTMLDivElement>(null);
+
   const whatsappText = buildWhatsAppText(trip);
 
-  const activeText = activeTab === 'email' ? emailText : whatsappText;
+  // Inicjalizuj treść edytora gdy dialog się otwiera
+  useEffect(() => {
+    if (isOpen && editorRef.current) {
+      editorRef.current.innerHTML = buildEmailBodyHtml(trip);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
-  function handleCopy() {
-    navigator.clipboard.writeText(activeText).then(() => {
-      setCopied(true);
-      toast.success('Skopiowano do schowka!');
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  function handlePrint() {
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(`
-      <!DOCTYPE html>
-      <html lang="pl">
-      <head>
-        <meta charset="UTF-8">
-        <title>${trip.title} – wiadomość</title>
-        <style>
-          body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; padding: 40px; max-width: 700px; margin: 0 auto; color: #222; }
-          pre { white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; }
-          h2 { color: #1a56db; margin-bottom: 4px; }
-          .label { color: #888; font-size: 12px; margin-bottom: 16px; }
-          @media print { body { padding: 20px; } }
-        </style>
-      </head>
-      <body>
-        <h2>${trip.title}</h2>
-        <div class="label">${activeTab === 'email' ? 'Wiadomość e-mail' : 'Wiadomość WhatsApp'}</div>
-        <pre>${activeText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-      </body>
-      </html>
-    `);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 300);
+  function handleReset() {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = buildEmailBodyHtml(trip);
+    }
+    setEmailSubject(`${trip.title} – informacja o wyjeździe`);
+    toast.info('Przywrócono treść domyślną');
   }
 
   async function handleSendToGroup() {
+    const bodyHtml = editorRef.current?.innerHTML || buildEmailBodyHtml(trip);
     setIsSending(true);
     try {
-      const result = await sendTripInfoEmailToGroup(trip.id);
+      const result = await sendTripInfoEmailToGroup(trip.id, emailSubject, bodyHtml);
       if (result.error) {
         toast.error(result.error);
       } else {
         toast.success(
-          `Wysłano ${result.sent} e-mail${result.sent === 1 ? '' : 'i'} do rodziców${result.skipped ? ` (pominięto: ${result.skipped})` : ''}`,
+          `Wysłano ${result.sent} e-mail${result.sent === 1 ? '' : 'e'} do rodziców${result.skipped ? ` (błędy: ${result.skipped})` : ''}`,
           { duration: 6000 }
         );
       }
@@ -276,6 +218,14 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
     } finally {
       setIsSending(false);
     }
+  }
+
+  function handleCopyWhatsApp() {
+    navigator.clipboard.writeText(whatsappText).then(() => {
+      setCopied(true);
+      toast.success('Skopiowano do schowka!');
+      setTimeout(() => setCopied(false), 2000);
+    });
   }
 
   return (
@@ -296,8 +246,8 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5 text-blue-600" />
               Wiadomość dla rodziców
@@ -305,72 +255,71 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
           </DialogHeader>
 
           {/* Zakładki */}
-          <div className="flex gap-2 border-b pb-2">
+          <div className="flex gap-2 px-5 border-b pb-0">
             <button
               onClick={() => setActiveTab('email')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'email'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-500 hover:bg-gray-100'
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <Mail className="h-4 w-4" />
-              Podgląd e-mail
+              E-mail
             </button>
             <button
               onClick={() => setActiveTab('whatsapp')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'whatsapp'
-                  ? 'bg-green-100 text-green-700'
-                  : 'text-gray-500 hover:bg-gray-100'
+                  ? 'border-green-600 text-green-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <MessageCircle className="h-4 w-4" />
               WhatsApp
             </button>
-            <button
-              onClick={() => setActiveTab('send')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'send'
-                  ? 'bg-indigo-100 text-indigo-700'
-                  : 'text-gray-500 hover:bg-gray-100'
-              }`}
-            >
-              <Send className="h-4 w-4" />
-              Wyślij do grupy
-            </button>
           </div>
 
-          {/* Treść wiadomości / panel wysyłki */}
-          <div className="flex-1 overflow-auto min-h-0">
-            {activeTab === 'send' ? (
-              <div className="flex flex-col items-center justify-center gap-6 py-8 px-4 text-center">
-                <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <Send className="h-8 w-8 text-indigo-600" />
+          {/* E-mail — edytowalny podgląd */}
+          {activeTab === 'email' && (
+            <div className="flex flex-col gap-3 flex-1 min-h-0 px-5 py-4">
+              {/* Temat */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Temat wiadomości</label>
+                <input
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full h-9 px-3 rounded-xl bg-gray-50 ring-1 ring-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all"
+                />
+              </div>
+
+              {/* Edytowalna treść */}
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-medium text-gray-500">Treść (kliknij aby edytować)</label>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Przywróć domyślną
+                  </button>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Wyślij e-mail do wszystkich rodziców
-                  </h3>
-                  <p className="text-sm text-gray-500 max-w-sm">
-                    Wiadomość z informacjami o wyjeździe zostanie wysłana do rodziców wszystkich dzieci
-                    z grup przypisanych do tego wyjazdu.
-                  </p>
-                </div>
-                <div className="w-full max-w-sm bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                  <p className="text-xs font-semibold text-amber-800 mb-1">Co zostanie wysłane?</p>
-                  <ul className="text-xs text-amber-700 space-y-1">
-                    <li>• Termin i miejsce wyjazdu oraz powrotu</li>
-                    <li>• Harmonogram płatności z terminami</li>
-                    <li>• Numer konta bankowego</li>
-                    <li>• Opis wyjazdu (jeśli podany)</li>
-                  </ul>
-                </div>
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 prose prose-sm max-w-none bg-white min-h-[280px]"
+                />
+              </div>
+
+              {/* Akcje */}
+              <div className="flex items-center gap-2 pt-1 border-t">
                 <Button
                   onClick={handleSendToGroup}
                   disabled={isSending}
-                  className="w-full max-w-sm bg-indigo-600 hover:bg-indigo-700"
-                  size="lg"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
                 >
                   {isSending ? (
                     <>
@@ -384,37 +333,39 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
                     </>
                   )}
                 </Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            ) : (
-              <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed bg-gray-50 rounded-lg p-4 border">
-                {activeText}
-              </pre>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Przyciski akcji — tylko dla zakładek podglądu */}
-          {activeTab !== 'send' && (
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Button onClick={handleCopy} className="flex-1">
-                {copied ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Skopiowano!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Kopiuj tekst
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="mr-2 h-4 w-4" />
-                Drukuj / PDF
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
+          {/* WhatsApp */}
+          {activeTab === 'whatsapp' && (
+            <div className="flex flex-col gap-3 flex-1 min-h-0 px-5 py-4">
+              <div className="flex-1 overflow-auto">
+                <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed bg-gray-50 rounded-xl p-4 border min-h-[280px]">
+                  {whatsappText}
+                </pre>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t">
+                <Button onClick={handleCopyWhatsApp} className="flex-1">
+                  {copied ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Skopiowano!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Kopiuj tekst
+                    </>
+                  )}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
