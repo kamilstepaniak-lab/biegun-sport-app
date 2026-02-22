@@ -114,6 +114,7 @@ export interface TripEmailData {
   return_stop2_location?: string | null;
   bank_account_pln?: string | null;
   bank_account_eur?: string | null;
+  declaration_deadline?: string | null;
 }
 
 export interface PaymentLineItem {
@@ -139,6 +140,16 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
 
   if (trip.description) {
     html += `<p style="color:#6b7280;font-size:14px;margin:0 0 16px;">${trip.description}</p>`;
+  }
+
+  // DEKLARACJA
+  if (trip.declaration_deadline) {
+    const dlFormatted = new Date(trip.declaration_deadline).toLocaleDateString('pl-PL', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    });
+    html += `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 16px;margin-bottom:20px;">`;
+    html += `<p style="margin:0;font-size:14px;color:#92400e;">⏰ Prosimy o <strong>potwierdzenie udziału do ${dlFormatted}</strong>. Brak odpowiedzi w tym terminie może skutkować utratą miejsca.</p>`;
+    html += `</div>`;
   }
 
   // TERMINY

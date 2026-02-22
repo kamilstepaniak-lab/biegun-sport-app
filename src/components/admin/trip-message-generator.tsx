@@ -124,15 +124,8 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
       }
       setServerPreviewHtml(result.html);
       if (result.subject) setEmailSubject(result.subject);
-      // Wymuszamy re-render edytora z nową treścią przez zmianę key
+      // Inkrementacja key wymusza remount contentEditable z nowym dangerouslySetInnerHTML
       setEditorKey((k) => k + 1);
-      // Po re-renderze ustaw innerHTML przez ref
-      // (setTimeout 0 daje czas React na re-mount elementu)
-      setTimeout(() => {
-        if (editorRef.current) {
-          editorRef.current.innerHTML = result.html!;
-        }
-      }, 0);
     } catch {
       toast.error('Wystąpił błąd podczas ładowania podglądu');
     } finally {
@@ -142,10 +135,8 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
 
   /** Przywraca treść edytora do szablonu pobranego z serwera */
   function handleReset() {
-    const html = serverPreviewHtml ?? '';
-    if (editorRef.current) {
-      editorRef.current.innerHTML = html;
-    }
+    // Inkrementacja key remountuje div z aktualnym serverPreviewHtml
+    setEditorKey((k) => k + 1);
     toast.info('Przywrócono treść szablonu');
   }
 
@@ -275,6 +266,9 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
+                    // dangerouslySetInnerHTML ustawia HTML przy montowaniu (key wymusza remount)
+                    // Po montowaniu React nie ingeruje — użytkownik edytuje swobodnie
+                    dangerouslySetInnerHTML={{ __html: serverPreviewHtml ?? '' }}
                     className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 prose prose-sm max-w-none bg-white min-h-[280px]"
                   />
                 )}
