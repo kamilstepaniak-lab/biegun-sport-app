@@ -188,6 +188,10 @@ export async function createTrip(input: CreateTripInput) {
     payment_templates,
   } = input;
 
+  if (departure_datetime && return_datetime && new Date(return_datetime) <= new Date(departure_datetime)) {
+    return { error: 'Data powrotu musi być późniejsza niż data wyjazdu' };
+  }
+
   // 1. Utwórz wyjazd
   const { data: trip, error: tripError } = await supabase
     .from('trips')
@@ -304,6 +308,11 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     group_ids,
     payment_templates,
   } = input;
+
+  if (departure_datetime !== undefined && return_datetime !== undefined &&
+      new Date(return_datetime) <= new Date(departure_datetime)) {
+    return { error: 'Data powrotu musi być późniejsza niż data wyjazdu' };
+  }
 
   // 1. Aktualizuj wyjazd (używamy admin client żeby ominąć RLS)
   const updateData: Partial<Trip> = {

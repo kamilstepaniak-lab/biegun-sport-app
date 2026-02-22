@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, ChevronDown, ChevronUp, MapPin, Calendar, CreditCard, Users, Info } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, MapPin, Calendar, CreditCard, Users, Info, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -844,7 +844,12 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             onClick={() => handleSubmit(false)}
             disabled={isSubmitting || !isValid}
           >
-            {isSubmitting ? 'Zapisywanie...' : mode === 'create' ? 'Utwórz wyjazd' : 'Zapisz zmiany'}
+            {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Zapisywanie...
+            </>
+          ) : mode === 'create' ? 'Utwórz wyjazd' : 'Zapisz zmiany'}
           </Button>
         </div>
       </div>

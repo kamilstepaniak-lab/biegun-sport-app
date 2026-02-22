@@ -17,6 +17,7 @@ import {
   ArrowRight,
   Bus,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -251,7 +252,12 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             </div>
                             <div className="min-w-0">
                               <span className="font-medium text-gray-800">{child.child_name}</span>
-                              {currentStatus !== 'unconfirmed' && (
+                              {isUpdating ? (
+                                <span className="ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-500">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  Zapisywanie...
+                                </span>
+                              ) : currentStatus !== 'unconfirmed' && (
                                 <span className={cn('ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium', status.color)}>
                                   <StatusIcon className="h-3 w-3" />
                                   {statusLabel}

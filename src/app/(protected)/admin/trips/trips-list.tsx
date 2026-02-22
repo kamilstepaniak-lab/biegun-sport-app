@@ -716,9 +716,36 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Usuń zaznaczone wyjazdy</AlertDialogTitle>
-            <AlertDialogDescription>
-              Czy na pewno chcesz usunąć {selectedTrips.size} zaznaczonych wyjazdów?
-              Tej operacji nie można cofnąć. Wszystkie powiązane dane (rejestracje, płatności) zostaną również usunięte.
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <div className="rounded-xl bg-red-50 border border-red-200 p-4">
+                  <p className="font-semibold text-red-700 text-sm mb-2">UWAGA — tej operacji nie można cofnąć</p>
+                  <p className="text-sm text-red-600 mb-3">
+                    Usunięcie wyjazdów trwale usunie wszystkie powiązane dane:
+                  </p>
+                  <ul className="text-sm text-red-600 list-disc list-inside space-y-1">
+                    <li>Zapisy uczestników</li>
+                    <li>Historia płatności</li>
+                    <li>Podpisane umowy</li>
+                    <li>Szablony płatności</li>
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Wyjazdy do usunięcia ({selectedTrips.size}):
+                  </p>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {trips
+                      .filter((t) => selectedTrips.has(t.id))
+                      .map((t) => (
+                        <li key={t.id} className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                          {t.title}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -728,7 +755,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700 rounded-xl"
             >
-              {isDeleting ? 'Usuwanie...' : 'Usuń'}
+              {isDeleting ? 'Usuwanie...' : `Usuń ${selectedTrips.size} ${selectedTrips.size === 1 ? 'wyjazd' : 'wyjazdy'}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
