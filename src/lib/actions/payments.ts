@@ -408,7 +408,7 @@ export async function createPaymentsForRegistration(registrationId: string, trip
     .eq('trip_id', tripId);
 
   if (!templates || templates.length === 0) {
-    return { success: true, message: 'Brak szablonów płatności' };
+    return { success: true, noTemplates: true };
   }
 
   // Pobierz dane uczestnika (do sprawdzenia rocznika dla karnetów)

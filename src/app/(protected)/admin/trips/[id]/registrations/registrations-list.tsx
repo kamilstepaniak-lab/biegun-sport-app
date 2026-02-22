@@ -321,6 +321,8 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
     );
     if (result.error) {
       toast.error(result.error);
+    } else if ('warning' in result && result.warning) {
+      toast.warning(result.warning);
     } else {
       toast.success('Status zaktualizowany');
     }
@@ -346,7 +348,11 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success('Notatka zapisana');
+        if ('warning' in result && result.warning) {
+          toast.warning(result.warning);
+        } else {
+          toast.success('Notatka zapisana');
+        }
         setNoteDialogOpen(false);
       }
     } catch {

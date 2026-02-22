@@ -811,7 +811,14 @@ export async function updateParticipationStatus(
       .limit(1);
 
     if (!existingPayments || existingPayments.length === 0) {
-      await createPaymentsForRegistration(registrationId, tripId, participantId);
+      const paymentsResult = await createPaymentsForRegistration(registrationId, tripId, participantId);
+      if (paymentsResult && 'noTemplates' in paymentsResult && paymentsResult.noTemplates) {
+        revalidatePath(`/admin/trips/${tripId}/registrations`);
+        revalidatePath('/parent/trips');
+        revalidatePath('/parent/payments');
+        revalidatePath('/admin/payments');
+        return { success: true, warning: 'Uczestnik potwierdzony, ale wyjazd nie ma skonfigurowanych płatności.' };
+      }
     }
   } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
     // Admin ustawia "Nie jedzie" lub "Niepotwierdzony" — anuluj oczekujące płatności
