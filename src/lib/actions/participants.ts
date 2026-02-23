@@ -60,50 +60,45 @@ export async function getParticipant(id: string): Promise<ParticipantWithGroup |
     .eq('id', user.id)
     .single();
 
-  // Najpierw pobierz uczestnika
-  let participantQuery = supabase
+  // Pobierz uczestnika razem z grupą — 1 zapytanie zamiast 3 (JOIN)
+  let query = supabase
     .from('participants')
-    .select('*')
+    .select(`
+      *,
+      participant_groups (
+        group:groups (*)
+      )
+    `)
     .eq('id', id);
 
   // Rodzic może widzieć tylko swoje dzieci
   if (profile?.role !== 'admin') {
-    participantQuery = participantQuery.eq('parent_id', user.id);
+    query = query.eq('parent_id', user.id);
   }
 
-  const { data: participant, error: participantError } = await participantQuery.single();
+  const { data: participant, error } = await query.single();
 
-  if (participantError || !participant) {
-    console.error('Participant fetch error:', participantError);
+  if (error || !participant) {
+    console.error('Participant fetch error:', error);
     return null;
   }
 
-  // Oddzielnie pobierz przypisanie do grupy
-  const { data: participantGroup, error: pgError } = await supabase
-    .from('participant_groups')
-    .select('group_id')
-    .eq('participant_id', id)
-    .maybeSingle();
-
+  // Wyodrębnij grupę z zagnieżdżonej struktury
   let group = null;
-
-  if (participantGroup?.group_id) {
-    const { data: groupData } = await supabase
-      .from('groups')
-      .select('*')
-      .eq('id', participantGroup.group_id)
-      .single();
-
-    group = groupData;
+  const pg = participant.participant_groups;
+  if (pg) {
+    if (Array.isArray(pg) && pg.length > 0) {
+      group = (pg[0] as { group: Group })?.group ?? null;
+    } else if (!Array.isArray(pg) && typeof pg === 'object') {
+      group = (pg as { group: Group }).group ?? null;
+    }
   }
 
-  const result = {
-    ...participant,
-    group,
-  };
+  const { participant_groups: _pg, ...rest } = participant as typeof participant & { participant_groups: unknown };
+  void _pg;
 
   // Serializuj do plain objects
-  return JSON.parse(JSON.stringify(result));
+  return JSON.parse(JSON.stringify({ ...rest, group }));
 }
 
 export async function getParticipantFull(id: string): Promise<ParticipantFull | null> {

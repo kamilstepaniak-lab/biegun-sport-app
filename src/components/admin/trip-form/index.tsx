@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, ChevronDown, ChevronUp, MapPin, Calendar, CreditCard, Users, Info } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, MapPin, Calendar, CreditCard, Users, Info, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -150,6 +150,7 @@ function LocationSelect({
 export function TripForm({ groups, trip, mode }: TripFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [showStop2Departure, setShowStop2Departure] = useState(!!trip?.departure_stop2_location);
   const [showStop2Return, setShowStop2Return] = useState(!!trip?.return_stop2_location);
   const [paymentsOpen, setPaymentsOpen] = useState(true);
@@ -215,9 +216,19 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   const validationErrors: string[] = [];
   if (formData.title.trim().length < 3) validationErrors.push('Tytuł za krótki (min 3 znaki)');
   if (!formData.departure_datetime) validationErrors.push('Brak daty wyjazdu');
-  if (formData.departure_location.trim().length < 3) validationErrors.push('Miejsce wyjazdu za krótkie');
+  // Miejsce wyjazdu: wymagane tylko gdy NIE ma dojazdu własnego; gdy jest, akceptujemy puste
+  if (!formData.allow_own_transport && formData.departure_location.trim().length < 3) {
+    validationErrors.push('Miejsce wyjazdu (Przystanek 1) jest wymagane');
+  } else if (formData.departure_location.trim().length > 0 && formData.departure_location.trim().length < 3) {
+    validationErrors.push('Miejsce wyjazdu za krótkie (min 3 znaki)');
+  }
   if (!formData.return_datetime) validationErrors.push('Brak daty powrotu');
-  if (formData.return_location.trim().length < 3) validationErrors.push('Miejsce powrotu za krótkie');
+  // Miejsce powrotu: wymagane tylko gdy NIE ma dojazdu własnego
+  if (!formData.allow_own_transport && formData.return_location.trim().length < 3) {
+    validationErrors.push('Miejsce powrotu (Przystanek 1) jest wymagane');
+  } else if (formData.return_location.trim().length > 0 && formData.return_location.trim().length < 3) {
+    validationErrors.push('Miejsce powrotu za krótkie (min 3 znaki)');
+  }
   if (formData.departure_datetime && formData.return_datetime &&
       new Date(formData.return_datetime) <= new Date(formData.departure_datetime)) {
     validationErrors.push('Data powrotu musi być po dacie wyjazdu');
@@ -233,10 +244,15 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
 
   const isValid = validationErrors.length === 0;
 
-  // Debug - pokaż w konsoli co blokuje
-  if (!isValid && validationErrors.length > 0) {
-    console.log('Walidacja formularza - błędy:', validationErrors);
-  }
+  // Flagi błędów per sekcja (dla podświetlania kart)
+  const hasBasicErrors = submitAttempted && validationErrors.some(e => e.includes('Tytuł'));
+  const hasDateErrors = submitAttempted && validationErrors.some(e =>
+    e.includes('wyjazdu') || e.includes('powrotu') || e.includes('Data powrotu')
+  );
+  const hasGroupErrors = submitAttempted && validationErrors.some(e => e.includes('grupę'));
+  const hasPaymentErrors = submitAttempted && validationErrors.some(e =>
+    e.includes('Płatność') || e.includes('płatność')
+  );
 
   async function handleSubmit(saveAsDraft: boolean = false) {
     setIsSubmitting(true);
@@ -280,11 +296,12 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Podstawowe informacje */}
-      <Card>
+      <Card className={hasBasicErrors ? 'border-destructive' : ''}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Info className="h-5 w-5" />
             Podstawowe informacje
+            {hasBasicErrors && <AlertCircle className="h-4 w-4 text-destructive ml-auto" />}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -350,11 +367,12 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       </Card>
 
       {/* Terminy i lokalizacje */}
-      <Card>
+      <Card className={hasDateErrors ? 'border-destructive' : ''}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Terminy i lokalizacje
+            {hasDateErrors && <AlertCircle className="h-4 w-4 text-destructive ml-auto" />}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -363,6 +381,9 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             <h4 className="font-semibold text-green-700 flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Wyjazd - Przystanek 1 (główny)
+              {formData.allow_own_transport && (
+                <span className="text-xs font-normal text-gray-400">(opcjonalne — zezwolono na dojazd własny)</span>
+              )}
             </h4>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -374,7 +395,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 />
               </div>
               <LocationSelect
-                label="Miejsce *"
+                label={formData.allow_own_transport ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
                 value={formData.departure_location}
                 onChange={(val) => updateFormData({ departure_location: val })}
               />
@@ -444,6 +465,9 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             <h4 className="font-semibold text-blue-700 flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Powrót - Przystanek 1 (główny)
+              {formData.allow_own_transport && (
+                <span className="text-xs font-normal text-gray-400">(opcjonalne)</span>
+              )}
             </h4>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -461,7 +485,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                   )}
               </div>
               <LocationSelect
-                label="Miejsce *"
+                label={formData.allow_own_transport ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
                 value={formData.return_location}
                 onChange={(val) => updateFormData({ return_location: val })}
               />
@@ -515,11 +539,12 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       </Card>
 
       {/* Grupy */}
-      <Card>
+      <Card className={hasGroupErrors ? 'border-destructive' : ''}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Grupy
+            {hasGroupErrors && <AlertCircle className="h-4 w-4 text-destructive ml-auto" />}
           </CardTitle>
           <CardDescription>
             Wybierz grupy, dla których dostępny będzie ten wyjazd
@@ -557,7 +582,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       </Card>
 
       {/* Płatności */}
-      <Card>
+      <Card className={hasPaymentErrors ? 'border-destructive' : ''}>
         <Collapsible open={paymentsOpen} onOpenChange={setPaymentsOpen}>
           <CardHeader>
             <CollapsibleTrigger asChild>
@@ -565,6 +590,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
                   Płatności ({formData.payment_templates.length})
+                  {hasPaymentErrors && <AlertCircle className="h-4 w-4 text-destructive" />}
                 </CardTitle>
                 {paymentsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </div>
@@ -899,30 +925,50 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       </Card>
 
       {/* Przyciski akcji */}
-      <div className="flex justify-between gap-4 sticky bottom-4 bg-background p-4 rounded-lg border shadow-lg">
-        <Button
-          variant="outline"
-          onClick={() => router.push('/admin/trips')}
-          disabled={isSubmitting}
-        >
-          Anuluj
-        </Button>
-        <div className="flex gap-2">
-          {mode === 'create' && (
-            <Button
-              variant="secondary"
-              onClick={() => handleSubmit(true)}
-              disabled={isSubmitting || !formData.title.trim()}
-            >
-              Zapisz jako szkic
-            </Button>
-          )}
+      <div className="sticky bottom-4 bg-background rounded-lg border shadow-lg overflow-hidden">
+        {/* Panel błędów walidacji */}
+        {submitAttempted && validationErrors.length > 0 && (
+          <div className="p-3 bg-destructive/10 border-b border-destructive/30">
+            <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              Uzupełnij brakujące dane:
+            </p>
+            <ul className="text-sm text-destructive space-y-0.5 pl-5">
+              {validationErrors.map((err, i) => (
+                <li key={i} className="list-disc">{err}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <div className="flex justify-between gap-4 p-4">
           <Button
-            onClick={() => handleSubmit(false)}
-            disabled={isSubmitting || !isValid}
+            variant="outline"
+            onClick={() => router.push('/admin/trips')}
+            disabled={isSubmitting}
           >
-            {isSubmitting ? 'Zapisywanie...' : mode === 'create' ? 'Utwórz wyjazd' : 'Zapisz zmiany'}
+            Anuluj
           </Button>
+          <div className="flex gap-2">
+            {mode === 'create' && (
+              <Button
+                variant="secondary"
+                onClick={() => handleSubmit(true)}
+                disabled={isSubmitting || !formData.title.trim()}
+              >
+                Zapisz jako szkic
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                setSubmitAttempted(true);
+                if (isValid) handleSubmit(false);
+              }}
+              disabled={isSubmitting}
+              variant={submitAttempted && !isValid ? 'destructive' : 'default'}
+            >
+              {isSubmitting ? 'Zapisywanie...' : mode === 'create' ? 'Utwórz wyjazd' : 'Zapisz zmiany'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

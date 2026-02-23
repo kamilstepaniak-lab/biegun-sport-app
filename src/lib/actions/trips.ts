@@ -269,9 +269,7 @@ export async function createTrip(input: CreateTripInput) {
     }
   }
 
-  revalidatePath('/admin/trips');
-  revalidatePath('/admin/calendar');
-  revalidatePath('/parent/trips');
+  revalidatePath('/', 'layout');
   return { success: true, data: trip };
 }
 
@@ -417,10 +415,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     }
   }
 
-  revalidatePath('/admin/trips');
-  revalidatePath(`/admin/trips/${id}`);
-  revalidatePath('/admin/calendar');
-  revalidatePath('/parent/trips');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -452,10 +447,7 @@ export async function updateTripStatus(id: string, status: TripStatus) {
     return { error: 'Nie udało się zmienić statusu' };
   }
 
-  revalidatePath('/admin/trips');
-  revalidatePath(`/admin/trips/${id}`);
-  revalidatePath('/admin/calendar');
-  revalidatePath('/parent/trips');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -550,11 +542,7 @@ export async function deleteTrip(id: string) {
     return { error: 'Błąd podczas usuwania wyjazdu i powiązanych danych' };
   }
 
-  revalidatePath('/admin/trips');
-  revalidatePath('/admin/payments');
-  revalidatePath('/admin/calendar');
-  revalidatePath('/parent/trips');
-  revalidatePath('/parent/payments');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -826,10 +814,7 @@ export async function updateParticipationStatus(
       .eq('status', 'pending');
   }
 
-  revalidatePath(`/admin/trips/${tripId}/registrations`);
-  revalidatePath('/parent/trips');
-  revalidatePath('/parent/payments');
-  revalidatePath('/admin/payments');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -1164,10 +1149,7 @@ export async function updateParticipationStatusByParent(
     }
   }
 
-  revalidatePath('/parent/trips');
-  revalidatePath('/parent/payments');
-  revalidatePath('/admin/payments');
-  revalidatePath(`/admin/trips/${tripId}/registrations`);
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -1306,8 +1288,6 @@ export async function duplicateTrip(tripId: string) {
     }
   }
 
-  revalidatePath('/admin/trips');
-  revalidatePath('/admin/calendar');
-  revalidatePath('/parent/trips');
+  revalidatePath('/', 'layout');
   return { success: true, data: newTrip };
 }
