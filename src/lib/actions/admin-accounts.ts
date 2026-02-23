@@ -1,6 +1,6 @@
 'use server';
 
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 const DEFAULT_PASSWORD = 'biegunsport';
 
@@ -12,11 +12,23 @@ export interface ParentAccountResult {
   error?: string;
 }
 
+async function requireAdmin() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') return null;
+  return user;
+}
+
 export async function resetParentPasswords(): Promise<{
   results: ParentAccountResult[];
   reset: number;
   errors: number;
 }> {
+  const adminUser = await requireAdmin();
+  if (!adminUser) throw new Error('Brak uprawnień');
+
   const supabaseAdmin = createAdminClient();
 
   // Pobierz wszystkich rodziców z tabeli profiles
@@ -135,6 +147,9 @@ export async function createParentAccounts(): Promise<{
   alreadyExists: number;
   errors: number;
 }> {
+  const adminUser = await requireAdmin();
+  if (!adminUser) throw new Error('Brak uprawnień');
+
   const supabaseAdmin = createAdminClient();
 
   // Pobierz wszystkich rodziców z tabeli profiles

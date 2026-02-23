@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertTriangle, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +12,17 @@ import { ContractDocument } from '@/components/contract-document';
 import { PrintContractButton } from '@/components/parent/print-contract-button';
 import { getContractsForParent } from '@/lib/actions/contracts';
 import { getProfile } from '@/lib/actions/profile';
+import { getGlobalDocument, getDynamicDocuments } from '@/lib/actions/documents';
+import { GLOBAL_DOCUMENTS } from '@/lib/global-documents';
+import { GlobalDocumentReadonly } from '@/components/parent/global-document-readonly';
 import { AcceptContractButton } from './accept-contract-button';
 
 export default async function ParentContractsPage() {
-  const [contracts, profile] = await Promise.all([
+  const [contracts, profile, dynamicDocs, ...docContents] = await Promise.all([
     getContractsForParent(),
     getProfile(),
+    getDynamicDocuments(),
+    ...GLOBAL_DOCUMENTS.map((doc) => getGlobalDocument(doc.id)),
   ]);
 
   const contractDataComplete = !!(
@@ -39,9 +44,48 @@ export default async function ParentContractsPage() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <PageHeader
-        title="Umowy uczestnictwa"
-        description="Zapoznaj się z umowami i zaakceptuj je dla każdego dziecka"
+        title="Dokumenty"
+        description="Dokumenty ogólne i umowy uczestnictwa"
       />
+
+      {/* ── SEKCJA: Dokumenty ── */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100">
+            <BookOpen className="h-4 w-4 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Dokumenty</h2>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {GLOBAL_DOCUMENTS.map((doc, i) => (
+            <GlobalDocumentReadonly
+              key={doc.id}
+              title={doc.title}
+              content={docContents[i]}
+            />
+          ))}
+          {dynamicDocs.map((doc) => (
+            <GlobalDocumentReadonly
+              key={doc.id}
+              title={doc.title}
+              content={doc.content}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── SEKCJA: Umowy uczestnictwa ── */}
+      <div className="flex items-center gap-3 pt-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-100">
+          <FileText className="h-4 w-4 text-purple-600" />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">Umowy uczestnictwa</h2>
+          <p className="text-xs text-gray-500">Zapoznaj się z umowami i zaakceptuj je dla każdego dziecka</p>
+        </div>
+      </div>
 
       {!contractDataComplete && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">

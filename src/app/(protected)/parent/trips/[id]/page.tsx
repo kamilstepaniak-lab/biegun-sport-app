@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Calendar, Clock, MapPin, Users, CreditCard, Info, Copy, Check, Banknote } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, CreditCard, Info, Copy, Check, Banknote, Backpack, MessageCircle } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +47,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
       <PageHeader
         title={trip.title}
-        description={trip.description || 'Szczegóły wyjazdu narciarskiego'}
+        description={[trip.location, trip.description].filter(Boolean).join(' · ') || 'Szczegóły wyjazdu narciarskiego'}
       />
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -192,6 +192,54 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               </CardHeader>
               <CardContent>
                 <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Co zabrać */}
+          {trip.packing_list && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Backpack className="h-5 w-5" />
+                  Co zabrać
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {trip.packing_list
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Dodatkowe informacje */}
+          {trip.additional_info && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Dodatkowe informacje
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {trip.additional_info
+                    .split('\n')
+                    .filter(Boolean)
+                    .map((line, i) => (
+                      <p key={i} className="text-sm text-muted-foreground">{line}</p>
+                    ))}
+                </div>
               </CardContent>
             </Card>
           )}

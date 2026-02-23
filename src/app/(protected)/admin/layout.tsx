@@ -30,7 +30,7 @@ const adminNavItems: SidebarItem[] = [
     icon: 'BarChart2',
   },
   {
-    title: 'Umowy',
+    title: 'Dokumenty',
     href: '/admin/contracts',
     icon: 'FileText',
   },

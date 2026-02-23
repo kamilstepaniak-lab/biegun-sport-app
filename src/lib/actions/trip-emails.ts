@@ -23,8 +23,8 @@ export async function getTripEmailPreview(tripId: string): Promise<{
 }> {
   const supabaseAdmin = createAdminClient();
 
-  // Pobierz dane wyjazdu
-  const { data: trip } = await supabaseAdmin
+  // Pobierz dane wyjazdu — próbuj z nowymi kolumnami, jeśli błąd (migracja nie uruchomiona) — fallback bez nich
+  const { data: tripFull, error: tripFullError } = await supabaseAdmin
     .from('trips')
     .select(`
       title, description, location,
@@ -37,6 +37,26 @@ export async function getTripEmailPreview(tripId: string): Promise<{
     `)
     .eq('id', tripId)
     .single();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let trip: any = tripFull;
+  if (tripFullError || !tripFull) {
+    // Fallback — kolumny packing_list/additional_info mogą jeszcze nie istnieć w bazie
+    const { data: tripBasic } = await supabaseAdmin
+      .from('trips')
+      .select(`
+        title, description, location,
+        departure_datetime, departure_location,
+        departure_stop2_datetime, departure_stop2_location,
+        return_datetime, return_location,
+        return_stop2_datetime, return_stop2_location,
+        bank_account_pln, bank_account_eur,
+        declaration_deadline
+      `)
+      .eq('id', tripId)
+      .single();
+    trip = tripBasic;
+  }
 
   if (!trip) return { error: 'Nie znaleziono wyjazdu' };
 

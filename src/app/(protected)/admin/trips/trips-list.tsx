@@ -21,6 +21,8 @@ import {
   Loader2,
   Mail,
   FileText,
+  Backpack,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -264,6 +266,12 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                       <Calendar className="h-3.5 w-3.5" />
                       {format(departureDate, 'd MMM', { locale: pl })} - {format(returnDate, 'd MMM yyyy', { locale: pl })}
                     </span>
+                    {trip.location && (
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {trip.location}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1.5">
                       {trip.groups.map((g) => {
                         const colors = getGroupColor(g.name);
@@ -510,6 +518,50 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                         </button>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Co zabrać */}
+              {trip.packing_list && (
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-100">
+                      <Backpack className="h-3.5 w-3.5 text-green-600" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
+                  </div>
+                  <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                    {trip.packing_list
+                      .split('\n')
+                      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                      .filter(Boolean)
+                      .map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Dodatkowe informacje */}
+              {trip.additional_info && (
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                      <Info className="h-3.5 w-3.5 text-blue-600" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
+                  </div>
+                  <div className="bg-white rounded-xl p-3 space-y-1.5">
+                    {trip.additional_info
+                      .split('\n')
+                      .filter(Boolean)
+                      .map((line, i) => (
+                        <p key={i} className="text-sm text-gray-700">{line}</p>
+                      ))}
                   </div>
                 </div>
               )}

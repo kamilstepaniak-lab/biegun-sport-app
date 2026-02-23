@@ -68,6 +68,23 @@ export async function getProfile(): Promise<Profile | null> {
   return profile;
 }
 
+export async function changePassword(
+  newPassword: string
+): Promise<{ error?: string }> {
+  if (!newPassword || newPassword.length < 8) {
+    return { error: 'Hasło musi mieć co najmniej 8 znaków' };
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: 'Nie udało się zmienić hasła. Spróbuj ponownie.' };
+
+  return {};
+}
+
 export async function getProfileById(id: string): Promise<Profile | null> {
   const supabase = await createClient();
 

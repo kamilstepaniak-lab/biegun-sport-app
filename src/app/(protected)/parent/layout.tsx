@@ -27,7 +27,7 @@ const parentNavItems: SidebarItem[] = [
     icon: 'CreditCard',
   },
   {
-    title: 'Umowy',
+    title: 'Dokumenty',
     href: '/parent/contracts',
     icon: 'FileText',
   },

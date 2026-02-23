@@ -13,6 +13,8 @@ import {
   MapPin,
   Clock,
   FileText,
+  Backpack,
+  Info as InfoIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -61,7 +63,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
       <PageHeader
         title={trip.title}
-        description={trip.description || undefined}
+        description={[trip.location, trip.description].filter(Boolean).join(' · ') || undefined}
       >
         <Button variant="outline" asChild>
           <Link href="/admin/trips">
@@ -205,6 +207,54 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Co zabrać */}
+        {trip.packing_list && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Backpack className="h-5 w-5" />
+                Co zabrać
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-1">
+                {trip.packing_list
+                  .split('\n')
+                  .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                  .filter(Boolean)
+                  .map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Dodatkowe informacje */}
+        {trip.additional_info && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <InfoIcon className="h-5 w-5" />
+                Dodatkowe informacje
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {trip.additional_info
+                  .split('\n')
+                  .filter(Boolean)
+                  .map((line, i) => (
+                    <p key={i} className="text-sm text-muted-foreground">{line}</p>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Wzór umowy — pełna szerokość */}
         <div className="md:col-span-2">

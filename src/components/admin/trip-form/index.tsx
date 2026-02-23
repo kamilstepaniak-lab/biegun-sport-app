@@ -153,6 +153,8 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   const [showStop2Departure, setShowStop2Departure] = useState(!!trip?.departure_stop2_location);
   const [showStop2Return, setShowStop2Return] = useState(!!trip?.return_stop2_location);
   const [paymentsOpen, setPaymentsOpen] = useState(true);
+  const [showPackingList, setShowPackingList] = useState(!!(trip as Trip & { packing_list?: string | null })?.packing_list);
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(!!(trip as Trip & { additional_info?: string | null })?.additional_info);
 
   const [formData, setFormData] = useState<TripFormData>({
     title: trip?.title || '',
@@ -833,30 +835,65 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             Treść maila do rodziców
           </CardTitle>
           <CardDescription>
-            Te informacje trafią do maila wysyłanego do grupy. Możesz je edytować przed wysyłką.
+            Zaznacz sekcje, które mają pojawić się w mailu wysyłanym do grupy.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="packing_list">Co zabrać</Label>
-            <Textarea
-              id="packing_list"
-              value={formData.packing_list}
-              onChange={(e) => updateFormData({ packing_list: e.target.value })}
-              placeholder={"- Kask narciarski (obowiązkowy)\n- Gogle narciarskie\n- Rękawice narciarskie\n- Kurtka i spodnie narciarskie\n- Buty narciarskie (jeśli własne)\n- Narty i kijki (jeśli własne)\n- Ubrania na zmianę / bielizna termiczna\n- Środki higieniczne\n- Legitymacja szkolna / dowód tożsamości\n- Karta EKUZ lub ubezpieczenie"}
-              rows={8}
-            />
-            <p className="text-xs text-muted-foreground">Każda pozycja w nowej linii (ze znakiem - lub bez)</p>
+          {/* Co zabrać */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="toggle_packing_list"
+                checked={showPackingList}
+                onCheckedChange={(checked) => {
+                  setShowPackingList(!!checked);
+                  if (!checked) updateFormData({ packing_list: '' });
+                }}
+              />
+              <Label htmlFor="toggle_packing_list" className="cursor-pointer font-medium">
+                Co zabrać
+              </Label>
+            </div>
+            {showPackingList && (
+              <div className="space-y-2 pl-7">
+                <Textarea
+                  id="packing_list"
+                  value={formData.packing_list}
+                  onChange={(e) => updateFormData({ packing_list: e.target.value })}
+                  placeholder={"- Kask narciarski (obowiązkowy)\n- Gogle narciarskie\n- Rękawice narciarskie\n- Kurtka i spodnie narciarskie\n- Buty narciarskie (jeśli własne)\n- Narty i kijki (jeśli własne)\n- Ubrania na zmianę / bielizna termiczna\n- Środki higieniczne\n- Legitymacja szkolna / dowód tożsamości\n- Karta EKUZ lub ubezpieczenie"}
+                  rows={8}
+                />
+                <p className="text-xs text-muted-foreground">Każda pozycja w nowej linii (ze znakiem - lub bez)</p>
+              </div>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="additional_info">Dodatkowe informacje</Label>
-            <Textarea
-              id="additional_info"
-              value={formData.additional_info}
-              onChange={(e) => updateFormData({ additional_info: e.target.value })}
-              placeholder="Wyjazd odbywa się pod opieką wykwalifikowanych instruktorów BiegunSport. Prosimy o punktualne stawienie się na miejscu zbiórki."
-              rows={4}
-            />
+
+          {/* Dodatkowe informacje */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="toggle_additional_info"
+                checked={showAdditionalInfo}
+                onCheckedChange={(checked) => {
+                  setShowAdditionalInfo(!!checked);
+                  if (!checked) updateFormData({ additional_info: '' });
+                }}
+              />
+              <Label htmlFor="toggle_additional_info" className="cursor-pointer font-medium">
+                Dodatkowe informacje
+              </Label>
+            </div>
+            {showAdditionalInfo && (
+              <div className="pl-7">
+                <Textarea
+                  id="additional_info"
+                  value={formData.additional_info}
+                  onChange={(e) => updateFormData({ additional_info: e.target.value })}
+                  placeholder="Wyjazd odbywa się pod opieką wykwalifikowanych instruktorów BiegunSport. Prosimy o punktualne stawienie się na miejscu zbiórki."
+                  rows={4}
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

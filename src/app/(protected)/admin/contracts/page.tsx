@@ -2,15 +2,20 @@ export const dynamic = 'force-dynamic';
 
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { FileText, CheckCircle, Clock, ExternalLink, Library } from 'lucide-react';
+import { FileText, CheckCircle, Clock, ExternalLink, Library, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/shared';
 import { ContractTemplateLibrary } from '@/components/admin/contract-template-library';
 import { ContractsTable } from '@/components/admin/contracts-table';
+import { GlobalDocumentEditor } from '@/components/admin/global-document-editor';
+import { DynamicDocumentEditor } from '@/components/admin/dynamic-document-editor';
+import { AddDocumentDialog } from '@/components/admin/add-document-dialog';
 import { getContractsForAdmin } from '@/lib/actions/contracts';
+import { getGlobalDocument, getDynamicDocuments } from '@/lib/actions/documents';
 import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
+import { GLOBAL_DOCUMENTS } from '@/lib/global-documents';
 
 // ─── Szablony globalne (wzory umów do kopiowania) ───────────────────────────
 const GLOBAL_TEMPLATES = [
@@ -23,7 +28,11 @@ const GLOBAL_TEMPLATES = [
 ];
 
 export default async function AdminContractsPage() {
-  const contracts = await getContractsForAdmin();
+  const [contracts, dynamicDocs, ...docContents] = await Promise.all([
+    getContractsForAdmin(),
+    getDynamicDocuments(),
+    ...GLOBAL_DOCUMENTS.map((doc) => getGlobalDocument(doc.id)),
+  ]);
 
   const accepted = contracts.filter((c) => c.accepted_at);
   const pending = contracts.filter((c) => !c.accepted_at);
@@ -39,9 +48,44 @@ export default async function AdminContractsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Umowy uczestnictwa"
-        description="Wszystkie umowy wygenerowane w systemie"
+        title="Dokumenty"
+        description="Dokumenty ogólne i umowy uczestnictwa"
       />
+
+      {/* ── SEKCJA: Dokumenty ── */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100">
+            <BookOpen className="h-4 w-4 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Dokumenty</h2>
+            <p className="text-xs text-gray-500">
+              Stałe dokumenty widoczne dla rodziców — możesz edytować ich treść
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {GLOBAL_DOCUMENTS.map((doc, i) => (
+            <GlobalDocumentEditor
+              key={doc.id}
+              id={doc.id}
+              title={doc.title}
+              initialContent={docContents[i]}
+              defaultContent={doc.defaultContent}
+            />
+          ))}
+          {dynamicDocs.map((doc) => (
+            <DynamicDocumentEditor
+              key={doc.id}
+              id={doc.id}
+              initialTitle={doc.title}
+              initialContent={doc.content}
+            />
+          ))}
+          <AddDocumentDialog />
+        </div>
+      </div>
 
       {/* ── SEKCJA: Szablony umów ── */}
       <div className="space-y-4">
