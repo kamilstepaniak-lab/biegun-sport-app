@@ -46,8 +46,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Dla zalogowanego użytkownika — pobierz profil JEDNORAZOWO tylko gdy potrzebny do przekierowania
-  const needsProfile =
+  // Dla zalogowanego użytkownika — rola z app_metadata JWT (zero dodatkowych zapytań do DB)
+  const needsRoleCheck =
     user &&
     (pathname === '/' ||
       pathname === '/login' ||
@@ -57,14 +57,12 @@ export async function updateSession(request: NextRequest) {
       pathname === '/parent' ||
       pathname === '/parent/');
 
-  if (needsProfile) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user!.id)
-      .single();
+  if (needsRoleCheck) {
+    // Odczyt roli z tokena JWT — brak zapytania do bazy danych
+    // app_metadata jest ustawiane przy tworzeniu konta przez admin (syncRolesToAppMetadata lub createParentAccounts)
+    const role = (user!.app_metadata?.role as string | undefined)
+      ?? (user!.user_metadata?.role as string | undefined);
 
-    const role = profile?.role;
     const url = request.nextUrl.clone();
 
     // Przekieruj z auth stron gdy już zalogowany

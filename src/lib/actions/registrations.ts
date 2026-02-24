@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
 import { sendRegistrationConfirmationEmail, type TripEmailData, type PaymentLineItem } from '@/lib/email';
+import { logPaymentChange } from './payment-history';
 
 export async function registerParticipantToTrip(
   tripId: string,
@@ -238,11 +239,34 @@ export async function cancelRegistration(registrationId: string) {
     return { error: 'Nie udało się anulować zapisu' };
   }
 
-  // Anuluj też płatności
+  // Pobierz płatności do audit logu, zanim je anulujesz
+  const { data: paymentsToCancel } = await supabase
+    .from('payments')
+    .select('id, status, amount_paid')
+    .eq('registration_id', registrationId)
+    .neq('status', 'cancelled');
+
+  // Anuluj płatności
   await supabase
     .from('payments')
     .update({ status: 'cancelled' })
     .eq('registration_id', registrationId);
+
+  // Audit log dla każdej anulowanej płatności
+  if (paymentsToCancel && paymentsToCancel.length > 0) {
+    for (const p of paymentsToCancel) {
+      logPaymentChange({
+        paymentId: p.id,
+        userId: user.id,
+        oldStatus: p.status,
+        newStatus: 'cancelled',
+        oldAmountPaid: p.amount_paid || 0,
+        newAmountPaid: p.amount_paid || 0,
+        action: 'cancelled',
+        note: 'Anulowanie zapisu na wyjazd',
+      }).catch(console.error);
+    }
+  }
 
   revalidatePath('/admin/trips');
   revalidatePath('/admin/payments');

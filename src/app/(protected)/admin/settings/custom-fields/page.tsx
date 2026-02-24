@@ -1,11 +1,12 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { Settings, UserPlus, Mail } from 'lucide-react';
+import { Settings, UserPlus, Mail, ShieldCheck } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader, EmptyState } from '@/components/shared';
 import { ParentAccountsManager } from '../parent-accounts-manager';
+import { SyncJwtRolesButton } from '../sync-jwt-roles';
 
 export default async function CustomFieldsSettingsPage() {
   // TODO: Pobierz definicje pól
@@ -57,6 +58,26 @@ export default async function CustomFieldsSettingsPage() {
         </CardHeader>
         <CardContent>
           <ParentAccountsManager />
+        </CardContent>
+      </Card>
+
+      {/* Synchronizacja ról JWT */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+              <ShieldCheck className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <CardTitle>Synchronizacja ról JWT</CardTitle>
+              <CardDescription>
+                Zapisuje rolę każdego użytkownika w tokenie JWT — przyspiesza działanie aplikacji (brak zapytania do bazy przy każdej nawigacji). Uruchom raz po wdrożeniu lub gdy zmienisz rolę komuś ręcznie.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <SyncJwtRolesButton />
         </CardContent>
       </Card>
 

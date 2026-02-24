@@ -90,6 +90,7 @@ export async function resetParentPasswords(): Promise<{
         email: parent.email,
         password: DEFAULT_PASSWORD,
         email_confirm: true,
+        app_metadata: { role: 'parent' },
       });
       if (createError) {
         results.push({
@@ -112,10 +113,10 @@ export async function resetParentPasswords(): Promise<{
       continue;
     }
 
-    // Konto istnieje — zaktualizuj hasło
+    // Konto istnieje — zaktualizuj hasło i ustaw app_metadata z rolą
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       authUserId,
-      { password: DEFAULT_PASSWORD }
+      { password: DEFAULT_PASSWORD, app_metadata: { role: 'parent' } }
     );
 
     if (updateError) {
@@ -193,6 +194,9 @@ export async function createParentAccounts(): Promise<{
         first_name: parent.first_name,
         last_name: parent.last_name,
       },
+      app_metadata: {
+        role: 'parent', // rola w JWT — eliminuje DB query w middleware
+      },
     });
 
     if (error) {
@@ -252,4 +256,50 @@ export async function createParentAccounts(): Promise<{
   }
 
   return { results, created, alreadyExists, errors };
+}
+
+export async function syncRolesToAppMetadata(): Promise<{
+  synced: number;
+  errors: number;
+  details: string[];
+}> {
+  const adminUser = await requireAdmin();
+  if (!adminUser) throw new Error('Brak uprawnień');
+
+  const supabaseAdmin = createAdminClient();
+
+  // Pobierz wszystkich użytkowników z tabeli profiles
+  const { data: profiles, error: fetchError } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email, role');
+
+  if (fetchError) {
+    throw new Error(`Nie udało się pobrać listy profili: ${fetchError.message}`);
+  }
+
+  if (!profiles || profiles.length === 0) {
+    return { synced: 0, errors: 0, details: [] };
+  }
+
+  let synced = 0;
+  let errors = 0;
+  const details: string[] = [];
+
+  for (const profile of profiles) {
+    if (!profile.role) continue;
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
+      profile.id,
+      { app_metadata: { role: profile.role } }
+    );
+
+    if (error) {
+      errors++;
+      details.push(`❌ ${profile.email || profile.id}: ${error.message}`);
+    } else {
+      synced++;
+    }
+  }
+
+  return { synced, errors, details };
 }

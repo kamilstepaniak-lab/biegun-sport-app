@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
+import { logPaymentChange } from './payment-history';
 
 export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDetails[]> {
   const supabase = await createClient();
@@ -206,6 +207,18 @@ export async function addPaymentTransaction(
     console.error('Payment update error:', updateError);
   }
 
+  // Audit log — nie blokuje głównej akcji
+  logPaymentChange({
+    paymentId,
+    userId: user.id,
+    oldStatus: payment.status,
+    newStatus: newStatus,
+    oldAmountPaid: payment.amount_paid || 0,
+    newAmountPaid: newAmountPaid,
+    action: 'payment_added',
+    note: notes,
+  }).catch(console.error);
+
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');
@@ -276,6 +289,18 @@ export async function markPaymentAsPaid(
     console.error('Payment update error:', updateError);
     return { error: 'Nie udało się oznaczyć jako opłacone' };
   }
+
+  // Audit log
+  logPaymentChange({
+    paymentId,
+    userId: user.id,
+    oldStatus: payment.status,
+    newStatus: 'paid',
+    oldAmountPaid: payment.amount_paid || 0,
+    newAmountPaid: payment.amount,
+    action: 'marked_paid',
+    note: `Oznaczone ręcznie jako opłacone (${paymentMethod === 'cash' ? 'gotówka' : 'przelew'})`,
+  }).catch(console.error);
 
   // Wyślij e-mail potwierdzenia płatności
   try {
@@ -688,16 +713,19 @@ export async function updatePaymentStatus(
     return { error: 'Brak uprawnień' };
   }
 
-  // Pobierz płatność
+  // Pobierz płatność (wraz ze starym statusem do audit logu)
   const { data: payment } = await supabase
     .from('payments')
-    .select('amount')
+    .select('amount, status, amount_paid')
     .eq('id', paymentId)
     .single();
 
   if (!payment) {
     return { error: 'Nie znaleziono płatności' };
   }
+
+  const oldStatus = payment.status;
+  const oldAmountPaid = payment.amount_paid || 0;
 
   const updateData: Record<string, unknown> = {
     status,
@@ -724,6 +752,17 @@ export async function updatePaymentStatus(
     console.error('Update payment status error:', error);
     return { error: `Nie udało się zmienić statusu: ${error.message}` };
   }
+
+  // Audit log
+  logPaymentChange({
+    paymentId,
+    userId: user.id,
+    oldStatus,
+    newStatus: status,
+    oldAmountPaid,
+    newAmountPaid: status === 'paid' ? payment.amount : (status === 'pending' ? 0 : oldAmountPaid),
+    action: 'status_changed',
+  }).catch(console.error);
 
   // Wyślij e-mail potwierdzenia gdy płatność oznaczona jako opłacona
   if (status === 'paid') {
