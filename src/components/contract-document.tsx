@@ -127,13 +127,14 @@ export function ContractDocument({
  */
 function highlightLine(text: string): React.ReactNode {
   // Pasuje do: kwoty (500 PLN), telefony (+48 xxx), numery kont (długie ciągi cyfr z spacjami)
-  const pattern = /(\b\d[\d\s]*(?:PLN|EUR)\b|\+48[\s\d]{9,}|\b(?:PL)?\s*(?:\d{2}\s*){13}\d{2}\b)/g;
-  const parts = text.split(pattern);
+  const splitPattern = /(\b\d[\d\s]*(?:PLN|EUR)\b|\+48[\s\d]{9,}|\b(?:PL)?\s*(?:\d{2}\s*){13}\d{2}\b)/g;
+  const parts = text.split(splitPattern);
   if (parts.length === 1) return text;
+  // Przy split z capturing group nieparzyste indeksy (1,3,5...) to dopasowania
   return (
     <>
       {parts.map((part, i) =>
-        pattern.test(part)
+        i % 2 === 1
           ? <strong key={i} className="text-gray-900 font-semibold">{part}</strong>
           : part
       )}
@@ -251,31 +252,47 @@ function ContractSection({ text }: { text: string }) {
 
   // ── SZCZEGÓŁY OBOZU / §2 — siatka klucz: wartość ───────────────────
   if (isTripInfo || isSpecialInfo) {
+    // Parsuj linie: obsługa zarówno starego formatu │ key │ value │ jak i nowego "Key: value"
+    const dataLines: { key: string; value: string }[] = [];
+    for (const line of lines.slice(1)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      // Stary format ASCII tabeli: │ Klucz │ Wartość │ lub │ 1 │ Klucz │ Wartość │
+      if (trimmed.startsWith('│')) {
+        const cells = trimmed.split('│').map(c => c.trim()).filter(Boolean);
+        // Pomiń linie nagłówkowe (Lp., Wyszczególnienie) i separatory (─, ┌, └, ├)
+        if (cells.some(c => /^[─┌└├┬┼┤┘┐]+/.test(c))) continue;
+        if (cells.some(c => /^(Lp\.|Wyszczególnienie|Opis|Nr)$/i.test(c))) continue;
+        // Jeśli 3 kolumny (Lp. | klucz | wartość), weź kolumny 1 i 2 (indeksy 1 i 2)
+        // Jeśli 2 kolumny, weź 0 i 1
+        if (cells.length >= 3) {
+          dataLines.push({ key: cells[1], value: cells[2] });
+        } else if (cells.length === 2) {
+          dataLines.push({ key: cells[0], value: cells[1] });
+        }
+        continue;
+      }
+      // Nowy format: "Klucz: wartość"
+      const colonIdx = trimmed.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 50) {
+        dataLines.push({ key: trimmed.slice(0, colonIdx).trim(), value: trimmed.slice(colonIdx + 1).trim() });
+      }
+    }
+
     return (
       <div className="px-8 py-6">
         <h2 className="text-sm font-bold text-purple-800 uppercase tracking-wide mb-4">{firstLine}</h2>
         <div className="grid grid-cols-1 gap-0">
-          {lines.slice(1).map((line, i) => {
-            const trimmed = line.trim();
-            if (!trimmed) return <div key={i} className="h-1" />;
-
-            const colonIdx = trimmed.indexOf(':');
-            if (colonIdx > 0 && colonIdx < 50) {
-              const key = trimmed.slice(0, colonIdx).trim();
-              const value = trimmed.slice(colonIdx + 1).trim();
-              // Specjalne wyróżnienie dla kont bankowych i dat
-              const isHighValue = /konto|PESEL|NIP/i.test(key);
-              return (
-                <div key={i} className="flex gap-2 text-sm py-1.5 border-b border-gray-50 last:border-0">
-                  <span className="text-gray-500 min-w-[220px] shrink-0">{key}</span>
-                  <span className={`${isHighValue ? 'font-bold font-mono text-gray-900' : 'font-semibold text-gray-900'}`}>
-                    {value || '—'}
-                  </span>
-                </div>
-              );
-            }
-
-            return <p key={i} className="text-sm text-gray-600 py-1">{trimmed}</p>;
+          {dataLines.map(({ key, value }, i) => {
+            const isHighValue = /konto|PESEL|NIP/i.test(key);
+            return (
+              <div key={i} className={`flex gap-2 text-sm py-1.5 border-b border-gray-50 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50/60'}`}>
+                <span className="text-gray-500 min-w-[220px] shrink-0">{key}</span>
+                <span className={isHighValue ? 'font-bold font-mono text-gray-900' : 'font-semibold text-gray-900'}>
+                  {value || '—'}
+                </span>
+              </div>
+            );
           })}
         </div>
       </div>

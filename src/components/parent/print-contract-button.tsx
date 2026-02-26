@@ -59,7 +59,6 @@ ${el.innerHTML}
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
-      printWindow.close();
     }, 400);
   }
 
