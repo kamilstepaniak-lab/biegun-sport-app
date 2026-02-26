@@ -8,6 +8,7 @@ import {
   type TripEmailData,
   type PaymentLineItem,
 } from '@/lib/email';
+import { logActivity } from './activity-logs';
 
 // ─── Podgląd e-maila (do edytora w dialogu wyjazdu) ──────────────────────────
 
@@ -236,7 +237,7 @@ export async function sendTripInfoEmailToGroup(
     try {
       if (customBodyHtml) {
         // Tryb: wyślij edytowany HTML admina (ten sam do wszystkich)
-        await sendTripEmail(recipient.parentEmail, subject, customBodyHtml);
+        await sendTripEmail(recipient.parentEmail, subject, customBodyHtml, tripId);
       } else {
         // Tryb: generuj HTML per-odbiorca (z filtrowaniem płatności wg rocznika)
         const emailPaymentLines: PaymentLineItem[] = (paymentTemplates || [])
@@ -262,6 +263,7 @@ export async function sendTripInfoEmailToGroup(
           recipient.childName,
           trip as TripEmailData,
           emailPaymentLines,
+          tripId,
         );
       }
       sent++;
@@ -270,6 +272,15 @@ export async function sendTripInfoEmailToGroup(
       skipped++;
     }
   }
+
+  // Activity log
+  logActivity(user.id, user.email ?? undefined, 'trip_email_sent', {
+    tripId,
+    tripTitle: trip.title,
+    subject,
+    sent,
+    skipped,
+  }).catch(console.error);
 
   return { success: true, sent, skipped };
 }

@@ -6,6 +6,7 @@ import { pl } from 'date-fns/locale';
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { CONTRACT_TEMPLATE, fillContractTemplate, buildPaymentScheduleText } from '@/lib/contract-template';
+import { logActivity } from './activity-logs';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers wewnętrzne
@@ -478,6 +479,13 @@ export async function acceptContract(
     return { error: 'Brak uprawnień do akceptacji tej umowy' };
   }
 
+  // Pobierz dane umowy do logu
+  const { data: contractFull } = await supabase
+    .from('trip_contracts')
+    .select('contract_number, trips:trip_id(title), participants:participant_id(first_name, last_name)')
+    .eq('id', contractId)
+    .single();
+
   const { error } = await supabase
     .from('trip_contracts')
     .update({
@@ -490,6 +498,22 @@ export async function acceptContract(
     console.error('acceptContract error:', error);
     return { error: 'Nie udało się zaakceptować umowy' };
   }
+
+  // Activity log
+  const { data: profile } = await supabase.from('profiles').select('email').eq('id', user.id).single();
+  const contractData = contractFull as unknown as {
+    contract_number: string | null;
+    trips: { title: string } | null;
+    participants: { first_name: string; last_name: string } | null;
+  } | null;
+  logActivity(user.id, profile?.email, 'contract_accepted', {
+    contractId,
+    contractNumber: contractData?.contract_number,
+    participantName: contractData?.participants
+      ? `${contractData.participants.first_name} ${contractData.participants.last_name}`
+      : null,
+    tripTitle: contractData?.trips?.title,
+  }).catch(console.error);
 
   revalidatePath('/parent/contracts');
   return { success: true };

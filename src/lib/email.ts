@@ -77,11 +77,23 @@ function wrapInTemplate(content: string) {
 // ─── Wysyłka ─────────────────────────────────────────────────────────────────
 
 /** Publiczna funkcja wysyłki — dla własnego HTML z wrapperem BiegunSport */
-export async function sendTripEmail(to: string, subject: string, bodyHtml: string) {
-  await sendEmail(to, subject, bodyHtml);
+export async function sendTripEmail(
+  to: string,
+  subject: string,
+  bodyHtml: string,
+  tripId?: string,
+) {
+  await sendEmail(to, subject, bodyHtml, { templateId: 'trip_info', tripId });
 }
 
-async function sendEmail(to: string, subject: string, bodyHtml: string) {
+async function sendEmail(
+  to: string,
+  subject: string,
+  bodyHtml: string,
+  meta?: { templateId?: string; tripId?: string },
+) {
+  const prefixedSubject = `[BS APP] ${subject}`;
+
   if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
     console.warn('Email not configured — skipping send');
     return;
@@ -90,9 +102,21 @@ async function sendEmail(to: string, subject: string, bodyHtml: string) {
     await transporter.sendMail({
       from: FROM,
       to,
-      subject,
+      subject: prefixedSubject,
       html: wrapInTemplate(bodyHtml),
     });
+    // Log do bazy
+    try {
+      const supabase = createAdminClient();
+      await supabase.from('email_logs').insert({
+        to_email: to,
+        subject: prefixedSubject,
+        template_id: meta?.templateId ?? null,
+        trip_id: meta?.tripId ?? null,
+      });
+    } catch (logErr) {
+      console.error('Email log insert error:', logErr);
+    }
   } catch (err) {
     console.error('Email send error:', err);
   }
@@ -260,7 +284,7 @@ const DEFAULTS = {
 export async function sendWelcomeEmail(to: string, firstName: string) {
   const tpl = await getTemplate('welcome') ?? DEFAULTS.welcome;
   const vars = { '{{imie}}': firstName };
-  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars));
+  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars), { templateId: 'welcome' });
 }
 
 export async function sendRegistrationConfirmationEmail(
@@ -269,6 +293,7 @@ export async function sendRegistrationConfirmationEmail(
   childName: string,
   trip: TripEmailData,
   payments: PaymentLineItem[] = [],
+  tripId?: string,
 ) {
   const tpl = await getTemplate('registration') ?? DEFAULTS.registration;
   const tripDetailsHtml = buildTripDetailsHtml(trip, payments);
@@ -287,7 +312,7 @@ export async function sendRegistrationConfirmationEmail(
   if (!tpl.body_html.includes('{{szczegoly_wyjazdu}}')) {
     bodyHtml += tripDetailsHtml;
   }
-  await sendEmail(to, interpolate(tpl.subject, vars), bodyHtml);
+  await sendEmail(to, interpolate(tpl.subject, vars), bodyHtml, { templateId: 'registration', tripId });
 }
 
 export async function sendPaymentConfirmedEmail(
@@ -308,7 +333,7 @@ export async function sendPaymentConfirmedEmail(
     '{{kwota}}': amount.toFixed(0),
     '{{waluta}}': currency,
   };
-  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars));
+  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars), { templateId: 'payment_confirmed' });
 }
 
 export async function sendPaymentReminderEmail(
@@ -334,5 +359,5 @@ export async function sendPaymentReminderEmail(
     '{{waluta}}': currency,
     '{{termin}}': dueDateFormatted,
   };
-  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars));
+  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars), { templateId: 'payment_reminder' });
 }

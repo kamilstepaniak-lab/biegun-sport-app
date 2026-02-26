@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { profileSchema, type ProfileInput } from '@/lib/validations/profile';
 import type { Profile } from '@/types';
+import { logActivity } from './activity-logs';
 
 export async function updateProfile(formData: ProfileInput) {
   const supabase = await createClient();
@@ -42,6 +43,12 @@ export async function updateProfile(formData: ProfileInput) {
     console.error('Profile update error:', error);
     return { error: 'Nie udało się zaktualizować profilu' };
   }
+
+  // Activity log
+  const updatedFields = Object.keys(result.data).filter(
+    (k) => result.data[k as keyof typeof result.data] !== undefined
+  );
+  logActivity(user.id, user.email, 'profile_updated', { fields: updatedFields }).catch(console.error);
 
   revalidatePath('/parent/profile');
   revalidatePath('/admin/settings');

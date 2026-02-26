@@ -5,6 +5,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
 import { sendRegistrationConfirmationEmail, type TripEmailData, type PaymentLineItem } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
+import { logActivity } from './activity-logs';
 
 export async function registerParticipantToTrip(
   tripId: string,
@@ -198,10 +199,25 @@ export async function registerParticipantToTrip(
         childName,
         tripData as TripEmailData,
         emailPaymentLines,
+        tripId,
       ).catch(console.error);
     }
   } catch {
     // e-mail nie blokuje zapisu
+  }
+
+  // Activity log
+  try {
+    const { data: tripInfo } = await supabase.from('trips').select('title').eq('id', tripId).single();
+    const childName = `${participant.first_name} ${participant.last_name}`;
+    logActivity(user.id, user.email, 'registration_created', {
+      participantName: childName,
+      tripTitle: tripInfo?.title,
+      tripId,
+      registrationId: registration.id,
+    }).catch(console.error);
+  } catch {
+    // log nie blokuje głównego flow
   }
 
   revalidatePath('/parent/trips');
