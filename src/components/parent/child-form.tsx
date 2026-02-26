@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -34,7 +35,13 @@ import type { Group, ParticipantWithGroup, CustomFieldDefinition } from '@/types
 interface ChildFormProps {
   groups: Group[];
   customFields?: CustomFieldDefinition[];
-  child?: ParticipantWithGroup & { custom_fields?: Array<{ field_name: string; field_value: string | null }> };
+  child?: ParticipantWithGroup & {
+    custom_fields?: Array<{ field_name: string; field_value: string | null }>;
+    parent_notes_health?: string | null;
+    parent_notes_food?: string | null;
+    parent_notes_accommodation?: string | null;
+    parent_notes_additional?: string | null;
+  };
   mode: 'create' | 'edit';
 }
 
@@ -44,6 +51,12 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(
     child?.group || null
   );
+
+  // Notatki rodzica — poza schematem Zod, osobny state
+  const [notesHealth, setNotesHealth] = useState(child?.parent_notes_health ?? '');
+  const [notesFood, setNotesFood] = useState(child?.parent_notes_food ?? '');
+  const [notesAccommodation, setNotesAccommodation] = useState(child?.parent_notes_accommodation ?? '');
+  const [notesAdditional, setNotesAdditional] = useState(child?.parent_notes_additional ?? '');
 
   const defaultCustomFields: Record<string, string> = {};
   child?.custom_fields?.forEach((cf) => {
@@ -68,7 +81,13 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
     try {
       const result = mode === 'create'
         ? await createParticipant(data)
-        : await updateParticipant(child!.id, data);
+        : await updateParticipant(child!.id, {
+            ...data,
+            parent_notes_health: notesHealth || undefined,
+            parent_notes_food: notesFood || undefined,
+            parent_notes_accommodation: notesAccommodation || undefined,
+            parent_notes_additional: notesAdditional || undefined,
+          });
 
       if (result.error) {
         toast.error(result.error);
@@ -297,6 +316,60 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
                   )}
                 />
               ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Notatki dla organizatora — tylko w trybie edycji */}
+        {mode === 'edit' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Notatki dla organizatora</CardTitle>
+              <CardDescription>
+                Te informacje będą widoczne wyłącznie dla organizatora — nie są publiczne.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium block">🏥 Zdrowie i leki</label>
+                <Textarea
+                  placeholder="Alergie, przyjmowane leki, choroby przewlekłe, ograniczenia fizyczne..."
+                  value={notesHealth}
+                  onChange={(e) => setNotesHealth(e.target.value)}
+                  disabled={isLoading}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium block">🍽️ Jedzenie i dieta</label>
+                <Textarea
+                  placeholder="Alergie pokarmowe, nietolerancje, preferencje żywieniowe..."
+                  value={notesFood}
+                  onChange={(e) => setNotesFood(e.target.value)}
+                  disabled={isLoading}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium block">🛏️ Zakwaterowanie</label>
+                <Textarea
+                  placeholder="Z kim dziecko chce mieszkać, preferencje dotyczące pokoju..."
+                  value={notesAccommodation}
+                  onChange={(e) => setNotesAccommodation(e.target.value)}
+                  disabled={isLoading}
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium block">ℹ️ Dodatkowe informacje</label>
+                <Textarea
+                  placeholder="Inne ważne informacje dla organizatora..."
+                  value={notesAdditional}
+                  onChange={(e) => setNotesAdditional(e.target.value)}
+                  disabled={isLoading}
+                  rows={3}
+                />
+              </div>
             </CardContent>
           </Card>
         )}

@@ -40,6 +40,11 @@ const adminNavItems: SidebarItem[] = [
     icon: 'Mail',
   },
   {
+    title: 'Wiadomości',
+    href: '/admin/messages',
+    icon: 'MessageSquare',
+  },
+  {
     title: 'Logi',
     href: '/admin/logs',
     icon: 'ClipboardList',

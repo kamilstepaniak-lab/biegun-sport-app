@@ -39,6 +39,7 @@ const STORAGE_KEY = 'biegun_selected_child';
 import { deleteParticipant, getParticipantRegistrations } from '@/lib/actions/participants';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
+import { DashboardBlocks } from '@/app/(protected)/parent/children/dashboard-blocks';
 
 interface ChildrenListProps {
   children: ParticipantWithGroup[];
@@ -262,14 +263,13 @@ export function ChildrenList({ children }: ChildrenListProps) {
                   )} />
                 </div>
 
-                {/* Sekcja aktywna - skróty nawigacyjne */}
+                {/* Sekcja aktywna - skróty nawigacyjne + dashboard */}
                 {isSelected && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                     <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">Przejdź do</p>
                     <div className="grid grid-cols-3 gap-2">
                       <Link
                         href={`/parent/trips?child=${child.id}&childName=${encodeURIComponent(`${child.first_name} ${child.last_name}`)}`}
-                        onClick={(e) => e.stopPropagation()}
                         className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
                       >
                         <MapPin className="h-5 w-5 text-blue-600" />
@@ -277,7 +277,6 @@ export function ChildrenList({ children }: ChildrenListProps) {
                       </Link>
                       <Link
                         href={`/parent/payments?child=${child.id}&childName=${encodeURIComponent(`${child.first_name} ${child.last_name}`)}`}
-                        onClick={(e) => e.stopPropagation()}
                         className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors"
                       >
                         <CreditCard className="h-5 w-5 text-emerald-600" />
@@ -285,13 +284,18 @@ export function ChildrenList({ children }: ChildrenListProps) {
                       </Link>
                       <Link
                         href={`/parent/calendar?child=${child.id}&childName=${encodeURIComponent(`${child.first_name} ${child.last_name}`)}`}
-                        onClick={(e) => e.stopPropagation()}
                         className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 transition-colors"
                       >
                         <CalendarDays className="h-5 w-5 text-violet-600" />
                         <span className="text-xs font-medium text-violet-700">Kalendarz</span>
                       </Link>
                     </div>
+
+                    {/* Dashboard bloki */}
+                    <DashboardBlocks
+                      participantId={child.id}
+                      participantName={`${child.first_name} ${child.last_name}`}
+                    />
                   </div>
                 )}
               </div>

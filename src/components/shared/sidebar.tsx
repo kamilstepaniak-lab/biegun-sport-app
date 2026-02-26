@@ -24,6 +24,7 @@ import {
   BarChart2,
   Mail,
   ClipboardList,
+  MessageSquare,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -42,6 +43,7 @@ const iconMap: Record<string, LucideIcon> = {
   BarChart2,
   Mail,
   ClipboardList,
+  MessageSquare,
 };
 
 // Map icons to background colors for the modern icon badges
@@ -60,6 +62,7 @@ const iconColorMap: Record<string, string> = {
   BarChart2: 'bg-cyan-100 text-cyan-600',
   Mail: 'bg-blue-100 text-blue-600',
   ClipboardList: 'bg-slate-100 text-slate-600',
+  MessageSquare: 'bg-amber-100 text-amber-600',
 };
 
 export interface SidebarItem {

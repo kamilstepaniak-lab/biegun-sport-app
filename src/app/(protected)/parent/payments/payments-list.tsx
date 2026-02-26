@@ -91,11 +91,16 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
         </div>
 
         {/* Status */}
-        <div>
+        <div className="flex flex-wrap items-center gap-1">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium ${status.bgClass}`}>
             <StatusIcon className="h-3 w-3" />
             {status.label}
           </span>
+          {isOverdue && payment.status !== 'overdue' && payment.status !== 'partially_paid_overdue' && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-red-100 text-red-700">
+              Po terminie
+            </span>
+          )}
         </div>
 
         {/* Kwota */}

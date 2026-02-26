@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { format, differenceInYears } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ArrowLeft, Calendar, Ruler, Mail, Phone, MapPin, CreditCard, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, Ruler, Mail, Phone, MapPin, CreditCard, FileText, HeartPulse, Utensils, BedDouble, Info } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -200,6 +200,57 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
           currentGroupId={participant.group?.id ?? null}
           groups={groups}
         />
+
+        {/* Notatka od rodzica */}
+        {(participant.parent_notes_health || participant.parent_notes_food || participant.parent_notes_accommodation || participant.parent_notes_additional) && (
+          <Card className="md:col-span-2 border-amber-100 bg-amber-50/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-800">
+                <Info className="h-5 w-5" />
+                Notatka od rodzica
+              </CardTitle>
+              <CardDescription>Informacje przekazane przez opiekuna</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              {participant.parent_notes_health && (
+                <div className="flex gap-3">
+                  <HeartPulse className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Zdrowie i leki</p>
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{participant.parent_notes_health}</p>
+                  </div>
+                </div>
+              )}
+              {participant.parent_notes_food && (
+                <div className="flex gap-3">
+                  <Utensils className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Jedzenie i dieta</p>
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{participant.parent_notes_food}</p>
+                  </div>
+                </div>
+              )}
+              {participant.parent_notes_accommodation && (
+                <div className="flex gap-3">
+                  <BedDouble className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Zakwaterowanie</p>
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{participant.parent_notes_accommodation}</p>
+                  </div>
+                </div>
+              )}
+              {participant.parent_notes_additional && (
+                <div className="flex gap-3">
+                  <Info className="h-5 w-5 text-gray-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Dodatkowe informacje</p>
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{participant.parent_notes_additional}</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Notatki */}
         <ParticipantNotesCard

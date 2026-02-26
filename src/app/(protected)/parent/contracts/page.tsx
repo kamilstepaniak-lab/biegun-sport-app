@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { FileText, CheckCircle, Clock, AlertTriangle, BookOpen } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertTriangle, BookOpen, User } from 'lucide-react';
 import Link from 'next/link';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,9 +12,17 @@ import { GLOBAL_DOCUMENTS } from '@/lib/global-documents';
 import { GlobalDocumentReadonly } from '@/components/parent/global-document-readonly';
 import { ContractCard } from './contract-card';
 
-export default async function ParentContractsPage() {
+interface Props {
+  searchParams: Promise<{ child?: string; childName?: string }>;
+}
+
+export default async function ParentContractsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const selectedChildId = params.child;
+  const selectedChildName = params.childName ? decodeURIComponent(params.childName) : null;
+
   const [contracts, profile, dynamicDocs, ...docContents] = await Promise.all([
-    getContractsForParent(),
+    getContractsForParent(selectedChildId),
     getProfile(),
     getDynamicDocuments(),
     ...GLOBAL_DOCUMENTS.map((doc) => getGlobalDocument(doc.id)),
@@ -78,9 +86,29 @@ export default async function ParentContractsPage() {
         </div>
         <div>
           <h2 className="text-base font-semibold text-gray-900">Umowy uczestnictwa</h2>
-          <p className="text-xs text-gray-500">Zapoznaj się z umowami i zaakceptuj je dla każdego dziecka</p>
+          <p className="text-xs text-gray-500">
+            {selectedChildName
+              ? `Umowy dla: ${selectedChildName}`
+              : 'Zapoznaj się z umowami i zaakceptuj je dla każdego dziecka'}
+          </p>
         </div>
       </div>
+
+      {/* Baner wybranego dziecka */}
+      {selectedChildId && selectedChildName && (
+        <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 text-sm">
+          <User className="h-4 w-4 text-purple-500 shrink-0" />
+          <span className="text-purple-800">
+            Pokazuję umowy dla: <strong>{selectedChildName}</strong>
+          </span>
+          <Link
+            href="/parent/contracts"
+            className="ml-auto text-xs text-purple-500 hover:text-purple-700 underline"
+          >
+            Pokaż wszystkie
+          </Link>
+        </div>
+      )}
 
       {!contractDataComplete && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
@@ -96,7 +124,11 @@ export default async function ParentContractsPage() {
           <CardContent className="py-12 text-center text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">Brak umów do wyświetlenia</p>
-            <p className="text-sm">Umowy pojawią się tutaj gdy organizator je wygeneruje</p>
+            <p className="text-sm">
+              {selectedChildId
+                ? 'Brak umów dla wybranego dziecka'
+                : 'Umowy pojawią się tutaj gdy organizator je wygeneruje'}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -139,4 +171,3 @@ export default async function ParentContractsPage() {
     </div>
   );
 }
-

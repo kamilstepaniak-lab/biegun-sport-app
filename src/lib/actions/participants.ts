@@ -234,7 +234,13 @@ export async function createParticipant(formData: ParticipantInput & { custom_fi
 
 export async function updateParticipant(
   id: string,
-  formData: ParticipantInput & { custom_fields?: Record<string, string> }
+  formData: ParticipantInput & {
+    custom_fields?: Record<string, string>;
+    parent_notes_health?: string;
+    parent_notes_food?: string;
+    parent_notes_accommodation?: string;
+    parent_notes_additional?: string;
+  }
 ) {
   const supabase = await createClient();
 
@@ -257,7 +263,7 @@ export async function updateParticipant(
   }
 
   const { first_name, last_name, birth_date, height_cm, group_id } = result.data;
-  const { custom_fields } = formData;
+  const { custom_fields, parent_notes_health, parent_notes_food, parent_notes_accommodation, parent_notes_additional } = formData;
 
   // Aktualizuj uczestnika
   let updateQuery = supabase
@@ -267,6 +273,10 @@ export async function updateParticipant(
       last_name,
       birth_date,
       height_cm: height_cm || null,
+      parent_notes_health: parent_notes_health ?? null,
+      parent_notes_food: parent_notes_food ?? null,
+      parent_notes_accommodation: parent_notes_accommodation ?? null,
+      parent_notes_additional: parent_notes_additional ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id);

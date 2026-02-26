@@ -402,7 +402,7 @@ export async function getContractsForAdmin() {
 // Rodzic: Pobierz swoje umowy
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getContractsForParent() {
+export async function getContractsForParent(participantId?: string) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -415,7 +415,11 @@ export async function getContractsForParent() {
 
   if (!children || children.length === 0) return [];
 
-  const childIds = children.map((c) => c.id);
+  const childIds = participantId
+    ? children.filter((c) => c.id === participantId).map((c) => c.id)
+    : children.map((c) => c.id);
+
+  if (childIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from('trip_contracts')
