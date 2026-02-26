@@ -34,7 +34,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
       <Breadcrumbs
         homeHref="/admin/groups"
         items={[
-          { label: 'Uczestnicy', href: '/admin/participants' },
+          { label: 'Grupy', href: '/admin/groups' },
           { label: `${participant.first_name} ${participant.last_name}` },
         ]}
       />
@@ -44,7 +44,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
         description="Szczegóły uczestnika"
       >
         <Button variant="outline" asChild>
-          <Link href="/admin/participants">
+          <Link href="/admin/groups">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Powrót
           </Link>
