@@ -45,13 +45,8 @@ const adminNavItems: SidebarItem[] = [
     icon: 'MessageSquare',
   },
   {
-    title: 'Logi',
-    href: '/admin/logs',
-    icon: 'ClipboardList',
-  },
-  {
     title: 'Ustawienia',
-    href: '/admin/settings/custom-fields',
+    href: '/admin/settings',
     icon: 'Settings',
   },
 ];
