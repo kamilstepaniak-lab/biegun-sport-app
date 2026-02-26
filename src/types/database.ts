@@ -55,6 +55,10 @@ export interface Participant {
   birth_date: string;
   height_cm: number | null;
   notes: string | null;
+  parent_notes_health: string | null;
+  parent_notes_food: string | null;
+  parent_notes_accommodation: string | null;
+  parent_notes_additional: string | null;
   created_at: string;
   updated_at: string;
 }

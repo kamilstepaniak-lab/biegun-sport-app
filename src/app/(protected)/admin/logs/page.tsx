@@ -38,26 +38,32 @@ function ActionBadge({ type }: { type: string }) {
   );
 }
 
+function str(val: unknown): string {
+  return val != null ? String(val) : '';
+}
+
 function renderDetails(details: Record<string, unknown> | null, actionType: string) {
   if (!details) return <span className="text-gray-400 text-xs">—</span>;
+
+  const d = details as Record<string, string | number | boolean | null | undefined>;
 
   if (actionType === 'contract_accepted') {
     return (
       <div className="text-xs text-gray-600">
-        {details.participantName && <p className="font-medium text-gray-800">{String(details.participantName)}</p>}
-        {details.tripTitle && <p className="text-gray-500">{String(details.tripTitle)}</p>}
-        {details.contractNumber && <p className="text-gray-400 font-mono">#{details.contractNumber}</p>}
+        {d.participantName ? <p className="font-medium text-gray-800">{str(d.participantName)}</p> : null}
+        {d.tripTitle ? <p className="text-gray-500">{str(d.tripTitle)}</p> : null}
+        {d.contractNumber ? <p className="text-gray-400 font-mono">#{str(d.contractNumber)}</p> : null}
       </div>
     );
   }
 
   if (actionType === 'profile_updated') {
-    const fields = Array.isArray(details.fields) ? details.fields : [];
+    const fields = Array.isArray(details.fields) ? (details.fields as unknown[]) : [];
     return (
       <div className="flex flex-wrap gap-1">
         {fields.map((f) => (
-          <span key={String(f)} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-            {String(f)}
+          <span key={str(f)} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+            {str(f)}
           </span>
         ))}
       </div>
@@ -67,8 +73,8 @@ function renderDetails(details: Record<string, unknown> | null, actionType: stri
   if (actionType === 'registration_created') {
     return (
       <div className="text-xs text-gray-600">
-        {details.participantName && <p className="font-medium text-gray-800">{String(details.participantName)}</p>}
-        {details.tripTitle && <p className="text-gray-500">{String(details.tripTitle)}</p>}
+        {d.participantName ? <p className="font-medium text-gray-800">{str(d.participantName)}</p> : null}
+        {d.tripTitle ? <p className="text-gray-500">{str(d.tripTitle)}</p> : null}
       </div>
     );
   }
@@ -76,10 +82,10 @@ function renderDetails(details: Record<string, unknown> | null, actionType: stri
   if (actionType === 'trip_email_sent') {
     return (
       <div className="text-xs text-gray-600">
-        {details.tripTitle && <p className="font-medium text-gray-800">{String(details.tripTitle)}</p>}
-        {details.sent !== undefined && (
-          <p className="text-gray-500">Wysłano: {String(details.sent)} · Błędy: {String(details.skipped ?? 0)}</p>
-        )}
+        {d.tripTitle ? <p className="font-medium text-gray-800">{str(d.tripTitle)}</p> : null}
+        {d.sent !== undefined ? (
+          <p className="text-gray-500">Wysłano: {str(d.sent)} · Błędy: {str(d.skipped ?? 0)}</p>
+        ) : null}
       </div>
     );
   }
