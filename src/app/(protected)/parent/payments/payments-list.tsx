@@ -104,7 +104,9 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
             <span className="text-sm font-semibold text-emerald-600">{payment.amount.toFixed(0)} {payment.currency}</span>
           ) : (
             <div>
-              <span className="text-sm font-bold text-gray-900">{remaining.toFixed(0)} {payment.currency}</span>
+              <span className={`text-sm font-bold ${isOverdue ? 'text-red-600 animate-pulse' : 'text-gray-900'}`}>
+                {remaining.toFixed(0)} {payment.currency}
+              </span>
               {payment.amount_paid > 0 && (
                 <span className="text-xs text-gray-400 ml-1">
                   (wpł. {payment.amount_paid.toFixed(0)})
