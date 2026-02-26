@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import {
@@ -22,6 +23,8 @@ import {
   Pencil,
   Loader2,
   Eye,
+  StickyNote,
+  PencilLine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,7 +53,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
   TooltipContent,
@@ -59,6 +64,7 @@ import {
 } from '@/components/ui/tooltip';
 
 import { deleteParticipants, createGroup, deleteGroup, renameGroup, type GroupWithParticipants, type ParticipantInGroup } from '@/lib/actions/groups';
+import { updateParticipantNote } from '@/lib/actions/participants';
 import { runImport, resetImportStatus, fixContactData, getImportBufferData, type ImportStats } from '@/lib/actions/import';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
@@ -69,6 +75,7 @@ interface GroupsListProps {
 }
 
 export function GroupsList({ groups, importStats }: GroupsListProps) {
+  const router = useRouter();
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
@@ -86,6 +93,45 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
     data_urodzenia: string | null; mail_1: string | null; telefon_1: string | null;
     sekcja: string | null; status_importu: string | null; blad_opis: string | null;
   }>>([]);
+
+  // Note editing state
+  const [noteDialog, setNoteDialog] = useState<{
+    isOpen: boolean;
+    participantId: string;
+    participantName: string;
+    currentNote: string;
+  } | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  async function handleSaveNote() {
+    if (!noteDialog) return;
+    setIsSavingNote(true);
+    try {
+      const result = await updateParticipantNote(noteDialog.participantId, noteText);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success('Notatka zapisana');
+        setNoteDialog(null);
+        router.refresh();
+      }
+    } catch {
+      toast.error('Wystąpił nieoczekiwany błąd');
+    } finally {
+      setIsSavingNote(false);
+    }
+  }
+
+  function openNoteDialog(participant: ParticipantInGroup) {
+    setNoteText(participant.notes ?? '');
+    setNoteDialog({
+      isOpen: true,
+      participantId: participant.id,
+      participantName: `${participant.first_name} ${participant.last_name}`,
+      currentNote: participant.notes ?? '',
+    });
+  }
 
   // Groups management state
   const [showAddGroupDialog, setShowAddGroupDialog] = useState(false);
@@ -529,13 +575,14 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                       </div>
 
                       {/* Nagłówek tabeli */}
-                      <div className="hidden md:grid grid-cols-[auto_2fr_1fr_1fr_2fr_1.5fr_auto] gap-4 px-4 py-2 bg-gray-50/30 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <div className="hidden md:grid grid-cols-[auto_2fr_1fr_1fr_2fr_1.5fr_1.5fr_auto] gap-4 px-4 py-2 bg-gray-50/30 text-xs font-medium text-gray-400 uppercase tracking-wider">
                         <div className="w-5"></div>
                         <div>Nazwisko i imię</div>
                         <div>Data urodzenia</div>
                         <div>Grupa</div>
                         <div>Email</div>
                         <div>Telefon</div>
+                        <div>Notatka</div>
                         <div className="w-20"></div>
                       </div>
 
@@ -548,7 +595,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                         return (
                           <div
                             key={participant.id}
-                            className={`grid grid-cols-1 md:grid-cols-[auto_2fr_1fr_1fr_2fr_1.5fr_auto] gap-2 md:gap-4 px-4 py-3 items-center hover:bg-gray-50/50 transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
+                            className={`grid grid-cols-1 md:grid-cols-[auto_2fr_1fr_1fr_2fr_1.5fr_1.5fr_auto] gap-2 md:gap-4 px-4 py-3 items-center hover:bg-gray-50/50 transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
                           >
                             {/* Checkbox */}
                             <Checkbox
@@ -626,6 +673,35 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                                 <p className="text-xs text-muted-foreground">
                                   {participant.parent.secondary_phone}
                                 </p>
+                              )}
+                            </div>
+
+                            {/* Notatka */}
+                            <div>
+                              {participant.notes ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => openNoteDialog(participant)}
+                                      className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg ring-1 ring-amber-200 transition-colors max-w-[140px] group"
+                                    >
+                                      <StickyNote className="h-3 w-3 flex-shrink-0" />
+                                      <span className="truncate">{participant.notes}</span>
+                                      <PencilLine className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-60" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs whitespace-pre-wrap">
+                                    {participant.notes}
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <button
+                                  onClick={() => openNoteDialog(participant)}
+                                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded-lg hover:bg-gray-50"
+                                >
+                                  <PencilLine className="h-3 w-3" />
+                                  Dodaj
+                                </button>
                               )}
                             </div>
 
@@ -938,6 +1014,40 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
               {isImporting ? 'Importowanie...' : `Importuj (${importStats.oczekuje})`}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog edycji notatki */}
+      <Dialog
+        open={noteDialog?.isOpen ?? false}
+        onOpenChange={(open) => { if (!open) setNoteDialog(null); }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <StickyNote className="h-4 w-4" />
+              Notatka — {noteDialog?.participantName}
+            </DialogTitle>
+            <DialogDescription>
+              Notatka widoczna tylko dla adminów.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="Wpisz notatkę..."
+            rows={5}
+            className="resize-none"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialog(null)} disabled={isSavingNote}>
+              Anuluj
+            </Button>
+            <Button onClick={handleSaveNote} disabled={isSavingNote}>
+              {isSavingNote && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Zapisz
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </TooltipProvider>
