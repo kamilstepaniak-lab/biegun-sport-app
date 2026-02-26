@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { Activity, Mail, ChevronDown, FileText, FormInput } from 'lucide-react';
+import { Activity, Mail, ChevronDown, FormInput } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { getActivityLogs, getEmailLogs } from '@/lib/actions/activity-logs';
@@ -115,18 +115,6 @@ export default async function SettingsPage() {
           <div>
             <p className="font-semibold text-gray-900 text-sm">Pola formularzy</p>
             <p className="text-xs text-gray-500">Własne pola w karcie dziecka</p>
-          </div>
-        </Link>
-        <Link
-          href="/admin/settings/email-templates"
-          className="flex items-center gap-4 bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5 hover:shadow-md hover:ring-gray-200 transition-all"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 flex-shrink-0">
-            <FileText className="h-5 w-5 text-blue-600" />
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900 text-sm">Szablony e-maili</p>
-            <p className="text-xs text-gray-500">Edytuj treść automatycznych maili</p>
           </div>
         </Link>
       </div>
