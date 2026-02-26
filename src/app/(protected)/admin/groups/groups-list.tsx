@@ -21,6 +21,7 @@ import {
   Plus,
   Pencil,
   Loader2,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -556,9 +557,12 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                             />
 
                             {/* Nazwisko i imię */}
-                            <div className="font-medium text-gray-900 text-sm">
+                            <Link
+                              href={`/admin/participants/${participant.id}`}
+                              className="font-medium text-gray-900 text-sm hover:text-primary hover:underline"
+                            >
                               {participant.last_name} {participant.first_name}
-                            </div>
+                            </Link>
 
                             {/* Data urodzenia */}
                             <div className="text-sm text-gray-500">
@@ -625,13 +629,13 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                               )}
                             </div>
 
-                            {/* Przycisk Edytuj */}
+                            {/* Przycisk Szczegóły */}
                             <Link
                               href={`/admin/participants/${participant.id}`}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg ring-1 ring-gray-200 transition-colors"
                             >
-                              <Edit className="h-3.5 w-3.5" />
-                              Edytuj
+                              <Eye className="h-3.5 w-3.5" />
+                              Szczegóły
                             </Link>
                           </div>
                         );
