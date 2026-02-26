@@ -23,6 +23,7 @@ import {
   FileText,
   Backpack,
   Info,
+  LayoutDashboard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -574,6 +575,13 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                 >
                   <Edit className="h-4 w-4" />
                   Edytuj
+                </Link>
+                <Link
+                  href={`/admin/trips/${trip.id}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Karta wyjazdu
                 </Link>
                 <TripMessageGenerator trip={trip} compact />
                 <ContractTemplateEditor
