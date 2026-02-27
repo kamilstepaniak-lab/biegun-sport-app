@@ -498,8 +498,7 @@ export async function acceptContract(
 
   const contractForNumber = contractFull as unknown as { contract_number: string | null } | null;
   if (!contractForNumber?.contract_number) {
-    const supabaseAdmin = createAdminClient();
-    updateData.contract_number = await generateContractNumber(supabaseAdmin);
+    updateData.contract_number = await nextContractNumber();
   }
 
   const { error } = await supabase
