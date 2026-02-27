@@ -32,6 +32,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EmptyState } from '@/components/shared';
 import { saveChildToStorage, clearChildFromStorage } from './child-url-sync';
@@ -76,6 +82,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [expandedMessage, setExpandedMessage] = useState<AppMessage | null>(null);
 
   useEffect(() => {
     try {
@@ -349,7 +356,10 @@ export function ChildrenList({ children }: ChildrenListProps) {
               messages.map((msg) => (
                 <button
                   key={msg.id}
-                  onClick={() => !msg.is_read && handleMarkRead(msg.id)}
+                  onClick={() => {
+                    setExpandedMessage(msg);
+                    if (!msg.is_read) handleMarkRead(msg.id);
+                  }}
                   className={cn(
                     'w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors',
                     !msg.is_read && 'bg-blue-50/20'
@@ -377,11 +387,9 @@ export function ChildrenList({ children }: ChildrenListProps) {
                       <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
                         {msg.body}
                       </p>
-                      {!msg.is_read && (
-                        <span className="inline-block mt-1.5 text-[10px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
-                          Oznacz jako przeczytane
-                        </span>
-                      )}
+                      <span className="inline-block mt-1.5 text-[10px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                        {!msg.is_read ? 'Nowa • Kliknij aby przeczytać' : 'Kliknij aby przeczytać'}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -539,6 +547,32 @@ export function ChildrenList({ children }: ChildrenListProps) {
           </div>
         </div>
       )}
+
+      {/* Modal pełnej wiadomości */}
+      <Dialog open={!!expandedMessage} onOpenChange={(open) => !open && setExpandedMessage(null)}>
+        <DialogContent className="max-w-lg rounded-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="h-4 w-4 text-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-base font-semibold text-gray-900 leading-tight">
+                  {expandedMessage?.title}
+                </DialogTitle>
+                {expandedMessage && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {format(new Date(expandedMessage.created_at), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="mt-2 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-[60vh] overflow-y-auto pr-1">
+            {expandedMessage?.body}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog usunięcia */}
       <AlertDialog
