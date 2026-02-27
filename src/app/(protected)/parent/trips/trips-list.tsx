@@ -217,7 +217,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                 </div>
                 <div className={cn(
                   'w-8 h-8 rounded-xl flex items-center justify-center transition-colors ml-3',
-                  isOpen ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'
+                  isOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
                 )}>
                   {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
@@ -351,7 +351,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             />
                             <div className="flex justify-end gap-2">
                               <button onClick={(e) => { e.stopPropagation(); setShowInneInput(null); setInneMessage(''); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50">Anuluj</button>
-                              <button disabled={isUpdating} onClick={(e) => { e.stopPropagation(); handleStatusChange(trip.id, child.child_id, 'other', inneMessage); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-900 text-white hover:bg-gray-800 shadow-sm">Wyślij</button>
+                              <button disabled={isUpdating} onClick={(e) => { e.stopPropagation(); handleStatusChange(trip.id, child.child_id, 'other', inneMessage); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm">Wyślij</button>
                             </div>
                           </div>
                         )}

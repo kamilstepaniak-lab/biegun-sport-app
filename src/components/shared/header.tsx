@@ -69,7 +69,7 @@ export function Header({ user }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-gray-100/80 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-white text-xs font-semibold">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-semibold">
                 {initials}
               </div>
               <span className="hidden sm:inline-block text-sm font-medium text-gray-700">

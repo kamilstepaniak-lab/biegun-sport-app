@@ -98,7 +98,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(v => !v)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <Users className="h-4 w-4" />
               Wybierz dziecko
@@ -124,7 +124,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
         ) : (
           <Link
             href="/parent/children"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
           >
             <Users className="h-4 w-4" />
             Przejdź do Moje dzieci
@@ -137,7 +137,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
   return (
     <div className="space-y-5">
       {/* Banner wybranego dziecka */}
-      <div className="bg-gray-900 rounded-2xl p-4 flex items-center justify-between">
+      <div className="bg-blue-900 rounded-2xl p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white font-bold text-sm">
             {(selectedChildName || 'D').charAt(0)}

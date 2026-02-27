@@ -202,7 +202,7 @@ function TemplateEditor({
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-all"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-all"
         >
           <Save className="h-4 w-4" />
           {isSaving ? 'Zapisywanie...' : 'Zapisz szablon'}

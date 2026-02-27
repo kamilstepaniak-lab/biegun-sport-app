@@ -223,8 +223,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{stats.paid}</p>
@@ -260,7 +260,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                 onClick={() => setStatusFilter(f.key)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                   statusFilter === f.key
-                    ? 'bg-gray-900 text-white shadow-sm'
+                    ? 'bg-blue-600 text-white shadow-sm'
                     : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
                 }`}
               >
@@ -418,8 +418,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                           <button
                             className={`h-7 flex-1 text-xs font-medium rounded-lg flex items-center justify-center gap-1 transition-all ${
                               isPaid
-                                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                : 'bg-white text-emerald-600 ring-1 ring-emerald-200 hover:bg-emerald-50'
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-white text-green-600 ring-1 ring-green-200 hover:bg-green-50'
                             }`}
                             onClick={() => handleStatusChange(payment.id, 'paid')}
                             disabled={isUpdating === payment.id}

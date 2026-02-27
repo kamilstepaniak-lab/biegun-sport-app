@@ -67,12 +67,7 @@ interface DeleteDialogState {
 }
 
 const avatarColors = [
-  { bg: 'bg-blue-100', text: 'text-blue-600' },
-  { bg: 'bg-blue-200', text: 'text-blue-700' },
-  { bg: 'bg-sky-100', text: 'text-sky-600' },
-  { bg: 'bg-sky-200', text: 'text-sky-700' },
-  { bg: 'bg-indigo-100', text: 'text-indigo-600' },
-  { bg: 'bg-indigo-200', text: 'text-indigo-700' },
+  { bg: 'bg-blue-100', text: 'text-blue-700' },
 ];
 
 export function ChildrenList({ children }: ChildrenListProps) {

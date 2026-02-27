@@ -172,7 +172,7 @@ export function DashboardBlocks({ participantId, participantName }: DashboardBlo
               <MessageSquare className="h-4 w-4 text-gray-500" />
             </div>
             {unreadCount > 0 && (
-              <span className="text-xs font-bold text-white bg-gray-900 w-5 h-5 rounded-full flex items-center justify-center">
+              <span className="text-xs font-bold text-white bg-blue-600 w-5 h-5 rounded-full flex items-center justify-center">
                 {unreadCount}
               </span>
             )}
@@ -294,7 +294,7 @@ export function DashboardBlocks({ participantId, participantName }: DashboardBlo
                     onClick={() => !msg.is_read && handleMarkRead(msg.id)}
                     className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50/50 transition-colors text-left"
                   >
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${msg.is_read ? 'bg-gray-200' : 'bg-gray-900'}`} />
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${msg.is_read ? 'bg-gray-200' : 'bg-blue-500'}`} />
                     <p className={`text-sm truncate ${msg.is_read ? 'text-gray-500' : 'font-medium text-gray-900'}`}>
                       {msg.title}
                     </p>

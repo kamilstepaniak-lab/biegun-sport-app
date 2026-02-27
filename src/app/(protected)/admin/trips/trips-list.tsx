@@ -342,8 +342,8 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100">
-                      <Calendar className="h-3.5 w-3.5 text-violet-600" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                      <Calendar className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Powrót</h4>
                   </div>
@@ -410,8 +410,8 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {trip.payment_templates && trip.payment_templates.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100">
-                      <Receipt className="h-3.5 w-3.5 text-emerald-600" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                      <Receipt className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
                   </div>
@@ -452,14 +452,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                                   : '-'}
                               </td>
                               <td className="px-4 py-2.5">
-                                <span className={cn(
-                                  'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium',
-                                  template.payment_method === 'cash'
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : template.payment_method === 'transfer'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-violet-100 text-violet-700'
-                                )}>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600">
                                   {methodLabel}
                                 </span>
                               </td>
@@ -479,8 +472,8 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {(trip.bank_account_pln || trip.bank_account_eur) && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100">
-                      <Banknote className="h-3.5 w-3.5 text-orange-600" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                      <Banknote className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Dane do przelewu</h4>
                   </div>
@@ -527,8 +520,8 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {trip.packing_list && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-100">
-                      <Backpack className="h-3.5 w-3.5 text-green-600" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                      <Backpack className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
                   </div>
@@ -539,7 +532,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                       .filter(Boolean)
                       .map((item, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
                           {item}
                         </li>
                       ))}
@@ -571,7 +564,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               <div className="flex flex-wrap gap-2 pt-1">
                 <Link
                   href={`/admin/trips/${trip.id}/edit`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
                 >
                   <Edit className="h-4 w-4" />
                   Edytuj
@@ -614,7 +607,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
           className={cn(
             'px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
             groupFilter === 'all'
-              ? 'bg-gray-900 text-white shadow-sm'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
           )}
         >

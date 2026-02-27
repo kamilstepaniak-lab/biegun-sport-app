@@ -62,7 +62,7 @@ export function ParentAccountsManager() {
             <button
               onClick={handleCreate}
               disabled={isLoading}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading && activeAction === 'create' ? (
                 <><Loader2 className="h-4 w-4 animate-spin" />Tworzenie...</>

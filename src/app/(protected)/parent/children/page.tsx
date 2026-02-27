@@ -18,7 +18,7 @@ export default async function ParentChildrenPage() {
       >
         <Link
           href="/parent/children/add"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
         >
           <Plus className="h-4 w-4" />
           Dodaj dziecko

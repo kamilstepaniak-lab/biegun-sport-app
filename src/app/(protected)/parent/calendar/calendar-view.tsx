@@ -99,7 +99,7 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
               className={cn(
                 'px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200',
                 groupFilter === 'all'
-                  ? 'bg-gray-900 text-white shadow-sm'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
               )}
             >

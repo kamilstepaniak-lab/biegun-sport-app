@@ -1,34 +1,34 @@
-// Mapowanie nazw grup na kolory - stonowana paleta
+// Mapowanie nazw grup na kolory — Beeski=żółty, ProKids=czerwony, SemiPRO=niebieski, Hero=czarny, Pro=szary
 export const groupColors: Record<string, { bg: string; text: string; dot: string; border: string }> = {
   beeski: {
     bg: 'bg-amber-50',
-    text: 'text-amber-600',
+    text: 'text-amber-700',
     dot: 'bg-amber-400',
     border: 'border-amber-300',
   },
   prokids: {
-    bg: 'bg-violet-50',
-    text: 'text-violet-600',
-    dot: 'bg-violet-400',
-    border: 'border-violet-300',
+    bg: 'bg-red-50',
+    text: 'text-red-600',
+    dot: 'bg-red-400',
+    border: 'border-red-200',
   },
   semipro: {
-    bg: 'bg-teal-50',
-    text: 'text-teal-600',
-    dot: 'bg-teal-400',
-    border: 'border-teal-300',
+    bg: 'bg-blue-50',
+    text: 'text-blue-600',
+    dot: 'bg-blue-500',
+    border: 'border-blue-200',
   },
   hero: {
-    bg: 'bg-slate-50',
-    text: 'text-slate-600',
-    dot: 'bg-slate-400',
-    border: 'border-slate-300',
+    bg: 'bg-gray-900',
+    text: 'text-white',
+    dot: 'bg-white',
+    border: 'border-gray-900',
   },
   pro: {
-    bg: 'bg-zinc-100',
-    text: 'text-zinc-700',
-    dot: 'bg-zinc-500',
-    border: 'border-zinc-400',
+    bg: 'bg-gray-100',
+    text: 'text-gray-600',
+    dot: 'bg-gray-400',
+    border: 'border-gray-300',
   },
 };
 
