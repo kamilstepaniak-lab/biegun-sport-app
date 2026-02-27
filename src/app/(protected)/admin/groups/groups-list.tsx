@@ -562,160 +562,178 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                       {searchQuery ? 'Brak pasujących uczestników' : 'Brak uczestników w tej grupie'}
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-50">
-                      {/* Nagłówek z checkbox zaznacz wszystko */}
-                      <div className="px-4 py-2 bg-gray-50/50 flex items-center gap-4">
-                        <Checkbox
-                          checked={group.participants.every(p => selectedParticipants.has(p.id))}
-                          onCheckedChange={() => toggleAllInGroup(group.id, group.participants)}
-                        />
-                        <span className="text-xs text-gray-400 font-medium">
-                          Zaznacz wszystkich w grupie
-                        </span>
-                      </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm border-collapse">
+                        <colgroup>
+                          <col className="w-10" />   {/* checkbox */}
+                          <col />                    {/* nazwisko */}
+                          <col className="w-28" />   {/* data ur. */}
+                          <col className="w-24" />   {/* grupa */}
+                          <col />                    {/* email */}
+                          <col className="w-32" />   {/* telefon */}
+                          <col className="w-36" />   {/* notatka */}
+                          <col className="w-24" />   {/* akcje */}
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            {/* Checkbox zaznacz wszystkich */}
+                            <th className="px-4 py-2 text-left bg-gray-50/50">
+                              <Checkbox
+                                checked={group.participants.every(p => selectedParticipants.has(p.id))}
+                                onCheckedChange={() => toggleAllInGroup(group.id, group.participants)}
+                              />
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Nazwisko i imię</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Data ur.</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Grupa</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Email</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Telefon</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Notatka</th>
+                            <th className="px-3 py-2 bg-gray-50/30"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {group.participants.map((participant) => {
+                            const birthDate = new Date(participant.birth_date);
+                            const emailId = `email-${group.id}-${participant.id}`;
+                            const phoneId = `phone-${group.id}-${participant.id}`;
+                            const isSelected = selectedParticipants.has(participant.id);
 
-                      {/* Nagłówek tabeli */}
-                      <div className="hidden md:grid grid-cols-[20px_2fr_1fr_1fr_2fr_1.5fr_1.5fr_90px] gap-4 px-4 py-2 bg-gray-50/30 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        <div className="w-5"></div>
-                        <div>Nazwisko i imię</div>
-                        <div>Data urodzenia</div>
-                        <div>Grupa</div>
-                        <div>Email</div>
-                        <div>Telefon</div>
-                        <div>Notatka</div>
-                        <div className="w-20"></div>
-                      </div>
+                            return (
+                              <tr
+                                key={participant.id}
+                                className={cn(
+                                  'hover:bg-gray-50/50 transition-colors',
+                                  isSelected && 'bg-blue-50/50'
+                                )}
+                              >
+                                {/* Checkbox */}
+                                <td className="px-4 py-2.5">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={() => toggleParticipant(participant.id)}
+                                  />
+                                </td>
 
-                      {group.participants.map((participant) => {
-                        const birthDate = new Date(participant.birth_date);
-                        const emailId = `email-${group.id}-${participant.id}`;
-                        const phoneId = `phone-${group.id}-${participant.id}`;
-                        const isSelected = selectedParticipants.has(participant.id);
-
-                        return (
-                          <div
-                            key={participant.id}
-                            className={`grid grid-cols-1 md:grid-cols-[20px_2fr_1fr_1fr_2fr_1.5fr_1.5fr_90px] gap-2 md:gap-4 px-4 py-3 items-center hover:bg-gray-50/50 transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
-                          >
-                            {/* Checkbox */}
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleParticipant(participant.id)}
-                            />
-
-                            {/* Nazwisko i imię */}
-                            <Link
-                              href={`/admin/participants/${participant.id}`}
-                              className="font-medium text-gray-900 text-sm hover:text-primary hover:underline"
-                            >
-                              {participant.last_name} {participant.first_name}
-                            </Link>
-
-                            {/* Data urodzenia */}
-                            <div className="text-sm text-gray-500">
-                              {format(birthDate, 'dd.MM.yyyy')}
-                            </div>
-
-                            {/* Grupa */}
-                            <div>
-                              <span className={cn(
-                                'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium border',
-                                colors.bg, colors.text, colors.border
-                              )}>
-                                {group.name}
-                              </span>
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => copyToClipboard(participant.parent.email, emailId)}
-                                    className="text-sm hover:text-primary cursor-pointer flex items-center gap-1 group truncate"
+                                {/* Nazwisko i imię */}
+                                <td className="px-3 py-2.5">
+                                  <Link
+                                    href={`/admin/participants/${participant.id}`}
+                                    className="font-medium text-gray-900 text-sm hover:text-primary hover:underline"
                                   >
-                                    {participant.parent.email}
-                                    {copiedField === emailId ? (
-                                      <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                    ) : (
-                                      <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
-                                    )}
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>Kliknij aby skopiować</TooltipContent>
-                              </Tooltip>
-                              {participant.parent.secondary_email && (
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {participant.parent.secondary_email}
-                                </p>
-                              )}
-                            </div>
+                                    {participant.last_name} {participant.first_name}
+                                  </Link>
+                                </td>
 
-                            {/* Telefon */}
-                            <div>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => copyToClipboard(participant.parent.phone, phoneId)}
-                                    className="text-sm hover:text-primary cursor-pointer flex items-center gap-1 group"
-                                  >
-                                    {participant.parent.phone}
-                                    {copiedField === phoneId ? (
-                                      <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                    ) : (
-                                      <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
-                                    )}
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>Kliknij aby skopiować</TooltipContent>
-                              </Tooltip>
-                              {participant.parent.secondary_phone && (
-                                <p className="text-xs text-muted-foreground">
-                                  {participant.parent.secondary_phone}
-                                </p>
-                              )}
-                            </div>
+                                {/* Data urodzenia */}
+                                <td className="px-3 py-2.5 text-sm text-gray-500 whitespace-nowrap">
+                                  {format(birthDate, 'dd.MM.yyyy')}
+                                </td>
 
-                            {/* Notatka */}
-                            <div>
-                              {participant.notes ? (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
+                                {/* Grupa */}
+                                <td className="px-3 py-2.5">
+                                  <span className={cn(
+                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium border whitespace-nowrap',
+                                    colors.bg, colors.text, colors.border
+                                  )}>
+                                    {group.name}
+                                  </span>
+                                </td>
+
+                                {/* Email */}
+                                <td className="px-3 py-2.5 max-w-0">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={() => copyToClipboard(participant.parent.email, emailId)}
+                                        className="text-sm hover:text-primary cursor-pointer flex items-center gap-1 group w-full truncate"
+                                      >
+                                        <span className="truncate">{participant.parent.email}</span>
+                                        {copiedField === emailId ? (
+                                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                        ) : (
+                                          <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
+                                        )}
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Kliknij aby skopiować</TooltipContent>
+                                  </Tooltip>
+                                  {participant.parent.secondary_email && (
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {participant.parent.secondary_email}
+                                    </p>
+                                  )}
+                                </td>
+
+                                {/* Telefon */}
+                                <td className="px-3 py-2.5">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={() => copyToClipboard(participant.parent.phone, phoneId)}
+                                        className="text-sm hover:text-primary cursor-pointer flex items-center gap-1 group whitespace-nowrap"
+                                      >
+                                        {participant.parent.phone}
+                                        {copiedField === phoneId ? (
+                                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                                        ) : (
+                                          <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
+                                        )}
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Kliknij aby skopiować</TooltipContent>
+                                  </Tooltip>
+                                  {participant.parent.secondary_phone && (
+                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                                      {participant.parent.secondary_phone}
+                                    </p>
+                                  )}
+                                </td>
+
+                                {/* Notatka */}
+                                <td className="px-3 py-2.5">
+                                  {participant.notes ? (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          onClick={() => openNoteDialog(participant)}
+                                          className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg ring-1 ring-amber-200 transition-colors max-w-[130px] group"
+                                        >
+                                          <StickyNote className="h-3 w-3 flex-shrink-0" />
+                                          <span className="truncate">{participant.notes}</span>
+                                          <PencilLine className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-60" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs whitespace-pre-wrap">
+                                        {participant.notes}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  ) : (
                                     <button
                                       onClick={() => openNoteDialog(participant)}
-                                      className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg ring-1 ring-amber-200 transition-colors max-w-[140px] group"
+                                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded-lg hover:bg-gray-50"
                                     >
-                                      <StickyNote className="h-3 w-3 flex-shrink-0" />
-                                      <span className="truncate">{participant.notes}</span>
-                                      <PencilLine className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-60" />
+                                      <PencilLine className="h-3 w-3" />
+                                      Dodaj
                                     </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs whitespace-pre-wrap">
-                                    {participant.notes}
-                                  </TooltipContent>
-                                </Tooltip>
-                              ) : (
-                                <button
-                                  onClick={() => openNoteDialog(participant)}
-                                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded-lg hover:bg-gray-50"
-                                >
-                                  <PencilLine className="h-3 w-3" />
-                                  Dodaj
-                                </button>
-                              )}
-                            </div>
+                                  )}
+                                </td>
 
-                            {/* Przycisk Szczegóły */}
-                            <Link
-                              href={`/admin/participants/${participant.id}`}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg ring-1 ring-gray-200 transition-colors"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                              Szczegóły
-                            </Link>
-                          </div>
-                        );
-                      })}
+                                {/* Przycisk Szczegóły */}
+                                <td className="px-3 py-2.5">
+                                  <Link
+                                    href={`/admin/participants/${participant.id}`}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg ring-1 ring-gray-200 transition-colors whitespace-nowrap"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                    Szczegóły
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>
