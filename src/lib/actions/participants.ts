@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
 import type { Participant, ParticipantWithGroup, ParticipantFull, Group } from '@/types';
+import { logActivity } from './activity-logs';
 
 export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
   const supabase = await createClient();
@@ -337,6 +338,22 @@ export async function updateParticipant(
         .from('participant_custom_fields')
         .insert(customFieldsData);
     }
+  }
+
+  // Activity log — loguj tylko gdy wywołuje rodzic (nie admin)
+  if (profile?.role !== 'admin') {
+    const { data: participantData } = await supabase
+      .from('participants')
+      .select('first_name, last_name')
+      .eq('id', id)
+      .single();
+    logActivity(user.id, user.email, 'profile_updated', {
+      childId: id,
+      childName: participantData
+        ? `${participantData.first_name} ${participantData.last_name}`
+        : id,
+      fields: ['child_data'],
+    }).catch(console.error);
   }
 
   revalidatePath('/parent/children');

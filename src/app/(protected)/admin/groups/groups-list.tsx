@@ -575,7 +575,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                       </div>
 
                       {/* Nagłówek tabeli */}
-                      <div className="hidden md:grid grid-cols-[auto_2fr_1fr_1fr_2fr_1.5fr_1.5fr_auto] gap-4 px-4 py-2 bg-gray-50/30 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                      <div className="hidden md:grid grid-cols-[20px_2fr_1fr_1fr_2fr_1.5fr_1.5fr_90px] gap-4 px-4 py-2 bg-gray-50/30 text-xs font-medium text-gray-400 uppercase tracking-wider">
                         <div className="w-5"></div>
                         <div>Nazwisko i imię</div>
                         <div>Data urodzenia</div>
@@ -595,7 +595,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                         return (
                           <div
                             key={participant.id}
-                            className={`grid grid-cols-1 md:grid-cols-[auto_2fr_1fr_1fr_2fr_1.5fr_1.5fr_auto] gap-2 md:gap-4 px-4 py-3 items-center hover:bg-gray-50/50 transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
+                            className={`grid grid-cols-1 md:grid-cols-[20px_2fr_1fr_1fr_2fr_1.5fr_1.5fr_90px] gap-2 md:gap-4 px-4 py-3 items-center hover:bg-gray-50/50 transition-colors ${isSelected ? 'bg-blue-50/50' : ''}`}
                           >
                             {/* Checkbox */}
                             <Checkbox

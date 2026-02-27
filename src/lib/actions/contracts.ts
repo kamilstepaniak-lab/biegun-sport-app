@@ -490,12 +490,21 @@ export async function acceptContract(
     .eq('id', contractId)
     .single();
 
+  // Jeśli umowa nie ma jeszcze numeru — nadaj go automatycznie przy akceptacji
+  const updateData: Record<string, unknown> = {
+    accepted_at: new Date().toISOString(),
+    accepted_by_parent_id: user.id,
+  };
+
+  const contractForNumber = contractFull as unknown as { contract_number: string | null } | null;
+  if (!contractForNumber?.contract_number) {
+    const supabaseAdmin = createAdminClient();
+    updateData.contract_number = await generateContractNumber(supabaseAdmin);
+  }
+
   const { error } = await supabase
     .from('trip_contracts')
-    .update({
-      accepted_at: new Date().toISOString(),
-      accepted_by_parent_id: user.id,
-    })
+    .update(updateData)
     .eq('id', contractId);
 
   if (error) {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { format, differenceInYears } from 'date-fns';
+import { differenceInYears, format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
   UserPlus,
@@ -13,10 +13,12 @@ import {
   Calendar,
   Ruler,
   Users,
-  ChevronRight,
+  Plus,
   MapPin,
   CreditCard,
-  CalendarDays,
+  MessageSquare,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,9 +39,10 @@ import { saveChildToStorage, clearChildFromStorage } from './child-url-sync';
 const STORAGE_KEY = 'biegun_selected_child';
 
 import { deleteParticipant, getParticipantRegistrations } from '@/lib/actions/participants';
+import { getMessagesForParent, markMessageRead, type AppMessage } from '@/lib/actions/messages';
+import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
-import { DashboardBlocks } from '@/app/(protected)/parent/children/dashboard-blocks';
 
 interface ChildrenListProps {
   children: ParticipantWithGroup[];
@@ -57,21 +60,23 @@ interface DeleteDialogState {
   isLoading: boolean;
 }
 
-// Kolory dla avatarów dzieci
 const avatarColors = [
-  'bg-blue-100 text-blue-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-violet-100 text-violet-700',
-  'bg-amber-100 text-amber-700',
-  'bg-rose-100 text-rose-700',
-  'bg-cyan-100 text-cyan-700',
+  { bg: 'bg-blue-100', text: 'text-blue-600' },
+  { bg: 'bg-blue-200', text: 'text-blue-700' },
+  { bg: 'bg-sky-100', text: 'text-sky-600' },
+  { bg: 'bg-sky-200', text: 'text-sky-700' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+  { bg: 'bg-indigo-200', text: 'text-indigo-700' },
 ];
 
 export function ChildrenList({ children }: ChildrenListProps) {
   const router = useRouter();
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<AppMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
 
-  // Wczytaj z localStorage po zamontowaniu
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -81,6 +86,26 @@ export function ChildrenList({ children }: ChildrenListProps) {
       }
     } catch { /* ignore */ }
   }, []);
+
+  useEffect(() => {
+    setMessagesLoading(true);
+    getMessagesForParent()
+      .then(setMessages)
+      .catch(console.error)
+      .finally(() => setMessagesLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedChildId) {
+      setDashboardData(null);
+      return;
+    }
+    setDashboardLoading(true);
+    getDashboardData(selectedChildId)
+      .then(setDashboardData)
+      .catch(console.error)
+      .finally(() => setDashboardLoading(false));
+  }, [selectedChildId]);
 
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
     isOpen: false,
@@ -94,9 +119,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
     e.stopPropagation();
     const child = children.find((c) => c.id === childId);
     if (!child) return;
-
     const registrations = await getParticipantRegistrations(childId);
-
     setDeleteDialog({
       isOpen: true,
       childId,
@@ -108,9 +131,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
 
   async function handleDeleteConfirm() {
     if (!deleteDialog.childId) return;
-
     setDeleteDialog((prev) => ({ ...prev, isLoading: true }));
-
     try {
       const result = await deleteParticipant(deleteDialog.childId);
       if (result.error) {
@@ -126,13 +147,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
     } catch {
       toast.error('Wystąpił nieoczekiwany błąd');
     } finally {
-      setDeleteDialog({
-        isOpen: false,
-        childId: null,
-        childName: '',
-        registrations: [],
-        isLoading: false,
-      });
+      setDeleteDialog({ isOpen: false, childId: null, childName: '', registrations: [], isLoading: false });
     }
   }
 
@@ -145,6 +160,13 @@ export function ChildrenList({ children }: ChildrenListProps) {
       setSelectedChildId(child.id);
       saveChildToStorage(child.id, childName);
     }
+  }
+
+  async function handleMarkRead(messageId: string) {
+    await markMessageRead(messageId);
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, is_read: true } : m))
+    );
   }
 
   if (children.length === 0) {
@@ -161,148 +183,362 @@ export function ChildrenList({ children }: ChildrenListProps) {
     r.payments.some((p) => p.status !== 'paid' && p.status !== 'cancelled')
   );
 
-  const selectedChild = children.find(c => c.id === selectedChildId);
+  const selectedChild = children.find((c) => c.id === selectedChildId);
+  const unreadCount = messages.filter((m) => !m.is_read).length;
+
+  const childSlug = selectedChild
+    ? `?child=${selectedChild.id}&childName=${encodeURIComponent(`${selectedChild.first_name} ${selectedChild.last_name}`)}`
+    : '';
+
+  const { nearestTrip, pendingPayments = [], overdueCount = 0 } = dashboardData ?? {};
 
   return (
     <>
-      {/* Instrukcja */}
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-sm text-blue-700 flex items-start gap-3">
-        <div className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-blue-700 text-xs font-bold">i</span>
-        </div>
-        <p>
-          Kliknij na dziecko, aby je wybrać i zobaczyć jego wyjazdy, płatności oraz kalendarz.
-          {selectedChild && (
-            <> Aktualnie wybrane: <strong>{selectedChild.first_name} {selectedChild.last_name}</strong></>
-          )}
-        </p>
-      </div>
+      {/* ── Górny rząd: Wybór dziecka | Wiadomości ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-      {/* Lista dzieci */}
-      <div className="space-y-3">
-        {children.map((child, index) => {
-          const birthDate = new Date(child.birth_date);
-          const age = differenceInYears(new Date(), birthDate);
-          const isSelected = selectedChildId === child.id;
-          const avatarColor = avatarColors[index % avatarColors.length];
-
-          return (
-            <div
-              key={child.id}
-              onClick={() => handleSelectChild(child)}
-              className={cn(
-                'bg-white rounded-2xl shadow-sm ring-1 transition-all duration-200 cursor-pointer overflow-hidden',
-                isSelected
-                  ? 'ring-2 ring-gray-900 shadow-md'
-                  : 'ring-gray-100 hover:shadow-md hover:ring-gray-200'
-              )}
+        {/* LEWY: Lista dzieci */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Users className="h-4 w-4 text-blue-500" />
+              </div>
+              <p className="text-sm font-semibold text-gray-800">Moje dzieci</p>
+            </div>
+            <Link
+              href="/parent/children/add"
+              className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
             >
-              <div className="p-5">
-                <div className="flex items-center gap-4">
-                  {/* Avatar */}
+              <Plus className="h-3.5 w-3.5" />
+              Dodaj
+            </Link>
+          </div>
+
+          <div className="divide-y divide-gray-50">
+            {children.map((child, index) => {
+              const birthDate = new Date(child.birth_date);
+              const age = differenceInYears(new Date(), birthDate);
+              const isSelected = selectedChildId === child.id;
+              const color = avatarColors[index % avatarColors.length];
+
+              return (
+                <div
+                  key={child.id}
+                  onClick={() => handleSelectChild(child)}
+                  className={cn(
+                    'flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-all duration-150 relative',
+                    isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50'
+                  )}
+                >
+                  {isSelected && (
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500 rounded-r-sm" />
+                  )}
+
                   <div className={cn(
-                    'w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold flex-shrink-0',
-                    avatarColor
+                    'w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0',
+                    color.bg, color.text
                   )}>
                     {child.first_name.charAt(0)}{child.last_name.charAt(0)}
                   </div>
 
-                  {/* Dane */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg text-gray-900">
+                    <div className="flex items-center gap-2">
+                      <p className={cn(
+                        'text-sm font-semibold',
+                        isSelected ? 'text-blue-700' : 'text-gray-800'
+                      )}>
                         {child.first_name} {child.last_name}
-                      </h3>
+                      </p>
                       {isSelected && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium bg-gray-900 text-white">
-                          <Check className="h-3 w-3" />
-                          Wybrane
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 flex-shrink-0">
+                          <Check className="h-2.5 w-2.5 text-white" />
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {format(birthDate, 'd.MM.yyyy', { locale: pl })} · {age} lat
+                    <div className="flex items-center gap-2.5 text-[11px] text-gray-400 mt-0.5">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-2.5 w-2.5" />
+                        {age} lat
                       </span>
                       {child.height_cm && (
-                        <span className="flex items-center gap-1.5">
-                          <Ruler className="h-3.5 w-3.5" />
+                        <span className="flex items-center gap-1">
+                          <Ruler className="h-2.5 w-2.5" />
                           {child.height_cm} cm
                         </span>
                       )}
                       {child.group && (
-                        <span className="flex items-center gap-1.5">
-                          <Users className="h-3.5 w-3.5" />
+                        <span className="flex items-center gap-1">
+                          <Users className="h-2.5 w-2.5" />
                           {child.group.name}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Akcje */}
-                  <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <Link
                       href={`/parent/children/${child.id}`}
-                      className="w-9 h-9 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors ring-1 ring-gray-200"
+                      className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
                     >
-                      <Edit className="h-4 w-4 text-gray-500" />
+                      <Edit className="h-3.5 w-3.5 text-gray-400" />
                     </Link>
                     <button
                       onClick={(e) => handleDeleteClick(e, child.id)}
-                      className="w-9 h-9 rounded-xl bg-gray-50 hover:bg-red-50 flex items-center justify-center transition-colors ring-1 ring-gray-200 hover:ring-red-200"
+                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors"
                     >
-                      <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
+                      <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
                     </button>
                   </div>
-
-                  {/* Chevron */}
-                  <ChevronRight className={cn(
-                    'h-5 w-5 transition-transform flex-shrink-0',
-                    isSelected ? 'text-gray-900 rotate-90' : 'text-gray-300'
-                  )} />
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Sekcja aktywna - skróty nawigacyjne + dashboard */}
-                {isSelected && (
-                  <div className="mt-4 pt-4 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                    <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-wide">Przejdź do</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <Link
-                        href={`/parent/trips?child=${child.id}&childName=${encodeURIComponent(`${child.first_name} ${child.last_name}`)}`}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
-                      >
-                        <MapPin className="h-5 w-5 text-blue-600" />
-                        <span className="text-xs font-medium text-blue-700">Wyjazdy</span>
-                      </Link>
-                      <Link
-                        href={`/parent/payments?child=${child.id}&childName=${encodeURIComponent(`${child.first_name} ${child.last_name}`)}`}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                      >
-                        <CreditCard className="h-5 w-5 text-emerald-600" />
-                        <span className="text-xs font-medium text-emerald-700">Płatności</span>
-                      </Link>
-                      <Link
-                        href={`/parent/calendar?child=${child.id}&childName=${encodeURIComponent(`${child.first_name} ${child.last_name}`)}`}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 transition-colors"
-                      >
-                        <CalendarDays className="h-5 w-5 text-violet-600" />
-                        <span className="text-xs font-medium text-violet-700">Kalendarz</span>
-                      </Link>
-                    </div>
+          {!selectedChildId && (
+            <div className="px-5 py-4 border-t border-gray-50">
+              <p className="text-xs text-gray-400 text-center">Kliknij dziecko aby zobaczyć dane</p>
+            </div>
+          )}
+        </div>
 
-                    {/* Dashboard bloki */}
-                    <DashboardBlocks
-                      participantId={child.id}
-                      participantName={`${child.first_name} ${child.last_name}`}
-                    />
-                  </div>
+        {/* PRAWY: Wiadomości */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '300px' }}>
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <MessageSquare className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Wiadomości od organizatora</p>
+                {!messagesLoading && (
+                  <p className="text-[11px] text-gray-400">{messages.length} komunikatów</p>
                 )}
               </div>
             </div>
-          );
-        })}
+            {unreadCount > 0 && (
+              <span className="text-xs font-bold text-white bg-blue-500 px-2.5 py-1 rounded-full">
+                {unreadCount} nowych
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+            {messagesLoading ? (
+              <div className="p-5 space-y-4 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
+                    <div className="flex-1 space-y-2 pt-1">
+                      <div className="h-3.5 bg-gray-100 rounded w-2/3" />
+                      <div className="h-3 bg-gray-100 rounded w-full" />
+                      <div className="h-3 bg-gray-100 rounded w-4/5" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-12 text-center px-6">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
+                  <MessageSquare className="h-6 w-6 text-blue-200" />
+                </div>
+                <p className="text-sm font-medium text-gray-500">Brak wiadomości</p>
+                <p className="text-xs text-gray-400 mt-1">Organizator nie wysłał jeszcze żadnych komunikatów</p>
+              </div>
+            ) : (
+              messages.map((msg) => (
+                <button
+                  key={msg.id}
+                  onClick={() => !msg.is_read && handleMarkRead(msg.id)}
+                  className={cn(
+                    'w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors',
+                    !msg.is_read && 'bg-blue-50/20'
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
+                      msg.is_read ? 'bg-gray-100' : 'bg-blue-100'
+                    )}>
+                      <MessageSquare className={cn('h-3.5 w-3.5', msg.is_read ? 'text-gray-400' : 'text-blue-500')} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className={cn(
+                          'text-sm truncate',
+                          msg.is_read ? 'text-gray-600' : 'font-semibold text-gray-900'
+                        )}>
+                          {msg.title}
+                        </p>
+                        <span className="text-[11px] text-gray-400 flex-shrink-0">
+                          {format(new Date(msg.created_at), 'd MMM', { locale: pl })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
+                        {msg.body}
+                      </p>
+                      {!msg.is_read && (
+                        <span className="inline-block mt-1.5 text-[10px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                          Oznacz jako przeczytane
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* ── Dolny rząd: Najbliższy wyjazd | Płatności ── */}
+      {selectedChild && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+
+          {/* Najbliższy wyjazd */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-blue-500" />
+                </div>
+                <p className="text-sm font-semibold text-gray-800">Najbliższy wyjazd</p>
+              </div>
+              <Link
+                href={`/parent/trips${childSlug}`}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                Wszystkie →
+              </Link>
+            </div>
+
+            <div className="p-5">
+              {dashboardLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="h-5 bg-gray-100 rounded w-3/4" />
+                  <div className="h-4 bg-gray-100 rounded w-1/2" />
+                  <div className="h-8 bg-gray-100 rounded w-1/3" />
+                </div>
+              ) : nearestTrip ? (
+                <div className="space-y-3">
+                  <p className="font-semibold text-gray-900">{nearestTrip.title}</p>
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                    <Clock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    {format(new Date(nearestTrip.departure_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}
+                  </div>
+                  {nearestTrip.departure_location && (
+                    <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                      <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                      {nearestTrip.departure_location}
+                    </div>
+                  )}
+                  <div className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold',
+                    nearestTrip.daysUntil <= 7
+                      ? 'bg-red-50 text-red-700'
+                      : 'bg-blue-50 text-blue-700'
+                  )}>
+                    {nearestTrip.daysUntil === 0
+                      ? 'Dziś!'
+                      : nearestTrip.daysUntil === 1
+                        ? 'Jutro!'
+                        : `Za ${nearestTrip.daysUntil} dni`}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
+                    <MapPin className="h-5 w-5 text-gray-300" />
+                  </div>
+                  <p className="text-sm text-gray-500 font-medium">Brak zaplanowanych wyjazdów</p>
+                  <p className="text-xs text-gray-400 mt-1">Dziecko nie jest zapisane na żaden nadchodzący wyjazd</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Płatności */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <CreditCard className="h-4 w-4 text-blue-500" />
+                </div>
+                <p className="text-sm font-semibold text-gray-800">Płatności</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {overdueCount > 0 && (
+                  <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                    {overdueCount} po terminie
+                  </span>
+                )}
+                <Link
+                  href={`/parent/payments${childSlug}`}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                >
+                  Wszystkie →
+                </Link>
+              </div>
+            </div>
+
+            <div className="divide-y divide-gray-50">
+              {dashboardLoading ? (
+                <div className="p-5 animate-pulse space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3.5 bg-gray-100 rounded w-2/3" />
+                        <div className="h-3 bg-gray-100 rounded w-1/3" />
+                      </div>
+                      <div className="h-5 bg-gray-100 rounded w-16" />
+                    </div>
+                  ))}
+                </div>
+              ) : pendingPayments.length === 0 ? (
+                <div className="flex flex-col items-center py-6 text-center px-5">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
+                    <CreditCard className="h-5 w-5 text-blue-300" />
+                  </div>
+                  <p className="text-sm text-gray-500 font-medium">Wszystkie płatności opłacone</p>
+                  <p className="text-xs text-gray-400 mt-1">Brak zaległych lub oczekujących płatności</p>
+                </div>
+              ) : (
+                pendingPayments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between px-5 py-3.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className={cn(
+                        'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
+                        p.isOverdue ? 'bg-red-50' : 'bg-blue-50'
+                      )}>
+                        {p.isOverdue
+                          ? <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+                          : <Clock className="h-3.5 w-3.5 text-blue-400" />
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {p.trip_title || 'Płatność'}
+                        </p>
+                        <p className={cn('text-[11px] mt-0.5', p.isOverdue ? 'text-red-500' : 'text-gray-400')}>
+                          {p.due_date
+                            ? `${p.isOverdue ? 'Termin minął' : 'Do'} ${format(new Date(p.due_date), 'd MMM yyyy', { locale: pl })}`
+                            : 'Brak terminu'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className={cn(
+                      'text-sm font-bold flex-shrink-0 ml-4',
+                      p.isOverdue ? 'text-red-600' : 'text-gray-900'
+                    )}>
+                      {(p.amount - p.amount_paid).toFixed(0)} {p.currency}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialog usunięcia */}
       <AlertDialog
@@ -343,7 +579,6 @@ export function ChildrenList({ children }: ChildrenListProps) {
                     </AlertDescription>
                   </Alert>
                 )}
-
                 <div className="text-sm">
                   <p className="font-medium mb-2">Usunięcie dziecka:</p>
                   <ul className="list-none space-y-1 text-muted-foreground">

@@ -13,10 +13,8 @@ export function PrintContractButton({ contractId, contractNumber }: PrintContrac
     const el = document.getElementById(`contract-doc-${contractId}`);
     if (!el) return;
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    printWindow.document.write(`<!DOCTYPE html>
+    // Skrypt window.print() wewnątrz iframe działa niezawodnie bez user-gesture restriction
+    const html = `<!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
@@ -53,13 +51,29 @@ export function PrintContractButton({ contractId, contractNumber }: PrintContrac
 </head>
 <body>
 ${el.innerHTML}
+<script>
+  window.onload = function() {
+    setTimeout(function() { window.print(); }, 300);
+  };
+<\/script>
 </body>
-</html>`);
-    printWindow.document.close();
-    printWindow.focus();
+</html>`;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;opacity:0;border:none;';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument ?? iframe.contentWindow?.document;
+    if (!iframeDoc) { document.body.removeChild(iframe); return; }
+
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    // Usuń iframe po 8s (po zakończeniu drukowania)
     setTimeout(() => {
-      printWindow.print();
-    }, 400);
+      if (document.body.contains(iframe)) document.body.removeChild(iframe);
+    }, 8000);
   }
 
   return (

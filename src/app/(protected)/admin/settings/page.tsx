@@ -1,10 +1,12 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
-import { Activity, Mail, ChevronDown, FormInput } from 'lucide-react';
+import { Activity, Mail, ChevronDown, FormInput, UserPlus, ShieldCheck, ArrowRight } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { getActivityLogs, getEmailLogs } from '@/lib/actions/activity-logs';
+import { ParentAccountsManager } from './parent-accounts-manager';
+import { SyncJwtRolesButton } from './sync-jwt-roles';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,27 +99,77 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-3 max-w-4xl">
       <PageHeader
         title="Ustawienia"
         description="Konfiguracja aplikacji, logi i narzędzia administracyjne"
       />
 
-      {/* ── Szybkie linki ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link
-          href="/admin/settings/custom-fields"
-          className="flex items-center gap-4 bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5 hover:shadow-md hover:ring-gray-200 transition-all"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 flex-shrink-0">
-            <FormInput className="h-5 w-5 text-violet-600" />
+      {/* ── Pola formularzy ───────────────────────────────────────── */}
+      <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+        <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100">
+              <FormInput className="h-4 w-4 text-violet-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Pola formularzy</p>
+              <p className="text-xs text-gray-500">Własne pola zbierane w karcie dziecka</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold text-gray-900 text-sm">Pola formularzy</p>
-            <p className="text-xs text-gray-500">Własne pola w karcie dziecka</p>
+          <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 flex-shrink-0" />
+        </summary>
+        <div className="border-t border-gray-100 px-5 py-4">
+          <p className="text-sm text-gray-600 mb-3">
+            Skonfiguruj dodatkowe pola które będą zbierane dla każdego uczestnika podczas rejestracji.
+          </p>
+          <Link
+            href="/admin/settings/custom-fields"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
+          >
+            Przejdź do konfiguracji pól
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </details>
+
+      {/* ── Konta rodziców ────────────────────────────────────────── */}
+      <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+        <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+              <UserPlus className="h-4 w-4 text-gray-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Konta rodziców</p>
+              <p className="text-xs text-gray-500">Twórz i resetuj hasła kont logowania rodziców</p>
+            </div>
           </div>
-        </Link>
-      </div>
+          <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 flex-shrink-0" />
+        </summary>
+        <div className="border-t border-gray-100 px-5 py-4">
+          <ParentAccountsManager />
+        </div>
+      </details>
+
+      {/* ── Synchronizacja ról JWT ────────────────────────────────── */}
+      <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+        <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+              <ShieldCheck className="h-4 w-4 text-green-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Synchronizacja ról JWT</p>
+              <p className="text-xs text-gray-500">Zapisz role użytkowników w tokenach JWT</p>
+            </div>
+          </div>
+          <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 flex-shrink-0" />
+        </summary>
+        <div className="border-t border-gray-100 px-5 py-4">
+          <SyncJwtRolesButton />
+        </div>
+      </details>
 
       {/* ── Logi aktywności ───────────────────────────────────────── */}
       <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">

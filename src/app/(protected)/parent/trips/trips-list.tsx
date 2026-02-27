@@ -17,6 +17,8 @@ import {
   ArrowRight,
   Bus,
   CheckCircle2,
+  Backpack,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -439,14 +441,53 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Cennik</h4>
                       </div>
-                      <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100 -mx-1 sm:mx-0">
-                        <table className="w-full text-xs sm:text-sm min-w-[280px]">
+                      <div className="bg-white rounded-xl ring-1 ring-gray-100 overflow-hidden">
+                        {/* Mobile: lista kart */}
+                        <div className="sm:hidden divide-y divide-gray-50">
+                          {trip.payment_templates.map((template) => {
+                            const label = template.payment_type === 'installment'
+                              ? `Rata ${template.installment_number}`
+                              : template.payment_type === 'season_pass'
+                              ? `Karnet${template.category_name ? ` (${template.category_name})` : ''}`
+                              : template.payment_type === 'full'
+                              ? 'Pełna opłata'
+                              : template.payment_type;
+                            const methodLabel = template.payment_method === 'transfer' ? 'Przelew'
+                              : template.payment_method === 'cash' ? 'Gotówka'
+                              : template.payment_method === 'both' ? 'Przel./Got.' : '–';
+                            return (
+                              <div key={template.id} className="flex items-center justify-between px-3 py-2.5 gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-xs font-medium text-gray-800">{label}</p>
+                                  <p className="text-[11px] text-gray-400 mt-0.5">
+                                    {template.due_date
+                                      ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
+                                        ? 'w dniu wyjazdu'
+                                        : `do ${format(new Date(template.due_date), 'd.MM.yy', { locale: pl })}`)
+                                      : '–'}
+                                    {' · '}
+                                    <span className={cn(
+                                      template.payment_method === 'cash' ? 'text-amber-600'
+                                        : template.payment_method === 'transfer' ? 'text-blue-600'
+                                        : 'text-violet-600'
+                                    )}>{methodLabel}</span>
+                                  </p>
+                                </div>
+                                <p className="text-sm font-bold text-gray-900 whitespace-nowrap flex-shrink-0">
+                                  {template.amount.toFixed(0)} {template.currency}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Desktop: tabela */}
+                        <table className="hidden sm:table w-full text-sm">
                           <thead>
                             <tr className="border-b border-gray-100">
-                              <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-500">Za co</th>
-                              <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
-                              <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-500">Forma</th>
-                              <th className="px-2 sm:px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500">Za co</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500">Forma</th>
+                              <th className="px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-50">
@@ -463,17 +504,17 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 : template.payment_method === 'both' ? 'Przelew/Got.' : '–';
                               return (
                                 <tr key={template.id} className="hover:bg-gray-50/50">
-                                  <td className="px-2 sm:px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
-                                  <td className="px-2 sm:px-3 py-2 text-gray-500 whitespace-nowrap">
+                                  <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
+                                  <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
                                     {template.due_date
                                       ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
                                         ? 'w dniu wyjazdu'
                                         : `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`)
                                       : '–'}
                                   </td>
-                                  <td className="px-2 sm:px-3 py-2">
+                                  <td className="px-3 py-2">
                                     <span className={cn(
-                                      'inline-flex items-center px-1 sm:px-1.5 py-0.5 rounded-lg text-[10px] sm:text-xs font-medium whitespace-nowrap',
+                                      'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
                                       template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
                                         : template.payment_method === 'transfer' ? 'bg-blue-100 text-blue-700'
                                         : 'bg-violet-100 text-violet-700'
@@ -481,7 +522,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                       {methodLabel}
                                     </span>
                                   </td>
-                                  <td className="px-2 sm:px-3 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
+                                  <td className="px-3 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
                                     {template.amount.toFixed(0)} {template.currency}
                                   </td>
                                 </tr>
@@ -548,6 +589,37 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   )}
                 </div>
               </div>
+
+              {/* Co zabrać */}
+              {trip.packing_list && (
+                <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <Backpack className="h-3.5 w-3.5 text-amber-600" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-700">Co zabrać</h4>
+                  </div>
+                  <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+                    {trip.packing_list}
+                  </div>
+                </div>
+              )}
+
+              {/* Dodatkowe informacje */}
+              {trip.additional_info && (
+                <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <Info className="h-3.5 w-3.5 text-blue-600" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-700">Dodatkowe informacje</h4>
+                  </div>
+                  <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+                    {trip.additional_info}
+                  </div>
+                </div>
+              )}
+
             </div>
           </CollapsibleContent>
         </div>

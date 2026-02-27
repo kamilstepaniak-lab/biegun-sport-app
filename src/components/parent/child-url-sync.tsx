@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 
 const STORAGE_KEY = 'biegun_selected_child';
-const PROTECTED_PATHS = ['/parent/trips', '/parent/payments', '/parent/calendar'];
+const PROTECTED_PATHS = ['/parent/trips', '/parent/payments', '/parent/calendar', '/parent/contracts'];
 
 function loadFromStorage(): { id: string; name: string } | null {
   if (typeof window === 'undefined') return null;

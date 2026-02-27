@@ -844,6 +844,8 @@ export interface TripForParent extends TripWithGroups {
   return_stop2_datetime: string | null;
   return_stop2_location: string | null;
   payment_templates: PaymentTemplateForParent[];
+  packing_list: string | null;
+  additional_info: string | null;
 }
 
 export async function getTripsForParentWithChildren(parentId: string, selectedChildId?: string): Promise<TripForParent[]> {
