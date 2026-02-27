@@ -193,7 +193,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-blue-600" />
+              <Mail className="h-5 w-5 text-white" />
               Wiadomość dla rodziców
             </DialogTitle>
           </DialogHeader>

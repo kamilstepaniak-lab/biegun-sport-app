@@ -203,8 +203,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Users className="h-4 w-4 text-blue-500" />
+              <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+                <Users className="h-4 w-4 text-white" />
               </div>
               <p className="text-sm font-semibold text-gray-800">Moje dzieci</p>
             </div>
@@ -308,8 +308,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '300px' }}>
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                <MessageSquare className="h-4 w-4 text-blue-500" />
+              <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+                <MessageSquare className="h-4 w-4 text-white" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-800">Wiadomości od organizatora</p>
@@ -341,8 +341,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
               </div>
             ) : messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12 text-center px-6">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
-                  <MessageSquare className="h-6 w-6 text-blue-200" />
+                <div className="w-12 h-12 rounded-xl bg-sky-500 flex items-center justify-center mb-3">
+                  <MessageSquare className="h-6 w-6 text-white/40" />
                 </div>
                 <p className="text-sm font-medium text-gray-500">Brak wiadomości</p>
                 <p className="text-xs text-gray-400 mt-1">Organizator nie wysłał jeszcze żadnych komunikatów</p>
@@ -402,8 +402,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <MapPin className="h-4 w-4 text-blue-500" />
+                <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-white" />
                 </div>
                 <p className="text-sm font-semibold text-gray-800">Najbliższy wyjazd</p>
               </div>
@@ -464,8 +464,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <CreditCard className="h-4 w-4 text-blue-500" />
+                <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
+                  <CreditCard className="h-4 w-4 text-white" />
                 </div>
                 <p className="text-sm font-semibold text-gray-800">Płatności</p>
               </div>
@@ -499,7 +499,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
                 </div>
               ) : pendingPayments.length === 0 ? (
                 <div className="flex flex-col items-center py-6 text-center px-5">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center mb-3">
                     <CreditCard className="h-5 w-5 text-blue-300" />
                   </div>
                   <p className="text-sm text-gray-500 font-medium">Wszystkie płatności opłacone</p>
@@ -548,8 +548,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
         <DialogContent className="max-w-lg rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <MessageSquare className="h-4 w-4 text-blue-500" />
+              <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-base font-semibold text-gray-900 leading-tight">

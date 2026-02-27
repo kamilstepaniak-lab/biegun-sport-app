@@ -76,7 +76,7 @@ export function GlobalDocumentEditor({
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 shrink-0">
-            <FileText className="h-4 w-4 text-blue-600" />
+            <FileText className="h-4 w-4 text-white" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">

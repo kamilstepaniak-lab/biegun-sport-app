@@ -206,7 +206,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
-              <CreditCard className="h-5 w-5 text-blue-600" />
+              <CreditCard className="h-5 w-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>

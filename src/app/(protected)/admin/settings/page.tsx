@@ -237,7 +237,7 @@ export default async function SettingsPage() {
         <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-              <Mail className="h-4 w-4 text-blue-600" />
+              <Mail className="h-4 w-4 text-white" />
             </div>
             <div>
               <p className="font-semibold text-gray-900 text-sm">Logi e-maili</p>

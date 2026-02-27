@@ -139,7 +139,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
           <CardContent className="pt-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                <CreditCard className="h-5 w-5 text-blue-600" />
+                <CreditCard className="h-5 w-5 text-white" />
               </div>
               <div>
                 <p className="text-xl font-bold">{stats.total.toFixed(0)} PLN</p>

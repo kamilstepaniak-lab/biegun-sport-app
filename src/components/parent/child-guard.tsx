@@ -137,13 +137,13 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
   return (
     <div className="space-y-5">
       {/* Banner wybranego dziecka */}
-      <div className="bg-blue-900 rounded-2xl p-4 flex items-center justify-between">
+      <div className="bg-sky-500 rounded-2xl p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white font-bold text-sm">
             {(selectedChildName || 'D').charAt(0)}
           </div>
           <div>
-            <p className="text-xs text-gray-400">Przeglądasz dane dla</p>
+            <p className="text-xs text-sky-100">Przeglądasz dane dla</p>
             <p className="text-sm font-semibold text-white">{selectedChildName || 'Wybrane dziecko'}</p>
           </div>
         </div>

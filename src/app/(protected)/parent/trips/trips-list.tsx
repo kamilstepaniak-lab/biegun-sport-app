@@ -374,8 +374,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                 <div className="bg-gray-50 rounded-2xl p-3 sm:p-5 space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <ArrowRight className="h-3.5 w-3.5 text-blue-600" />
+                      <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                        <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </div>
                       <h4 className="text-sm font-semibold text-gray-700">Wyjazd</h4>
                     </div>
@@ -537,8 +537,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   {(trip.bank_account_pln || trip.bank_account_eur) && (
                     <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <Banknote className="h-3.5 w-3.5 text-blue-600" />
+                        <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                          <Banknote className="h-3.5 w-3.5 text-white" />
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Dane do przelewu</h4>
                       </div>
@@ -609,8 +609,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
               {trip.additional_info && (
                 <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <Info className="h-3.5 w-3.5 text-blue-600" />
+                    <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                      <Info className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-700">Dodatkowe informacje</h4>
                   </div>
@@ -629,37 +629,6 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
 
   return (
     <div className="space-y-6">
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Bus className="h-5 w-5 text-blue-600" />
-            </div>
-            <span className="text-sm text-gray-500">Wszystkie wyjazdy</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-emerald-600" />
-            </div>
-            <span className="text-sm text-gray-500">Nadchodzące</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats.upcoming}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-violet-600" />
-            </div>
-            <span className="text-sm text-gray-500">Najbliższy wyjazd</span>
-          </div>
-          <p className="text-lg font-semibold text-gray-900">{stats.nextDate ?? '–'}</p>
-        </div>
-      </div>
-
       {/* Nadchodzące wyjazdy */}
       {upcomingTrips.length === 0 && pastTrips.length === 0 && (
         <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center text-gray-400">

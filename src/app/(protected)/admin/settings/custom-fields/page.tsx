@@ -26,7 +26,7 @@ export default async function CustomFieldsSettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                  <Mail className="h-4 w-4 text-blue-600" />
+                  <Mail className="h-4 w-4 text-white" />
                 </div>
                 <div>
                   <CardTitle>Szablony e-maili</CardTitle>

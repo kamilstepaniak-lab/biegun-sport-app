@@ -55,7 +55,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100">
-            <BookOpen className="h-4 w-4 text-blue-600" />
+            <BookOpen className="h-4 w-4 text-white" />
           </div>
           <div>
             <h2 className="text-base font-semibold text-gray-900">Dokumenty</h2>
@@ -81,8 +81,8 @@ export default async function ParentContractsPage({ searchParams }: Props) {
 
       {/* ── SEKCJA: Umowy uczestnictwa ── */}
       <div className="flex items-center gap-3 pt-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-100">
-          <FileText className="h-4 w-4 text-purple-600" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500">
+          <FileText className="h-4 w-4 text-white" />
         </div>
         <div>
           <h2 className="text-base font-semibold text-gray-900">Umowy uczestnictwa</h2>
@@ -96,14 +96,14 @@ export default async function ParentContractsPage({ searchParams }: Props) {
 
       {/* Baner wybranego dziecka */}
       {selectedChildId && selectedChildName && (
-        <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 rounded-xl px-4 py-3 text-sm">
-          <User className="h-4 w-4 text-purple-500 shrink-0" />
-          <span className="text-purple-800">
+        <div className="flex items-center gap-3 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-sm">
+          <User className="h-4 w-4 text-sky-500 shrink-0" />
+          <span className="text-sky-800">
             Pokazuję umowy dla: <strong>{selectedChildName}</strong>
           </span>
           <Link
             href="/parent/contracts"
-            className="ml-auto text-xs text-purple-500 hover:text-purple-700 underline"
+            className="ml-auto text-xs text-sky-500 hover:text-sky-700 underline"
           >
             Pokaż wszystkie
           </Link>
