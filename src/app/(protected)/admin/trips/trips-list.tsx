@@ -636,26 +636,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
 
       {/* Stats row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2 ring-1 ring-gray-100 shadow-sm">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-              <MapPin className="h-3.5 w-3.5 text-white" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Aktywne</p>
-              <p className="text-lg font-bold text-gray-900">{activeTrips.length}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2 ring-1 ring-gray-100 shadow-sm">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100">
-              <Calendar className="h-3.5 w-3.5 text-gray-500" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Zakończone</p>
-              <p className="text-lg font-bold text-gray-900">{completedTrips.length}</p>
-            </div>
-          </div>
-        </div>
+        <div />
 
         {selectedTrips.size > 0 && (
           <div className="flex items-center gap-2">
