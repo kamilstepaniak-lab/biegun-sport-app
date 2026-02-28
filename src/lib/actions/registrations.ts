@@ -106,6 +106,24 @@ export async function registerParticipantToTrip(
 
   if (paymentTemplates && paymentTemplates.length > 0) {
     const birthYear = new Date(participant.birth_date).getFullYear();
+
+    // Zabezpieczenie przed duplikatami — sprawdź czy płatności już istnieją
+    const supabaseAdmin = createAdminClient();
+    const { data: existingPayments } = await supabaseAdmin
+      .from('payments')
+      .select('id')
+      .eq('registration_id', registration.id)
+      .limit(1);
+
+    if (existingPayments && existingPayments.length > 0) {
+      // Płatności już istnieją (np. stworzone przez admina) — pomiń tworzenie
+      revalidatePath('/parent/trips');
+      revalidatePath('/parent/payments');
+      revalidatePath(`/admin/trips/${tripId}/registrations`);
+      revalidatePath(`/admin/trips/${tripId}/payments`);
+      return { success: true, data: registration };
+    }
+
     const paymentsToCreate = [];
 
     for (const template of paymentTemplates) {
@@ -169,7 +187,6 @@ export async function registerParticipantToTrip(
     }
 
     if (paymentsToCreate.length > 0) {
-      const supabaseAdmin = createAdminClient();
       const { error: paymentsError } = await supabaseAdmin.from('payments').insert(paymentsToCreate);
       if (paymentsError) {
         console.error('Payments insert error:', paymentsError);
