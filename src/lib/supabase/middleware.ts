@@ -54,8 +54,7 @@ export async function updateSession(request: NextRequest) {
       pathname === '/register' ||
       pathname === '/forgot-password' ||
       pathname.startsWith('/admin') ||
-      pathname === '/parent' ||
-      pathname === '/parent/');
+      pathname.startsWith('/parent'));
 
   if (needsRoleCheck) {
     // Próbuj odczytać rolę z app_metadata JWT (szybko, bez DB).
@@ -93,8 +92,8 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Przekieruj admina z /parent lub /parent/ do panelu admina
-    if ((pathname === '/parent' || pathname === '/parent/') && role === 'admin') {
+    // Przekieruj admina z /parent/* do panelu admina
+    if (pathname.startsWith('/parent') && role === 'admin') {
       url.pathname = '/admin/groups';
       return NextResponse.redirect(url);
     }

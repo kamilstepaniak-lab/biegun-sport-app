@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, ChevronDown, Search } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -52,17 +52,8 @@ export function Header({ user }: HeaderProps) {
         <div className="w-10" />
       </div>
 
-      {/* Search bar area (left side on desktop) */}
-      <div className="hidden md:flex items-center flex-1">
-        <div className="relative max-w-xs w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Szukaj..."
-            className="w-full h-9 pl-9 pr-4 rounded-xl bg-gray-100/80 border-0 text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all"
-          />
-        </div>
-      </div>
+      {/* Left side spacer */}
+      <div className="hidden md:flex items-center flex-1" />
 
       {/* Right side - User menu */}
       <div className="flex items-center gap-3">

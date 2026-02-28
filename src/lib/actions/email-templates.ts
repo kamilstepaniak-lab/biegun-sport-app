@@ -15,6 +15,14 @@ export interface EmailTemplate {
 export async function getEmailTemplates(): Promise<EmailTemplate[]> {
   const supabase = await createClient();
 
+  // Tylko admin może przeglądać szablony emaili
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') return [];
+
   const { data, error } = await supabase
     .from('email_templates')
     .select('*')
@@ -29,8 +37,17 @@ export async function getEmailTemplates(): Promise<EmailTemplate[]> {
 }
 
 export async function getEmailTemplate(id: string): Promise<EmailTemplate | null> {
-  const supabaseAdmin = createAdminClient();
+  const supabase = await createClient();
 
+  // Tylko admin może pobrać szablon
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') return null;
+
+  const supabaseAdmin = createAdminClient();
   const { data, error } = await supabaseAdmin
     .from('email_templates')
     .select('*')

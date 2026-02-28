@@ -9,6 +9,14 @@ import { logPaymentChange } from './payment-history';
 export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDetails[]> {
   const supabase = await createClient();
 
+  // Weryfikacja roli — tylko admin może pobrać płatności całego wyjazdu
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'admin') return [];
+
   const { data: payments, error } = await supabase
     .from('payments')
     .select(`
@@ -63,59 +71,6 @@ export async function getAllPayments(): Promise<PaymentWithDetails[]> {
       ),
       transactions:payment_transactions (*)
     `)
-    .neq('status', 'cancelled')
-    .order('due_date', { ascending: true });
-
-  if (error) {
-    console.error('Payments fetch error:', error);
-    return [];
-  }
-
-  return payments.filter((p: PaymentWithDetails) => p.registration) as PaymentWithDetails[];
-}
-
-export async function getMyPayments(): Promise<PaymentWithDetails[]> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  // Pobierz dzieci
-  const { data: children } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('parent_id', user.id);
-
-  if (!children || children.length === 0) return [];
-
-  const childIds = children.map((c) => c.id);
-
-  // Pobierz rejestracje
-  const { data: registrations } = await supabase
-    .from('trip_registrations')
-    .select('id')
-    .in('participant_id', childIds)
-    .eq('status', 'active');
-
-  if (!registrations || registrations.length === 0) return [];
-
-  const registrationIds = registrations.map((r) => r.id);
-
-  const { data: payments, error } = await supabase
-    .from('payments')
-    .select(`
-      *,
-      registration:trip_registrations (
-        *,
-        participant:participants (
-          *,
-          parent:profiles!parent_id (*)
-        ),
-        trip:trips (*)
-      ),
-      transactions:payment_transactions (*)
-    `)
-    .in('registration_id', registrationIds)
     .neq('status', 'cancelled')
     .order('due_date', { ascending: true });
 

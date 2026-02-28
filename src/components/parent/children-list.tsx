@@ -173,11 +173,34 @@ export function ChildrenList({ children }: ChildrenListProps) {
 
   if (children.length === 0) {
     return (
-      <EmptyState
-        icon={UserPlus}
-        title="Brak dzieci"
-        description="Nie dodałeś jeszcze żadnego dziecka. Dodaj pierwsze dziecko, aby móc zapisywać je na wyjazdy."
-      />
+      <div className="max-w-lg mx-auto mt-12 text-center space-y-6">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white mx-auto">
+          <UserPlus className="h-8 w-8" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Witaj w BiegunSport!</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Aby rozpocząć, dodaj swoje dziecko do systemu.
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl ring-1 ring-gray-100 p-6 text-left space-y-4">
+          <h3 className="text-sm font-semibold text-gray-900">Jak zacząć?</h3>
+          <ol className="text-sm text-gray-600 space-y-3">
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex-shrink-0">1</span>
+              <span>Kliknij przycisk <strong>&quot;Dodaj dziecko&quot;</strong> poniżej i uzupełnij dane: imię, nazwisko, data urodzenia.</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex-shrink-0">2</span>
+              <span>Wybierz <strong>grupę treningową</strong> do której należy dziecko (jeśli nie wiesz, zapytaj instruktora).</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex-shrink-0">3</span>
+              <span>Po dodaniu dziecka zobaczysz dostępne <strong>wyjazdy</strong> i będziesz mógł potwierdzić udział.</span>
+            </li>
+          </ol>
+        </div>
+      </div>
     );
   }
 

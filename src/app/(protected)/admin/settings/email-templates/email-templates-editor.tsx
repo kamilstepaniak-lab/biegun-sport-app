@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import DOMPurify from 'dompurify';
 import { toast } from 'sonner';
 import {
   Mail,
@@ -170,7 +171,7 @@ function TemplateEditor({
         {showPreview ? (
           <div
             className="p-6 prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }}
           />
         ) : (
           <EditorContent editor={editor} />

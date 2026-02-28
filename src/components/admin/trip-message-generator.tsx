@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import DOMPurify from 'dompurify';
 import { Mail, MessageCircle, Copy, Check, X, Send, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -268,7 +269,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
                     suppressContentEditableWarning
                     // dangerouslySetInnerHTML ustawia HTML przy montowaniu (key wymusza remount)
                     // Po montowaniu React nie ingeruje — użytkownik edytuje swobodnie
-                    dangerouslySetInnerHTML={{ __html: serverPreviewHtml ?? '' }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(serverPreviewHtml ?? '') }}
                     className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 prose prose-sm max-w-none bg-white min-h-[280px]"
                   />
                 )}
