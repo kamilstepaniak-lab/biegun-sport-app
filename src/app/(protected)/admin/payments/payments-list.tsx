@@ -11,6 +11,8 @@ import {
   CircleDollarSign,
   CheckCircle2,
   MessageSquare,
+  CalendarDays,
+  ListFilter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +32,7 @@ interface PaymentsListProps {
 }
 
 type StatusFilter = 'all' | 'pending' | 'paid' | 'overdue';
+type PageLimit = 25 | 50 | 100 | 200 | 'all';
 
 interface GroupedPayment {
   key: string;
@@ -45,6 +48,9 @@ interface GroupedPayment {
 export function PaymentsList({ payments }: PaymentsListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [pageLimit, setPageLimit] = useState<PageLimit>(25);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState<string>('');
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -106,10 +112,32 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       });
     }
 
+    // Filtr dat (created_at)
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      result = result.filter((g) =>
+        g.payments.some((p) => new Date(p.created_at) >= from)
+      );
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((g) =>
+        g.payments.some((p) => new Date(p.created_at) <= to)
+      );
+    }
+
     result.sort((a, b) => a.participantName.localeCompare(b.participantName, 'pl'));
 
     return result;
-  }, [groupedPayments, searchQuery, statusFilter]);
+  }, [groupedPayments, searchQuery, statusFilter, dateFrom, dateTo]);
+
+  // Limit wyświetlanych wierszy
+  const displayedGroups = useMemo(() => {
+    if (pageLimit === 'all') return filteredGroups;
+    return filteredGroups.slice(0, pageLimit);
+  }, [filteredGroups, pageLimit]);
 
   async function handleStatusChange(paymentId: string, newStatus: 'pending' | 'paid') {
     setIsUpdating(paymentId);
@@ -234,39 +262,99 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         </div>
 
         {/* Filters row */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              placeholder="Szukaj po nazwisku lub wyjeździe..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
-            />
-            {searchQuery && (
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                onClick={() => setSearchQuery('')}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+        <div className="flex flex-col gap-3">
+          {/* Row 1: search + status */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                placeholder="Szukaj po nazwisku lub wyjeździe..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              {statusFilters.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setStatusFilter(f.key)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    statusFilter === f.key
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex gap-2">
-            {statusFilters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setStatusFilter(f.key)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  statusFilter === f.key
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* Row 2: date range + limit */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            {/* Date range */}
+            <div className="flex items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
+              <CalendarDays className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-400">Od</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
+              />
+              <span className="text-xs text-gray-300">—</span>
+              <span className="text-xs text-gray-400">Do</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  className="text-gray-400 hover:text-gray-600 ml-1"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Page limit */}
+            <div className="flex items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
+              <ListFilter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-400">Pokaż</span>
+              <div className="flex gap-1">
+                {([25, 50, 100, 200, 'all'] as PageLimit[]).map((limit) => (
+                  <button
+                    key={limit}
+                    onClick={() => setPageLimit(limit)}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-medium transition-all ${
+                      pageLimit === limit
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    {limit === 'all' ? 'Wszystkie' : limit}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Info ile widać */}
+            <span className="text-xs text-gray-400">
+              Wyświetlono {displayedGroups.length} z {filteredGroups.length} transakcji
+            </span>
           </div>
         </div>
 
@@ -283,12 +371,12 @@ export function PaymentsList({ payments }: PaymentsListProps) {
 
           {/* Rows */}
           <div className="divide-y divide-gray-50">
-            {filteredGroups.length === 0 ? (
+            {displayedGroups.length === 0 ? (
               <div className="p-12 text-center text-gray-500 text-sm">
-                {searchQuery ? 'Brak płatności pasujących do wyszukiwania' : 'Brak płatności'}
+                {searchQuery || dateFrom || dateTo ? 'Brak płatności pasujących do filtrów' : 'Brak płatności'}
               </div>
             ) : (
-              filteredGroups.map((group) => (
+              displayedGroups.map((group) => (
                 <div
                   key={group.key}
                   className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1fr_2fr_auto] gap-2 md:gap-4 px-5 py-3.5 items-center hover:bg-gray-50/50 transition-colors"
