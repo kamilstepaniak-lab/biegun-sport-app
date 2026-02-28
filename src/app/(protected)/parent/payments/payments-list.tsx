@@ -32,7 +32,7 @@ function copyToClipboard(text: string, label: string) {
 function getMethodStyle(method: string | null): { label: string; className: string } | null {
   if (method === 'transfer') return { label: 'Przelew', className: 'bg-blue-100 text-blue-700' };
   if (method === 'cash') return { label: 'Gotówka', className: 'bg-amber-100 text-amber-700' };
-  if (method === 'both') return { label: 'Przelew/Gotówka', className: 'bg-violet-100 text-violet-700' };
+  if (method === 'both') return { label: 'Przelew/Gotówka', className: 'bg-blue-100 text-blue-700' };
   return null;
 }
 

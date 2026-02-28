@@ -374,7 +374,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                 <div className="bg-gray-50 rounded-2xl p-3 sm:p-5 space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
                         <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </div>
                       <h4 className="text-sm font-semibold text-gray-700">Wyjazd</h4>
@@ -436,8 +436,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   {trip.payment_templates && trip.payment_templates.length > 0 && (
                     <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                          <Receipt className="h-3.5 w-3.5 text-violet-600" />
+                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                          <Receipt className="h-3.5 w-3.5 text-white" />
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Cennik</h4>
                       </div>
@@ -469,7 +469,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                     <span className={cn(
                                       template.payment_method === 'cash' ? 'text-amber-600'
                                         : template.payment_method === 'transfer' ? 'text-blue-600'
-                                        : 'text-violet-600'
+                                        : 'text-white'
                                     )}>{methodLabel}</span>
                                   </p>
                                 </div>
@@ -517,7 +517,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                       'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
                                       template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
                                         : template.payment_method === 'transfer' ? 'bg-blue-100 text-blue-700'
-                                        : 'bg-violet-100 text-violet-700'
+                                        : 'bg-blue-100 text-blue-700'
                                     )}>
                                       {methodLabel}
                                     </span>
@@ -537,7 +537,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   {(trip.bank_account_pln || trip.bank_account_eur) && (
                     <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
                           <Banknote className="h-3.5 w-3.5 text-white" />
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Dane do przelewu</h4>
@@ -609,7 +609,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
               {trip.additional_info && (
                 <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
                       <Info className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-700">Dodatkowe informacje</h4>

@@ -24,11 +24,11 @@ export default function OwuPage() {
       {/* Dokument OWU */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Nagłówek */}
-        <div className="bg-gradient-to-r from-purple-700 to-purple-900 px-8 py-6 text-white">
+        <div className="bg-gradient-to-r from-blue-700 to-blue-900 px-8 py-6 text-white">
           <div className="flex items-center gap-3">
-            <Shield className="h-6 w-6 text-purple-300" />
+            <Shield className="h-6 w-6 text-blue-300" />
             <div>
-              <p className="text-purple-200 text-xs font-medium uppercase tracking-widest mb-0.5">BiegunSport</p>
+              <p className="text-blue-200 text-xs font-medium uppercase tracking-widest mb-0.5">BiegunSport</p>
               <h1 className="text-xl font-bold">Ogólne Warunki Uczestnictwa</h1>
             </div>
           </div>
@@ -85,7 +85,7 @@ function OwuSection({ text, isFirst }: { text: string; isFirst: boolean }) {
   if (isSectionHeader) {
     return (
       <div className="px-8 py-6">
-        <h2 className="text-sm font-bold text-purple-800 uppercase tracking-wide mb-4">{firstLine}</h2>
+        <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide mb-4">{firstLine}</h2>
         <div className="space-y-2">
           {lines.slice(1).map((line, i) => {
             const trimmed = line.trim();

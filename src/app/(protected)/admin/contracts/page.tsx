@@ -90,8 +90,8 @@ export default async function AdminContractsPage() {
       {/* ── SEKCJA: Szablony umów ── */}
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-100">
-            <Library className="h-4 w-4 text-purple-600" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600">
+            <Library className="h-4 w-4 text-white" />
           </div>
           <div>
             <h2 className="text-base font-semibold text-gray-900">Szablony umów</h2>
@@ -108,8 +108,8 @@ export default async function AdminContractsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-                <FileText className="h-5 w-5 text-purple-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                <FileText className="h-5 w-5 text-white" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{contracts.length}</p>

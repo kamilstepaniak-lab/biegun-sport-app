@@ -63,7 +63,7 @@ export function AcceptContractButton({ contractId }: AcceptContractButtonProps) 
             href="/parent/owu"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-purple-700 font-medium hover:text-purple-900 underline underline-offset-2"
+            className="inline-flex items-center gap-1 text-blue-700 font-medium hover:text-blue-900 underline underline-offset-2"
             onClick={(e) => e.stopPropagation()}
           >
             Ogólnymi Warunkami Uczestnictwa (OWU)

@@ -81,7 +81,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
 
       {/* ── SEKCJA: Umowy uczestnictwa ── */}
       <div className="flex items-center gap-3 pt-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600">
           <FileText className="h-4 w-4 text-white" />
         </div>
         <div>
@@ -96,14 +96,14 @@ export default async function ParentContractsPage({ searchParams }: Props) {
 
       {/* Baner wybranego dziecka */}
       {selectedChildId && selectedChildName && (
-        <div className="flex items-center gap-3 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3 text-sm">
-          <User className="h-4 w-4 text-sky-500 shrink-0" />
-          <span className="text-sky-800">
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm">
+          <User className="h-4 w-4 text-blue-600 shrink-0" />
+          <span className="text-blue-800">
             Pokazuję umowy dla: <strong>{selectedChildName}</strong>
           </span>
           <Link
             href="/parent/contracts"
-            className="ml-auto text-xs text-sky-500 hover:text-sky-700 underline"
+            className="ml-auto text-xs text-blue-600 hover:text-blue-700 underline"
           >
             Pokaż wszystkie
           </Link>
