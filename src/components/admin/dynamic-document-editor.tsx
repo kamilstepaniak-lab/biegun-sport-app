@@ -70,7 +70,7 @@ export function DynamicDocumentEditor({
         onClick={() => setIsOpen((prev) => !prev)}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 shrink-0">
             <FileText className="h-4 w-4 text-white" />
           </div>
           <p className="font-semibold text-gray-900">{savedTitle}</p>

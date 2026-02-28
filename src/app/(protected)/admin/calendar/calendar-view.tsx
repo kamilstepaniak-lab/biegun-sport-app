@@ -373,8 +373,8 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
 
       <div className="space-y-2 text-sm">
         <div className="flex items-start gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100 flex-shrink-0">
-            <Calendar className="h-3 w-3 text-blue-600" />
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 flex-shrink-0">
+            <Calendar className="h-3 w-3 text-white" />
           </div>
           <div>
             <div className="font-medium text-gray-900">Wyjazd</div>

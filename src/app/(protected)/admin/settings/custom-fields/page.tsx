@@ -25,7 +25,7 @@ export default async function CustomFieldsSettingsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
                   <Mail className="h-4 w-4 text-white" />
                 </div>
                 <div>

@@ -69,7 +69,7 @@ const statusStyles: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
   published: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-600',
-  completed: 'bg-blue-100 text-blue-600',
+  completed: 'bg-blue-600 text-blue-600',
 };
 
 function copyToClipboard(text: string, label: string) {
@@ -310,7 +310,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Calendar className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Wyjazd</h4>
@@ -342,7 +342,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Calendar className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Powrót</h4>
@@ -410,7 +410,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {trip.payment_templates && trip.payment_templates.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Receipt className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
@@ -472,7 +472,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {(trip.bank_account_pln || trip.bank_account_eur) && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Banknote className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Dane do przelewu</h4>
@@ -520,7 +520,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {trip.packing_list && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Backpack className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
@@ -544,7 +544,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {trip.additional_info && (
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Info className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
@@ -638,7 +638,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2 ring-1 ring-gray-100 shadow-sm">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
               <MapPin className="h-3.5 w-3.5 text-white" />
             </div>
             <div>
