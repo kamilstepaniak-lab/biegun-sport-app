@@ -62,17 +62,30 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
   const today = new Date();
 
   const monthTrips = useMemo(() => {
-    return trips
-      .filter((trip) => {
-        const tripStart = new Date(trip.departure_datetime);
-        const tripEnd = new Date(trip.return_datetime);
-        return (
-          isWithinInterval(tripStart, { start: monthStart, end: monthEnd }) ||
-          isWithinInterval(tripEnd, { start: monthStart, end: monthEnd }) ||
-          (tripStart <= monthStart && tripEnd >= monthEnd)
-        );
-      })
-      .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime());
+    const todayStart = startOfDay(new Date());
+
+    const filtered = trips.filter((trip) => {
+      const tripStart = new Date(trip.departure_datetime);
+      const tripEnd = new Date(trip.return_datetime);
+      return (
+        isWithinInterval(tripStart, { start: monthStart, end: monthEnd }) ||
+        isWithinInterval(tripEnd, { start: monthStart, end: monthEnd }) ||
+        (tripStart <= monthStart && tripEnd >= monthEnd)
+      );
+    });
+
+    return filtered.sort((a, b) => {
+      const aDone = startOfDay(new Date(a.return_datetime)) < todayStart;
+      const bDone = startOfDay(new Date(b.return_datetime)) < todayStart;
+      if (aDone && !bDone) return 1;
+      if (!aDone && bDone) return -1;
+      if (!aDone) {
+        // oba aktywne → ASC po wyjeździe
+        return new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime();
+      }
+      // oba zakończone → DESC po wyjeździe (najnowszy na górze w grupie)
+      return new Date(b.departure_datetime).getTime() - new Date(a.departure_datetime).getTime();
+    });
   }, [trips, monthStart, monthEnd]);
 
   function getDaysLabel(trip: TripForParent) {
