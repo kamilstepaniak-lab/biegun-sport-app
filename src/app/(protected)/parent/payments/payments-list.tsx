@@ -48,14 +48,15 @@ function SummaryBlocks({
   pendingSource: ParentPayment[];
   overdueSource: ParentPayment[];
 }) {
+  // "Do zapłaty" = wszystkie nieopłacone (pending + overdue łącznie)
   const pendingByCurrency = useMemo(() => {
     const sums: Record<string, number> = {};
-    pendingSource.forEach((p) => {
+    [...pendingSource, ...overdueSource].forEach((p) => {
       const rem = p.amount - p.amount_paid;
       sums[p.currency] = (sums[p.currency] ?? 0) + rem;
     });
     return sums;
-  }, [pendingSource]);
+  }, [pendingSource, overdueSource]);
 
   const overdueByCurrency = useMemo(() => {
     const sums: Record<string, number> = {};
@@ -66,8 +67,13 @@ function SummaryBlocks({
     return sums;
   }, [overdueSource]);
 
-  const hasPending = pendingSource.length > 0;
+  const hasPending = Object.keys(pendingByCurrency).length > 0;
   const hasOverdue = overdueSource.length > 0;
+
+  // PLN zawsze przed EUR
+  const currencyOrder = (c: string) => c === 'PLN' ? 0 : c === 'EUR' ? 1 : 2;
+  const sortedPendingEntries = Object.entries(pendingByCurrency).sort((a, b) => currencyOrder(a[0]) - currencyOrder(b[0]));
+  const sortedOverdueEntries = Object.entries(overdueByCurrency).sort((a, b) => currencyOrder(a[0]) - currencyOrder(b[0]));
 
   return (
     <div className="grid grid-cols-2 gap-3">
@@ -81,7 +87,7 @@ function SummaryBlocks({
         </div>
         {hasPending ? (
           <div className="space-y-0.5">
-            {Object.entries(pendingByCurrency).map(([currency, sum]) => (
+            {sortedPendingEntries.map(([currency, sum]) => (
               <div key={currency} className="flex items-baseline gap-1.5">
                 <span className="text-xl font-bold text-gray-900 tabular-nums">{sum.toFixed(0)}</span>
                 <span className="text-sm font-semibold text-gray-400">{currency}</span>
@@ -103,7 +109,7 @@ function SummaryBlocks({
         </div>
         {hasOverdue ? (
           <div className="space-y-0.5">
-            {Object.entries(overdueByCurrency).map(([currency, sum]) => (
+            {sortedOverdueEntries.map(([currency, sum]) => (
               <div key={currency} className="flex items-baseline gap-1.5">
                 <span className="text-xl font-bold text-red-600 tabular-nums">{sum.toFixed(0)}</span>
                 <span className="text-sm font-semibold text-red-400">{currency}</span>
@@ -417,8 +423,29 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
       <SummaryBlocks pendingSource={summaryPending} overdueSource={summaryOverdue} />
 
       <div className="space-y-4">
-        {/* Filtry + dropdown wyjazdu */}
+        {/* Dropdown wyjazdu + filtry statusu */}
         <div className="flex flex-wrap items-center gap-2">
+          {availableTrips.length > 1 && (
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400 pointer-events-none" />
+              <select
+                value={tripFilter}
+                onChange={(e) => setTripFilter(e.target.value)}
+                className={`appearance-none pl-8 pr-8 py-2 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  tripFilter !== 'all'
+                    ? 'bg-blue-600 text-white border border-blue-700'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
+                }`}
+              >
+                <option value="all">Wszystkie wyjazdy</option>
+                {availableTrips.map((t) => (
+                  <option key={t.id} value={t.id}>{t.title}</option>
+                ))}
+              </select>
+              <ChevronDown className={`absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none ${tripFilter !== 'all' ? 'text-blue-200' : 'text-blue-400'}`} />
+            </div>
+          )}
+
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
@@ -437,23 +464,6 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
               )}
             </button>
           ))}
-
-          {availableTrips.length > 1 && (
-            <div className="relative ml-auto">
-              <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-              <select
-                value={tripFilter}
-                onChange={(e) => setTripFilter(e.target.value)}
-                className="appearance-none pl-7 pr-7 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-700 cursor-pointer hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Wszystkie wyjazdy</option>
-                {availableTrips.map((t) => (
-                  <option key={t.id} value={t.id}>{t.title}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
-            </div>
-          )}
         </div>
 
         {/* Lista płatności */}
