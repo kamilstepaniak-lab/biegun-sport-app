@@ -20,7 +20,7 @@ export default async function ParentTripsPage({ searchParams }: Props) {
   const { child: selectedChildId, childName } = await searchParams;
 
   const [trips, myChildren] = await Promise.all([
-    getTripsForParentWithChildren(user.id, selectedChildId),
+    getTripsForParentWithChildren(user.id, selectedChildId === 'all' ? undefined : selectedChildId),
     getMyChildren(),
   ]);
 

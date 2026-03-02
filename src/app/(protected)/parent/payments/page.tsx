@@ -16,7 +16,7 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
   const { child: selectedChildId, childName } = await searchParams;
 
   const [payments, bankAccounts, myChildren] = await Promise.all([
-    getPaymentsForParent(selectedChildId),
+    getPaymentsForParent(selectedChildId === 'all' ? undefined : selectedChildId),
     getBankAccountsForParent(),
     getMyChildren(),
   ]);

@@ -19,7 +19,7 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
   const { child: selectedChildId, childName } = await searchParams;
 
   const [trips, myChildren] = await Promise.all([
-    getTripsForParentWithChildren(profile.id, selectedChildId),
+    getTripsForParentWithChildren(profile.id, selectedChildId === 'all' ? undefined : selectedChildId),
     getMyChildren(),
   ]);
 

@@ -22,7 +22,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
   const selectedChildName = params.childName ? decodeURIComponent(params.childName) : null;
 
   const [contracts, profile, dynamicDocs, ...docContents] = await Promise.all([
-    getContractsForParent(selectedChildId),
+    getContractsForParent(selectedChildId === 'all' ? undefined : selectedChildId),
     getProfile(),
     getDynamicDocuments(),
     ...GLOBAL_DOCUMENTS.map((doc) => getGlobalDocument(doc.id)),

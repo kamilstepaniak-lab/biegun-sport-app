@@ -11,7 +11,7 @@ interface ChildOption {
 }
 
 interface ChildGuardProps {
-  /** ID wybranego dziecka — przekazywane z searchParams po stronie serwera */
+  /** ID wybranego dziecka lub 'all' — przekazywane z searchParams po stronie serwera */
   selectedChildId?: string;
   /** Nazwa dziecka do wyświetlenia w bannerze (opcjonalna) */
   selectedChildName?: string;
@@ -21,6 +21,8 @@ interface ChildGuardProps {
 }
 
 const STORAGE_KEY = 'selectedChild';
+const ALL_CHILDREN_ID = 'all';
+const ALL_CHILDREN_NAME = 'Wszystkie dzieci';
 
 export function ChildGuard({ selectedChildId, selectedChildName, childrenList, children }: ChildGuardProps) {
   const pathname = usePathname();
@@ -28,6 +30,8 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isAll = selectedChildId === ALL_CHILDREN_ID;
 
   // Zamknij dropdown po kliknięciu poza nim
   useEffect(() => {
@@ -42,42 +46,47 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
 
   // Zapisz wybrane dziecko do localStorage
   useEffect(() => {
-    if (selectedChildId && selectedChildName) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name: selectedChildName }));
+    if (selectedChildId) {
+      const name = isAll ? ALL_CHILDREN_NAME : (selectedChildName ?? '');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name }));
     }
-  }, [selectedChildId, selectedChildName]);
+  }, [selectedChildId, selectedChildName, isAll]);
 
-  // Jeśli brak dziecka w URL — spróbuj przywrócić z localStorage, a jeśli brak — wybierz pierwsze
+  // Jeśli brak dziecka w URL — domyślnie idź na "Wszystkie dzieci"
   useEffect(() => {
     if (!selectedChildId && childrenList && childrenList.length > 0) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
           const { id, name } = JSON.parse(stored);
-          // Sprawdź czy to dziecko nadal istnieje na liście
-          if (childrenList.some(c => c.id === id)) {
+          if (id === ALL_CHILDREN_ID || childrenList.some(c => c.id === id)) {
             setRedirecting(true);
-            router.replace(`${pathname}?child=${id}&childName=${encodeURIComponent(name)}`);
+            const params = id === ALL_CHILDREN_ID
+              ? `?child=${ALL_CHILDREN_ID}`
+              : `?child=${id}&childName=${encodeURIComponent(name)}`;
+            router.replace(`${pathname}${params}`);
             return;
           }
         } catch {
           localStorage.removeItem(STORAGE_KEY);
         }
       }
-      // Brak w localStorage lub dziecko nie istnieje — wybierz pierwsze z listy
-      const first = childrenList[0];
+      // Brak w localStorage — domyślnie "Wszystkie dzieci"
       setRedirecting(true);
-      router.replace(`${pathname}?child=${first.id}&childName=${encodeURIComponent(first.name)}`);
+      router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
     }
   }, [selectedChildId, pathname, router, childrenList]);
 
-  function handleSelectChild(child: ChildOption) {
+  function handleSelectChild(child: ChildOption | { id: typeof ALL_CHILDREN_ID; name: string }) {
     setDropdownOpen(false);
-    router.push(`${pathname}?child=${child.id}&childName=${encodeURIComponent(child.name)}`);
+    if (child.id === ALL_CHILDREN_ID) {
+      router.push(`${pathname}?child=${ALL_CHILDREN_ID}`);
+    } else {
+      router.push(`${pathname}?child=${child.id}&childName=${encodeURIComponent(child.name)}`);
+    }
   }
 
   if (!selectedChildId) {
-    // Jeśli właśnie przekierowujemy — pokaż loader zamiast "Wybierz dziecko"
     if (redirecting) {
       return <div className="h-32" />;
     }
@@ -92,8 +101,6 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
             Aby zobaczyć tę sekcję, najpierw wybierz dziecko.
           </p>
         </div>
-
-        {/* Jeśli mamy listę dzieci, pokaż dropdown zamiast linku do Moje dzieci */}
         {childrenList && childrenList.length > 0 ? (
           <div className="relative" ref={dropdownRef}>
             <button
@@ -105,7 +112,17 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
               <ChevronDown className="h-4 w-4" />
             </button>
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[180px] z-50">
+              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[200px] z-50">
+                {/* Opcja "Wszystkie dzieci" */}
+                <button
+                  onClick={() => handleSelectChild({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 border-b border-gray-100"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Users className="h-3.5 w-3.5 text-blue-600" />
+                  </div>
+                  <span className="font-medium text-blue-700">Wszystkie dzieci</span>
+                </button>
                 {childrenList.map(child => (
                   <button
                     key={child.id}
@@ -134,22 +151,26 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     );
   }
 
+  const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || 'Wybrane dziecko');
+
   return (
     <div className="space-y-5">
       {/* Banner wybranego dziecka */}
       <div className="bg-blue-600 rounded-2xl p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white font-bold text-sm">
-            {(selectedChildName || 'D').charAt(0)}
+            {isAll ? <Users className="h-4 w-4" /> : displayName.charAt(0)}
           </div>
           <div>
-            <p className="text-xs text-blue-100">Przeglądasz dane dla</p>
-            <p className="text-sm font-semibold text-white">{selectedChildName || 'Wybrane dziecko'}</p>
+            <p className="text-xs text-blue-100">
+              {isAll ? 'Widok zbiorczy' : 'Przeglądasz dane dla'}
+            </p>
+            <p className="text-sm font-semibold text-white">{displayName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {/* Dropdown zmiany dziecka */}
-          {childrenList && childrenList.length > 1 && (
+          {childrenList && childrenList.length > 0 && (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(v => !v)}
@@ -159,7 +180,18 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
               {dropdownOpen && (
-                <div className="absolute top-full mt-2 right-0 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[180px] z-50">
+                <div className="absolute top-full mt-2 right-0 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[200px] z-50">
+                  {/* Opcja "Wszystkie dzieci" */}
+                  <button
+                    onClick={() => handleSelectChild({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 border-b border-gray-100"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Users className="h-3.5 w-3.5 text-blue-600" />
+                    </div>
+                    <span className="flex-1 font-medium text-blue-700">Wszystkie dzieci</span>
+                    {isAll && <Check className="h-3.5 w-3.5 text-gray-900 flex-shrink-0" />}
+                  </button>
                   {childrenList.map(child => (
                     <button
                       key={child.id}
@@ -179,13 +211,14 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
               )}
             </div>
           )}
-          {/* Link "X" czyści child z URL */}
-          <Link
-            href={pathname}
+          {/* Link "X" wraca do "Wszystkie dzieci" zamiast czyścić URL */}
+          <button
+            onClick={() => router.push(`${pathname}?child=${ALL_CHILDREN_ID}`)}
             className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            title="Pokaż wszystkie dzieci"
           >
             <X className="h-4 w-4 text-white" />
-          </Link>
+          </button>
         </div>
       </div>
       {children}
