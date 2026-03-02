@@ -403,8 +403,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   <div className="h-px bg-gray-200" />
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-gray-200 flex items-center justify-center">
-                        <ArrowRight className="h-3.5 w-3.5 text-gray-500 rotate-180" />
+                      <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <ArrowRight className="h-3.5 w-3.5 text-white rotate-180" />
                       </div>
                       <h4 className="text-sm font-semibold text-gray-700">Powrót</h4>
                     </div>
@@ -594,8 +594,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
               {trip.packing_list && (
                 <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center">
-                      <Backpack className="h-3.5 w-3.5 text-amber-600" />
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                      <Backpack className="h-3.5 w-3.5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-gray-700">Co zabrać</h4>
                   </div>

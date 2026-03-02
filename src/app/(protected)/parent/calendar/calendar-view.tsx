@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -20,35 +20,10 @@ import type { TripForParent } from '@/lib/actions/trips';
 
 interface ParentCalendarViewProps {
   trips: TripForParent[];
-  /** ID grupy dziecka — ustawia domyślny filtr kalendarza */
-  defaultGroupId?: string;
 }
 
-export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarViewProps) {
+export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [groupFilter, setGroupFilter] = useState<string>(defaultGroupId || 'all');
-
-  // Gdy zmienia się dziecko (defaultGroupId) — zaktualizuj filtr
-  useEffect(() => {
-    setGroupFilter(defaultGroupId || 'all');
-  }, [defaultGroupId]);
-
-  const availableGroups = useMemo(() => {
-    const groupMap = new Map<string, { id: string; name: string }>();
-    trips.forEach((trip) => {
-      trip.groups.forEach((g) => {
-        if (!groupMap.has(g.id)) {
-          groupMap.set(g.id, { id: g.id, name: g.name });
-        }
-      });
-    });
-    return Array.from(groupMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [trips]);
-
-  const filteredTrips = useMemo(() => {
-    if (groupFilter === 'all') return trips;
-    return trips.filter((trip) => trip.groups.some((g) => g.id === groupFilter));
-  }, [trips, groupFilter]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -64,7 +39,7 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
   }, [monthStart, monthEnd]);
 
   function getTripsForDay(day: Date): TripForParent[] {
-    return filteredTrips.filter((trip) => {
+    return trips.filter((trip) => {
       const tripStart = startOfDay(new Date(trip.departure_datetime));
       const tripEnd = endOfDay(new Date(trip.return_datetime));
       const dayStart = startOfDay(day);
@@ -86,22 +61,8 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
 
   const today = new Date();
 
-  function formatTripDates(departure: Date, returnDate: Date): string {
-    const depDay = format(departure, 'd');
-    const retDay = format(returnDate, 'd');
-    const depMonth = format(departure, 'MM');
-    const retMonth = format(returnDate, 'MM');
-    const retYear = format(returnDate, 'yyyy');
-
-    if (depMonth === retMonth) {
-      return `${depDay}–${retDay}.${retMonth}.${retYear}`;
-    } else {
-      return `${depDay}.${depMonth}–${retDay}.${retMonth}.${retYear}`;
-    }
-  }
-
   const monthTrips = useMemo(() => {
-    return filteredTrips
+    return trips
       .filter((trip) => {
         const tripStart = new Date(trip.departure_datetime);
         const tripEnd = new Date(trip.return_datetime);
@@ -112,7 +73,7 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
         );
       })
       .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime());
-  }, [filteredTrips, monthStart, monthEnd]);
+  }, [trips, monthStart, monthEnd]);
 
   function getDaysLabel(trip: TripForParent) {
     const departure = startOfDay(new Date(trip.departure_datetime));
@@ -131,45 +92,6 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
 
   return (
     <div className="space-y-4">
-      {/* Filtr grup */}
-      {availableGroups.length > 1 && (
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-gray-500 mr-1">Filtruj:</span>
-            <button
-              onClick={() => setGroupFilter('all')}
-              className={cn(
-                'px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200',
-                groupFilter === 'all'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
-              )}
-            >
-              Wszystkie
-            </button>
-            {availableGroups.map((group) => {
-              const color = getGroupColor(group.name);
-              const isActive = groupFilter === group.id;
-              return (
-                <button
-                  key={group.id}
-                  onClick={() => setGroupFilter(isActive ? 'all' : group.id)}
-                  className={cn(
-                    'px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 inline-flex items-center gap-2',
-                    isActive
-                      ? cn(color.bg, color.text, 'ring-1', color.border, 'shadow-sm')
-                      : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
-                  )}
-                >
-                  <span className={cn('w-2.5 h-2.5 rounded-full', color.dot)} />
-                  {group.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Kalendarz */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
@@ -289,7 +211,9 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
                               {/* Daty i miejsca */}
                               <div className="space-y-1.5">
                                 <div className="flex items-start gap-1.5 text-xs">
-                                  <Calendar className="h-3 w-3 mt-0.5 text-green-500 flex-shrink-0" />
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 flex-shrink-0 mt-0.5">
+                                    <Calendar className="h-3 w-3 text-white" />
+                                  </div>
                                   <div className="text-gray-600">
                                     <span className="font-medium text-gray-700">Wyjazd: </span>
                                     {format(new Date(trip.departure_datetime), 'd MMM yyyy, HH:mm', { locale: pl })}
@@ -309,7 +233,9 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
                                 </div>
 
                                 <div className="flex items-start gap-1.5 text-xs">
-                                  <Calendar className="h-3 w-3 mt-0.5 text-red-400 flex-shrink-0" />
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 flex-shrink-0 mt-0.5">
+                                    <Calendar className="h-3 w-3 text-white" />
+                                  </div>
                                   <div className="text-gray-600">
                                     <span className="font-medium text-gray-700">Powrót: </span>
                                     {format(new Date(trip.return_datetime), 'd MMM yyyy, HH:mm', { locale: pl })}
@@ -378,7 +304,7 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
 
       {/* Tabelka wyjazdów w tym miesiącu */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h3 className="font-semibold text-gray-900">
             Wyjazdy w {format(currentDate, 'LLLL yyyy', { locale: pl })}
           </h3>
@@ -393,25 +319,26 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
             <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
               <Calendar className="h-6 w-6 text-gray-300" />
             </div>
-            <p className="text-gray-500 text-sm">
-              {groupFilter === 'all' ? 'Brak wyjazdów w tym miesiącu' : 'Brak wyjazdów dla wybranej grupy w tym miesiącu'}
-            </p>
+            <p className="text-gray-500 text-sm">Brak wyjazdów w tym miesiącu</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-50 bg-gray-50/60">
+                <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">
-                    Wyjazd / Powrót
+                    Wyjazd
                   </th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Tytuł wyjazdu
+                    Powrót
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
+                    Tytuł
                   </th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
                     Dni do wyjazdu
                   </th>
-                  <th className="px-4 py-3" />
+                  <th className="px-4 py-3 w-28" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -426,49 +353,67 @@ export function ParentCalendarView({ trips, defaultGroupId }: ParentCalendarView
                     far: 'bg-gray-100 text-gray-600',
                   }[variant];
 
+                  const dep = new Date(trip.departure_datetime);
+                  const ret = new Date(trip.return_datetime);
+
                   return (
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
-                      {/* Daty */}
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-800">
-                          {formatTripDates(
-                            new Date(trip.departure_datetime),
-                            new Date(trip.return_datetime)
+                      {/* Wyjazd */}
+                      <td className="px-5 py-3.5 whitespace-nowrap align-top">
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          <span className="font-semibold text-gray-900">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
+                          <span className="text-gray-500">{format(dep, 'HH:mm', { locale: pl })}</span>
+                          {trip.departure_location && (
+                            <span className="text-gray-400 text-xs">{trip.departure_location}</span>
                           )}
-                        </span>
+                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+                            <span className="text-gray-400 text-xs">
+                              {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Powrót */}
+                      <td className="px-4 py-3.5 whitespace-nowrap align-top">
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          <span className="font-semibold text-gray-900">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
+                          <span className="text-gray-500">{format(ret, 'HH:mm', { locale: pl })}</span>
+                          {trip.return_location && (
+                            <span className="text-gray-400 text-xs">{trip.return_location}</span>
+                          )}
+                          {trip.return_stop2_datetime && trip.return_stop2_location && (
+                            <span className="text-gray-400 text-xs">
+                              {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Tytuł */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1 flex-shrink-0">
+                      <td className="px-4 py-3.5 align-top">
+                        <div className="flex items-start gap-2">
+                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
                             {trip.groups.map((g) => (
-                              <span
-                                key={g.id}
-                                className={cn('w-2.5 h-2.5 rounded-full', getGroupColor(g.name).dot)}
-                                title={g.name}
-                              />
+                              <span key={g.id} className={cn('w-2 h-2 rounded-full', getGroupColor(g.name).dot)} title={g.name} />
                             ))}
                           </div>
-                          <span className="font-medium text-gray-900 text-sm">{trip.title}</span>
+                          <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
                         </div>
                       </td>
 
                       {/* Dni do wyjazdu */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className={cn(
-                          'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold',
-                          badgeClass
-                        )}>
+                      <td className="px-4 py-3.5 whitespace-nowrap align-top">
+                        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold', badgeClass)}>
                           {label}
                         </span>
                       </td>
 
                       {/* Przycisk */}
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-4 py-3.5 text-right align-top">
                         <Link
                           href={`/parent/trips/${trip.id}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-700 text-xs font-medium transition-colors ring-1 ring-gray-200 hover:ring-blue-200"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
                         >
                           Szczegóły
                           <ArrowRight className="h-3 w-3" />

@@ -64,11 +64,11 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               <div className="grid gap-6 sm:grid-cols-2">
                 {/* WYJAZD */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-green-700">Wyjazd</h4>
+                  <h4 className="font-semibold text-blue-700">Wyjazd</h4>
 
                   {/* Przystanek 1 */}
-                  <div className="space-y-2 pl-3 border-l-2 border-green-300">
-                    <p className="text-xs font-medium text-green-600">Przystanek 1 (główny)</p>
+                  <div className="space-y-2 pl-3 border-l-2 border-blue-300">
+                    <p className="text-xs font-medium text-blue-600">Przystanek 1 (główny)</p>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
                       <span>{format(new Date(trip.departure_datetime), 'd MMMM yyyy', { locale: pl })}</span>
@@ -85,8 +85,8 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
                   {/* Przystanek 2 */}
                   {trip.departure_stop2_location && (
-                    <div className="space-y-2 pl-3 border-l-2 border-green-200">
-                      <p className="text-xs font-medium text-green-500">Przystanek 2</p>
+                    <div className="space-y-2 pl-3 border-l-2 border-blue-200">
+                      <p className="text-xs font-medium text-blue-500">Przystanek 2</p>
                       {trip.departure_stop2_datetime && (
                         <>
                           <div className="flex items-center gap-2">
