@@ -78,22 +78,22 @@ function SummaryBlocks({
   return (
     <div className="grid grid-cols-2 gap-3">
       {/* Do zapłaty */}
-      <div className="bg-white rounded-2xl ring-1 ring-gray-100 p-4">
+      <div className="bg-amber-50 rounded-2xl ring-1 ring-amber-200 p-4">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <Clock className="h-3.5 w-3.5 text-amber-600" />
+          <div className="w-7 h-7 rounded-lg bg-amber-200 flex items-center justify-center flex-shrink-0">
+            <Clock className="h-3.5 w-3.5 text-amber-700" />
           </div>
           <div>
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Do zapłaty</span>
-            <p className="text-[10px] text-gray-300 leading-tight">razem z płatnościami po terminie</p>
+            <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide">Do zapłaty</span>
+            <p className="text-[10px] text-amber-400 leading-tight">razem z płatnościami po terminie</p>
           </div>
         </div>
         {hasPending ? (
           <div className="space-y-0.5">
             {sortedPendingEntries.map(([currency, sum]) => (
               <div key={currency} className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-gray-900 tabular-nums">{sum.toFixed(0)}</span>
-                <span className="text-sm font-semibold text-gray-400">{currency}</span>
+                <span className="text-xl font-bold text-amber-900 tabular-nums">{sum.toFixed(0)}</span>
+                <span className="text-sm font-semibold text-amber-600">{currency}</span>
               </div>
             ))}
           </div>
@@ -103,19 +103,19 @@ function SummaryBlocks({
       </div>
 
       {/* Po terminie */}
-      <div className={`bg-white rounded-2xl ring-1 p-4 ${hasOverdue ? 'ring-red-200' : 'ring-gray-100'}`}>
+      <div className={`rounded-2xl ring-1 p-4 ${hasOverdue ? 'bg-red-50 ring-red-200' : 'bg-white ring-gray-100'}`}>
         <div className="flex items-center gap-2 mb-2">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${hasOverdue ? 'bg-red-100' : 'bg-gray-100'}`}>
-            <AlertCircle className={`h-3.5 w-3.5 ${hasOverdue ? 'text-red-600' : 'text-gray-400'}`} />
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${hasOverdue ? 'bg-red-200' : 'bg-gray-100'}`}>
+            <AlertCircle className={`h-3.5 w-3.5 ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`} />
           </div>
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Po terminie</span>
+          <span className={`text-[10px] font-semibold uppercase tracking-wide ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`}>Po terminie</span>
         </div>
         {hasOverdue ? (
           <div className="space-y-0.5">
             {sortedOverdueEntries.map(([currency, sum]) => (
               <div key={currency} className="flex items-baseline gap-1.5">
-                <span className="text-xl font-bold text-red-600 tabular-nums">{sum.toFixed(0)}</span>
-                <span className="text-sm font-semibold text-red-400">{currency}</span>
+                <span className="text-xl font-bold text-red-700 tabular-nums">{sum.toFixed(0)}</span>
+                <span className="text-sm font-semibold text-red-500">{currency}</span>
               </div>
             ))}
           </div>
@@ -171,13 +171,14 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
             const isDepartureDay = payment.trip_departure_date &&
               payment.due_date === new Date(payment.trip_departure_date).toISOString().split('T')[0];
             return (
-              <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-                {isDepartureDay
-                  ? 'w dniu wyjazdu'
-                  : isOverdue
-                    ? `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })} · ${daysOverdue}d po term.`
-                    : `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}`}
-              </span>
+              <div>
+                <span className={isOverdue ? 'text-red-600' : 'text-gray-500'}>
+                  {isDepartureDay ? 'w dniu wyjazdu' : `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}`}
+                </span>
+                {isOverdue && daysOverdue > 0 && (
+                  <p className="text-[11px] text-red-400 font-normal mt-0.5">{daysOverdue} dni po terminie</p>
+                )}
+              </div>
             );
           })() : (
             <span className="text-gray-300">—</span>
