@@ -48,8 +48,14 @@ export function ChildUrlSync() {
     const childInUrl = searchParams.get('child');
     const childNameInUrl = searchParams.get('childName');
 
+    if (childInUrl === 'all') {
+      // Widok zbiorczy — zapisz do localStorage
+      saveChildToStorage('all', 'Wszystkie dzieci');
+      return;
+    }
+
     if (childInUrl && childNameInUrl) {
-      // Mamy dziecko w URL — zapisz do localStorage
+      // Mamy konkretne dziecko w URL — zapisz do localStorage
       saveChildToStorage(childInUrl, childNameInUrl);
       return;
     }
@@ -58,11 +64,15 @@ export function ChildUrlSync() {
       // Brak dziecka w URL — sprawdź localStorage
       const stored = loadFromStorage();
       if (stored) {
-        // Dodaj ?child= do URL bez przeładowania strony
-        const params = new URLSearchParams(searchParams.toString());
-        params.set('child', stored.id);
-        params.set('childName', stored.name);
-        router.replace(`${pathname}?${params.toString()}`);
+        if (stored.id === 'all') {
+          router.replace(`${pathname}?child=all`);
+        } else {
+          // Dodaj ?child= do URL bez przeładowania strony
+          const params = new URLSearchParams(searchParams.toString());
+          params.set('child', stored.id);
+          params.set('childName', stored.name);
+          router.replace(`${pathname}?${params.toString()}`);
+        }
       }
     }
   }, [pathname, searchParams, router]);

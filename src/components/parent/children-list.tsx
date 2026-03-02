@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { EmptyState } from '@/components/shared';
-import { saveChildToStorage, clearChildFromStorage } from './child-url-sync';
+import { saveChildToStorage } from './child-url-sync';
 
 const STORAGE_KEY = 'biegun_selected_child';
 
@@ -72,7 +72,7 @@ const avatarColors = [
 
 export function ChildrenList({ children }: ChildrenListProps) {
   const router = useRouter();
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<string>('all');
   const [messages, setMessages] = useState<AppMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -85,6 +85,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.id) setSelectedChildId(parsed.id);
+      } else {
+        saveChildToStorage('all', 'Wszystkie dzieci');
       }
     } catch { /* ignore */ }
   }, []);
@@ -98,7 +100,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
   }, []);
 
   useEffect(() => {
-    if (!selectedChildId) {
+    if (selectedChildId === 'all') {
       setDashboardData(null);
       return;
     }
@@ -140,8 +142,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
         toast.error(result.error);
       } else {
         if (selectedChildId === deleteDialog.childId) {
-          setSelectedChildId(null);
-          clearChildFromStorage();
+          setSelectedChildId('all');
+          saveChildToStorage('all', 'Wszystkie dzieci');
         }
         toast.success('Dziecko zostało usunięte');
         router.refresh();
@@ -153,11 +155,16 @@ export function ChildrenList({ children }: ChildrenListProps) {
     }
   }
 
+  function handleSelectAll() {
+    setSelectedChildId('all');
+    saveChildToStorage('all', 'Wszystkie dzieci');
+  }
+
   function handleSelectChild(child: ParticipantWithGroup) {
     const childName = `${child.first_name} ${child.last_name}`;
     if (selectedChildId === child.id) {
-      setSelectedChildId(null);
-      clearChildFromStorage();
+      setSelectedChildId('all');
+      saveChildToStorage('all', 'Wszystkie dzieci');
     } else {
       setSelectedChildId(child.id);
       saveChildToStorage(child.id, childName);
@@ -210,10 +217,13 @@ export function ChildrenList({ children }: ChildrenListProps) {
 
   const selectedChild = children.find((c) => c.id === selectedChildId);
   const unreadCount = messages.filter((m) => !m.is_read).length;
+  const isAll = selectedChildId === 'all';
 
-  const childSlug = selectedChild
-    ? `?child=${selectedChild.id}&childName=${encodeURIComponent(`${selectedChild.first_name} ${selectedChild.last_name}`)}`
-    : '';
+  const childSlug = isAll
+    ? '?child=all'
+    : selectedChild
+      ? `?child=${selectedChild.id}&childName=${encodeURIComponent(`${selectedChild.first_name} ${selectedChild.last_name}`)}`
+      : '?child=all';
 
   const { nearestTrip, pendingPayments = [], overdueCount = 0 } = dashboardData ?? {};
 
@@ -241,6 +251,38 @@ export function ChildrenList({ children }: ChildrenListProps) {
           </div>
 
           <div className="divide-y divide-gray-50">
+            {/* Opcja "Wszystkie dzieci" */}
+            <div
+              onClick={handleSelectAll}
+              className={cn(
+                'flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-all duration-150 relative',
+                isAll ? 'bg-blue-50/50' : 'hover:bg-gray-50'
+              )}
+            >
+              {isAll && (
+                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500 rounded-r-sm" />
+              )}
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <Users className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className={cn(
+                    'text-sm font-semibold',
+                    isAll ? 'text-blue-700' : 'text-gray-800'
+                  )}>
+                    Wszystkie dzieci
+                  </p>
+                  {isAll && (
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 flex-shrink-0">
+                      <Check className="h-2.5 w-2.5 text-white" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-400 mt-0.5">Widok zbiorczy wszystkich dzieci</p>
+              </div>
+            </div>
+
             {children.map((child, index) => {
               const birthDate = new Date(child.birth_date);
               const age = differenceInYears(new Date(), birthDate);
@@ -320,9 +362,9 @@ export function ChildrenList({ children }: ChildrenListProps) {
             })}
           </div>
 
-          {!selectedChildId && (
-            <div className="px-5 py-4 border-t border-gray-50">
-              <p className="text-xs text-gray-400 text-center">Kliknij dziecko aby zobaczyć dane</p>
+          {!isAll && (
+            <div className="px-5 py-3 border-t border-gray-50">
+              <p className="text-xs text-gray-400 text-center">Kliknij ponownie aby wrócić do widoku zbiorczego</p>
             </div>
           )}
         </div>
@@ -418,7 +460,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
       </div>
 
       {/* ── Dolny rząd: Najbliższy wyjazd | Płatności ── */}
-      {selectedChild && (
+      {!isAll && selectedChild && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
 
           {/* Najbliższy wyjazd */}
