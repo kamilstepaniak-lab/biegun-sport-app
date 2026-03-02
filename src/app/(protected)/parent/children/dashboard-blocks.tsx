@@ -79,7 +79,9 @@ export function DashboardBlocks({ participantId, participantName }: DashboardBlo
 
   if (!data) return null;
 
-  const { nearestTrip, pendingPayments, overdueCount, attendance } = data;
+  const { upcomingTrips, overduePayments, upcomingPayments, overdueCount, attendance } = data;
+  const nearestTrip = upcomingTrips[0] ?? null;
+  const pendingPayments = [...overduePayments, ...upcomingPayments];
   const unreadCount = messages.filter((m) => !m.is_read).length;
   const attendancePercent = attendance.total > 0
     ? Math.round((attendance.completed / attendance.total) * 100)

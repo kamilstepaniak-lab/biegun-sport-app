@@ -225,7 +225,12 @@ export function ChildrenList({ children }: ChildrenListProps) {
       ? `?child=${selectedChild.id}&childName=${encodeURIComponent(`${selectedChild.first_name} ${selectedChild.last_name}`)}`
       : '?child=all';
 
-  const { nearestTrip, pendingPayments = [], overdueCount = 0 } = dashboardData ?? {};
+  const {
+    upcomingTrips = [],
+    overduePayments = [],
+    upcomingPayments = [],
+    overdueCount = 0,
+  } = dashboardData ?? {};
 
   return (
     <>
@@ -459,70 +464,100 @@ export function ChildrenList({ children }: ChildrenListProps) {
         </div>
       </div>
 
-      {/* ── Dolny rząd: Najbliższy wyjazd | Płatności ── */}
+      {/* ── Dolny rząd: Wyjazdy | Płatności ── */}
       {!isAll && selectedChild && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
 
-          {/* Najbliższy wyjazd */}
+          {/* Najbliższe wyjazdy */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                   <MapPin className="h-4 w-4 text-white" />
                 </div>
-                <p className="text-sm font-semibold text-gray-800">Najbliższy wyjazd</p>
+                <p className="text-sm font-semibold text-gray-800">Najbliższe wyjazdy</p>
               </div>
-              <Link
-                href={`/parent/trips${childSlug}`}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
-              >
+              <Link href={`/parent/trips${childSlug}`} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
                 Wszystkie →
               </Link>
             </div>
 
-            <div className="p-5">
-              {dashboardLoading ? (
-                <div className="animate-pulse space-y-3">
-                  <div className="h-5 bg-gray-100 rounded w-3/4" />
-                  <div className="h-4 bg-gray-100 rounded w-1/2" />
-                  <div className="h-8 bg-gray-100 rounded w-1/3" />
-                </div>
-              ) : nearestTrip ? (
-                <div className="space-y-3">
-                  <p className="font-semibold text-gray-900">{nearestTrip.title}</p>
-                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                    <Clock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                    {format(new Date(nearestTrip.departure_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}
+            {dashboardLoading ? (
+              <div className="p-5 animate-pulse space-y-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-4 bg-gray-100 rounded w-3/4" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                    <div className="h-3 bg-gray-100 rounded w-2/3" />
                   </div>
-                  {nearestTrip.departure_location && (
-                    <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                      <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                      {nearestTrip.departure_location}
+                ))}
+              </div>
+            ) : upcomingTrips.length === 0 ? (
+              <div className="flex flex-col items-center py-6 text-center px-5">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
+                  <MapPin className="h-5 w-5 text-gray-300" />
+                </div>
+                <p className="text-sm text-gray-500 font-medium">Brak zaplanowanych wyjazdów</p>
+                <p className="text-xs text-gray-400 mt-1">Dziecko nie jest zapisane na żaden nadchodzący wyjazd</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {upcomingTrips.map((trip) => (
+                  <div key={trip.id} className="px-5 py-4 space-y-2.5">
+                    {/* Tytuł + badge */}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-gray-900 text-sm leading-snug">{trip.title}</p>
+                      <span className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold flex-shrink-0',
+                        trip.daysUntil === 0
+                          ? 'bg-blue-600 text-white'
+                          : trip.daysUntil <= 7
+                            ? 'bg-red-50 text-red-700'
+                            : 'bg-blue-50 text-blue-700'
+                      )}>
+                        {trip.daysUntil === 0 ? 'Dziś!' : trip.daysUntil === 1 ? 'Jutro!' : `Za ${trip.daysUntil} dni`}
+                      </span>
                     </div>
-                  )}
-                  <div className={cn(
-                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold',
-                    nearestTrip.daysUntil <= 7
-                      ? 'bg-red-50 text-red-700'
-                      : 'bg-blue-50 text-blue-700'
-                  )}>
-                    {nearestTrip.daysUntil === 0
-                      ? 'Dziś!'
-                      : nearestTrip.daysUntil === 1
-                        ? 'Jutro!'
-                        : `Za ${nearestTrip.daysUntil} dni`}
+
+                    {/* Wyjazd */}
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-gray-700">
+                        ↗ {format(new Date(trip.departure_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
+                        {trip.departure_location && (
+                          <span className="text-gray-400"> · {trip.departure_location}</span>
+                        )}
+                      </p>
+                      {trip.departure_stop2_location && (
+                        <p className="text-[11px] text-gray-400 pl-4">
+                          {trip.departure_stop2_datetime
+                            ? format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
+                            : ''}
+                          {trip.departure_stop2_location}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Powrót */}
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-medium text-gray-700">
+                        ↙ {format(new Date(trip.return_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
+                        {trip.return_location && (
+                          <span className="text-gray-400"> · {trip.return_location}</span>
+                        )}
+                      </p>
+                      {trip.return_stop2_location && (
+                        <p className="text-[11px] text-gray-400 pl-4">
+                          {trip.return_stop2_datetime
+                            ? format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
+                            : ''}
+                          {trip.return_stop2_location}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center py-6 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
-                    <MapPin className="h-5 w-5 text-gray-300" />
-                  </div>
-                  <p className="text-sm text-gray-500 font-medium">Brak zaplanowanych wyjazdów</p>
-                  <p className="text-xs text-gray-400 mt-1">Dziecko nie jest zapisane na żaden nadchodzący wyjazd</p>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Płatności */}
@@ -537,73 +572,109 @@ export function ChildrenList({ children }: ChildrenListProps) {
               <div className="flex items-center gap-2">
                 {overdueCount > 0 && (
                   <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
-                    {overdueCount} po terminie
+                    {overdueCount} zaległe
                   </span>
                 )}
-                <Link
-                  href={`/parent/payments${childSlug}`}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                >
+                <Link href={`/parent/payments${childSlug}`} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
                   Wszystkie →
                 </Link>
               </div>
             </div>
 
-            <div className="divide-y divide-gray-50">
-              {dashboardLoading ? (
-                <div className="p-5 animate-pulse space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3.5 bg-gray-100 rounded w-2/3" />
-                        <div className="h-3 bg-gray-100 rounded w-1/3" />
-                      </div>
-                      <div className="h-5 bg-gray-100 rounded w-16" />
+            {dashboardLoading ? (
+              <div className="p-5 animate-pulse space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 bg-gray-100 rounded w-2/3" />
+                      <div className="h-3 bg-gray-100 rounded w-1/3" />
                     </div>
-                  ))}
-                </div>
-              ) : pendingPayments.length === 0 ? (
-                <div className="flex flex-col items-center py-6 text-center px-5">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-3">
-                    <CreditCard className="h-5 w-5 text-blue-300" />
+                    <div className="h-5 bg-gray-100 rounded w-16" />
                   </div>
-                  <p className="text-sm text-gray-500 font-medium">Wszystkie płatności opłacone</p>
-                  <p className="text-xs text-gray-400 mt-1">Brak zaległych lub oczekujących płatności</p>
+                ))}
+              </div>
+            ) : overduePayments.length === 0 && upcomingPayments.length === 0 ? (
+              <div className="flex flex-col items-center py-6 text-center px-5">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-3">
+                  <CreditCard className="h-5 w-5 text-blue-300" />
                 </div>
-              ) : (
-                pendingPayments.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between px-5 py-3.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={cn(
-                        'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
-                        p.isOverdue ? 'bg-red-50' : 'bg-blue-50'
-                      )}>
-                        {p.isOverdue
-                          ? <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-                          : <Clock className="h-3.5 w-3.5 text-blue-400" />
-                        }
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">
-                          {p.trip_title || 'Płatność'}
-                        </p>
-                        <p className={cn('text-[11px] mt-0.5', p.isOverdue ? 'text-red-500' : 'text-gray-400')}>
-                          {p.due_date
-                            ? `${p.isOverdue ? 'Termin minął' : 'Do'} ${format(new Date(p.due_date), 'd MMM yyyy', { locale: pl })}`
-                            : 'Brak terminu'}
-                        </p>
-                      </div>
+                <p className="text-sm text-gray-500 font-medium">Wszystkie płatności opłacone</p>
+                <p className="text-xs text-gray-400 mt-1">Brak zaległych lub oczekujących płatności</p>
+              </div>
+            ) : (
+              <div>
+                {/* Sekcja: Zaległe */}
+                {overduePayments.length > 0 && (
+                  <>
+                    <div className="px-5 py-2 bg-red-50/60 border-b border-red-100">
+                      <p className="text-[11px] font-semibold text-red-600 uppercase tracking-wide">
+                        Zaległe ({overduePayments.length})
+                      </p>
                     </div>
-                    <p className={cn(
-                      'text-sm font-bold flex-shrink-0 ml-4',
-                      p.isOverdue ? 'text-red-600' : 'text-gray-900'
+                    <div className="divide-y divide-gray-50">
+                      {overduePayments.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">
+                                {p.trip_title || 'Płatność'}
+                              </p>
+                              <p className="text-[11px] text-red-500 mt-0.5">
+                                {p.daysOverdue === 0 ? 'Termin dziś' : `${p.daysOverdue} dni po terminie`}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-bold text-red-600 flex-shrink-0 ml-3">
+                            {(p.amount - p.amount_paid).toFixed(0)} {p.currency}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Sekcja: Przyszłe */}
+                {upcomingPayments.length > 0 && (
+                  <>
+                    <div className={cn(
+                      'px-5 py-2 border-b border-gray-100',
+                      overduePayments.length > 0 ? 'bg-gray-50 border-t border-gray-100' : 'bg-gray-50/50'
                     )}>
-                      {(p.amount - p.amount_paid).toFixed(0)} {p.currency}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
+                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                        Przyszłe ({upcomingPayments.length})
+                      </p>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {upcomingPayments.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Clock className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">
+                                {p.trip_title || 'Płatność'}
+                              </p>
+                              <p className="text-[11px] text-gray-400 mt-0.5">
+                                {p.daysUntilDue === null
+                                  ? 'Brak terminu'
+                                  : p.daysUntilDue === 0
+                                    ? 'Termin dziś!'
+                                    : p.daysUntilDue === 1
+                                      ? 'Termin jutro'
+                                      : `za ${p.daysUntilDue} dni`}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-bold text-gray-900 flex-shrink-0 ml-3">
+                            {(p.amount - p.amount_paid).toFixed(0)} {p.currency}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

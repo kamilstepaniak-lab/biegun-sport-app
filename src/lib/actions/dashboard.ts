@@ -7,6 +7,12 @@ export interface NearestTrip {
   title: string;
   departure_datetime: string;
   departure_location: string;
+  departure_stop2_datetime: string | null;
+  departure_stop2_location: string | null;
+  return_datetime: string;
+  return_location: string | null;
+  return_stop2_datetime: string | null;
+  return_stop2_location: string | null;
   daysUntil: number;
 }
 
@@ -19,6 +25,8 @@ export interface PaymentSummaryItem {
   status: string;
   amount_paid: number;
   isOverdue: boolean;
+  daysOverdue: number;
+  daysUntilDue: number | null;
 }
 
 export interface AttendanceSummary {
@@ -27,8 +35,9 @@ export interface AttendanceSummary {
 }
 
 export interface DashboardData {
-  nearestTrip: NearestTrip | null;
-  pendingPayments: PaymentSummaryItem[];
+  upcomingTrips: NearestTrip[];
+  overduePayments: PaymentSummaryItem[];
+  upcomingPayments: PaymentSummaryItem[];
   overdueCount: number;
   attendance: AttendanceSummary;
 }
@@ -38,7 +47,12 @@ type TripRecord = {
   title: string;
   departure_datetime: string;
   departure_location: string;
+  departure_stop2_datetime: string | null;
+  departure_stop2_location: string | null;
   return_datetime: string;
+  return_location: string | null;
+  return_stop2_datetime: string | null;
+  return_stop2_location: string | null;
 } | null;
 
 type Registration = {
@@ -50,8 +64,9 @@ type Registration = {
 
 export async function getDashboardData(participantId: string): Promise<DashboardData> {
   const empty: DashboardData = {
-    nearestTrip: null,
-    pendingPayments: [],
+    upcomingTrips: [],
+    overduePayments: [],
+    upcomingPayments: [],
     overdueCount: 0,
     attendance: { completed: 0, total: 0 },
   };
@@ -67,7 +82,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
   const now = new Date();
   const nowIso = now.toISOString();
 
-  // Fetch all active registrations for this participant with trip data
+  // Fetch all active registrations for this participant with full trip data
   const { data: registrations, error: regError } = await supabase
     .from('trip_registrations')
     .select(`
@@ -79,7 +94,12 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
         title,
         departure_datetime,
         departure_location,
-        return_datetime
+        departure_stop2_datetime,
+        departure_stop2_location,
+        return_datetime,
+        return_location,
+        return_stop2_datetime,
+        return_stop2_location
       )
     `)
     .eq('participant_id', participantId)
@@ -99,7 +119,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
     return Array.isArray(r.trip) ? (r.trip[0] ?? null) : r.trip;
   };
 
-  // ── Nearest upcoming trip (confirmed, departure in future) ───────────────
+  // ── Upcoming trips (confirmed, departure in future) — top 2 ─────────────
   const upcomingConfirmed = regs
     .filter((r) => {
       const t = getTrip(r);
@@ -114,22 +134,27 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
       );
     });
 
-  let nearestTrip: NearestTrip | null = null;
-  if (upcomingConfirmed.length > 0) {
-    const t = getTrip(upcomingConfirmed[0]);
-    if (t) {
-      const daysUntil = Math.ceil(
-        (new Date(t.departure_datetime).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      nearestTrip = {
-        id: t.id,
-        title: t.title,
-        departure_datetime: t.departure_datetime,
-        departure_location: t.departure_location,
-        daysUntil,
-      };
-    }
-  }
+  const upcomingTrips: NearestTrip[] = upcomingConfirmed.slice(0, 2).map((r) => {
+    const t = getTrip(r);
+    if (!t) return null;
+    const daysUntil = Math.max(
+      0,
+      Math.ceil((new Date(t.departure_datetime).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    );
+    return {
+      id: t.id,
+      title: t.title,
+      departure_datetime: t.departure_datetime,
+      departure_location: t.departure_location,
+      departure_stop2_datetime: t.departure_stop2_datetime,
+      departure_stop2_location: t.departure_stop2_location,
+      return_datetime: t.return_datetime,
+      return_location: t.return_location,
+      return_stop2_datetime: t.return_stop2_datetime,
+      return_stop2_location: t.return_stop2_location,
+      daysUntil,
+    };
+  }).filter(Boolean) as NearestTrip[];
 
   // ── Attendance ────────────────────────────────────────────────────────────
   const participatingRegs = regs.filter((r) =>
@@ -141,17 +166,16 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
     return t && t.return_datetime < nowIso;
   }).length;
 
-  // ── Pending payments ──────────────────────────────────────────────────────
+  // ── Payments ──────────────────────────────────────────────────────────────
   const registrationIds = regs.map((r) => r.id);
-  let pendingPayments: PaymentSummaryItem[] = [];
+  let overduePayments: PaymentSummaryItem[] = [];
+  let upcomingPayments: PaymentSummaryItem[] = [];
   let overdueCount = 0;
 
   if (registrationIds.length > 0) {
     const { data: payments, error: payError } = await supabaseAdmin
       .from('payments')
-      .select(
-        'id, registration_id, amount, currency, due_date, status, amount_paid'
-      )
+      .select('id, registration_id, amount, currency, due_date, status, amount_paid')
       .in('registration_id', registrationIds)
       .not('status', 'in', '("cancelled","paid")')
       .order('due_date', { ascending: true });
@@ -160,41 +184,71 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      pendingPayments = payments
-        .map(
-          (p: {
-            id: string;
-            registration_id: string;
-            amount: number;
-            currency: string;
-            due_date: string | null;
-            status: string;
-            amount_paid: number;
-          }) => {
-            const reg = regs.find((r) => r.id === p.registration_id);
-            const t = reg ? getTrip(reg) : null;
-            const isOverdue = !!p.due_date && new Date(p.due_date) < today;
-            return {
-              id: p.id,
-              trip_title: t?.title ?? '',
-              amount: p.amount,
-              currency: p.currency,
-              due_date: p.due_date,
-              status: p.status,
-              amount_paid: p.amount_paid,
-              isOverdue,
-            };
-          }
-        )
+      const allMapped: PaymentSummaryItem[] = payments.map(
+        (p: {
+          id: string;
+          registration_id: string;
+          amount: number;
+          currency: string;
+          due_date: string | null;
+          status: string;
+          amount_paid: number;
+        }) => {
+          const reg = regs.find((r) => r.id === p.registration_id);
+          const t = reg ? getTrip(reg) : null;
+          const isOverdue = !!p.due_date && new Date(p.due_date) < today;
+          const daysOverdue =
+            isOverdue && p.due_date
+              ? Math.floor(
+                  (today.getTime() - new Date(p.due_date).getTime()) / (1000 * 60 * 60 * 24)
+                )
+              : 0;
+          const daysUntilDue =
+            !isOverdue && p.due_date
+              ? Math.ceil(
+                  (new Date(p.due_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+                )
+              : null;
+          return {
+            id: p.id,
+            trip_title: t?.title ?? '',
+            amount: p.amount,
+            currency: p.currency,
+            due_date: p.due_date,
+            status: p.status,
+            amount_paid: p.amount_paid,
+            isOverdue,
+            daysOverdue,
+            daysUntilDue,
+          };
+        }
+      );
+
+      // Zaległe — most overdue first, top 3
+      overduePayments = allMapped
+        .filter((p) => p.isOverdue)
+        .sort((a, b) => b.daysOverdue - a.daysOverdue)
         .slice(0, 3);
 
-      overdueCount = pendingPayments.filter((p) => p.isOverdue).length;
+      // Przyszłe — nearest due date first, top 3
+      upcomingPayments = allMapped
+        .filter((p) => !p.isOverdue)
+        .sort((a, b) => {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        })
+        .slice(0, 3);
+
+      overdueCount = overduePayments.length;
     }
   }
 
   return {
-    nearestTrip,
-    pendingPayments,
+    upcomingTrips,
+    overduePayments,
+    upcomingPayments,
     overdueCount,
     attendance: { completed, total },
   };
