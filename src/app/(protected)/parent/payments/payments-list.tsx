@@ -83,7 +83,10 @@ function SummaryBlocks({
           <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
             <Clock className="h-3.5 w-3.5 text-amber-600" />
           </div>
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Do zapłaty</span>
+          <div>
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Do zapłaty</span>
+            <p className="text-[10px] text-gray-300 leading-tight">razem z płatnościami po terminie</p>
+          </div>
         </div>
         {hasPending ? (
           <div className="space-y-0.5">
