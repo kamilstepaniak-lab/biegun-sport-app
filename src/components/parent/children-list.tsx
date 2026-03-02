@@ -520,39 +520,45 @@ export function ChildrenList({ children }: ChildrenListProps) {
                     </div>
 
                     {/* Wyjazd */}
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-medium text-gray-700">
-                        ↗ {format(new Date(trip.departure_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
-                        {trip.departure_location && (
-                          <span className="text-gray-400"> · {trip.departure_location}</span>
-                        )}
-                      </p>
-                      {trip.departure_stop2_location && (
-                        <p className="text-[11px] text-gray-400 pl-4">
-                          {trip.departure_stop2_datetime
-                            ? format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
-                            : ''}
-                          {trip.departure_stop2_location}
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-green-500 font-bold text-sm leading-none mt-0.5 flex-shrink-0">↗</span>
+                      <div className="space-y-0.5 min-w-0">
+                        <p className="text-xs font-medium text-gray-700">
+                          {format(new Date(trip.departure_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
+                          {trip.departure_location && (
+                            <span className="text-gray-400"> · {trip.departure_location}</span>
+                          )}
                         </p>
-                      )}
+                        {trip.departure_stop2_location && (
+                          <p className="text-[11px] text-gray-400">
+                            {trip.departure_stop2_datetime
+                              ? format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
+                              : ''}
+                            {trip.departure_stop2_location}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Powrót */}
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-medium text-gray-700">
-                        ↙ {format(new Date(trip.return_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
-                        {trip.return_location && (
-                          <span className="text-gray-400"> · {trip.return_location}</span>
-                        )}
-                      </p>
-                      {trip.return_stop2_location && (
-                        <p className="text-[11px] text-gray-400 pl-4">
-                          {trip.return_stop2_datetime
-                            ? format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
-                            : ''}
-                          {trip.return_stop2_location}
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-red-500 font-bold text-sm leading-none mt-0.5 flex-shrink-0">↙</span>
+                      <div className="space-y-0.5 min-w-0">
+                        <p className="text-xs font-medium text-gray-700">
+                          {format(new Date(trip.return_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
+                          {trip.return_location && (
+                            <span className="text-gray-400"> · {trip.return_location}</span>
+                          )}
                         </p>
-                      )}
+                        {trip.return_stop2_location && (
+                          <p className="text-[11px] text-gray-400">
+                            {trip.return_stop2_datetime
+                              ? format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
+                              : ''}
+                            {trip.return_stop2_location}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -621,7 +627,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
                                 {p.trip_title || 'Płatność'}
                               </p>
                               <p className="text-[11px] text-red-500 mt-0.5">
-                                {p.daysOverdue === 0 ? 'Termin dziś' : `${p.daysOverdue} dni po terminie`}
+                                {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : ''}
+                                {p.daysOverdue > 0 && ` · ${p.daysOverdue}d po term.`}
                               </p>
                             </div>
                           </div>
@@ -642,7 +649,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
                       overduePayments.length > 0 ? 'bg-gray-50 border-t border-gray-100' : 'bg-gray-50/50'
                     )}>
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                        Przyszłe ({upcomingPayments.length})
+                        Do zapłaty ({upcomingPayments.length})
                       </p>
                     </div>
                     <div className="divide-y divide-gray-50">
@@ -655,13 +662,12 @@ export function ChildrenList({ children }: ChildrenListProps) {
                                 {p.trip_title || 'Płatność'}
                               </p>
                               <p className="text-[11px] text-gray-400 mt-0.5">
-                                {p.daysUntilDue === null
-                                  ? 'Brak terminu'
-                                  : p.daysUntilDue === 0
-                                    ? 'Termin dziś!'
-                                    : p.daysUntilDue === 1
-                                      ? 'Termin jutro'
-                                      : `za ${p.daysUntilDue} dni`}
+                                {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : 'Brak terminu'}
+                                {p.daysUntilDue !== null && p.daysUntilDue >= 0 && (
+                                  <span className="text-blue-400">
+                                    {p.daysUntilDue === 0 ? ' · dziś!' : p.daysUntilDue === 1 ? ' · jutro' : ` · za ${p.daysUntilDue}d`}
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>

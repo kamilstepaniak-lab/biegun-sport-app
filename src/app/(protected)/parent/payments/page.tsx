@@ -6,7 +6,7 @@ import { PageHeader, EmptyState } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
 import { getPaymentsForParent, getBankAccountsForParent } from '@/lib/actions/payments';
 import { getMyChildren } from '@/lib/actions/participants';
-import { ParentPaymentsList } from './payments-list';
+import { ParentPaymentsList, BankAccountsSection } from './payments-list';
 
 interface Props {
   searchParams: Promise<{ child?: string; childName?: string }>;
@@ -35,6 +35,8 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
         title="Płatności"
         description="Zarządzaj płatnościami za wyjazdy swoich dzieci"
       />
+
+      <BankAccountsSection bankAccounts={bankAccounts} />
 
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
         {payments.length === 0 ? (

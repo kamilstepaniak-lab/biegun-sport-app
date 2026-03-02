@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { Check, Clock, AlertCircle, CreditCard, Copy, Banknote, User, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
@@ -133,6 +133,9 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
   const StatusIcon = status.icon;
   const remaining = payment.amount - payment.amount_paid;
   const isOverdue = isOverduePayment(payment);
+  const daysOverdue = isOverdue && payment.due_date
+    ? differenceInCalendarDays(new Date(), new Date(payment.due_date))
+    : 0;
 
   const paymentTypeLabel = payment.payment_type === 'installment'
     ? `Rata ${payment.installment_number}`
@@ -169,7 +172,11 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
               payment.due_date === new Date(payment.trip_departure_date).toISOString().split('T')[0];
             return (
               <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-                {isDepartureDay ? 'w dniu wyjazdu' : `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}`}
+                {isDepartureDay
+                  ? 'w dniu wyjazdu'
+                  : isOverdue
+                    ? `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })} · ${daysOverdue}d po term.`
+                    : `do ${format(new Date(payment.due_date), 'd.MM.yyyy', { locale: pl })}`}
               </span>
             );
           })() : (
@@ -228,7 +235,7 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
 }
 
 // ── Dane do przelewu ──────────────────────────────────────────────────────
-function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccountInfo }) {
+export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccountInfo }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
       <div className="flex items-center gap-2 mb-4">
@@ -420,8 +427,6 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
 
   return (
     <div className="space-y-6">
-      <BankAccountsSection bankAccounts={bankAccounts} />
-
       {/* Bloki sumaryczne */}
       <SummaryBlocks pendingSource={summaryPending} overdueSource={summaryOverdue} />
 
