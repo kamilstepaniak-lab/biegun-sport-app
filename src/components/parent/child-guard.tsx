@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Users, X, ChevronDown, Check } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface ChildOption {
   id: string;
@@ -15,7 +16,7 @@ interface ChildGuardProps {
   selectedChildId?: string;
   /** Nazwa dziecka do wyświetlenia w bannerze (opcjonalna) */
   selectedChildName?: string;
-  /** Lista wszystkich dzieci rodzica — do dropdownu zmiany dziecka */
+  /** Lista wszystkich dzieci rodzica — do wyboru dziecka */
   childrenList?: ChildOption[];
   children: React.ReactNode;
 }
@@ -27,22 +28,9 @@ const ALL_CHILDREN_NAME = 'Wszystkie dzieci';
 export function ChildGuard({ selectedChildId, selectedChildName, childrenList, children }: ChildGuardProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isAll = selectedChildId === ALL_CHILDREN_ID;
-
-  // Zamknij dropdown po kliknięciu poza nim
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Zapisz wybrane dziecko do localStorage
   useEffect(() => {
@@ -77,8 +65,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     }
   }, [selectedChildId, pathname, router, childrenList]);
 
-  function handleSelectChild(child: ChildOption | { id: typeof ALL_CHILDREN_ID; name: string }) {
-    setDropdownOpen(false);
+  function navigateTo(child: ChildOption | { id: typeof ALL_CHILDREN_ID; name: string }) {
     if (child.id === ALL_CHILDREN_ID) {
       router.push(`${pathname}?child=${ALL_CHILDREN_ID}`);
     } else {
@@ -102,41 +89,26 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
           </p>
         </div>
         {childrenList && childrenList.length > 0 ? (
-          <div className="relative" ref={dropdownRef}>
+          <div className="flex flex-wrap justify-center gap-2">
             <button
-              onClick={() => setDropdownOpen(v => !v)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+              onClick={() => navigateTo({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <Users className="h-4 w-4" />
-              Wybierz dziecko
-              <ChevronDown className="h-4 w-4" />
+              Wszystkie dzieci
             </button>
-            {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[200px] z-50">
-                {/* Opcja "Wszystkie dzieci" */}
-                <button
-                  onClick={() => handleSelectChild({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 border-b border-gray-100"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Users className="h-3.5 w-3.5 text-blue-600" />
-                  </div>
-                  <span className="font-medium text-blue-700">Wszystkie dzieci</span>
-                </button>
-                {childrenList.map(child => (
-                  <button
-                    key={child.id}
-                    onClick={() => handleSelectChild(child)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
-                      {child.name.charAt(0)}
-                    </div>
-                    {child.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            {childrenList.map(child => (
+              <button
+                key={child.id}
+                onClick={() => navigateTo(child)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-colors"
+              >
+                <span className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-700">
+                  {child.name.charAt(0)}
+                </span>
+                {child.name}
+              </button>
+            ))}
           </div>
         ) : (
           <Link
@@ -155,71 +127,54 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
 
   return (
     <div className="space-y-5">
-      {/* Banner wybranego dziecka */}
-      <div className="bg-blue-600 rounded-2xl p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white font-bold text-sm">
+      {/* Banner z wyborem dziecka */}
+      <div className="bg-blue-600 rounded-2xl p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
             {isAll ? <Users className="h-4 w-4" /> : displayName.charAt(0)}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-blue-100">
               {isAll ? 'Widok zbiorczy' : 'Przeglądasz dane dla'}
             </p>
-            <p className="text-sm font-semibold text-white">{displayName}</p>
+            <p className="text-sm font-semibold text-white truncate">{displayName}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {/* Dropdown zmiany dziecka */}
-          {childrenList && childrenList.length > 0 && (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setDropdownOpen(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors"
-              >
-                Zmień
-                <ChevronDown className="h-3.5 w-3.5" />
-              </button>
-              {dropdownOpen && (
-                <div className="absolute top-full mt-2 right-0 bg-white rounded-xl shadow-lg ring-1 ring-gray-200 py-1 min-w-[200px] z-50">
-                  {/* Opcja "Wszystkie dzieci" */}
-                  <button
-                    onClick={() => handleSelectChild({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
-                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 border-b border-gray-100"
-                  >
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <Users className="h-3.5 w-3.5 text-blue-600" />
-                    </div>
-                    <span className="flex-1 font-medium text-blue-700">Wszystkie dzieci</span>
-                    {isAll && <Check className="h-3.5 w-3.5 text-gray-900 flex-shrink-0" />}
-                  </button>
-                  {childrenList.map(child => (
-                    <button
-                      key={child.id}
-                      onClick={() => handleSelectChild(child)}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
-                        {child.name.charAt(0)}
-                      </div>
-                      <span className="flex-1">{child.name}</span>
-                      {child.id === selectedChildId && (
-                        <Check className="h-3.5 w-3.5 text-gray-900 flex-shrink-0" />
-                      )}
-                    </button>
-                  ))}
-                </div>
+
+        {/* Przyciski wyboru dziecka */}
+        {childrenList && childrenList.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => navigateTo({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                isAll
+                  ? 'bg-white text-blue-700'
+                  : 'bg-white/15 hover:bg-white/25 text-white'
               )}
-            </div>
-          )}
-          {/* Link "X" wraca do "Wszystkie dzieci" zamiast czyścić URL */}
-          <button
-            onClick={() => router.push(`${pathname}?child=${ALL_CHILDREN_ID}`)}
-            className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            title="Pokaż wszystkie dzieci"
-          >
-            <X className="h-4 w-4 text-white" />
-          </button>
-        </div>
+            >
+              <Users className="h-3 w-3" />
+              Wszystkie
+            </button>
+            {childrenList.map(child => (
+              <button
+                key={child.id}
+                onClick={() => navigateTo(child)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                  child.id === selectedChildId
+                    ? 'bg-white text-blue-700'
+                    : 'bg-white/15 hover:bg-white/25 text-white'
+                )}
+              >
+                <span className="w-4 h-4 rounded bg-current/20 flex items-center justify-center text-[9px] font-bold opacity-80">
+                  {child.name.charAt(0)}
+                </span>
+                {child.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {children}
     </div>
