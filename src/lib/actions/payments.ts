@@ -455,6 +455,7 @@ export interface ParentPayment {
   trip_title: string;
   trip_id: string;
   trip_departure_date: string;
+  trip_return_date: string | null;
   child_name: string;
   child_first_name: string;
   child_last_name: string;
@@ -514,7 +515,8 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
       trip:trips (
         id,
         title,
-        departure_datetime
+        departure_datetime,
+        return_datetime
       )
     `)
     .in('participant_id', childIds)
@@ -576,7 +578,7 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
       id: string;
       participant_id: string;
       trip_id: string;
-      trip: { id: string; title: string; departure_datetime: string } | null;
+      trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
     } | undefined;
 
     const childData = childDataMap.get(registration?.participant_id || '');
@@ -586,6 +588,7 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
       trip_title: registration?.trip?.title || 'Nieznany wyjazd',
       trip_id: registration?.trip_id || '',
       trip_departure_date: registration?.trip?.departure_datetime || '',
+      trip_return_date: registration?.trip?.return_datetime || null,
       child_name: childData?.name || 'Nieznane dziecko',
       child_first_name: childData?.first_name || '',
       child_last_name: childData?.last_name || '',

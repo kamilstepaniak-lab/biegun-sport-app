@@ -108,18 +108,24 @@ export function CalendarView({ trips }: CalendarViewProps) {
   }
 
   const monthTrips = useMemo(() => {
-    return filteredTrips
-      .filter((trip) => {
-        const tripStart = new Date(trip.departure_datetime);
-        const tripEnd = new Date(trip.return_datetime);
-        return (
-          isWithinInterval(tripStart, { start: monthStart, end: monthEnd }) ||
-          isWithinInterval(tripEnd, { start: monthStart, end: monthEnd }) ||
-          (tripStart <= monthStart && tripEnd >= monthEnd)
-        );
-      })
+    const filtered = filteredTrips.filter((trip) => {
+      const tripStart = new Date(trip.departure_datetime);
+      const tripEnd = new Date(trip.return_datetime);
+      return (
+        isWithinInterval(tripStart, { start: monthStart, end: monthEnd }) ||
+        isWithinInterval(tripEnd, { start: monthStart, end: monthEnd }) ||
+        (tripStart <= monthStart && tripEnd >= monthEnd)
+      );
+    });
+    const todayStart = startOfDay(today);
+    const active = filtered
+      .filter((t) => startOfDay(new Date(t.return_datetime)) >= todayStart)
       .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime());
-  }, [filteredTrips, monthStart, monthEnd]);
+    const done = filtered
+      .filter((t) => startOfDay(new Date(t.return_datetime)) < todayStart)
+      .sort((a, b) => new Date(b.departure_datetime).getTime() - new Date(a.departure_datetime).getTime());
+    return [...active, ...done];
+  }, [filteredTrips, monthStart, monthEnd, today]);
 
   function getDaysLabel(trip: TripWithPaymentTemplates) {
     const departure = startOfDay(new Date(trip.departure_datetime));

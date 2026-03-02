@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Check, Clock, AlertCircle, CreditCard, Copy, Banknote, User } from 'lucide-react';
+import { Check, Clock, AlertCircle, CreditCard, Copy, Banknote, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/shared';
@@ -36,11 +36,15 @@ function getMethodStyle(method: string | null): { label: string; className: stri
   return null;
 }
 
+function isOverduePayment(p: ParentPayment) {
+  return p.due_date && new Date(p.due_date) < new Date() && p.status !== 'paid';
+}
+
 function PaymentRow({ payment }: { payment: ParentPayment }) {
   const status = statusConfig[payment.status] || statusConfig.pending;
   const StatusIcon = status.icon;
   const remaining = payment.amount - payment.amount_paid;
-  const isOverdue = payment.due_date && new Date(payment.due_date) < new Date() && payment.status !== 'paid';
+  const isOverdue = isOverduePayment(payment);
 
   const paymentTypeLabel = payment.payment_type === 'installment'
     ? `Rata ${payment.installment_number}`
@@ -147,8 +151,8 @@ function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccountInfo }
   return (
     <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
       <div className="flex items-center gap-2 mb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
-          <Banknote className="h-4 w-4 text-orange-600" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+          <Banknote className="h-4 w-4 text-white" />
         </div>
         <h3 className="font-semibold text-gray-900 text-sm">Dane do przelewu</h3>
       </div>
@@ -255,7 +259,14 @@ function PaymentsGroupedByChild({ payments }: { payments: ParentPayment[] }) {
   );
 }
 
+type FilterType = 'all' | 'pending' | 'overdue' | 'paid';
+
 export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts }: ParentPaymentsListProps) {
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [archivedOpen, setArchivedOpen] = useState(false);
+
+  const today = new Date();
+
   const allPayments = useMemo(() => {
     const pending = [...pendingPayments].sort((a, b) => {
       if (!a.due_date && !b.due_date) return 0;
@@ -274,39 +285,116 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
     return [...pending, ...paid];
   }, [pendingPayments, paidPayments]);
 
-  const pendingCount = pendingPayments.length;
-  const paidCount = paidPayments.length;
+  // Archived = opłacone I wyjazd się już zakończył
+  const { active, archived } = useMemo(() => {
+    const active: ParentPayment[] = [];
+    const archived: ParentPayment[] = [];
+    allPayments.forEach((p) => {
+      const tripEnded = p.trip_return_date && new Date(p.trip_return_date) < today;
+      if (p.status === 'paid' && tripEnded) {
+        archived.push(p);
+      } else {
+        active.push(p);
+      }
+    });
+    return { active, archived };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPayments]);
+
+  const overduePayments = useMemo(() => active.filter(isOverduePayment), [active]);
+  const pendingOnly = useMemo(
+    () => active.filter((p) => ['pending', 'partially_paid'].includes(p.status) && !isOverduePayment(p)),
+    [active]
+  );
+  const paidActive = useMemo(() => active.filter((p) => p.status === 'paid'), [active]);
+  const allPaid = useMemo(() => allPayments.filter((p) => p.status === 'paid'), [allPayments]);
+
+  const displayPayments = useMemo(() => {
+    switch (filter) {
+      case 'pending': return pendingOnly;
+      case 'overdue': return overduePayments;
+      case 'paid': return allPaid;
+      default: return active;
+    }
+  }, [filter, active, pendingOnly, overduePayments, allPaid]);
+
+  const filterTabs: { id: FilterType; label: string; count: number; activeClass: string }[] = [
+    { id: 'all', label: 'Wszystkie', count: active.length, activeClass: 'bg-gray-900 text-white' },
+    { id: 'pending', label: 'Do zapłaty', count: pendingOnly.length, activeClass: 'bg-amber-500 text-white' },
+    { id: 'overdue', label: 'Po terminie', count: overduePayments.length, activeClass: 'bg-red-500 text-white' },
+    { id: 'paid', label: 'Opłacone', count: allPaid.length, activeClass: 'bg-emerald-600 text-white' },
+  ];
 
   return (
     <div className="space-y-6">
       <BankAccountsSection bankAccounts={bankAccounts} />
 
       <div className="space-y-4">
-        {/* Summary header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Wszystkie płatności</h2>
-          <div className="flex items-center gap-2">
-            {pendingCount > 0 && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700">
-                {pendingCount} oczekujących
-              </span>
-            )}
-            {paidCount > 0 && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600">
-                {paidCount} opłaconych
-              </span>
-            )}
-          </div>
+        {/* Filter tabs */}
+        <div className="flex flex-wrap gap-2">
+          {filterTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                filter === tab.id
+                  ? tab.activeClass
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                  filter === tab.id ? 'bg-white/20' : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
-        {allPayments.length === 0 ? (
+        {/* Main list */}
+        {displayPayments.length === 0 ? (
           <EmptyState
             icon={CreditCard}
             title="Brak płatności"
-            description="Nie masz jeszcze żadnych płatności."
+            description={
+              filter === 'pending' ? 'Nie masz zaległych płatności.' :
+              filter === 'overdue' ? 'Nie masz płatności po terminie.' :
+              filter === 'paid' ? 'Nie masz jeszcze opłaconych płatności.' :
+              'Nie masz jeszcze żadnych płatności.'
+            }
           />
         ) : (
-          <PaymentsGroupedByChild payments={allPayments} />
+          <PaymentsGroupedByChild payments={displayPayments} />
+        )}
+
+        {/* Archived section — tylko w widoku "Wszystkie" i "Opłacone" */}
+        {(filter === 'all' || filter === 'paid') && archived.length > 0 && (
+          <div>
+            <button
+              onClick={() => setArchivedOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-colors text-sm font-medium text-gray-500"
+            >
+              <span className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-500" />
+                Zakończone wyjazdy — opłacone
+                <span className="bg-gray-200 text-gray-500 text-xs px-1.5 py-0.5 rounded-md font-bold">
+                  {archived.length}
+                </span>
+              </span>
+              {archivedOpen
+                ? <ChevronUp className="h-4 w-4" />
+                : <ChevronDown className="h-4 w-4" />
+              }
+            </button>
+            {archivedOpen && (
+              <div className="mt-2">
+                <PaymentsGroupedByChild payments={archived} />
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
