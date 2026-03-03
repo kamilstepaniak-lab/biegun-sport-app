@@ -40,14 +40,12 @@ interface PaymentsListProps {
 type StatusFilter = 'all' | 'pending' | 'overdue';
 type PageLimit = 25 | 50 | 100 | 200 | 'all';
 
-interface GroupedPayment {
-  key: string;
-  participantId: string;
+interface FlatRow {
+  payment: PaymentWithDetails;
   participantName: string;
   tripTitle: string;
   tripId: string;
   tripDepartureDate: string;
-  payments: PaymentWithDetails[];
 }
 
 export function PaymentsList({ payments }: PaymentsListProps) {
@@ -64,98 +62,89 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [paidExpanded, setPaidExpanded] = useState(false);
 
-  // Grupuj płatności po uczestnik + wyjazd
-  const groupedPayments = useMemo(() => {
-    const groups = new Map<string, GroupedPayment>();
-    payments.forEach((payment) => {
-      if (!payment.registration) return;
-      const participant = payment.registration.participant;
-      const trip = payment.registration.trip;
-      const key = `${participant.id}-${trip.id}`;
-      if (!groups.has(key)) {
-        groups.set(key, {
-          key,
-          participantId: participant.id,
-          participantName: `${participant.last_name} ${participant.first_name}`,
-          tripTitle: trip.title,
-          tripId: trip.id,
-          tripDepartureDate: trip.departure_datetime,
-          payments: [],
-        });
-      }
-      groups.get(key)!.payments.push(payment);
-    });
-    return Array.from(groups.values());
+  // Spłaszcz do płaskiej listy wierszy
+  const flatRows = useMemo<FlatRow[]>(() => {
+    return payments
+      .filter((p) => p.registration)
+      .map((p) => ({
+        payment: p,
+        participantName: `${p.registration.participant.last_name} ${p.registration.participant.first_name}`,
+        tripTitle: p.registration.trip.title,
+        tripId: p.registration.trip.id,
+        tripDepartureDate: p.registration.trip.departure_datetime,
+      }));
   }, [payments]);
 
-  // Unikalne wyjazdy do filtra (posortowane chronologicznie)
+  // Unikalne wyjazdy do filtra
   const availableTrips = useMemo(() => {
     const trips = new Map<string, { title: string; departure: string }>();
-    groupedPayments.forEach((g) => {
-      if (!trips.has(g.tripId)) {
-        trips.set(g.tripId, { title: g.tripTitle, departure: g.tripDepartureDate });
+    flatRows.forEach((r) => {
+      if (!trips.has(r.tripId)) {
+        trips.set(r.tripId, { title: r.tripTitle, departure: r.tripDepartureDate });
       }
     });
     return Array.from(trips.entries())
       .map(([id, { title, departure }]) => ({ id, title, departure }))
       .sort((a, b) => new Date(a.departure).getTime() - new Date(b.departure).getTime());
-  }, [groupedPayments]);
+  }, [flatRows]);
 
-  // Filtruj i sortuj
-  const filteredGroups = useMemo(() => {
-    let result = groupedPayments;
+  // Filtruj
+  const filteredRows = useMemo(() => {
+    let result = flatRows;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((g) =>
-        g.participantName.toLowerCase().includes(q) ||
-        g.tripTitle.toLowerCase().includes(q)
+      result = result.filter(
+        (r) =>
+          r.participantName.toLowerCase().includes(q) ||
+          r.tripTitle.toLowerCase().includes(q)
       );
     }
 
     if (tripFilter !== 'all') {
-      result = result.filter((g) => g.tripId === tripFilter);
+      result = result.filter((r) => r.tripId === tripFilter);
     }
 
     if (statusFilter === 'pending') {
-      result = result.filter((g) =>
-        g.payments.some((p) => p.status === 'pending' || p.status === 'partially_paid')
+      result = result.filter(
+        (r) => r.payment.status === 'pending' || r.payment.status === 'partially_paid'
       );
     } else if (statusFilter === 'overdue') {
-      result = result.filter((g) =>
-        g.payments.some((p) => p.status === 'overdue' || p.status === 'partially_paid_overdue')
+      result = result.filter(
+        (r) =>
+          r.payment.status === 'overdue' || r.payment.status === 'partially_paid_overdue'
       );
     }
 
     if (dateFrom) {
       const from = new Date(dateFrom);
       from.setHours(0, 0, 0, 0);
-      result = result.filter((g) => g.payments.some((p) => new Date(p.created_at) >= from));
+      result = result.filter((r) => new Date(r.payment.created_at) >= from);
     }
     if (dateTo) {
       const to = new Date(dateTo);
       to.setHours(23, 59, 59, 999);
-      result = result.filter((g) => g.payments.some((p) => new Date(p.created_at) <= to));
+      result = result.filter((r) => new Date(r.payment.created_at) <= to);
     }
 
     result.sort((a, b) => a.participantName.localeCompare(b.participantName, 'pl'));
     return result;
-  }, [groupedPayments, searchQuery, tripFilter, statusFilter, dateFrom, dateTo]);
+  }, [flatRows, searchQuery, tripFilter, statusFilter, dateFrom, dateTo]);
 
-  // Rozdziel na aktywne i w pełni opłacone
-  const activeGroups = useMemo(
-    () => filteredGroups.filter((g) => !g.payments.every((p) => p.status === 'paid' || p.status === 'cancelled')),
-    [filteredGroups]
+  // Rozdziel aktywne / opłacone
+  const activeRows = useMemo(
+    () => filteredRows.filter((r) => r.payment.status !== 'paid' && r.payment.status !== 'cancelled'),
+    [filteredRows]
   );
-  const paidGroups = useMemo(
-    () => filteredGroups.filter((g) => g.payments.every((p) => p.status === 'paid' || p.status === 'cancelled')),
-    [filteredGroups]
+  const paidRows = useMemo(
+    () => filteredRows.filter((r) => r.payment.status === 'paid'),
+    [filteredRows]
   );
 
   const displayedActive = useMemo(() => {
-    if (pageLimit === 'all') return activeGroups;
-    return activeGroups.slice(0, pageLimit);
-  }, [activeGroups, pageLimit]);
+    if (pageLimit === 'all') return activeRows;
+    return activeRows.slice(0, pageLimit);
+  }, [activeRows, pageLimit]);
 
   // Handlers
   async function handleStatusChange(paymentId: string, newStatus: 'pending' | 'paid') {
@@ -171,27 +160,16 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     }
   }
 
-  function startEditAmount(payment: PaymentWithDetails) {
-    setEditingPayment(payment.id);
-    setEditAmount(payment.amount.toString());
-  }
-
   async function saveAmount(paymentId: string) {
     const newAmount = parseFloat(editAmount);
-    if (isNaN(newAmount) || newAmount < 0) {
-      toast.error('Podaj poprawną kwotę');
-      return;
-    }
+    if (isNaN(newAmount) || newAmount < 0) { toast.error('Podaj poprawną kwotę'); return; }
     setIsUpdating(paymentId);
     try {
       const result = await updatePaymentAmount(paymentId, newAmount);
       if (result.error) toast.error(result.error);
       else { toast.success('Kwota zaktualizowana'); setEditingPayment(null); }
-    } catch {
-      toast.error('Wystąpił błąd');
-    } finally {
-      setIsUpdating(null);
-    }
+    } catch { toast.error('Wystąpił błąd'); }
+    finally { setIsUpdating(null); }
   }
 
   async function saveNote(paymentId: string) {
@@ -200,11 +178,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       const result = await updatePaymentNote(paymentId, editNote);
       if (result.error) toast.error(result.error);
       else { toast.success('Notatka zapisana'); setEditingNote(null); }
-    } catch {
-      toast.error('Wystąpił błąd');
-    } finally {
-      setIsUpdating(null);
-    }
+    } catch { toast.error('Wystąpił błąd'); }
+    finally { setIsUpdating(null); }
   }
 
   function getPaymentLabel(payment: PaymentWithDetails): string {
@@ -215,15 +190,16 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   }
 
   function getStatusBadge(status: string) {
-    if (status === 'paid') return { label: 'Opłacone', cls: 'bg-green-50 text-green-700' };
-    if (status === 'overdue') return { label: 'Po terminie', cls: 'bg-red-50 text-red-700' };
-    if (status === 'partially_paid_overdue') return { label: 'Po term. (częśc.)', cls: 'bg-red-50 text-red-700' };
-    if (status === 'partially_paid') return { label: 'Częściowo', cls: 'bg-amber-50 text-amber-700' };
-    if (status === 'cancelled') return { label: 'Anulowane', cls: 'bg-gray-100 text-gray-400' };
-    return { label: 'Nieopłacone', cls: 'bg-orange-50 text-orange-700' };
+    switch (status) {
+      case 'paid': return { label: 'Opłacone', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' };
+      case 'overdue': return { label: 'Po terminie', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' };
+      case 'partially_paid_overdue': return { label: 'Po term. (częśc.)', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' };
+      case 'partially_paid': return { label: 'Częściowo', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
+      case 'cancelled': return { label: 'Anulowane', cls: 'bg-gray-100 text-gray-400' };
+      default: return { label: 'Nieopłacone', cls: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200' };
+    }
   }
 
-  // Stats (liczymy indywidualne płatności)
   const stats = {
     total: payments.length,
     pending: payments.filter((p) => p.status !== 'paid' && p.status !== 'cancelled').length,
@@ -236,210 +212,177 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     { key: 'overdue', label: 'Po terminie' },
   ];
 
-  function renderGroup(group: GroupedPayment, dimmed = false) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  function renderRow(row: FlatRow, dimmed = false) {
+    const { payment, participantName, tripTitle } = row;
+    const isPaid = payment.status === 'paid';
+    const isCancelled = payment.status === 'cancelled';
+    const isOverdue = payment.status === 'overdue' || payment.status === 'partially_paid_overdue';
+    const dueDate = payment.due_date ? new Date(payment.due_date) : null;
+    const isDueDateOverdue = dueDate ? dueDate < today : false;
+    const { label: statusLabel, cls: statusCls } = getStatusBadge(payment.status);
 
     return (
-      <div
-        key={group.key}
+      <tr
+        key={payment.id}
         className={cn(
-          'border border-gray-100 rounded-2xl overflow-hidden bg-white',
-          dimmed && 'opacity-60'
+          'border-b border-gray-100 transition-colors',
+          isPaid ? 'bg-emerald-50/20 hover:bg-emerald-50/40' : isOverdue ? 'bg-red-50/10 hover:bg-red-50/20' : 'hover:bg-gray-50/60',
+          dimmed && 'opacity-50'
         )}
       >
-        {/* Nagłówek grupy */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50/80 border-b border-gray-100">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-blue-700 select-none">
-              {group.participantName.charAt(0)}
+        {/* Uczestnik + wyjazd */}
+        <td className="py-3 pl-5 pr-3">
+          <p className="text-sm font-semibold text-gray-900 leading-tight">{participantName}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[180px]">{tripTitle}</p>
+        </td>
+
+        {/* Za co */}
+        <td className="py-3 px-3">
+          <span className="text-sm text-gray-700 font-medium">{getPaymentLabel(payment)}</span>
+        </td>
+
+        {/* Kwota */}
+        <td className="py-3 px-3">
+          {editingPayment === payment.id ? (
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveAmount(payment.id);
+                  if (e.key === 'Escape') setEditingPayment(null);
+                }}
+                className="h-7 w-20 text-xs rounded-lg"
+                min="0"
+                step="0.01"
+                autoFocus
+              />
+              <span className="text-xs text-gray-400">{payment.currency}</span>
+              <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100" onClick={() => saveAmount(payment.id)} disabled={isUpdating === payment.id}>
+                <Save className="h-3 w-3 text-gray-500" />
+              </button>
+              <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100" onClick={() => setEditingPayment(null)}>
+                <X className="h-3 w-3 text-gray-500" />
+              </button>
             </div>
-            <span className="text-sm font-semibold text-gray-900 truncate">{group.participantName}</span>
-            <span className="text-gray-300 flex-shrink-0">·</span>
-            <span className="text-sm text-gray-500 truncate">{group.tripTitle}</span>
-          </div>
-          <span className="text-xs text-gray-400 flex-shrink-0 ml-3">
-            {format(new Date(group.tripDepartureDate), 'd MMM yyyy', { locale: pl })}
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => { setEditingPayment(payment.id); setEditAmount(payment.amount.toString()); }}
+                  className="flex items-center gap-1 group"
+                >
+                  <span className="text-sm font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
+                    {payment.amount.toFixed(0)} {payment.currency}
+                  </span>
+                  <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
+            </Tooltip>
+          )}
+        </td>
+
+        {/* Status */}
+        <td className="py-3 px-3">
+          <span className={cn('inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full', statusCls)}>
+            {statusLabel}
           </span>
-        </div>
+        </td>
 
-        {/* Wiersze płatności */}
-        <div className="divide-y divide-gray-50">
-          {group.payments.map((payment) => {
-            const isPaid = payment.status === 'paid';
-            const isCancelled = payment.status === 'cancelled';
-            const isOverdue =
-              payment.status === 'overdue' || payment.status === 'partially_paid_overdue';
-            const dueDate = payment.due_date ? new Date(payment.due_date) : null;
-            const isDueDateOverdue = dueDate ? dueDate < today : false;
-            const { label: statusLabel, cls: statusCls } = getStatusBadge(payment.status);
+        {/* Termin */}
+        <td className="py-3 px-3">
+          {dueDate ? (
+            <span className={cn(
+              'text-sm tabular-nums',
+              isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500'
+            )}>
+              {format(dueDate, 'd.MM.yyyy', { locale: pl })}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-sm">—</span>
+          )}
+        </td>
 
-            return (
-              <div
-                key={payment.id}
+        {/* Notatka */}
+        <td className="py-3 px-3 max-w-[180px]">
+          {editingNote === payment.id ? (
+            <div className="flex items-center gap-1">
+              <Input
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                className="h-7 text-xs rounded-lg w-36"
+                placeholder="Notatka..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveNote(payment.id);
+                  if (e.key === 'Escape') setEditingNote(null);
+                }}
+                autoFocus
+              />
+              <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100" onClick={() => saveNote(payment.id)} disabled={isUpdating === payment.id}>
+                <Save className="h-3 w-3 text-gray-500" />
+              </button>
+              <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100" onClick={() => setEditingNote(null)}>
+                <X className="h-3 w-3 text-gray-500" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setEditingNote(payment.id); setEditNote(payment.admin_notes || ''); }}
+              className="flex items-center gap-1.5 text-xs group w-full text-left"
+            >
+              <MessageSquare className={cn(
+                'h-3.5 w-3.5 flex-shrink-0 transition-colors',
+                payment.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
+              )} />
+              {payment.admin_notes ? (
+                <span className="text-amber-700 truncate group-hover:text-amber-900">{payment.admin_notes}</span>
+              ) : (
+                <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
+              )}
+            </button>
+          )}
+        </td>
+
+        {/* Opłacono? */}
+        {!isCancelled && (
+          <td className="py-3 pl-3 pr-5">
+            <div className="flex gap-1.5">
+              <button
                 className={cn(
-                  'flex items-center gap-4 px-4 py-2.5 flex-wrap md:flex-nowrap',
-                  isPaid && 'bg-green-50/20',
-                  isOverdue && 'bg-red-50/20',
-                  isCancelled && 'opacity-40'
+                  'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                  isPaid
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                    : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
                 )}
+                onClick={() => handleStatusChange(payment.id, 'paid')}
+                disabled={isUpdating === payment.id}
               >
-                {/* Typ */}
-                <div className="w-20 flex-shrink-0">
-                  <span className="text-xs font-semibold text-gray-700">
-                    {getPaymentLabel(payment)}
-                  </span>
-                </div>
-
-                {/* Termin */}
-                <div className="w-24 flex-shrink-0">
-                  {dueDate ? (
-                    <span className={cn(
-                      'text-xs',
-                      isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-400'
-                    )}>
-                      {format(dueDate, 'd.MM.yyyy', { locale: pl })}
-                    </span>
-                  ) : (
-                    <span className="text-gray-300 text-xs">—</span>
-                  )}
-                </div>
-
-                {/* Kwota */}
-                <div className="w-28 flex-shrink-0">
-                  {editingPayment === payment.id ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        value={editAmount}
-                        onChange={(e) => setEditAmount(e.target.value)}
-                        className="h-6 w-20 text-xs rounded-lg"
-                        min="0"
-                        step="0.01"
-                        onKeyDown={(e) => { if (e.key === 'Enter') saveAmount(payment.id); if (e.key === 'Escape') setEditingPayment(null); }}
-                        autoFocus
-                      />
-                      <span className="text-xs text-gray-400">{payment.currency}</span>
-                      <button
-                        className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100"
-                        onClick={() => saveAmount(payment.id)}
-                        disabled={isUpdating === payment.id}
-                      >
-                        <Save className="h-3 w-3 text-gray-500" />
-                      </button>
-                      <button
-                        className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100"
-                        onClick={() => setEditingPayment(null)}
-                      >
-                        <X className="h-3 w-3 text-gray-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => startEditAmount(payment)}
-                          className="text-sm font-semibold text-gray-900 hover:text-blue-600 flex items-center gap-0.5 group transition-colors"
-                        >
-                          {payment.amount} {payment.currency}
-                          <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 ml-0.5" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-
-                {/* Status badge */}
-                <div className="flex-shrink-0">
-                  <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', statusCls)}>
-                    {statusLabel}
-                  </span>
-                </div>
-
-                {/* Notatka */}
-                <div className="flex-1 min-w-0">
-                  {editingNote === payment.id ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={editNote}
-                        onChange={(e) => setEditNote(e.target.value)}
-                        className="h-6 text-xs rounded-lg flex-1"
-                        placeholder="Wpisz notatkę..."
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveNote(payment.id);
-                          if (e.key === 'Escape') setEditingNote(null);
-                        }}
-                        autoFocus
-                      />
-                      <button
-                        className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100"
-                        onClick={() => saveNote(payment.id)}
-                        disabled={isUpdating === payment.id}
-                      >
-                        <Save className="h-3 w-3 text-gray-500" />
-                      </button>
-                      <button
-                        className="h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100"
-                        onClick={() => setEditingNote(null)}
-                      >
-                        <X className="h-3 w-3 text-gray-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => { setEditingNote(payment.id); setEditNote(payment.admin_notes || ''); }}
-                      className="flex items-center gap-1 text-xs group w-full text-left"
-                    >
-                      <MessageSquare className={cn(
-                        'h-3 w-3 flex-shrink-0',
-                        payment.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
-                      )} />
-                      {payment.admin_notes ? (
-                        <span className="text-amber-700 truncate group-hover:text-amber-900">{payment.admin_notes}</span>
-                      ) : (
-                        <span className="text-gray-300 group-hover:text-gray-400">Dodaj notatkę</span>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Przyciski Tak / Nie */}
-                {!isCancelled && (
-                  <div className="flex gap-1.5 flex-shrink-0 ml-auto">
-                    <button
-                      className={cn(
-                        'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                        isPaid
-                          ? 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
-                          : 'bg-green-50 text-green-700 ring-1 ring-green-200 hover:bg-green-100'
-                      )}
-                      onClick={() => handleStatusChange(payment.id, 'paid')}
-                      disabled={isUpdating === payment.id}
-                    >
-                      <Check className="h-3 w-3" />
-                      Tak
-                    </button>
-                    <button
-                      className={cn(
-                        'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                        !isPaid
-                          ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
-                          : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
-                      )}
-                      onClick={() => handleStatusChange(payment.id, 'pending')}
-                      disabled={isUpdating === payment.id}
-                    >
-                      <X className="h-3 w-3" />
-                      Nie
-                    </button>
-                  </div>
+                <Check className="h-3 w-3" />
+                Tak
+              </button>
+              <button
+                className={cn(
+                  'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                  !isPaid
+                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                    : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
                 )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                onClick={() => handleStatusChange(payment.id, 'pending')}
+                disabled={isUpdating === payment.id}
+              >
+                <X className="h-3 w-3" />
+                Nie
+              </button>
+            </div>
+          </td>
+        )}
+        {isCancelled && <td className="py-3 pl-3 pr-5" />}
+      </tr>
     );
   }
 
@@ -455,7 +398,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-xs text-gray-500">Wszystkie</p>
+              <p className="text-xs text-gray-500">Wszystkie płatności</p>
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
@@ -468,8 +411,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{stats.paid}</p>
@@ -480,35 +423,31 @@ export function PaymentsList({ payments }: PaymentsListProps) {
 
         {/* Filtry */}
         <div className="flex flex-col gap-3">
-          {/* Wiersz 1: search + trip + status */}
           <div className="flex flex-wrap gap-3 items-center">
-            {/* Szukaj po nazwisku */}
+            {/* Szukaj */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 placeholder="Szukaj po nazwisku..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 pl-10 pr-8 rounded-xl bg-white ring-1 ring-gray-200 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 w-52 transition-all"
+                className="h-10 pl-10 pr-8 rounded-xl bg-white ring-1 ring-gray-200 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 w-56 transition-all"
               />
               {searchQuery && (
-                <button
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => setSearchQuery('')}
-                >
+                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={() => setSearchQuery('')}>
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
 
-            {/* Filtr po wyjeździe */}
+            {/* Filtr wyjazdu */}
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-400" />
               <select
                 value={tripFilter}
                 onChange={(e) => setTripFilter(e.target.value)}
                 className={cn(
-                  'h-10 appearance-none pl-9 pr-8 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors',
+                  'h-10 appearance-none pl-9 pr-8 rounded-xl text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
                   tripFilter !== 'all'
                     ? 'bg-blue-600 text-white ring-1 ring-blue-700'
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
@@ -519,10 +458,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                   <option key={t.id} value={t.id}>{t.title}</option>
                 ))}
               </select>
-              <ChevronDown className={cn(
-                'absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none',
-                tripFilter !== 'all' ? 'text-blue-200' : 'text-gray-400'
-              )} />
+              <ChevronDown className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none', tripFilter !== 'all' ? 'text-blue-200' : 'text-gray-400')} />
             </div>
 
             {/* Status tabs */}
@@ -544,35 +480,23 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
           </div>
 
-          {/* Wiersz 2: daty + limit + info */}
           <div className="flex flex-wrap gap-3 items-center">
+            {/* Daty */}
             <div className="flex items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
               <CalendarDays className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <span className="text-xs text-gray-400">Od</span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
-              />
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer" />
               <span className="text-xs text-gray-300">—</span>
               <span className="text-xs text-gray-400">Do</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
-              />
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer" />
               {(dateFrom || dateTo) && (
-                <button
-                  onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  className="text-gray-400 hover:text-gray-600 ml-1"
-                >
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-gray-400 hover:text-gray-600 ml-1">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
 
+            {/* Limit */}
             <div className="flex items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
               <ListFilter className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <span className="text-xs text-gray-400">Pokaż</span>
@@ -581,10 +505,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                   <button
                     key={limit}
                     onClick={() => setPageLimit(limit)}
-                    className={cn(
-                      'px-2 py-0.5 rounded-lg text-xs font-medium transition-all',
-                      pageLimit === limit ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'
-                    )}
+                    className={cn('px-2 py-0.5 rounded-lg text-xs font-medium transition-all', pageLimit === limit ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100')}
                   >
                     {limit === 'all' ? 'Wszystkie' : limit}
                   </button>
@@ -593,57 +514,63 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
 
             <span className="text-xs text-gray-400">
-              {displayedActive.length} z {activeGroups.length} aktywnych
-              {paidGroups.length > 0 && ` · ${paidGroups.length} opłaconych`}
+              {displayedActive.length} z {activeRows.length} aktywnych
+              {paidRows.length > 0 && ` · ${paidRows.length} opłaconych`}
             </span>
           </div>
         </div>
 
-        {/* Lista aktywnych płatności */}
-        <div className="space-y-2">
-          {/* Nagłówek kolumn */}
-          {displayedActive.length > 0 && (
-            <div className="hidden md:flex items-center gap-4 px-4 py-1.5">
-              <div className="w-20 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Typ</div>
-              <div className="w-24 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Termin</div>
-              <div className="w-28 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Kwota</div>
-              <div className="flex-shrink-0 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Status</div>
-              <div className="flex-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Notatka</div>
-              <div className="w-24 text-[10px] font-semibold text-gray-400 uppercase tracking-wide text-right ml-auto">Opłacono?</div>
-            </div>
-          )}
-
-          {displayedActive.length === 0 ? (
-            <div className="bg-white rounded-2xl ring-1 ring-gray-100 p-12 text-center text-sm text-gray-400">
-              {searchQuery || tripFilter !== 'all' || dateFrom || dateTo
-                ? 'Brak płatności pasujących do filtrów'
-                : 'Brak aktywnych płatności'}
-            </div>
-          ) : (
-            displayedActive.map((group) => renderGroup(group))
-          )}
+        {/* Tabela aktywnych */}
+        <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="text-left py-2.5 pl-5 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Uczestnik</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Za co</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Kwota</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Termin</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Notatka</th>
+                <th className="text-left py-2.5 pl-3 pr-5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Opłacono?</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayedActive.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
+                    {searchQuery || tripFilter !== 'all' || dateFrom || dateTo
+                      ? 'Brak płatności pasujących do filtrów'
+                      : 'Brak aktywnych płatności'}
+                  </td>
+                </tr>
+              ) : (
+                displayedActive.map((row) => renderRow(row))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Sekcja opłaconych — zwijana */}
-        {paidGroups.length > 0 && (
+        {/* Sekcja opłaconych */}
+        {paidRows.length > 0 && (
           <div className="space-y-2">
             <button
               onClick={() => setPaidExpanded(!paidExpanded)}
-              className="flex items-center gap-2 w-full px-4 py-3 bg-green-50 rounded-2xl ring-1 ring-green-100 hover:bg-green-100/80 transition-colors"
+              className="flex items-center gap-2 w-full px-4 py-3 bg-emerald-50 rounded-2xl ring-1 ring-emerald-100 hover:bg-emerald-100/80 transition-colors"
             >
-              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-              <span className="text-sm font-semibold text-green-800">
-                Opłacone ({paidGroups.length})
-              </span>
-              {paidExpanded ? (
-                <ChevronUp className="h-4 w-4 text-green-600 ml-auto" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-green-600 ml-auto" />
-              )}
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+              <span className="text-sm font-semibold text-emerald-800">Opłacone ({paidRows.length})</span>
+              {paidExpanded
+                ? <ChevronUp className="h-4 w-4 text-emerald-600 ml-auto" />
+                : <ChevronDown className="h-4 w-4 text-emerald-600 ml-auto" />
+              }
             </button>
             {paidExpanded && (
-              <div className="space-y-2">
-                {paidGroups.map((group) => renderGroup(group, true))}
+              <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
+                <table className="w-full">
+                  <tbody>
+                    {paidRows.map((row) => renderRow(row, true))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
