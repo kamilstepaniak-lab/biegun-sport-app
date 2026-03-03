@@ -376,6 +376,21 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 
   // 3. Aktualizuj szablony płatności jeśli podane (używamy admin client)
   if (payment_templates !== undefined) {
+    // Odepnij istniejące płatności od szablonów przed ich usunięciem
+    // (FK bez ON DELETE SET NULL — musimy ręcznie wyzerować template_id)
+    const { data: existingTemplates } = await supabaseAdmin
+      .from('trip_payment_templates')
+      .select('id')
+      .eq('trip_id', id);
+
+    if (existingTemplates && existingTemplates.length > 0) {
+      const templateIds = existingTemplates.map((t) => t.id);
+      await supabaseAdmin
+        .from('payments')
+        .update({ template_id: null })
+        .in('template_id', templateIds);
+    }
+
     // Usuń wszystkie stare szablony
     const { error: deleteTemplatesError } = await supabaseAdmin
       .from('trip_payment_templates')

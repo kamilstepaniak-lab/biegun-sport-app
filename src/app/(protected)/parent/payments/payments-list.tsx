@@ -446,7 +446,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
                     : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100'
                 }`}
               >
-                <option value="all">Wszystkie wyjazdy</option>
+                <option value="all">Sortuj wg. wyjazdu</option>
                 {availableTrips.map((t) => (
                   <option key={t.id} value={t.id}>{t.title}</option>
                 ))}

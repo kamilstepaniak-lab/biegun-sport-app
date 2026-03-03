@@ -96,103 +96,10 @@ export async function registerParticipantToTrip(
     return { error: 'Nie udało się zapisać na wyjazd' };
   }
 
-  // Pobierz szablony płatności
-  const { data: paymentTemplates } = await supabase
-    .from('trip_payment_templates')
-    .select('*')
-    .eq('trip_id', tripId);
-
+  // Płatności są tworzone dopiero gdy rodzic wybierze zieloną opcję
+  // (Stop 1 / Stop 2 / Własny transport) w updateParticipationStatusByParent.
+  // Tutaj tworzymy tylko rejestrację bez płatności.
   const emailPaymentLines: PaymentLineItem[] = [];
-
-  if (paymentTemplates && paymentTemplates.length > 0) {
-    const birthYear = new Date(participant.birth_date).getFullYear();
-
-    // Zabezpieczenie przed duplikatami — sprawdź czy płatności już istnieją
-    const supabaseAdmin = createAdminClient();
-    const { data: existingPayments } = await supabaseAdmin
-      .from('payments')
-      .select('id')
-      .eq('registration_id', registration.id)
-      .limit(1);
-
-    if (existingPayments && existingPayments.length > 0) {
-      // Płatności już istnieją (np. stworzone przez admina) — pomiń tworzenie
-      revalidatePath('/parent/trips');
-      revalidatePath('/parent/payments');
-      revalidatePath(`/admin/trips/${tripId}/registrations`);
-      revalidatePath(`/admin/trips/${tripId}/payments`);
-      return { success: true, data: registration };
-    }
-
-    const paymentsToCreate = [];
-
-    for (const template of paymentTemplates) {
-      if (template.payment_type === 'installment') {
-        paymentsToCreate.push({
-          registration_id: registration.id,
-          template_id: template.id,
-          payment_type: 'installment',
-          installment_number: template.installment_number,
-          original_amount: template.amount,
-          amount: template.amount,
-          currency: template.currency,
-          due_date: template.due_date,
-          status: 'pending',
-        });
-
-        emailPaymentLines.push({
-          payment_type: 'installment',
-          installment_number: template.installment_number,
-          amount: template.amount,
-          currency: template.currency,
-          due_date: template.due_date,
-          payment_method: template.payment_method,
-        });
-
-        // Jeśli rata 1 ma dołączony karnet
-        if (template.is_first_installment && template.includes_season_pass) {
-          const seasonPass = paymentTemplates.find(
-            (t) =>
-              t.payment_type === 'season_pass' &&
-              t.birth_year_from &&
-              t.birth_year_to &&
-              t.birth_year_from <= birthYear &&
-              t.birth_year_to >= birthYear
-          );
-
-          if (seasonPass) {
-            paymentsToCreate.push({
-              registration_id: registration.id,
-              template_id: seasonPass.id,
-              payment_type: 'season_pass',
-              installment_number: null,
-              original_amount: seasonPass.amount,
-              amount: seasonPass.amount,
-              currency: seasonPass.currency,
-              due_date: template.due_date,
-              status: 'pending',
-            });
-
-            emailPaymentLines.push({
-              payment_type: 'season_pass',
-              installment_number: null,
-              amount: seasonPass.amount,
-              currency: seasonPass.currency,
-              due_date: template.due_date,
-              payment_method: seasonPass.payment_method,
-            });
-          }
-        }
-      }
-    }
-
-    if (paymentsToCreate.length > 0) {
-      const { error: paymentsError } = await supabaseAdmin.from('payments').insert(paymentsToCreate);
-      if (paymentsError) {
-        console.error('Payments insert error:', paymentsError);
-      }
-    }
-  }
 
   // Wyślij e-mail potwierdzający zapis
   try {

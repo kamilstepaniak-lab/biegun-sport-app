@@ -20,8 +20,8 @@ const statusLabels: Record<string, string> = {
   pending: 'Nieopłacona',
   partially_paid: 'Częściowo',
   paid: 'Opłacona',
-  overdue: 'Zaległa',
-  partially_paid_overdue: 'Częściowo / Zaległa',
+  overdue: 'Po terminie',
+  partially_paid_overdue: 'Częściowo / Po term.',
 };
 
 const statusColors: Record<string, string> = {
@@ -182,7 +182,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
               </div>
               <div>
                 <p className="text-xl font-bold text-red-700">{stats.countOverdue}</p>
-                <p className="text-xs text-muted-foreground">Zaległych rat</p>
+                <p className="text-xs text-muted-foreground">Po terminie</p>
               </div>
             </div>
           </CardContent>

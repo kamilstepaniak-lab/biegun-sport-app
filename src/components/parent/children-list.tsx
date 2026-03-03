@@ -232,6 +232,22 @@ export function ChildrenList({ children }: ChildrenListProps) {
     overdueCount = 0,
   } = dashboardData ?? {};
 
+  const sumByCurrency = (payments: typeof overduePayments) =>
+    payments.reduce((acc, p) => {
+      const remaining = p.amount - p.amount_paid;
+      acc[p.currency] = (acc[p.currency] || 0) + remaining;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const formatSum = (sums: Record<string, number>) =>
+    Object.entries(sums)
+      .sort(([a], [b]) => (a === 'PLN' ? -1 : b === 'PLN' ? 1 : 0))
+      .map(([currency, total]) => `${total.toFixed(0)} ${currency}`)
+      .join(' · ');
+
+  const overdueSum = formatSum(sumByCurrency(overduePayments));
+  const upcomingSum = formatSum(sumByCurrency(upcomingPayments));
+
   return (
     <>
       {/* ── Górny rząd: Wybór dziecka | Wiadomości ── */}
@@ -520,44 +536,54 @@ export function ChildrenList({ children }: ChildrenListProps) {
                     </div>
 
                     {/* Wyjazd */}
-                    <div className="flex items-start gap-1.5">
-                      <span className="text-green-500 font-bold text-sm leading-none mt-0.5 flex-shrink-0">↗</span>
-                      <div className="space-y-0.5 min-w-0">
-                        <p className="text-xs font-medium text-gray-700">
-                          {format(new Date(trip.departure_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
-                          {trip.departure_location && (
-                            <span className="text-gray-400"> · {trip.departure_location}</span>
-                          )}
-                        </p>
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500 font-bold text-xs flex-shrink-0 mt-0.5">↗</span>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                            {format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}
+                          </span>
+                          <span className="text-xs text-gray-500 truncate">{trip.departure_location || '—'}</span>
+                        </div>
                         {trip.departure_stop2_location && (
-                          <p className="text-[11px] text-gray-400">
-                            {trip.departure_stop2_datetime
-                              ? format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
-                              : ''}
-                            {trip.departure_stop2_location}
-                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                              {trip.departure_stop2_datetime
+                                ? format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })
+                                : '—'}
+                            </span>
+                            <span className="text-xs text-gray-500 truncate">{trip.departure_stop2_location}</span>
+                          </div>
                         )}
+                        <p className="text-[10px] text-gray-400">
+                          {format(new Date(trip.departure_datetime), 'd.MM.yyyy', { locale: pl })}
+                        </p>
                       </div>
                     </div>
 
                     {/* Powrót */}
-                    <div className="flex items-start gap-1.5">
-                      <span className="text-red-500 font-bold text-sm leading-none mt-0.5 flex-shrink-0">↙</span>
-                      <div className="space-y-0.5 min-w-0">
-                        <p className="text-xs font-medium text-gray-700">
-                          {format(new Date(trip.return_datetime), 'd.MM.yyyy · HH:mm', { locale: pl })}
-                          {trip.return_location && (
-                            <span className="text-gray-400"> · {trip.return_location}</span>
-                          )}
-                        </p>
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-500 font-bold text-xs flex-shrink-0 mt-0.5">↙</span>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                            {format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}
+                          </span>
+                          <span className="text-xs text-gray-500 truncate">{trip.return_location || '—'}</span>
+                        </div>
                         {trip.return_stop2_location && (
-                          <p className="text-[11px] text-gray-400">
-                            {trip.return_stop2_datetime
-                              ? format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl }) + ' · '
-                              : ''}
-                            {trip.return_stop2_location}
-                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                              {trip.return_stop2_datetime
+                                ? format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })
+                                : '—'}
+                            </span>
+                            <span className="text-xs text-gray-500 truncate">{trip.return_stop2_location}</span>
+                          </div>
                         )}
+                        <p className="text-[10px] text-gray-400">
+                          {format(new Date(trip.return_datetime), 'd.MM.yyyy', { locale: pl })}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -609,13 +635,16 @@ export function ChildrenList({ children }: ChildrenListProps) {
               </div>
             ) : (
               <div>
-                {/* Sekcja: Zaległe */}
+                {/* Sekcja: Po terminie */}
                 {overduePayments.length > 0 && (
                   <>
-                    <div className="px-5 py-2 bg-red-50/60 border-b border-red-100">
+                    <div className="px-5 py-2 bg-red-50/60 border-b border-red-100 flex items-center justify-between">
                       <p className="text-[11px] font-semibold text-red-600 uppercase tracking-wide">
-                        Zaległe ({overduePayments.length})
+                        Po terminie ({overduePayments.length})
                       </p>
+                      {overdueSum && (
+                        <p className="text-[11px] font-bold text-red-600">{overdueSum}</p>
+                      )}
                     </div>
                     <div className="divide-y divide-gray-50">
                       {overduePayments.map((p) => (
@@ -641,16 +670,19 @@ export function ChildrenList({ children }: ChildrenListProps) {
                   </>
                 )}
 
-                {/* Sekcja: Przyszłe */}
+                {/* Sekcja: Do zapłaty */}
                 {upcomingPayments.length > 0 && (
                   <>
                     <div className={cn(
-                      'px-5 py-2 border-b border-gray-100',
+                      'px-5 py-2 border-b border-gray-100 flex items-center justify-between',
                       overduePayments.length > 0 ? 'bg-gray-50 border-t border-gray-100' : 'bg-gray-50/50'
                     )}>
                       <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
                         Do zapłaty ({upcomingPayments.length})
                       </p>
+                      {upcomingSum && (
+                        <p className="text-[11px] font-bold text-gray-700">{upcomingSum}</p>
+                      )}
                     </div>
                     <div className="divide-y divide-gray-50">
                       {upcomingPayments.map((p) => (
