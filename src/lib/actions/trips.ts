@@ -429,126 +429,135 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
       }
     }
 
-    // Synchronizuj płatności dla wszystkich zatwierdzonych uczestników
-    const { data: newTemplates } = await supabaseAdmin
-      .from('trip_payment_templates')
-      .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date')
-      .eq('trip_id', id);
+  }
 
-    const { data: confirmedRegs } = await supabaseAdmin
-      .from('trip_registrations')
-      .select('id, participant_id')
-      .eq('trip_id', id)
-      .eq('status', 'active')
-      .eq('participation_status', 'confirmed');
+  // Synchronizuj płatności dla wszystkich zapisanych uczestników (zawsze przy edycji)
+  const { data: newTemplates } = await supabaseAdmin
+    .from('trip_payment_templates')
+    .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, payment_method')
+    .eq('trip_id', id);
 
-    if (confirmedRegs && confirmedRegs.length > 0) {
-      for (const reg of confirmedRegs as { id: string; participant_id: string }[]) {
-        const { data: participant } = await supabaseAdmin
-          .from('participants')
-          .select('birth_date')
-          .eq('id', reg.participant_id)
-          .single();
+  const { data: activeRegs } = await supabaseAdmin
+    .from('trip_registrations')
+    .select('id, participant_id, participation_status')
+    .eq('trip_id', id)
+    .eq('status', 'active')
+    .in('participation_status', ['confirmed', 'other']);
 
-        const birthYear = participant?.birth_date
-          ? new Date(participant.birth_date).getFullYear()
-          : null;
+  if (activeRegs && activeRegs.length > 0) {
+    for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string }[]) {
+      const { data: participant } = await supabaseAdmin
+        .from('participants')
+        .select('birth_date')
+        .eq('id', reg.participant_id)
+        .single();
 
-        const templates = (newTemplates || []) as {
-          id: string;
-          payment_type: string;
-          installment_number: number | null;
-          birth_year_from: number | null;
-          birth_year_to: number | null;
-          amount: number;
-          currency: string;
-          due_date: string | null;
-        }[];
+      const birthYear = participant?.birth_date
+        ? new Date(participant.birth_date).getFullYear()
+        : null;
 
-        const applicableTemplates = templates.filter((t) => {
-          if (t.payment_type === 'season_pass') {
+      const templates = (newTemplates || []) as {
+        id: string;
+        payment_type: string;
+        installment_number: number | null;
+        birth_year_from: number | null;
+        birth_year_to: number | null;
+        amount: number;
+        currency: string;
+        due_date: string | null;
+        payment_method: string | null;
+      }[];
+
+      const applicableTemplates = templates.filter((t) => {
+        if (t.payment_type === 'season_pass') {
+          // Jeśli szablon ma ograniczenia rocznikowe — sprawdź rocznik dziecka
+          if (t.birth_year_from || t.birth_year_to) {
             if (!birthYear) return false;
             const matchesFrom = !t.birth_year_from || birthYear >= t.birth_year_from;
             const matchesTo = !t.birth_year_to || birthYear <= t.birth_year_to;
             return matchesFrom && matchesTo;
           }
+          // Brak ograniczeń rocznikowych — karnet dotyczy wszystkich
           return true;
-        });
+        }
+        return true;
+      });
 
-        const { data: existingPayments } = await supabaseAdmin
-          .from('payments')
-          .select('id, payment_type, installment_number, status')
-          .eq('registration_id', reg.id)
-          .neq('status', 'cancelled');
+      const { data: existingPayments } = await supabaseAdmin
+        .from('payments')
+        .select('id, payment_type, installment_number, status')
+        .eq('registration_id', reg.id)
+        .neq('status', 'cancelled');
 
-        const existing = (existingPayments || []) as {
-          id: string;
-          payment_type: string;
-          installment_number: number | null;
-          status: string;
-        }[];
+      const existing = (existingPayments || []) as {
+        id: string;
+        payment_type: string;
+        installment_number: number | null;
+        status: string;
+      }[];
 
-        // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
-        for (const template of applicableTemplates) {
-          const match = existing.find(
-            (p) =>
-              p.payment_type === template.payment_type &&
-              p.installment_number === template.installment_number
-          );
+      // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
+      for (const template of applicableTemplates) {
+        const match = existing.find(
+          (p) =>
+            p.payment_type === template.payment_type &&
+            p.installment_number === template.installment_number
+        );
 
-          if (match) {
-            if (match.status === 'pending' || match.status === 'overdue') {
-              await supabaseAdmin
-                .from('payments')
-                .update({
-                  amount: template.amount,
-                  original_amount: template.amount,
-                  currency: template.currency,
-                  due_date: template.due_date,
-                  template_id: template.id,
-                })
-                .eq('id', match.id);
-            } else {
-              await supabaseAdmin
-                .from('payments')
-                .update({ template_id: template.id })
-                .eq('id', match.id);
-            }
+        if (match) {
+          if (match.status === 'pending' || match.status === 'overdue') {
+            await supabaseAdmin
+              .from('payments')
+              .update({
+                amount: template.amount,
+                original_amount: template.amount,
+                currency: template.currency,
+                due_date: template.due_date,
+                template_id: template.id,
+                payment_method: template.payment_method,
+              })
+              .eq('id', match.id);
           } else {
             await supabaseAdmin
               .from('payments')
-              .insert({
-                registration_id: reg.id,
-                template_id: template.id,
-                payment_type: template.payment_type,
-                installment_number: template.installment_number,
-                original_amount: template.amount,
-                discount_percentage: 0,
-                amount: template.amount,
-                currency: template.currency,
-                due_date: template.due_date,
-                status: 'pending',
-                amount_paid: 0,
-              });
+              .update({ template_id: template.id })
+              .eq('id', match.id);
           }
+        } else {
+          await supabaseAdmin
+            .from('payments')
+            .insert({
+              registration_id: reg.id,
+              template_id: template.id,
+              payment_type: template.payment_type,
+              installment_number: template.installment_number,
+              original_amount: template.amount,
+              discount_percentage: 0,
+              amount: template.amount,
+              currency: template.currency,
+              due_date: template.due_date,
+              status: 'pending',
+              amount_paid: 0,
+              payment_method: template.payment_method,
+            });
         }
+      }
 
-        // Anuluj oczekujące płatności, które nie mają już pasującego szablonu
-        for (const existingPayment of existing) {
-          const hasTemplate = applicableTemplates.find(
-            (t) =>
-              t.payment_type === existingPayment.payment_type &&
-              t.installment_number === existingPayment.installment_number
-          );
-          if (
-            !hasTemplate &&
-            (existingPayment.status === 'pending' || existingPayment.status === 'overdue')
-          ) {
-            await supabaseAdmin
-              .from('payments')
-              .update({ status: 'cancelled' })
-              .eq('id', existingPayment.id);
-          }
+      // Anuluj oczekujące płatności, które nie mają już pasującego szablonu
+      for (const existingPayment of existing) {
+        const hasTemplate = applicableTemplates.find(
+          (t) =>
+            t.payment_type === existingPayment.payment_type &&
+            t.installment_number === existingPayment.installment_number
+        );
+        if (
+          !hasTemplate &&
+          (existingPayment.status === 'pending' || existingPayment.status === 'overdue')
+        ) {
+          await supabaseAdmin
+            .from('payments')
+            .update({ status: 'cancelled' })
+            .eq('id', existingPayment.id);
         }
       }
     }
