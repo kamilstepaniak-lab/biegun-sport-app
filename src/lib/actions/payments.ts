@@ -837,3 +837,54 @@ export async function updatePaymentNote(paymentId: string, note: string) {
 
   return { success: true };
 }
+
+export async function bulkUpdatePaymentStatus(
+  paymentIds: string[],
+  status: 'paid' | 'pending'
+) {
+  if (!paymentIds.length) return { success: true };
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+
+  const now = new Date().toISOString();
+
+  if (status === 'pending') {
+    const { error } = await supabase
+      .from('payments')
+      .update({ status: 'pending', amount_paid: 0, paid_at: null, updated_at: now })
+      .in('id', paymentIds);
+
+    if (error) return { error: `Błąd: ${error.message}` };
+  } else {
+    // Pobierz kwoty — każda płatność ma inną wartość
+    const { data: rows } = await supabase
+      .from('payments')
+      .select('id, amount')
+      .in('id', paymentIds)
+      .neq('status', 'paid');
+
+    if (rows && rows.length > 0) {
+      for (const row of rows as { id: string; amount: number }[]) {
+        await supabase
+          .from('payments')
+          .update({ status: 'paid', amount_paid: row.amount, paid_at: now, marked_by: user.id, updated_at: now })
+          .eq('id', row.id);
+      }
+    }
+  }
+
+  revalidatePath('/admin/payments');
+  revalidatePath('/admin/trips');
+  return { success: true };
+}

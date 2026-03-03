@@ -29,7 +29,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote } from '@/lib/actions/payments';
+import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote, bulkUpdatePaymentStatus } from '@/lib/actions/payments';
 import type { PaymentWithDetails } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +61,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editNote, setEditNote] = useState('');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Spłaszcz do płaskiej listy wierszy
   const flatRows = useMemo<FlatRow[]>(() => {
@@ -190,6 +192,52 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     finally { setIsUpdating(null); }
   }
 
+  async function handleBulkAction(status: 'paid' | 'pending') {
+    if (!selectedIds.size) return;
+    setIsBulkUpdating(true);
+    try {
+      const result = await bulkUpdatePaymentStatus(Array.from(selectedIds), status);
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success(
+          status === 'paid'
+            ? `Oznaczono ${selectedIds.size} płatności jako opłacone`
+            : `Oznaczono ${selectedIds.size} płatności jako nieopłacone`
+        );
+        setSelectedIds(new Set());
+        router.refresh();
+      }
+    } catch { toast.error('Wystąpił błąd'); }
+    finally { setIsBulkUpdating(false); }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const allIds = displayedRows.map((r) => r.payment.id);
+    const allSelected = allIds.every((id) => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }
+
   function getPaymentLabel(payment: PaymentWithDetails): string {
     if (payment.payment_type === 'installment') return `Rata ${payment.installment_number}`;
     if (payment.payment_type === 'season_pass') return 'Karnet';
@@ -208,10 +256,13 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     }
   }
 
+  const pendingPayments = payments.filter((p) => p.status !== 'paid' && p.status !== 'cancelled');
   const stats = {
     total: payments.length,
-    pending: payments.filter((p) => p.status !== 'paid' && p.status !== 'cancelled').length,
+    pending: pendingPayments.length,
     paid: payments.filter((p) => p.status === 'paid').length,
+    pendingPLN: pendingPayments.filter((p) => p.currency === 'PLN').reduce((s, p) => s + (p.amount - (p.amount_paid ?? 0)), 0),
+    pendingEUR: pendingPayments.filter((p) => p.currency === 'EUR').reduce((s, p) => s + (p.amount - (p.amount_paid ?? 0)), 0),
   };
 
   const statusFilters: { key: StatusFilter; label: string }[] = [
@@ -233,16 +284,29 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     const isDueDateOverdue = dueDate ? dueDate < today : false;
     const { label: statusLabel, cls: statusCls } = getStatusBadge(payment.status);
 
+    const isSelected = selectedIds.has(payment.id);
+
     return (
       <tr
         key={payment.id}
         className={cn(
           'border-b border-gray-100 transition-colors',
           isPaid ? 'bg-emerald-50/20 hover:bg-emerald-50/40' : isOverdue ? 'bg-red-50/10 hover:bg-red-50/20' : 'hover:bg-gray-50/60',
+          isSelected && 'ring-inset ring-1 ring-blue-300 bg-blue-50/40',
         )}
       >
+        {/* Checkbox */}
+        <td className="py-3 pl-4 pr-2 w-8">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => toggleSelect(payment.id)}
+            className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+          />
+        </td>
+
         {/* Uczestnik + wyjazd */}
-        <td className="py-3 pl-5 pr-3">
+        <td className="py-3 pl-2 pr-3">
           <p className="text-sm font-semibold text-gray-900 leading-tight">{participantName}</p>
           <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[180px]">{tripTitle}</p>
         </td>
@@ -410,12 +474,20 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
               <CircleDollarSign className="h-5 w-5 text-red-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
               <p className="text-xs text-gray-500">Nieopłacone</p>
+              <div className="flex flex-wrap gap-x-2 mt-0.5">
+                {stats.pendingPLN > 0 && (
+                  <span className="text-xs font-semibold text-red-600">{stats.pendingPLN.toFixed(0)} PLN</span>
+                )}
+                {stats.pendingEUR > 0 && (
+                  <span className="text-xs font-semibold text-red-600">{stats.pendingEUR.toFixed(0)} EUR</span>
+                )}
+              </div>
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
@@ -527,12 +599,53 @@ export function PaymentsList({ payments }: PaymentsListProps) {
           </div>
         </div>
 
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 rounded-2xl ring-1 ring-blue-200">
+            <span className="text-sm font-semibold text-blue-800">
+              {selectedIds.size} zaznaczonych
+            </span>
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={() => handleBulkAction('paid')}
+                disabled={isBulkUpdating}
+                className="h-8 px-4 text-xs font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Oznacz jako opłacone
+              </button>
+              <button
+                onClick={() => handleBulkAction('pending')}
+                disabled={isBulkUpdating}
+                className="h-8 px-4 text-xs font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <X className="h-3.5 w-3.5" />
+                Oznacz jako nieopłacone
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="h-8 px-3 text-xs font-medium rounded-xl bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Odznacz
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tabela płatności */}
         <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="text-left py-2.5 pl-5 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Uczestnik</th>
+                <th className="py-2.5 pl-4 pr-2 w-8">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+                    checked={displayedRows.length > 0 && displayedRows.every((r) => selectedIds.has(r.payment.id))}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
+                <th className="text-left py-2.5 pl-2 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Uczestnik</th>
                 <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Za co</th>
                 <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Kwota</th>
                 <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
@@ -544,7 +657,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             <tbody>
               {displayedRows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
+                  <td colSpan={8} className="py-16 text-center text-sm text-gray-400">
                     {searchQuery || tripFilter !== 'all' || dateFrom || dateTo
                       ? 'Brak płatności pasujących do filtrów'
                       : 'Brak płatności'}
