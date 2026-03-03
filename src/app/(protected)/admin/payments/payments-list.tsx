@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   X,
@@ -15,7 +16,6 @@ import {
   ListFilter,
   MapPin,
   ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -37,7 +37,7 @@ interface PaymentsListProps {
   payments: PaymentWithDetails[];
 }
 
-type StatusFilter = 'all' | 'pending' | 'overdue';
+type StatusFilter = 'all' | 'pending' | 'overdue' | 'paid';
 type PageLimit = 25 | 50 | 100 | 200 | 'all';
 
 interface FlatRow {
@@ -49,6 +49,7 @@ interface FlatRow {
 }
 
 export function PaymentsList({ payments }: PaymentsListProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [tripFilter, setTripFilter] = useState('all');
@@ -60,7 +61,6 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editNote, setEditNote] = useState('');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [paidExpanded, setPaidExpanded] = useState(false);
 
   // Spłaszcz do płaskiej listy wierszy
   const flatRows = useMemo<FlatRow[]>(() => {
@@ -105,6 +105,9 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       result = result.filter((r) => r.tripId === tripFilter);
     }
 
+    const todayFilter = new Date();
+    todayFilter.setHours(0, 0, 0, 0);
+
     if (statusFilter === 'pending') {
       result = result.filter(
         (r) => r.payment.status === 'pending' || r.payment.status === 'partially_paid'
@@ -112,8 +115,15 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     } else if (statusFilter === 'overdue') {
       result = result.filter(
         (r) =>
-          r.payment.status === 'overdue' || r.payment.status === 'partially_paid_overdue'
+          r.payment.status === 'overdue' ||
+          r.payment.status === 'partially_paid_overdue' ||
+          (r.payment.due_date &&
+            new Date(r.payment.due_date) < todayFilter &&
+            r.payment.status !== 'paid' &&
+            r.payment.status !== 'cancelled')
       );
+    } else if (statusFilter === 'paid') {
+      result = result.filter((r) => r.payment.status === 'paid');
     }
 
     if (dateFrom) {
@@ -131,20 +141,15 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     return result;
   }, [flatRows, searchQuery, tripFilter, statusFilter, dateFrom, dateTo]);
 
-  // Rozdziel aktywne / opłacone
-  const activeRows = useMemo(
-    () => filteredRows.filter((r) => r.payment.status !== 'paid' && r.payment.status !== 'cancelled'),
-    [filteredRows]
-  );
-  const paidRows = useMemo(
-    () => filteredRows.filter((r) => r.payment.status === 'paid'),
+  const allRows = useMemo(
+    () => filteredRows.filter((r) => r.payment.status !== 'cancelled'),
     [filteredRows]
   );
 
-  const displayedActive = useMemo(() => {
-    if (pageLimit === 'all') return activeRows;
-    return activeRows.slice(0, pageLimit);
-  }, [activeRows, pageLimit]);
+  const displayedRows = useMemo(() => {
+    if (pageLimit === 'all') return allRows;
+    return allRows.slice(0, pageLimit);
+  }, [allRows, pageLimit]);
 
   // Handlers
   async function handleStatusChange(paymentId: string, newStatus: 'pending' | 'paid') {
@@ -152,7 +157,10 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     try {
       const result = await updatePaymentStatus(paymentId, newStatus);
       if (result.error) toast.error(result.error);
-      else toast.success(newStatus === 'paid' ? 'Oznaczono jako opłacone' : 'Oznaczono jako nieopłacone');
+      else {
+        toast.success(newStatus === 'paid' ? 'Oznaczono jako opłacone' : 'Oznaczono jako nieopłacone');
+        router.refresh();
+      }
     } catch {
       toast.error('Wystąpił błąd');
     } finally {
@@ -167,7 +175,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     try {
       const result = await updatePaymentAmount(paymentId, newAmount);
       if (result.error) toast.error(result.error);
-      else { toast.success('Kwota zaktualizowana'); setEditingPayment(null); }
+      else { toast.success('Kwota zaktualizowana'); setEditingPayment(null); router.refresh(); }
     } catch { toast.error('Wystąpił błąd'); }
     finally { setIsUpdating(null); }
   }
@@ -177,7 +185,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     try {
       const result = await updatePaymentNote(paymentId, editNote);
       if (result.error) toast.error(result.error);
-      else { toast.success('Notatka zapisana'); setEditingNote(null); }
+      else { toast.success('Notatka zapisana'); setEditingNote(null); router.refresh(); }
     } catch { toast.error('Wystąpił błąd'); }
     finally { setIsUpdating(null); }
   }
@@ -210,12 +218,13 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     { key: 'all', label: 'Wszystkie' },
     { key: 'pending', label: 'Nieopłacone' },
     { key: 'overdue', label: 'Po terminie' },
+    { key: 'paid', label: 'Opłacone' },
   ];
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  function renderRow(row: FlatRow, dimmed = false) {
+  function renderRow(row: FlatRow) {
     const { payment, participantName, tripTitle } = row;
     const isPaid = payment.status === 'paid';
     const isCancelled = payment.status === 'cancelled';
@@ -230,7 +239,6 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         className={cn(
           'border-b border-gray-100 transition-colors',
           isPaid ? 'bg-emerald-50/20 hover:bg-emerald-50/40' : isOverdue ? 'bg-red-50/10 hover:bg-red-50/20' : 'hover:bg-gray-50/60',
-          dimmed && 'opacity-50'
         )}
       >
         {/* Uczestnik + wyjazd */}
@@ -514,13 +522,12 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
 
             <span className="text-xs text-gray-400">
-              {displayedActive.length} z {activeRows.length} aktywnych
-              {paidRows.length > 0 && ` · ${paidRows.length} opłaconych`}
+              {displayedRows.length} z {allRows.length}
             </span>
           </div>
         </div>
 
-        {/* Tabela aktywnych */}
+        {/* Tabela płatności */}
         <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
           <table className="w-full">
             <thead>
@@ -535,46 +542,20 @@ export function PaymentsList({ payments }: PaymentsListProps) {
               </tr>
             </thead>
             <tbody>
-              {displayedActive.length === 0 ? (
+              {displayedRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
                     {searchQuery || tripFilter !== 'all' || dateFrom || dateTo
                       ? 'Brak płatności pasujących do filtrów'
-                      : 'Brak aktywnych płatności'}
+                      : 'Brak płatności'}
                   </td>
                 </tr>
               ) : (
-                displayedActive.map((row) => renderRow(row))
+                displayedRows.map((row) => renderRow(row))
               )}
             </tbody>
           </table>
         </div>
-
-        {/* Sekcja opłaconych */}
-        {paidRows.length > 0 && (
-          <div className="space-y-2">
-            <button
-              onClick={() => setPaidExpanded(!paidExpanded)}
-              className="flex items-center gap-2 w-full px-4 py-3 bg-emerald-50 rounded-2xl ring-1 ring-emerald-100 hover:bg-emerald-100/80 transition-colors"
-            >
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-              <span className="text-sm font-semibold text-emerald-800">Opłacone ({paidRows.length})</span>
-              {paidExpanded
-                ? <ChevronUp className="h-4 w-4 text-emerald-600 ml-auto" />
-                : <ChevronDown className="h-4 w-4 text-emerald-600 ml-auto" />
-              }
-            </button>
-            {paidExpanded && (
-              <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
-                <table className="w-full">
-                  <tbody>
-                    {paidRows.map((row) => renderRow(row, true))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
 
       </div>
     </TooltipProvider>
