@@ -223,11 +223,7 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
       {/* Wyjazd */}
       <td className="py-3 px-3">
         <p className="text-sm text-gray-700 font-medium truncate max-w-[200px]">{payment.trip_title}</p>
-        {payment.trip_departure_date && (
-          <p className="text-xs text-gray-400 mt-0.5">
-            {format(new Date(payment.trip_departure_date), 'd.MM.yyyy', { locale: pl })}
-          </p>
-        )}
+        <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{transferTitle}</p>
       </td>
 
       {/* Za co */}
