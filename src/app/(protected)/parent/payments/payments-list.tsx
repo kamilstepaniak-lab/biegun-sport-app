@@ -13,7 +13,6 @@ import {
   MapPin,
   ChevronDown,
   ChevronUp,
-  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -214,16 +213,20 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
     >
       {/* Dziecko */}
       <td className="py-3 pl-4 pr-3">
-        <div className="flex items-center gap-1.5">
-          <User className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
-          <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{payment.child_name}</span>
-        </div>
+        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{payment.child_name}</span>
       </td>
 
       {/* Wyjazd */}
       <td className="py-3 px-3">
         <p className="text-sm text-gray-700 font-medium truncate max-w-[200px]">{payment.trip_title}</p>
-        <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{transferTitle}</p>
+        <button
+          className="flex items-center gap-1 mt-0.5 group"
+          onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
+          title="Kopiuj tytuł przelewu"
+        >
+          <span className="text-xs text-gray-400 truncate max-w-[190px] group-hover:text-blue-500 transition-colors">{transferTitle}</span>
+          <Copy className="h-3 w-3 text-gray-300 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
+        </button>
       </td>
 
       {/* Za co */}
@@ -280,19 +283,6 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
         )}
       </td>
 
-      {/* Tytuł przelewu (tylko dla nieopłaconych) */}
-      <td className="py-3 pl-3 pr-4">
-        {payment.status !== 'paid' && payment.status !== 'cancelled' && (
-          <button
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors max-w-[160px] group"
-            onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
-            title={transferTitle}
-          >
-            <Copy className="h-3.5 w-3.5 flex-shrink-0 group-hover:text-blue-500" />
-            <span className="truncate group-hover:text-blue-500">Kopiuj tytuł</span>
-          </button>
-        )}
-      </td>
     </tr>
   );
 }
@@ -318,7 +308,6 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
               <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Kwota</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
-              <th className="py-2.5 pl-3 pr-4" />
             </tr>
           </thead>
           <tbody>
