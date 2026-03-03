@@ -257,14 +257,23 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   async function handleSubmit(saveAsDraft: boolean = false) {
     setIsSubmitting(true);
 
+    // Konwertuj datetime-local (czas lokalny) → ISO UTC przed wysłaniem do serwera
+    function localToISO(val: string): string {
+      if (!val) return val;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? val : d.toISOString();
+    }
+
     try {
       const data = {
         ...formData,
         status: saveAsDraft ? 'draft' as TripStatus : formData.status,
         location: formData.location || null,
-        departure_stop2_datetime: formData.departure_stop2_datetime || null,
+        departure_datetime: localToISO(formData.departure_datetime),
+        return_datetime: localToISO(formData.return_datetime),
+        departure_stop2_datetime: formData.departure_stop2_datetime ? localToISO(formData.departure_stop2_datetime) : null,
         departure_stop2_location: formData.departure_stop2_location || null,
-        return_stop2_datetime: formData.return_stop2_datetime || null,
+        return_stop2_datetime: formData.return_stop2_datetime ? localToISO(formData.return_stop2_datetime) : null,
         return_stop2_location: formData.return_stop2_location || null,
         allow_own_transport: formData.allow_own_transport,
       };

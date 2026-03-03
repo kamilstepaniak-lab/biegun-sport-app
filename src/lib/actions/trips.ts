@@ -189,6 +189,7 @@ export async function createTrip(input: CreateTripInput) {
     bank_account_pln,
     bank_account_eur,
     status,
+    allow_own_transport,
     group_ids,
     payment_templates,
     packing_list,
@@ -213,6 +214,7 @@ export async function createTrip(input: CreateTripInput) {
       return_stop2_location: return_stop2_location || null,
       bank_account_pln: bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
       bank_account_eur: bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+      allow_own_transport: allow_own_transport ?? false,
       packing_list: packing_list || null,
       additional_info: additional_info || null,
       status,
@@ -308,6 +310,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     bank_account_pln,
     bank_account_eur,
     status,
+    allow_own_transport,
     group_ids,
     payment_templates,
     packing_list,
@@ -334,6 +337,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (bank_account_pln !== undefined) updateData.bank_account_pln = bank_account_pln;
   if (bank_account_eur !== undefined) updateData.bank_account_eur = bank_account_eur;
   if (status !== undefined) updateData.status = status;
+  if (allow_own_transport !== undefined) updateData.allow_own_transport = allow_own_transport;
   if (packing_list !== undefined) updateData.packing_list = packing_list || null;
   if (additional_info !== undefined) updateData.additional_info = additional_info || null;
 

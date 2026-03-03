@@ -326,6 +326,7 @@ export interface CreateTripInput {
   status: TripStatus;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
+  allow_own_transport?: boolean;
   packing_list?: string | null;
   additional_info?: string | null;
 }
