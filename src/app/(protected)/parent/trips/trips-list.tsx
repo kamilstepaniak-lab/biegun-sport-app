@@ -477,7 +477,9 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                           <div>
                             <p className="font-medium text-gray-800 text-sm">{trip.departure_stop2_location}</p>
                             {trip.departure_stop2_datetime && (
-                              <p className="text-xs text-gray-500">{format(new Date(trip.departure_stop2_datetime), 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
+                              <p className="text-xs text-gray-500">
+                                {format(departureDate, 'EEEE, d MMMM yyyy', { locale: pl })}, {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -506,7 +508,9 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                           <div>
                             <p className="font-medium text-gray-800 text-sm">{trip.return_stop2_location}</p>
                             {trip.return_stop2_datetime && (
-                              <p className="text-xs text-gray-500">{format(new Date(trip.return_stop2_datetime), 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
+                              <p className="text-xs text-gray-500">
+                                {format(returnDate, 'EEEE, d MMMM yyyy', { locale: pl })}, {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}
+                              </p>
                             )}
                           </div>
                         </div>
