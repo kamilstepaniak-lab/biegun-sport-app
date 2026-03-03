@@ -442,7 +442,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     .select('id, participant_id, participation_status')
     .eq('trip_id', id)
     .eq('status', 'active')
-    .in('participation_status', ['confirmed', 'other']);
+    .eq('participation_status', 'confirmed');
 
   if (activeRegs && activeRegs.length > 0) {
     for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string }[]) {
@@ -505,7 +505,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         );
 
         if (match) {
-          if (match.status === 'pending' || match.status === 'overdue') {
+          const isUpdatable = ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(match.status);
+          if (isUpdatable) {
             await supabaseAdmin
               .from('payments')
               .update({
@@ -518,6 +519,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
               })
               .eq('id', match.id);
           } else {
+            // Opłacone — tylko zaktualizuj template_id
             await supabaseAdmin
               .from('payments')
               .update({ template_id: template.id })
@@ -552,7 +554,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         );
         if (
           !hasTemplate &&
-          (existingPayment.status === 'pending' || existingPayment.status === 'overdue')
+          ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(existingPayment.status)
         ) {
           await supabaseAdmin
             .from('payments')
