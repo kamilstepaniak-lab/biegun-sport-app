@@ -113,8 +113,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
   const [updatingChild, setUpdatingChild] = useState<string | null>(null);
   const [childStatuses, setChildStatuses] = useState<Record<string, ChildTripStatus['participation_status']>>({});
   const [childNotes, setChildNotes] = useState<Record<string, string | null>>({});
-  const [showInneInput, setShowInneInput] = useState<string | null>(null);
-  const [inneMessage, setInneMessage] = useState<string>('');
+  const [confirmPanel, setConfirmPanel] = useState<{ key: string; type: 'stop1' | 'stop2' | 'own' | 'not_going' | 'other' } | null>(null);
+  const [confirmMessage, setConfirmMessage] = useState('');
   const [pastExpanded, setPastExpanded] = useState(false);
 
   function toggleTrip(tripId: string) {
@@ -140,8 +140,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
         setChildNotes(prev => { const s = { ...prev }; delete s[key]; return s; });
         toast.error(result.error);
       } else {
-        setShowInneInput(null);
-        setInneMessage('');
+        setConfirmPanel(null);
+        setConfirmMessage('');
         toast.success(
           status === 'confirmed' ? 'Zapisano wybór przystanku!'
             : status === 'not_going' ? 'Zapisano - dziecko nie jedzie'
@@ -160,6 +160,32 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
   function copyToClipboard(text: string, label: string) {
     navigator.clipboard.writeText(text);
     toast.success(`${label} skopiowany do schowka`);
+  }
+
+  function openConfirmPanel(key: string, type: 'stop1' | 'stop2' | 'own' | 'not_going' | 'other') {
+    if (confirmPanel?.key === key && confirmPanel?.type === type) {
+      setConfirmPanel(null);
+      setConfirmMessage('');
+    } else {
+      setConfirmPanel({ key, type });
+      setConfirmMessage('');
+    }
+  }
+
+  function renderBulletList(text: string) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return null;
+    if (lines.length === 1) return <p className="text-sm text-gray-600">{text}</p>;
+    return (
+      <ul className="space-y-1.5">
+        {lines.map((line, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0 mt-[7px]" />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    );
   }
 
   function renderTripCard(trip: TripForParent, isPast = false) {
@@ -233,7 +259,6 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     const status = statusConfig[currentStatus];
                     const StatusIcon = status.icon;
                     const isUpdating = updatingChild === key;
-                    const isInneOpen = showInneInput === key;
                     const currentStop = getStopFromNote(currentNote);
 
                     const statusLabel = currentStatus === 'confirmed'
@@ -261,48 +286,54 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                               )}
                             </div>
                           </div>
-                          <div className="flex gap-1.5 flex-wrap">
+                          <div className="flex gap-1 flex-wrap">
                             {/* Przystanek 1 */}
                             <button
                               disabled={isUpdating}
-                              onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('stop1')); }}
+                              onClick={(e) => { e.stopPropagation(); openConfirmPanel(key, 'stop1'); }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
+                                'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
                                 currentStatus === 'confirmed' && currentStop === 'stop1'
                                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                  : confirmPanel?.key === key && confirmPanel?.type === 'stop1'
+                                  ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
                                   : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                               )}
                             >
-                              {trip.departure_location?.length > 20
-                                ? trip.departure_location.substring(0, 18) + '…'
+                              {trip.departure_location?.length > 18
+                                ? trip.departure_location.substring(0, 16) + '…'
                                 : trip.departure_location || 'Przystanek 1'}
                             </button>
                             {/* Przystanek 2 */}
                             {hasStop2 && (
                               <button
                                 disabled={isUpdating}
-                                onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('stop2')); }}
+                                onClick={(e) => { e.stopPropagation(); openConfirmPanel(key, 'stop2'); }}
                                 className={cn(
-                                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
+                                  'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
                                   currentStatus === 'confirmed' && currentStop === 'stop2'
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                    : confirmPanel?.key === key && confirmPanel?.type === 'stop2'
+                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
                                     : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                                 )}
                               >
-                                {(trip.departure_stop2_location?.length ?? 0) > 20
-                                  ? trip.departure_stop2_location!.substring(0, 18) + '…'
+                                {(trip.departure_stop2_location?.length ?? 0) > 18
+                                  ? trip.departure_stop2_location!.substring(0, 16) + '…'
                                   : trip.departure_stop2_location || 'Przystanek 2'}
                               </button>
                             )}
-                            {/* Dojazd własny — tylko gdy admin zezwolił */}
+                            {/* Dojazd własny */}
                             {trip.allow_own_transport && (
                               <button
                                 disabled={isUpdating}
-                                onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote('own')); }}
+                                onClick={(e) => { e.stopPropagation(); openConfirmPanel(key, 'own'); }}
                                 className={cn(
-                                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2',
+                                  'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
                                   currentStatus === 'confirmed' && currentStop === 'own'
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                                    : confirmPanel?.key === key && confirmPanel?.type === 'own'
+                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
                                     : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                                 )}
                               >
@@ -312,49 +343,102 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             {/* Nie jedzie */}
                             <button
                               disabled={isUpdating}
-                              onClick={(e) => { e.stopPropagation(); setShowInneInput(null); handleStatusChange(trip.id, child.child_id, 'not_going'); }}
+                              onClick={(e) => { e.stopPropagation(); openConfirmPanel(key, 'not_going'); }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
+                                'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
                                 currentStatus === 'not_going'
                                   ? 'bg-red-500 text-white border-red-500 shadow-md'
+                                  : confirmPanel?.key === key && confirmPanel?.type === 'not_going'
+                                  ? 'bg-red-100 text-red-600 border-red-500'
                                   : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
                               )}
                             >
-                              <X className="h-3.5 w-3.5" />
+                              <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                               Nie jedzie
                             </button>
-                            {/* Inne — tylko wiadomość tekstowa do admina */}
+                            {/* Wiadomość */}
                             <button
                               disabled={isUpdating}
-                              onClick={(e) => { e.stopPropagation(); if (isInneOpen) { setShowInneInput(null); setInneMessage(''); } else { setShowInneInput(key); setInneMessage(''); } }}
+                              onClick={(e) => { e.stopPropagation(); openConfirmPanel(key, 'other'); }}
                               className={cn(
-                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
-                                currentStatus === 'other' || isInneOpen
+                                'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
+                                currentStatus === 'other' || (confirmPanel?.key === key && confirmPanel?.type === 'other')
                                   ? 'bg-amber-500 text-white border-amber-500 shadow-md'
                                   : 'bg-white border-amber-400 text-amber-600 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md'
                               )}
                             >
-                              <HelpCircle className="h-3.5 w-3.5" />
+                              <HelpCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                               Wiadomość
                             </button>
                           </div>
                         </div>
-                        {isInneOpen && (
-                          <div className="ml-11 p-3 rounded-xl bg-amber-50/50 border border-amber-100 space-y-2">
-                            <Textarea
-                              placeholder="Wpisz wiadomość do admina (np. jest chore, dołączy później, itp.)"
-                              value={inneMessage}
-                              onChange={(e) => setInneMessage(e.target.value)}
-                              rows={2}
-                              className="text-sm rounded-lg bg-white border-amber-200 focus:border-amber-400"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="flex justify-end gap-2">
-                              <button onClick={(e) => { e.stopPropagation(); setShowInneInput(null); setInneMessage(''); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50">Anuluj</button>
-                              <button disabled={isUpdating} onClick={(e) => { e.stopPropagation(); handleStatusChange(trip.id, child.child_id, 'other', inneMessage); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm">Wyślij</button>
+                        {/* ── Panel potwierdzenia ── */}
+                        {confirmPanel?.key === key && (() => {
+                          const pType = confirmPanel.type;
+                          const isStop = ['stop1', 'stop2', 'own'].includes(pType);
+                          const isNotGoing = pType === 'not_going';
+                          const stopName = pType === 'stop2'
+                            ? (trip.departure_stop2_location || 'Przystanek 2')
+                            : pType === 'own' ? 'Dojazd własny'
+                            : (trip.departure_location || 'Przystanek 1');
+                          const headerLabel = isStop
+                            ? `Jedzie – ${stopName}`
+                            : isNotGoing ? 'Nie jedzie'
+                            : 'Wiadomość do admina';
+                          const panelCls = isStop
+                            ? 'bg-emerald-50/70 border-emerald-100'
+                            : isNotGoing ? 'bg-red-50/70 border-red-100'
+                            : 'bg-amber-50/70 border-amber-100';
+                          const headerCls = isStop ? 'text-emerald-700' : isNotGoing ? 'text-red-700' : 'text-amber-700';
+                          const confirmBtnCls = isStop
+                            ? 'bg-emerald-600 hover:bg-emerald-700'
+                            : isNotGoing ? 'bg-red-600 hover:bg-red-700'
+                            : 'bg-blue-600 hover:bg-blue-700';
+                          const confirmLabel = pType === 'other' ? 'Wyślij' : 'Potwierdź';
+                          return (
+                            <div className={cn('ml-11 p-3 rounded-xl border space-y-2', panelCls)}>
+                              <div className={cn('flex items-center gap-1.5', headerCls)}>
+                                {isStop && <CheckCircle2 className="h-3.5 w-3.5" />}
+                                {isNotGoing && <X className="h-3.5 w-3.5" />}
+                                {pType === 'other' && <HelpCircle className="h-3.5 w-3.5" />}
+                                <span className="text-xs font-semibold">{headerLabel}</span>
+                              </div>
+                              <Textarea
+                                placeholder={pType === 'other' ? 'Wpisz wiadomość do admina…' : 'Wiadomość dla admina (opcjonalna, np. dołączy później)'}
+                                value={confirmMessage}
+                                onChange={(e) => setConfirmMessage(e.target.value)}
+                                rows={2}
+                                className="text-sm rounded-lg bg-white"
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setConfirmPanel(null); setConfirmMessage(''); }}
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                                >
+                                  Anuluj
+                                </button>
+                                <button
+                                  disabled={isUpdating || (pType === 'other' && !confirmMessage.trim())}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isStop) {
+                                      handleStatusChange(trip.id, child.child_id, 'confirmed', buildNote(pType as 'stop1' | 'stop2' | 'own', confirmMessage || undefined));
+                                    } else if (isNotGoing) {
+                                      handleStatusChange(trip.id, child.child_id, 'not_going', confirmMessage || undefined);
+                                    } else {
+                                      handleStatusChange(trip.id, child.child_id, 'other', confirmMessage);
+                                    }
+                                  }}
+                                  className={cn('px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow-sm disabled:opacity-50', confirmBtnCls)}
+                                >
+                                  {isUpdating ? 'Zapisuję…' : confirmLabel}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -599,9 +683,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     </div>
                     <h4 className="text-sm font-semibold text-gray-700">Co zabrać</h4>
                   </div>
-                  <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
-                    {trip.packing_list}
-                  </div>
+                  {renderBulletList(trip.packing_list)}
                 </div>
               )}
 
@@ -614,9 +696,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     </div>
                     <h4 className="text-sm font-semibold text-gray-700">Dodatkowe informacje</h4>
                   </div>
-                  <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
-                    {trip.additional_info}
-                  </div>
+                  {renderBulletList(trip.additional_info)}
                 </div>
               )}
 
