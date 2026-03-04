@@ -340,13 +340,13 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">
+                    Tytuł wyjazdu
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
                     Wyjazd
                   </th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
                     Powrót
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Tytuł
                   </th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
                     Dni do wyjazdu
@@ -371,8 +371,13 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
 
                   return (
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
-                      {/* Wyjazd */}
+                      {/* Tytuł */}
                       <td className="px-5 py-3.5 align-top">
+                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                      </td>
+
+                      {/* Wyjazd */}
+                      <td className="px-4 py-3.5 align-top">
                         <div className="flex flex-col gap-1 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
                           <div className="flex items-baseline gap-2">
@@ -406,18 +411,6 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                               <span className="text-gray-400 text-xs">{trip.return_stop2_location}</span>
                             </div>
                           )}
-                        </div>
-                      </td>
-
-                      {/* Tytuł */}
-                      <td className="px-4 py-3.5 align-top">
-                        <div className="flex items-start gap-2">
-                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
-                            {trip.groups.map((g) => (
-                              <span key={g.id} className={cn('w-2 h-2 rounded-full', getGroupColor(g.name).dot)} title={g.name} />
-                            ))}
-                          </div>
-                          <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
                         </div>
                       </td>
 

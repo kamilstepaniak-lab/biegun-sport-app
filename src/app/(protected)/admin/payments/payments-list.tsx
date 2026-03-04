@@ -139,7 +139,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       result = result.filter((r) => new Date(r.payment.created_at) <= to);
     }
 
-    result.sort((a, b) => a.participantName.localeCompare(b.participantName, 'pl'));
+    result.sort((a, b) => new Date(b.payment.created_at).getTime() - new Date(a.payment.created_at).getTime());
     return result;
   }, [flatRows, searchQuery, tripFilter, statusFilter, dateFrom, dateTo]);
 
