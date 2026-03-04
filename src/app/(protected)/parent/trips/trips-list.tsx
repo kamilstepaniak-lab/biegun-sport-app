@@ -197,7 +197,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
     return (
       <Collapsible key={trip.id} open={isOpen} onOpenChange={() => toggleTrip(trip.id)}>
         <div className={cn(
-          'rounded-2xl transition-all duration-200 overflow-hidden',
+          'rounded-2xl transition-all duration-200',
           isOpen
             ? 'bg-white shadow-lg ring-2 ring-blue-400'
             : 'bg-white shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200',
@@ -454,8 +454,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                 <p className="text-sm text-gray-500 leading-relaxed whitespace-pre-line">{trip.description}</p>
               )}
               <div className="grid gap-4 lg:grid-cols-2">
-                {/* Wyjazd + Powrót */}
-                <div className="bg-gray-50 rounded-2xl p-3 sm:p-5 space-y-4">
+                {/* Wyjazd + Powrót — na mobile: drugi (po cenniku), na desktop: pierwszy (lewa kolumna) */}
+                <div className="order-2 lg:order-1 bg-gray-50 rounded-2xl p-3 sm:p-5 space-y-4">
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -519,8 +519,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                   </div>
                 </div>
 
-                {/* Cennik + Przelew */}
-                <div className="space-y-4">
+                {/* Cennik + Przelew — na mobile: PIERWSZY (widoczny od razu), na desktop: prawa kolumna */}
+                <div className="order-1 lg:order-2 space-y-4">
                   {trip.payment_templates && trip.payment_templates.length > 0 && (
                     <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
                       <div className="flex items-center gap-2 mb-3">
@@ -640,7 +640,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             <div key={child.child_id} className="flex items-center justify-between bg-white rounded-xl p-3">
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-gray-400">Tytuł przelewu – {child.child_name}</p>
-                                <p className="text-sm font-medium text-gray-800 truncate">{transferTitle}</p>
+                                <p className="text-sm font-medium text-gray-800 break-all">{transferTitle}</p>
                               </div>
                               <button onClick={(e) => { e.stopPropagation(); copyToClipboard(transferTitle, 'Tytuł przelewu'); }} className="ml-2 w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
                                 <Copy className="h-3.5 w-3.5 text-gray-400" />
@@ -653,7 +653,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             <div className="flex items-center justify-between bg-white rounded-xl p-3">
                               <div className="min-w-0">
                                 <p className="text-xs text-gray-400">Konto PLN</p>
-                                <p className="text-sm text-gray-800 truncate">{trip.bank_account_pln}</p>
+                                <p className="text-sm text-gray-800 break-all">{trip.bank_account_pln}</p>
                               </div>
                               <button onClick={(e) => { e.stopPropagation(); copyToClipboard(trip.bank_account_pln!, 'Numer konta PLN'); }} className="ml-1 w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors flex-shrink-0">
                                 <Copy className="h-3.5 w-3.5 text-gray-400" />
@@ -664,7 +664,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             <div className="flex items-center justify-between bg-white rounded-xl p-3">
                               <div className="min-w-0">
                                 <p className="text-xs text-gray-400">Konto EUR</p>
-                                <p className="text-sm text-gray-800 truncate">{trip.bank_account_eur}</p>
+                                <p className="text-sm text-gray-800 break-all">{trip.bank_account_eur}</p>
                               </div>
                               <button onClick={(e) => { e.stopPropagation(); copyToClipboard(trip.bank_account_eur!, 'Numer konta EUR'); }} className="ml-1 w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors flex-shrink-0">
                                 <Copy className="h-3.5 w-3.5 text-gray-400" />
