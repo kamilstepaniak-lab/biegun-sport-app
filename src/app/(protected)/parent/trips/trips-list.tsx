@@ -199,7 +199,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
         <div className={cn(
           'rounded-2xl transition-all duration-200 overflow-hidden',
           isOpen
-            ? 'bg-white shadow-lg ring-1 ring-gray-200'
+            ? 'bg-white shadow-lg ring-2 ring-blue-400'
             : 'bg-white shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200',
           isPast && !isOpen && 'opacity-60'
         )}>

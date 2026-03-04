@@ -239,9 +239,9 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
         <div className={cn(
           'bg-white rounded-2xl transition-all duration-200',
           isOpen
-            ? 'shadow-lg ring-1 ring-gray-200'
+            ? 'shadow-lg ring-2 ring-blue-400'
             : 'shadow-sm ring-1 ring-gray-100 hover:shadow-md',
-          isSelected && 'ring-2 ring-blue-400'
+          isSelected && !isOpen && 'ring-2 ring-blue-400'
         )}>
           <CollapsibleTrigger asChild>
             <div className="flex items-center justify-between p-4 cursor-pointer">

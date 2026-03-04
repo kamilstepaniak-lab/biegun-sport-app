@@ -86,7 +86,9 @@ function formatDateTimeLocal(isoDate: string | null | undefined): string {
   try {
     const date = new Date(isoDate);
     if (isNaN(date.getTime())) return '';
-    // Format: YYYY-MM-DDTHH:mm
+    // Format: YYYY-MM-DDTHH:mm — używamy metod lokalnych (getHours etc.)
+    // Ta funkcja jest wywoływana w przeglądarce (komponent kliencki) więc
+    // getHours() zwraca godzinę w strefie czasu przeglądarki (Europe/Warsaw).
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -258,10 +260,19 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     setIsSubmitting(true);
 
     // Konwertuj datetime-local (czas lokalny) → ISO UTC przed wysłaniem do serwera
+    // WAŻNE: new Date('YYYY-MM-DDTHH:mm') bez strefy może być traktowane jako UTC w niektórych
+    // przeglądarkach/środowiskach. Bezpieczna metoda: konstruktor z osobnymi argumentami
+    // (new Date(y, m, d, h, min)) jest ZAWSZE w czasie lokalnym wg spec ECMAScript.
     function localToISO(val: string): string {
       if (!val) return val;
-      const d = new Date(val);
-      return isNaN(d.getTime()) ? val : d.toISOString();
+      const [datePart, timePart] = val.split('T');
+      if (!datePart || !timePart) return val;
+      const [y, m, d] = datePart.split('-').map(Number);
+      const [h, min] = timePart.split(':').map(Number);
+      if (isNaN(y) || isNaN(m) || isNaN(d) || isNaN(h) || isNaN(min)) return val;
+      // Zawsze lokalny czas — gwarantowane przez ECMAScript
+      const local = new Date(y, m - 1, d, h, min, 0, 0);
+      return isNaN(local.getTime()) ? val : local.toISOString();
     }
 
     try {
