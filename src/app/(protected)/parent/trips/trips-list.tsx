@@ -220,26 +220,28 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
             <div className="p-3 sm:p-5 cursor-pointer">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg text-gray-900">{trip.title}</h3>
-                    {trip.groups.map((g) => {
-                      const colors = getGroupColor(g.name);
-                      return (
-                        <span key={g.id} className={cn(
-                          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-medium',
-                          colors.bg, colors.text
-                        )}>
-                          <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-                          {g.name}
+                  <div className="mb-1.5">
+                    <h3 className="font-semibold text-lg text-gray-900 leading-tight">{trip.title}</h3>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {trip.groups.map((g) => {
+                        const colors = getGroupColor(g.name);
+                        return (
+                          <span key={g.id} className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium',
+                            colors.bg, colors.text
+                          )}>
+                            <span className={cn('w-1 h-1 rounded-full', colors.dot)} />
+                            {g.name}
+                          </span>
+                        );
+                      })}
+                      {isPast && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-400">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          Zrealizowany
                         </span>
-                      );
-                    })}
-                    {isPast && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-500">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Zrealizowany
-                      </span>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className={cn(

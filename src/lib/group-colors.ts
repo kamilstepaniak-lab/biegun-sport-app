@@ -1,4 +1,4 @@
-// Mapowanie nazw grup na kolory — Beeski=żółty, ProKids=czerwony, SemiPRO=niebieski, Hero=czarny, Pro=szary
+// Mapowanie nazw grup na kolory — Beeski=żółty, ProKids=czerwony, SemiPRO=niebieski, Hero=ciemny szary, Pro=błękitny
 export const groupColors: Record<string, { bg: string; text: string; dot: string; border: string }> = {
   beeski: {
     bg: 'bg-amber-50',
@@ -19,16 +19,16 @@ export const groupColors: Record<string, { bg: string; text: string; dot: string
     border: 'border-blue-200',
   },
   hero: {
-    bg: 'bg-gray-900',
+    bg: 'bg-gray-700',
     text: 'text-white',
-    dot: 'bg-white',
-    border: 'border-gray-900',
+    dot: 'bg-gray-400',
+    border: 'border-gray-700',
   },
   pro: {
-    bg: 'bg-gray-100',
-    text: 'text-gray-600',
-    dot: 'bg-gray-400',
-    border: 'border-gray-300',
+    bg: 'bg-sky-100',
+    text: 'text-sky-700',
+    dot: 'bg-sky-400',
+    border: 'border-sky-200',
   },
 };
 
