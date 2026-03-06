@@ -6,7 +6,6 @@ import { pl } from 'date-fns/locale';
 import {
   ChevronDown,
   ChevronUp,
-  Calendar,
   MapPin,
   X,
   HelpCircle,
@@ -241,18 +240,6 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                         Zrealizowany
                       </span>
                     )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="h-4 w-4 text-gray-400" />
-                      {format(departureDate, 'EEE d MMM', { locale: pl })}
-                      <ArrowRight className="h-3 w-3 text-gray-300" />
-                      {format(returnDate, 'EEE d MMM yyyy', { locale: pl })}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      {trip.departure_location}
-                    </span>
                   </div>
                 </div>
                 <div className={cn(
