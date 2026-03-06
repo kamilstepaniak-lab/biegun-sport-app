@@ -455,7 +455,12 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
             <div className="px-3 sm:px-5 pb-4 sm:pb-5 space-y-4">
               <div className="h-px bg-gray-100" />
               {trip.description && (
-                <p className="text-sm text-gray-500 leading-relaxed whitespace-pre-line">{trip.description}</p>
+                <div className="bg-white rounded-xl p-3 sm:p-4">
+                  <div
+                    className="rich-content text-sm text-gray-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: trip.description }}
+                  />
+                </div>
               )}
               <div className="grid gap-4 lg:grid-cols-2">
                 {/* Wyjazd + Powrót — na mobile: drugi (po cenniku), na desktop: pierwszy (lewa kolumna) */}

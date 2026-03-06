@@ -139,3 +139,40 @@
     padding-top: env(safe-area-inset-top);
   }
 }
+
+/* ── Tiptap editor — placeholder ─────────────────────────── */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ── Rich text content (editor + parent read-only view) ───── */
+.rich-editor-content ul,
+.rich-content ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+.rich-editor-content li,
+.rich-content li {
+  margin-bottom: 0.15rem;
+}
+
+.rich-editor-content strong,
+.rich-content strong {
+  font-weight: 600;
+}
+
+.rich-editor-content p,
+.rich-content p {
+  margin-bottom: 0.2rem;
+}
+
+.rich-editor-content p:last-child,
+.rich-content p:last-child {
+  margin-bottom: 0;
+}

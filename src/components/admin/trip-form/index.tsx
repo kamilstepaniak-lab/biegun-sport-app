@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
@@ -347,13 +348,11 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Opis</Label>
-              <Textarea
-                id="description"
+              <Label>Opis</Label>
+              <RichTextEditor
                 value={formData.description}
-                onChange={(e) => updateFormData({ description: e.target.value })}
+                onChange={(html) => updateFormData({ description: html })}
                 placeholder="Opcjonalny opis wyjazdu..."
-                rows={3}
               />
             </div>
             <div className="space-y-2">
