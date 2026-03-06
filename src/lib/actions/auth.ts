@@ -97,7 +97,13 @@ export async function register(formData: RegisterInput) {
     }
   }
 
-  // Wyślij e-mail powitalny (nie blokujemy rejestracji jeśli się nie uda)
+  // Jeśli sesja jest null — Supabase czeka na potwierdzenie emaila (Confirm email: ON)
+  // W tym przypadku Supabase sam wysyła maila z linkiem — nie wysyłamy powitalnego żeby nie było 2 maili
+  if (!authData.session) {
+    return { emailConfirmationRequired: true };
+  }
+
+  // Confirm email: OFF — użytkownik od razu zalogowany, wyślij powitalny
   sendWelcomeEmail(email, firstName).catch(console.error);
 
   revalidatePath('/', 'layout');

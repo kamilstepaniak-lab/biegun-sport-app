@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Mail, CheckCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [emailSent, setEmailSent] = useState<string | null>(null);
 
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -48,12 +49,41 @@ export function RegisterForm() {
       const result = await register(data);
       if (result?.error) {
         setError(result.error);
+      } else if (result?.emailConfirmationRequired) {
+        setEmailSent(data.email);
       }
     } catch {
       setError('Wystąpił nieoczekiwany błąd. Spróbuj ponownie.');
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (emailSent) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardContent className="flex flex-col items-center gap-4 py-10">
+          <div className="rounded-full bg-green-100 p-4">
+            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-bold text-gray-900">Konto zostało utworzone!</h2>
+            <p className="text-sm text-gray-500">Wysłaliśmy link aktywacyjny na adres:</p>
+            <p className="font-medium flex items-center justify-center gap-2 text-gray-800">
+              <Mail className="h-4 w-4" />
+              {emailSent}
+            </p>
+            <p className="text-xs text-gray-400 mt-4">
+              Kliknij link w wiadomości żeby aktywować konto i się zalogować.<br />
+              Sprawdź też folder spam jeśli nie widzisz maila.
+            </p>
+          </div>
+          <Link href="/login" className="text-sm text-blue-600 hover:underline mt-2">
+            Wróć do logowania
+          </Link>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
