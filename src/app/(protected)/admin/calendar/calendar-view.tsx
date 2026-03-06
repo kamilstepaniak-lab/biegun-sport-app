@@ -188,131 +188,6 @@ export function CalendarView({ trips }: CalendarViewProps) {
         </div>
       </div>
 
-      {/* Nagłówek kalendarza */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => setCurrentDate(subMonths(currentDate, 1))}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <h2 className="text-xl font-semibold text-gray-900 capitalize">
-            {format(currentDate, 'LLLL yyyy', { locale: pl })}
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-1.5 rounded-xl text-sm font-medium bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              Dziś
-            </button>
-            <button
-              onClick={() => setCurrentDate(addMonths(currentDate, 1))}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Dni tygodnia */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekDays.map((day) => (
-            <div
-              key={day}
-              className="text-center text-xs font-medium text-gray-400 uppercase tracking-wider py-2"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Siatka dni */}
-        <div className="grid grid-cols-7 gap-1">
-          {days.map((day, index) => {
-            if (!day) {
-              return <div key={`empty-${index}`} className="min-h-[100px]" />;
-            }
-
-            const dayTrips = getTripsForDay(day);
-            const isToday = isSameDay(day, today);
-            const isCurrentMonth = isSameMonth(day, currentDate);
-
-            return (
-              <div
-                key={day.toISOString()}
-                className={cn(
-                  'min-h-[100px] rounded-xl p-1.5 transition-colors',
-                  isCurrentMonth ? 'bg-white ring-1 ring-gray-100' : 'bg-gray-50/50',
-                  isToday && 'ring-2 ring-blue-400 bg-blue-50/30'
-                )}
-              >
-                <div className={cn(
-                  'text-sm font-medium mb-1',
-                  isToday ? 'text-blue-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-300'
-                )}>
-                  {format(day, 'd')}
-                </div>
-
-                <div className="space-y-0.5">
-                  <TooltipProvider delayDuration={200}>
-                    {dayTrips.slice(0, 3).map((trip) => {
-                      const dayType = getTripDayType(day, trip);
-                      const primaryGroup = trip.groups[0];
-                      const groupColor = primaryGroup ? getGroupColor(primaryGroup.name) : null;
-
-                      return (
-                        <HoverCard key={trip.id} openDelay={100} closeDelay={100}>
-                          <HoverCardTrigger asChild>
-                            <Link
-                              href={`/admin/trips/${trip.id}`}
-                              className={cn(
-                                'block text-xs px-1 py-0.5 truncate cursor-pointer transition-opacity hover:opacity-80',
-                                groupColor?.bg || 'bg-gray-100',
-                                groupColor?.text || 'text-gray-700',
-                                dayType === 'start' && 'rounded-l',
-                                dayType === 'end' && 'rounded-r',
-                                dayType === 'single' && 'rounded',
-                                (dayType === 'middle' || dayType === 'start') && 'rounded-r-none mr-[-4px]',
-                                (dayType === 'middle' || dayType === 'end') && 'rounded-l-none ml-[-4px]'
-                              )}
-                            >
-                              {(dayType === 'start' || dayType === 'single') && (
-                                <span className="flex items-center gap-1">
-                                  {trip.groups.map((g) => (
-                                    <span
-                                      key={g.id}
-                                      className={cn('w-2 h-2 rounded-full flex-shrink-0', getGroupColor(g.name).dot)}
-                                    />
-                                  ))}
-                                  <span className="truncate">{trip.title}</span>
-                                </span>
-                              )}
-                              {dayType === 'middle' && <span>&nbsp;</span>}
-                              {dayType === 'end' && <span className="opacity-50">→</span>}
-                            </Link>
-                          </HoverCardTrigger>
-                          <HoverCardContent side="right" align="start" className="w-80">
-                            <TripTooltipContent trip={trip} />
-                          </HoverCardContent>
-                        </HoverCard>
-                      );
-                    })}
-                  </TooltipProvider>
-
-                  {dayTrips.length > 3 && (
-                    <div className="text-xs text-gray-400 px-1">
-                      +{dayTrips.length - 3} więcej
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Tabelka wyjazdów w tym miesiącu */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -439,6 +314,131 @@ export function CalendarView({ trips }: CalendarViewProps) {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Kalendarz */}
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <h2 className="text-xl font-semibold text-gray-900 capitalize">
+            {format(currentDate, 'LLLL yyyy', { locale: pl })}
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-1.5 rounded-xl text-sm font-medium bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              Dziś
+            </button>
+            <button
+              onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 transition-colors"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Dni tygodnia */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {weekDays.map((day) => (
+            <div
+              key={day}
+              className="text-center text-xs font-medium text-gray-400 uppercase tracking-wider py-2"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Siatka dni */}
+        <div className="grid grid-cols-7 gap-1">
+          {days.map((day, index) => {
+            if (!day) {
+              return <div key={`empty-${index}`} className="min-h-[100px]" />;
+            }
+
+            const dayTrips = getTripsForDay(day);
+            const isToday = isSameDay(day, today);
+            const isCurrentMonth = isSameMonth(day, currentDate);
+
+            return (
+              <div
+                key={day.toISOString()}
+                className={cn(
+                  'min-h-[100px] rounded-xl p-1.5 transition-colors',
+                  isCurrentMonth ? 'bg-white ring-1 ring-gray-100' : 'bg-gray-50/50',
+                  isToday && 'ring-2 ring-blue-400 bg-blue-50/30'
+                )}
+              >
+                <div className={cn(
+                  'text-sm font-medium mb-1',
+                  isToday ? 'text-blue-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-300'
+                )}>
+                  {format(day, 'd')}
+                </div>
+
+                <div className="space-y-0.5">
+                  <TooltipProvider delayDuration={200}>
+                    {dayTrips.slice(0, 3).map((trip) => {
+                      const dayType = getTripDayType(day, trip);
+                      const primaryGroup = trip.groups[0];
+                      const groupColor = primaryGroup ? getGroupColor(primaryGroup.name) : null;
+
+                      return (
+                        <HoverCard key={trip.id} openDelay={100} closeDelay={100}>
+                          <HoverCardTrigger asChild>
+                            <Link
+                              href={`/admin/trips/${trip.id}`}
+                              className={cn(
+                                'block text-xs px-1 py-0.5 truncate cursor-pointer transition-opacity hover:opacity-80',
+                                groupColor?.bg || 'bg-gray-100',
+                                groupColor?.text || 'text-gray-700',
+                                dayType === 'start' && 'rounded-l',
+                                dayType === 'end' && 'rounded-r',
+                                dayType === 'single' && 'rounded',
+                                (dayType === 'middle' || dayType === 'start') && 'rounded-r-none mr-[-4px]',
+                                (dayType === 'middle' || dayType === 'end') && 'rounded-l-none ml-[-4px]'
+                              )}
+                            >
+                              {(dayType === 'start' || dayType === 'single') && (
+                                <span className="flex items-center gap-1">
+                                  {trip.groups.map((g) => (
+                                    <span
+                                      key={g.id}
+                                      className={cn('w-2 h-2 rounded-full flex-shrink-0', getGroupColor(g.name).dot)}
+                                    />
+                                  ))}
+                                  <span className="truncate">{trip.title}</span>
+                                </span>
+                              )}
+                              {dayType === 'middle' && <span>&nbsp;</span>}
+                              {dayType === 'end' && <span className="opacity-50">→</span>}
+                            </Link>
+                          </HoverCardTrigger>
+                          <HoverCardContent side="right" align="start" className="w-80">
+                            <TripTooltipContent trip={trip} />
+                          </HoverCardContent>
+                        </HoverCard>
+                      );
+                    })}
+                  </TooltipProvider>
+
+                  {dayTrips.length > 3 && (
+                    <div className="text-xs text-gray-400 px-1">
+                      +{dayTrips.length - 3} więcej
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
     </div>

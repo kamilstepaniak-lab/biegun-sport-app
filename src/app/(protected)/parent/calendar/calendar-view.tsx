@@ -105,6 +105,91 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
 
   return (
     <div className="space-y-4">
+      {/* Tabelka wyjazdów w tym miesiącu */}
+      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">
+            Wyjazdy w {format(currentDate, 'LLLL yyyy', { locale: pl })}
+          </h3>
+          <span className="text-sm text-gray-400 font-medium">
+            {monthTrips.length}{' '}
+            {monthTrips.length === 1 ? 'wyjazd' : monthTrips.length >= 2 && monthTrips.length <= 4 ? 'wyjazdy' : 'wyjazdów'}
+          </span>
+        </div>
+
+        {monthTrips.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
+              <Calendar className="h-6 w-6 text-gray-300" />
+            </div>
+            <p className="text-gray-500 text-sm">Brak wyjazdów w tym miesiącu</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50/60 border-b border-gray-100">
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">Tytuł wyjazdu</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Wyjazd</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Powrót</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Dni do wyjazdu</th>
+                  <th className="px-4 py-3 w-28" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {monthTrips.map((trip) => {
+                  const { label, variant } = getDaysLabel(trip);
+                  const badgeClass = {
+                    done: 'bg-gray-100 text-gray-500',
+                    active: 'bg-green-100 text-green-700',
+                    today: 'bg-blue-600 text-white',
+                    soon: 'bg-orange-100 text-orange-700',
+                    medium: 'bg-yellow-100 text-yellow-700',
+                    far: 'bg-gray-100 text-gray-600',
+                  }[variant];
+                  const dep = new Date(trip.departure_datetime);
+                  const ret = new Date(trip.return_datetime);
+                  return (
+                    <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
+                      <td className="px-5 py-3.5 align-top">
+                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                      </td>
+                      <td className="px-4 py-3.5 align-top">
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
+                          <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
+                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 align-top">
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
+                          <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
+                          {trip.return_stop2_datetime && trip.return_stop2_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap align-top">
+                        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold', badgeClass)}>{label}</span>
+                      </td>
+                      <td className="px-4 py-3.5 text-right align-top">
+                        <Link href={`/parent/trips/${trip.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors">
+                          Szczegóły
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Kalendarz */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
@@ -315,122 +400,6 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
         </div>
       </div>
 
-      {/* Tabelka wyjazdów w tym miesiącu */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">
-            Wyjazdy w {format(currentDate, 'LLLL yyyy', { locale: pl })}
-          </h3>
-          <span className="text-sm text-gray-400 font-medium">
-            {monthTrips.length}{' '}
-            {monthTrips.length === 1 ? 'wyjazd' : monthTrips.length >= 2 && monthTrips.length <= 4 ? 'wyjazdy' : 'wyjazdów'}
-          </span>
-        </div>
-
-        {monthTrips.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
-              <Calendar className="h-6 w-6 text-gray-300" />
-            </div>
-            <p className="text-gray-500 text-sm">Brak wyjazdów w tym miesiącu</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50/60 border-b border-gray-100">
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">
-                    Tytuł wyjazdu
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Wyjazd
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Powrót
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Dni do wyjazdu
-                  </th>
-                  <th className="px-4 py-3 w-28" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {monthTrips.map((trip) => {
-                  const { label, variant } = getDaysLabel(trip);
-                  const badgeClass = {
-                    done: 'bg-gray-100 text-gray-500',
-                    active: 'bg-green-100 text-green-700',
-                    today: 'bg-blue-600 text-white',
-                    soon: 'bg-orange-100 text-orange-700',
-                    medium: 'bg-yellow-100 text-yellow-700',
-                    far: 'bg-gray-100 text-gray-600',
-                  }[variant];
-
-                  const dep = new Date(trip.departure_datetime);
-                  const ret = new Date(trip.return_datetime);
-
-                  return (
-                    <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
-                      {/* Tytuł */}
-                      <td className="px-5 py-3.5 align-top">
-                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
-                      </td>
-
-                      {/* Wyjazd */}
-                      <td className="px-4 py-3.5 align-top">
-                        <div className="flex flex-col gap-0.5 text-sm">
-                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">
-                            {format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}
-                          </span>
-                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">
-                              {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Powrót */}
-                      <td className="px-4 py-3.5 align-top">
-                        <div className="flex flex-col gap-0.5 text-sm">
-                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">
-                            {format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}
-                          </span>
-                          {trip.return_stop2_datetime && trip.return_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">
-                              {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Dni do wyjazdu */}
-                      <td className="px-4 py-3.5 whitespace-nowrap align-top">
-                        <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold', badgeClass)}>
-                          {label}
-                        </span>
-                      </td>
-
-                      {/* Przycisk */}
-                      <td className="px-4 py-3.5 text-right align-top">
-                        <Link
-                          href={`/parent/trips/${trip.id}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
-                        >
-                          Szczegóły
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
