@@ -190,14 +190,36 @@ export function CalendarView({ trips }: CalendarViewProps) {
 
       {/* Tabelka wyjazdów w tym miesiącu */}
       <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">
-            Wyjazdy w {format(currentDate, 'LLLL yyyy', { locale: pl })}
-          </h3>
-          <span className="text-sm text-gray-400 font-medium">
-            {monthTrips.length}{' '}
-            {monthTrips.length === 1 ? 'wyjazd' : monthTrips.length >= 2 && monthTrips.length <= 4 ? 'wyjazdy' : 'wyjazdów'}
-          </span>
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <h3 className="font-semibold text-gray-900 capitalize px-1 min-w-[160px] text-center">
+              {format(currentDate, 'LLLL yyyy', { locale: pl })}
+            </h3>
+            <button
+              onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-1 rounded-lg text-xs font-medium bg-white text-gray-500 ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              Dziś
+            </button>
+            <span className="text-sm text-gray-400 font-medium">
+              {monthTrips.length}{' '}
+              {monthTrips.length === 1 ? 'wyjazd' : monthTrips.length >= 2 && monthTrips.length <= 4 ? 'wyjazdy' : 'wyjazdów'}
+            </span>
+          </div>
         </div>
 
         {monthTrips.length === 0 ? (
