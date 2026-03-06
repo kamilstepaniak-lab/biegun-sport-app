@@ -378,38 +378,30 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
 
                       {/* Wyjazd */}
                       <td className="px-4 py-3.5 align-top">
-                        <div className="flex flex-col gap-1 text-sm">
+                        <div className="flex flex-col gap-0.5 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-gray-700 tabular-nums font-medium w-9 flex-shrink-0">{format(dep, 'HH:mm', { locale: pl })}</span>
-                            {trip.departure_location && (
-                              <span className="text-gray-400 text-xs">{trip.departure_location}</span>
-                            )}
-                          </div>
+                          <span className="text-gray-600 whitespace-nowrap">
+                            {format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}
+                          </span>
                           {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-gray-700 tabular-nums font-medium w-9 flex-shrink-0">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                              <span className="text-gray-400 text-xs">{trip.departure_stop2_location}</span>
-                            </div>
+                            <span className="text-gray-600 whitespace-nowrap">
+                              {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
+                            </span>
                           )}
                         </div>
                       </td>
 
                       {/* Powrót */}
                       <td className="px-4 py-3.5 align-top">
-                        <div className="flex flex-col gap-1 text-sm">
+                        <div className="flex flex-col gap-0.5 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-gray-700 tabular-nums font-medium w-9 flex-shrink-0">{format(ret, 'HH:mm', { locale: pl })}</span>
-                            {trip.return_location && (
-                              <span className="text-gray-400 text-xs">{trip.return_location}</span>
-                            )}
-                          </div>
+                          <span className="text-gray-600 whitespace-nowrap">
+                            {format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}
+                          </span>
                           {trip.return_stop2_datetime && trip.return_stop2_location && (
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-gray-700 tabular-nums font-medium w-9 flex-shrink-0">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                              <span className="text-gray-400 text-xs">{trip.return_stop2_location}</span>
-                            </div>
+                            <span className="text-gray-600 whitespace-nowrap">
+                              {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
+                            </span>
                           )}
                         </div>
                       </td>

@@ -69,8 +69,22 @@ const statusStyles: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-600',
   published: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-600',
-  completed: 'bg-blue-600 text-blue-600',
+  completed: 'bg-blue-100 text-blue-700',
 };
+
+function getTemplateLabel(template: { payment_type: string; installment_number?: number | null; category_name?: string | null }) {
+  if (template.payment_type === 'installment') return `Rata ${template.installment_number}`;
+  if (template.payment_type === 'season_pass') return `Karnet${template.category_name ? ` (${template.category_name})` : ''}`;
+  if (template.payment_type === 'full') return 'Pełna opłata';
+  return template.payment_type;
+}
+
+function getMethodLabel(method: string | undefined) {
+  if (method === 'transfer') return 'Przelew';
+  if (method === 'cash') return 'Gotówka';
+  if (method === 'both') return 'Przelew/Gotówka';
+  return '-';
+}
 
 function copyToClipboard(text: string, label: string) {
   navigator.clipboard.writeText(text);
@@ -427,21 +441,8 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {trip.payment_templates.map((template) => {
-                          const label = template.payment_type === 'installment'
-                            ? `Rata ${template.installment_number}`
-                            : template.payment_type === 'season_pass'
-                            ? `Karnet${template.category_name ? ` (${template.category_name})` : ''}`
-                            : template.payment_type === 'full'
-                            ? 'Pełna opłata'
-                            : template.payment_type;
-
-                          const methodLabel = template.payment_method === 'transfer'
-                            ? 'Przelew'
-                            : template.payment_method === 'cash'
-                            ? 'Gotówka'
-                            : template.payment_method === 'both'
-                            ? 'Przelew/Gotówka'
-                            : '-';
+                          const label = getTemplateLabel(template);
+                          const methodLabel = getMethodLabel(template.payment_method);
 
                           return (
                             <tr key={template.id} className="hover:bg-gray-50/50">

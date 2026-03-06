@@ -80,21 +80,40 @@ const PREDEFINED_STOPS = [
   'Ikea',
 ];
 
+// Konwertuj string datetime-local (czas lokalny PL) → ISO UTC.
+// new Date(y, m-1, d, h, min) z osobnymi arg. jest ZAWSZE lokalny (ECMAScript spec).
+function localToISO(val: string): string {
+  if (!val) return val;
+  const [datePart, timePart] = val.split('T');
+  if (!datePart || !timePart) return val;
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [h, min] = timePart.split(':').map(Number);
+  if (isNaN(y) || isNaN(m) || isNaN(d) || isNaN(h) || isNaN(min)) return val;
+  const local = new Date(y, m - 1, d, h, min, 0, 0);
+  return isNaN(local.getTime()) ? val : local.toISOString();
+}
+
 // Konwertuj datę ISO na format datetime-local (YYYY-MM-DDTHH:mm)
+// Używamy Intl.DateTimeFormat z jawną strefą Europe/Warsaw — działa poprawnie
+// zarówno na serwerze (UTC) jak i w przeglądarce, bez błędów hydratacji.
 function formatDateTimeLocal(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
   try {
     const date = new Date(isoDate);
     if (isNaN(date.getTime())) return '';
-    // Format: YYYY-MM-DDTHH:mm — używamy metod lokalnych (getHours etc.)
-    // Ta funkcja jest wywoływana w przeglądarce (komponent kliencki) więc
-    // getHours() zwraca godzinę w strefie czasu przeglądarki (Europe/Warsaw).
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    const parts = new Intl.DateTimeFormat('pl-PL', {
+      timeZone: 'Europe/Warsaw',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
   } catch {
     return '';
   }
@@ -151,38 +170,47 @@ function LocationSelect({
 
 export function TripForm({ groups, trip, mode }: TripFormProps) {
   const router = useRouter();
+  // Jeden cast do pełnego kształtu — eliminuje powtarzające się inline rzutowania
+  const t = trip as (TripWithPaymentTemplates & {
+    declaration_deadline?: string | null;
+    location?: string | null;
+    allow_own_transport?: boolean;
+    packing_list?: string | null;
+    additional_info?: string | null;
+  }) | undefined;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [showStop2Departure, setShowStop2Departure] = useState(!!trip?.departure_stop2_location);
-  const [showStop2Return, setShowStop2Return] = useState(!!trip?.return_stop2_location);
+  const [showStop2Departure, setShowStop2Departure] = useState(!!t?.departure_stop2_location);
+  const [showStop2Return, setShowStop2Return] = useState(!!t?.return_stop2_location);
   const [paymentsOpen, setPaymentsOpen] = useState(true);
-  const [showPackingList, setShowPackingList] = useState(!!(trip as Trip & { packing_list?: string | null })?.packing_list);
-  const [showAdditionalInfo, setShowAdditionalInfo] = useState(!!(trip as Trip & { additional_info?: string | null })?.additional_info);
+  const [showPackingList, setShowPackingList] = useState(!!t?.packing_list);
+  const [showAdditionalInfo, setShowAdditionalInfo] = useState(!!t?.additional_info);
 
   const [formData, setFormData] = useState<TripFormData>({
-    title: trip?.title || '',
-    description: trip?.description || '',
-    declaration_deadline: (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null })?.declaration_deadline || '',
-    location: (trip as TripWithPaymentTemplates & { location?: string | null })?.location || '',
-    status: trip?.status || 'draft',
+    title: t?.title || '',
+    description: t?.description || '',
+    declaration_deadline: t?.declaration_deadline || '',
+    location: t?.location || '',
+    status: t?.status || 'draft',
     departure_datetime: formatDateTimeLocal(trip?.departure_datetime),
     departure_location: trip?.departure_location || '',
-    departure_stop2_datetime: formatDateTimeLocal(trip?.departure_stop2_datetime),
-    departure_stop2_location: trip?.departure_stop2_location || '',
-    return_datetime: formatDateTimeLocal(trip?.return_datetime),
-    return_location: trip?.return_location || '',
-    return_stop2_datetime: formatDateTimeLocal(trip?.return_stop2_datetime),
-    return_stop2_location: trip?.return_stop2_location || '',
-    group_ids: trip?.groups?.map((g) => g.id) || [],
-    payment_templates: trip?.payment_templates?.map(pt => ({
+    departure_stop2_datetime: formatDateTimeLocal(t?.departure_stop2_datetime),
+    departure_stop2_location: t?.departure_stop2_location || '',
+    return_datetime: formatDateTimeLocal(t?.return_datetime),
+    return_location: t?.return_location || '',
+    return_stop2_datetime: formatDateTimeLocal(t?.return_stop2_datetime),
+    return_stop2_location: t?.return_stop2_location || '',
+    group_ids: t?.groups?.map((g) => g.id) || [],
+    payment_templates: t?.payment_templates?.map(pt => ({
       ...pt,
       due_date: pt.due_date ? pt.due_date.split('T')[0] : null,
     })) || [],
-    bank_account_pln: trip?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
-    bank_account_eur: trip?.bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
-    allow_own_transport: (trip as Trip & { allow_own_transport?: boolean })?.allow_own_transport ?? false,
-    packing_list: (trip as Trip & { packing_list?: string | null })?.packing_list || '',
-    additional_info: (trip as Trip & { additional_info?: string | null })?.additional_info || '',
+    bank_account_pln: t?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
+    bank_account_eur: t?.bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+    allow_own_transport: t?.allow_own_transport ?? false,
+    packing_list: t?.packing_list || '',
+    additional_info: t?.additional_info || '',
   });
 
   function updateFormData(data: Partial<TripFormData>) {
@@ -258,23 +286,6 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
 
   async function handleSubmit(saveAsDraft: boolean = false) {
     setIsSubmitting(true);
-
-    // Konwertuj datetime-local (czas lokalny) → ISO UTC przed wysłaniem do serwera
-    // WAŻNE: new Date('YYYY-MM-DDTHH:mm') bez strefy może być traktowane jako UTC w niektórych
-    // przeglądarkach/środowiskach. Bezpieczna metoda: konstruktor z osobnymi argumentami
-    // (new Date(y, m, d, h, min)) jest ZAWSZE w czasie lokalnym wg spec ECMAScript.
-    function localToISO(val: string): string {
-      if (!val) return val;
-      const [datePart, timePart] = val.split('T');
-      if (!datePart || !timePart) return val;
-      const [y, m, d] = datePart.split('-').map(Number);
-      const [h, min] = timePart.split(':').map(Number);
-      if (isNaN(y) || isNaN(m) || isNaN(d) || isNaN(h) || isNaN(min)) return val;
-      // Zawsze lokalny czas — gwarantowane przez ECMAScript
-      const local = new Date(y, m - 1, d, h, min, 0, 0);
-      return isNaN(local.getTime()) ? val : local.toISOString();
-    }
-
     try {
       const data = {
         ...formData,

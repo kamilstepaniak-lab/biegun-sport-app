@@ -360,38 +360,29 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
   if (payments.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-x-auto">
       {label && (
         <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
         </div>
       )}
-      {/* Mobile: karty */}
-      <div className="sm:hidden divide-y divide-gray-100">
-        {payments.map((p) => (
-          <PaymentCard key={p.id} payment={p} />
-        ))}
-      </div>
-      {/* Desktop: tabela */}
-      <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/60">
-              <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
-              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Wyjazd</th>
-              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Za co</th>
-              <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Kwota</th>
-              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
-              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((p) => (
-              <PaymentRow key={p.id} payment={p} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-gray-100 bg-gray-50/60">
+            <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
+            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Wyjazd</th>
+            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Za co</th>
+            <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
+            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Status</th>
+            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.map((p) => (
+            <PaymentRow key={p.id} payment={p} />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

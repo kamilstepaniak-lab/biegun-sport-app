@@ -62,6 +62,20 @@ const monthNames = [
   'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'
 ];
 
+function getTemplateLabel(template: { payment_type: string; installment_number?: number | null; category_name?: string | null }) {
+  if (template.payment_type === 'installment') return `Rata ${template.installment_number}`;
+  if (template.payment_type === 'season_pass') return `Karnet${template.category_name ? ` (${template.category_name})` : ''}`;
+  if (template.payment_type === 'full') return 'Pełna opłata';
+  return template.payment_type;
+}
+
+function getMethodLabel(method: string | undefined, short = false) {
+  if (method === 'transfer') return 'Przelew';
+  if (method === 'cash') return 'Gotówka';
+  if (method === 'both') return short ? 'Przel./Got.' : 'Przelew/Got.';
+  return '–';
+}
+
 function groupByMonth(trips: TripForParent[]) {
   const groups: { month: string; year: number; monthKey: string; trips: TripForParent[] }[] = [];
   trips.forEach(trip => {
@@ -529,67 +543,20 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                         </div>
                         <h4 className="text-sm font-semibold text-gray-700">Cennik</h4>
                       </div>
-                      <div className="bg-white rounded-xl ring-1 ring-gray-100 overflow-hidden">
-                        {/* Mobile: lista kart */}
-                        <div className="sm:hidden divide-y divide-gray-50">
-                          {trip.payment_templates.map((template) => {
-                            const label = template.payment_type === 'installment'
-                              ? `Rata ${template.installment_number}`
-                              : template.payment_type === 'season_pass'
-                              ? `Karnet${template.category_name ? ` (${template.category_name})` : ''}`
-                              : template.payment_type === 'full'
-                              ? 'Pełna opłata'
-                              : template.payment_type;
-                            const methodLabel = template.payment_method === 'transfer' ? 'Przelew'
-                              : template.payment_method === 'cash' ? 'Gotówka'
-                              : template.payment_method === 'both' ? 'Przel./Got.' : '–';
-                            return (
-                              <div key={template.id} className="flex items-center justify-between px-3 py-2.5 gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-xs font-medium text-gray-800">{label}</p>
-                                  <p className="text-[11px] text-gray-400 mt-0.5">
-                                    {template.due_date
-                                      ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
-                                        ? 'w dniu wyjazdu'
-                                        : `do ${format(new Date(template.due_date), 'd.MM.yy', { locale: pl })}`)
-                                      : '–'}
-                                    {' · '}
-                                    <span className={cn(
-                                      template.payment_method === 'cash' ? 'text-amber-600'
-                                        : template.payment_method === 'transfer' ? 'text-blue-600'
-                                        : 'text-white'
-                                    )}>{methodLabel}</span>
-                                  </p>
-                                </div>
-                                <p className="text-sm font-bold text-gray-900 whitespace-nowrap flex-shrink-0">
-                                  {template.amount.toFixed(0)} {template.currency}
-                                </p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {/* Desktop: tabela */}
-                        <table className="hidden sm:table w-full text-sm">
+                      <div className="bg-white rounded-xl ring-1 ring-gray-100 overflow-x-auto">
+                        <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-gray-100">
-                              <th className="px-3 py-2 text-left font-medium text-gray-500">Za co</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Za co</th>
                               <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-500">Forma</th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-500">Kwota</th>
+                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Forma</th>
+                              <th className="px-3 py-2 text-right font-medium text-gray-500 whitespace-nowrap">Kwota</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-50">
                             {trip.payment_templates.map((template) => {
-                              const label = template.payment_type === 'installment'
-                                ? `Rata ${template.installment_number}`
-                                : template.payment_type === 'season_pass'
-                                ? `Karnet${template.category_name ? ` (${template.category_name})` : ''}`
-                                : template.payment_type === 'full'
-                                ? 'Pełna opłata'
-                                : template.payment_type;
-                              const methodLabel = template.payment_method === 'transfer' ? 'Przelew'
-                                : template.payment_method === 'cash' ? 'Gotówka'
-                                : template.payment_method === 'both' ? 'Przelew/Got.' : '–';
+                              const label = getTemplateLabel(template);
+                              const methodLabel = getMethodLabel(template.payment_method);
                               return (
                                 <tr key={template.id} className="hover:bg-gray-50/50">
                                   <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
@@ -604,7 +571,6 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                     <span className={cn(
                                       'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
                                       template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
-                                        : template.payment_method === 'transfer' ? 'bg-blue-100 text-blue-700'
                                         : 'bg-blue-100 text-blue-700'
                                     )}>
                                       {methodLabel}
