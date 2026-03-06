@@ -59,12 +59,13 @@ interface SidebarProps {
   subtitle?: string;
 }
 
-function NavItem({ item, isActive, isCollapsed }: { item: SidebarItem; isActive: boolean; isCollapsed?: boolean }) {
+function NavItem({ item, isActive, isCollapsed, onClick }: { item: SidebarItem; isActive: boolean; isCollapsed?: boolean; onClick?: () => void }) {
   const Icon = iconMap[item.icon] || LayoutDashboard;
 
   return (
     <Link
       href={item.href}
+      onClick={onClick}
       className={cn(
         'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
         isCollapsed ? 'justify-center px-2' : '',
@@ -98,6 +99,7 @@ function NavItem({ item, isActive, isCollapsed }: { item: SidebarItem; isActive:
 export function Sidebar({ items, title, subtitle }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const LogoBlock = ({ collapsed }: { collapsed?: boolean }) => (
     collapsed ? (
@@ -122,7 +124,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
   return (
     <>
       {/* Mobile Sidebar */}
-      <Sheet>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
           <button className="md:hidden fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md border border-gray-100 text-gray-500 hover:text-gray-800 transition-colors">
             <Menu className="h-5 w-5" />
@@ -137,7 +139,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
               <nav className="space-y-0.5">
                 {items.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                  return <NavItem key={item.href} item={item} isActive={isActive} />;
+                  return <NavItem key={item.href} item={item} isActive={isActive} onClick={() => setSheetOpen(false)} />;
                 })}
               </nav>
             </ScrollArea>
