@@ -6,8 +6,6 @@ import { getUserProfile } from '@/lib/actions/auth';
 import { getMyChildren } from '@/lib/actions/participants';
 import { ParentCalendarView } from './calendar-view';
 
-export const dynamic = 'force-dynamic';
-
 interface Props {
   searchParams: Promise<{ child?: string; childName?: string }>;
 }

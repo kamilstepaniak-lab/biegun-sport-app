@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import Link from 'next/link';
-import { Activity, Mail, ChevronDown, FormInput, UserPlus, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Activity, Mail, ChevronDown, UserPlus, ShieldCheck } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { getActivityLogs, getEmailLogs } from '@/lib/actions/activity-logs';
@@ -104,34 +103,6 @@ export default async function SettingsPage() {
         title="Ustawienia"
         description="Konfiguracja aplikacji, logi i narzędzia administracyjne"
       />
-
-      {/* ── Pola formularzy ───────────────────────────────────────── */}
-      <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
-        <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100">
-              <FormInput className="h-4 w-4 text-violet-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 text-sm">Pola formularzy</p>
-              <p className="text-xs text-gray-500">Własne pola zbierane w karcie dziecka</p>
-            </div>
-          </div>
-          <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 flex-shrink-0" />
-        </summary>
-        <div className="border-t border-gray-100 px-5 py-4">
-          <p className="text-sm text-gray-600 mb-3">
-            Skonfiguruj dodatkowe pola które będą zbierane dla każdego uczestnika podczas rejestracji.
-          </p>
-          <Link
-            href="/admin/settings/custom-fields"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            Przejdź do konfiguracji pól
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </details>
 
       {/* ── Konta rodziców ────────────────────────────────────────── */}
       <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">

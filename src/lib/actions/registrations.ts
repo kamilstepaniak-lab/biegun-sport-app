@@ -145,6 +145,7 @@ export async function registerParticipantToTrip(
   }
 
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/calendar');
   revalidatePath('/parent/payments');
   revalidatePath(`/admin/trips/${tripId}/registrations`);
   revalidatePath(`/admin/trips/${tripId}/payments`);

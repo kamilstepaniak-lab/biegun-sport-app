@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { MapPin } from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';
