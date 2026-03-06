@@ -276,28 +276,16 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                       {statusLabels[trip.status]}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {format(departureDate, 'd MMM', { locale: pl })} - {format(returnDate, 'd MMM yyyy', { locale: pl })}
-                    </span>
-                    {trip.location && (
-                      <span className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {trip.location}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1.5">
-                      {trip.groups.map((g) => {
-                        const colors = getGroupColor(g.name);
-                        return (
-                          <span key={g.id} className="flex items-center gap-1">
-                            <span className={cn('w-2 h-2 rounded-full', colors.dot)} />
-                            <span className="text-xs">{g.name}</span>
-                          </span>
-                        );
-                      })}
-                    </span>
+                  <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                    {trip.groups.map((g) => {
+                      const colors = getGroupColor(g.name);
+                      return (
+                        <span key={g.id} className="flex items-center gap-1">
+                          <span className={cn('w-2 h-2 rounded-full', colors.dot)} />
+                          <span className="text-xs">{g.name}</span>
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
