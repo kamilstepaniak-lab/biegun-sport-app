@@ -381,7 +381,10 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               {/* Opis */}
               {trip.description && (
                 <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-600">{trip.description}</p>
+                  <div
+                    className="rich-content text-sm text-gray-600 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: trip.description }}
+                  />
                 </div>
               )}
 
