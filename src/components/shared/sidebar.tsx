@@ -150,7 +150,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-300',
+          'hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 relative',
           isCollapsed ? 'w-[68px]' : 'w-60'
         )}
       >
@@ -167,27 +167,19 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
           <nav className="space-y-0.5">
             {items.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-              return <NavItem key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} onClick={() => setIsCollapsed(true)} />;
+              return <NavItem key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} />;
             })}
           </nav>
         </ScrollArea>
 
-        {/* Collapse toggle */}
-        <div className="px-3 pb-4 border-t border-gray-50 pt-3">
-          <button
-            className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all duration-200"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <>
-                <ChevronLeft className="h-4 w-4" />
-                <span>Zwiń</span>
-              </>
-            )}
-          </button>
-        </div>
+        {/* Collapse arrow — floating on right edge */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute -right-3 top-6 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-400 shadow-sm transition-all duration-200"
+          title={isCollapsed ? 'Rozwiń' : 'Zwiń'}
+        >
+          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
       </aside>
     </>
   );
