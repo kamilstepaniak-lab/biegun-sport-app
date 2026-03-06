@@ -14,6 +14,7 @@ import {
   Copy,
   Receipt,
   ArrowRight,
+  ArrowLeft,
   Bus,
   CheckCircle2,
   Backpack,
@@ -468,7 +469,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     </div>
                     <div className="bg-white rounded-xl p-3 space-y-2">
                       <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-gray-800 text-sm">{trip.departure_location}</p>
                           <p className="text-xs text-gray-500">{format(departureDate, 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
@@ -476,7 +477,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                       </div>
                       {trip.departure_stop2_location && (
                         <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                           <div>
                             <p className="font-medium text-gray-800 text-sm">{trip.departure_stop2_location}</p>
                             {trip.departure_stop2_datetime && (
@@ -499,7 +500,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     </div>
                     <div className="bg-white rounded-xl p-3 space-y-2">
                       <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-gray-800 text-sm">{trip.return_location}</p>
                           <p className="text-xs text-gray-500">{format(returnDate, 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
@@ -507,7 +508,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                       </div>
                       {trip.return_stop2_location && (
                         <div className="flex items-start gap-2">
-                          <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                          <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                           <div>
                             <p className="font-medium text-gray-800 text-sm">{trip.return_stop2_location}</p>
                             {trip.return_stop2_datetime && (

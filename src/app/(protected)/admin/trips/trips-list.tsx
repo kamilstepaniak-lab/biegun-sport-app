@@ -24,6 +24,8 @@ import {
   Backpack,
   Info,
   LayoutDashboard,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -319,7 +321,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                   </div>
                   <div className="bg-white rounded-xl p-3 space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
                         <p className="text-xs text-gray-500">
@@ -329,7 +331,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                     </div>
                     {trip.departure_stop2_location && (
                       <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
                           {trip.departure_stop2_datetime && (
@@ -351,7 +353,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                   </div>
                   <div className="bg-white rounded-xl p-3 space-y-2">
                     <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
                         <p className="text-xs text-gray-500">
@@ -361,7 +363,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                     </div>
                     {trip.return_stop2_location && (
                       <div className="flex items-start gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
                           {trip.return_stop2_datetime && (
