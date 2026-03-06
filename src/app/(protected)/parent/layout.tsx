@@ -63,7 +63,7 @@ export default async function ParentLayout({
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header user={profile} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 safe-bottom">
           {/* Synchronizuje ?child= w URL z localStorage — działa w tle */}
           <Suspense fallback={null}>
             <ChildUrlSync />

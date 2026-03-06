@@ -429,14 +429,14 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
                   </div>
-                  <div className="bg-white rounded-xl overflow-hidden ring-1 ring-gray-100">
+                  <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-100">
-                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">Typ</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">Termin</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500">Forma</th>
-                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500">Kwota</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Typ</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Termin</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Forma</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kwota</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -446,18 +446,18 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
 
                           return (
                             <tr key={template.id} className="hover:bg-gray-50/50">
-                              <td className="px-4 py-2.5 font-medium text-gray-900">{label}</td>
-                              <td className="px-4 py-2.5 text-gray-500">
+                              <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
+                              <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
                                 {template.due_date
                                   ? format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })
                                   : '-'}
                               </td>
-                              <td className="px-4 py-2.5">
+                              <td className="px-4 py-2.5 whitespace-nowrap">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600">
                                   {methodLabel}
                                 </span>
                               </td>
-                              <td className="px-4 py-2.5 text-right font-semibold text-gray-900">
+                              <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
                                 {template.amount.toFixed(0)} {template.currency}
                               </td>
                             </tr>

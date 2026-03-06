@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -63,6 +63,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const lastCheckedIndexRef = useRef<number | null>(null);
 
   // Spłaszcz do płaskiej listy wierszy
   const flatRows = useMemo<FlatRow[]>(() => {
@@ -155,6 +156,11 @@ export function PaymentsList({ payments }: PaymentsListProps) {
 
   // Handlers
   async function handleStatusChange(paymentId: string, newStatus: 'pending' | 'paid') {
+    // Jeśli kliknięty wiersz jest zaznaczony → zastosuj do wszystkich zaznaczonych
+    if (selectedIds.has(paymentId) && selectedIds.size > 1) {
+      await handleBulkAction(newStatus);
+      return;
+    }
     setIsUpdating(paymentId);
     try {
       const result = await updatePaymentStatus(paymentId, newStatus);
@@ -211,13 +217,31 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     finally { setIsBulkUpdating(false); }
   }
 
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  function toggleSelect(id: string, index: number, shiftKey: boolean) {
+    if (shiftKey && lastCheckedIndexRef.current !== null) {
+      const from = Math.min(lastCheckedIndexRef.current, index);
+      const to = Math.max(lastCheckedIndexRef.current, index);
+      const shouldSelect = !selectedIds.has(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        for (let i = from; i <= to; i++) {
+          const rowId = displayedRows[i]?.payment.id;
+          if (rowId) {
+            if (shouldSelect) next.add(rowId);
+            else next.delete(rowId);
+          }
+        }
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+    lastCheckedIndexRef.current = index;
   }
 
   function toggleSelectAll() {
@@ -275,7 +299,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  function renderRow(row: FlatRow) {
+  function renderRow(row: FlatRow, index: number) {
     const { payment, participantName, tripTitle } = row;
     const isPaid = payment.status === 'paid';
     const isCancelled = payment.status === 'cancelled';
@@ -300,7 +324,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={() => toggleSelect(payment.id)}
+            onChange={(e) => toggleSelect(payment.id, index, e.nativeEvent.shiftKey)}
             className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
           />
         </td>
@@ -633,7 +657,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         )}
 
         {/* Tabela płatności */}
-        <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -645,13 +669,13 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                     onChange={toggleSelectAll}
                   />
                 </th>
-                <th className="text-left py-2.5 pl-2 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Uczestnik</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Za co</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Kwota</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Termin</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Notatka</th>
-                <th className="text-left py-2.5 pl-3 pr-5 text-xs font-semibold text-gray-400 uppercase tracking-wide">Opłacono?</th>
+                <th className="text-left py-2.5 pl-2 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Uczestnik</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Za co</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Status</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Notatka</th>
+                <th className="text-left py-2.5 pl-3 pr-5 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Opłacono?</th>
               </tr>
             </thead>
             <tbody>
@@ -664,7 +688,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                   </td>
                 </tr>
               ) : (
-                displayedRows.map((row) => renderRow(row))
+                displayedRows.map((row, index) => renderRow(row, index))
               )}
             </tbody>
           </table>

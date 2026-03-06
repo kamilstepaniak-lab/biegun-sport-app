@@ -119,7 +119,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+}
+
+@layer utilities {
+  /* PWA safe area — home indicator / notch support */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
   }
 }
