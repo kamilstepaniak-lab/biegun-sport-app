@@ -324,7 +324,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={(e) => toggleSelect(payment.id, index, e.nativeEvent.shiftKey)}
+            onChange={(e) => toggleSelect(payment.id, index, (e.nativeEvent as MouseEvent).shiftKey)}
             className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
           />
         </td>
