@@ -79,7 +79,7 @@ function getTemplateLabel(template: { payment_type: string; installment_number?:
   return template.payment_type;
 }
 
-function getMethodLabel(method: string | undefined) {
+function getMethodLabel(method: string | null | undefined) {
   if (method === 'transfer') return 'Przelew';
   if (method === 'cash') return 'Gotówka';
   if (method === 'both') return 'Przelew/Gotówka';
