@@ -29,10 +29,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // getSession() czyta JWT z ciasteczka LOKALNIE — zero zapytań sieciowych (~0ms).
+  // getUser() leci po sieci do Supabase Auth API (~200-400ms) — niepotrzebne w middleware.
+  // Pełna weryfikacja auth odbywa się w layout (getUserProfile → getUser).
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
+  const user = session?.user ?? null;
   const pathname = request.nextUrl.pathname;
 
   // Publiczne ścieżki - dostępne bez logowania
@@ -57,19 +61,9 @@ export async function updateSession(request: NextRequest) {
       pathname.startsWith('/parent'));
 
   if (needsRoleCheck) {
-    // Próbuj odczytać rolę z app_metadata JWT (szybko, bez DB).
-    // Jeśli rola nie istnieje w JWT (konto sprzed synchronizacji) — fallback do DB.
-    let role = (user!.app_metadata?.role as string | undefined)
+    // Rola jest w JWT app_metadata — odczyt lokalny, bez sieci.
+    const role = (user!.app_metadata?.role as string | undefined)
       ?? (user!.user_metadata?.role as string | undefined);
-
-    if (!role) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user!.id)
-        .single();
-      role = profile?.role ?? undefined;
-    }
 
     const url = request.nextUrl.clone();
 

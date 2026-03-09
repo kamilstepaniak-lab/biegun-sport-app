@@ -124,11 +124,11 @@ export async function getSession() {
   return session;
 }
 
-export async function getUser() {
+export const getUser = cache(async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
-}
+});
 
 export async function resetPassword(email: string) {
   const supabase = await createClient();
