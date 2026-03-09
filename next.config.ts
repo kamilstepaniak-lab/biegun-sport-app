@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
     },
   },
   turbopack: {},

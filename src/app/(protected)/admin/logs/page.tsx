@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { Activity, Mail } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { getActivityLogs, getEmailLogs } from '@/lib/actions/activity-logs';

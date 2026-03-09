@@ -2,8 +2,6 @@ import { PageHeader } from '@/components/shared';
 import { getTrips } from '@/lib/actions/trips';
 import { CalendarView } from './calendar-view';
 
-export const dynamic = 'force-dynamic';
-
 export default async function AdminCalendarPage() {
   const trips = await getTrips();
 

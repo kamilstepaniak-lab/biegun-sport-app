@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { MessageSquare, Eye } from 'lucide-react';

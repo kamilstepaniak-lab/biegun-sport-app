@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import Link from 'next/link';
 import { ArrowLeft, History, ArrowRight } from 'lucide-react';
 

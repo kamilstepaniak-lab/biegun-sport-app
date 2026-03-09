@@ -271,7 +271,9 @@ export async function createTrip(input: CreateTripInput) {
     }
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true, data: trip };
 }
 
@@ -569,7 +571,9 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     }
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true };
 }
 
@@ -601,7 +605,9 @@ export async function updateTripStatus(id: string, status: TripStatus) {
     return { error: 'Nie udało się zmienić statusu' };
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true };
 }
 
@@ -696,7 +702,9 @@ export async function deleteTrip(id: string) {
     return { error: 'Błąd podczas usuwania wyjazdu i powiązanych danych' };
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true };
 }
 
@@ -968,7 +976,9 @@ export async function updateParticipationStatus(
       .eq('status', 'pending');
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true };
 }
 
@@ -1305,7 +1315,9 @@ export async function updateParticipationStatusByParent(
     }
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true };
 }
 
@@ -1444,6 +1456,8 @@ export async function duplicateTrip(tripId: string) {
     }
   }
 
-  revalidatePath('/', 'layout');
+  revalidatePath('/admin/trips');
+  revalidatePath('/admin/calendar');
+  revalidatePath('/parent/trips');
   return { success: true, data: newTrip };
 }

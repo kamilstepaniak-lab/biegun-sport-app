@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { Activity, Mail, ChevronDown, UserPlus, ShieldCheck } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';

@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -162,7 +163,9 @@ export async function updatePassword(newPassword: string) {
   return { success: true };
 }
 
-export async function getUserProfile() {
+// cache() deduplikuje wywołania w ramach jednego renderowania —
+// layout + page + komponenty mogą wołać getUserProfile() bez dodatkowych zapytań
+export const getUserProfile = cache(async () => {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -176,4 +179,4 @@ export async function getUserProfile() {
 
   // Serializuj do plain objects dla Client Components
   return profile ? JSON.parse(JSON.stringify(profile)) : null;
-}
+});

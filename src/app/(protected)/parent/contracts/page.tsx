@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { FileText, CheckCircle, Clock, AlertTriangle, BookOpen, User } from 'lucide-react';
 import Link from 'next/link';
 

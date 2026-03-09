@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { Mail } from 'lucide-react';
 import { PageHeader } from '@/components/shared';
 import { getEmailTemplates } from '@/lib/actions/email-templates';

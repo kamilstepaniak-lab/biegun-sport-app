@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { BarChart2 } from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';
