@@ -6,16 +6,21 @@ import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 
+// Helper: szybkie sprawdzenie admina z JWT cookie (0ms zamiast ~400ms z getUser + DB)
+async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return { user: null as null, error: 'Nie jesteś zalogowany' as const };
+  const role = user.app_metadata?.role ?? user.user_metadata?.role;
+  if (role !== 'admin') return { user: null as null, error: 'Brak uprawnień' as const };
+  return { user, error: null };
+}
+
 export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDetails[]> {
   const supabase = await createClient();
 
-  // Weryfikacja roli — tylko admin może pobrać płatności całego wyjazdu
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user } = await requireAdmin(supabase);
   if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return [];
 
   const { data: payments, error } = await supabase
     .from('payments')
@@ -46,16 +51,8 @@ export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDet
 export async function getAllPayments(): Promise<PaymentWithDetails[]> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { user } = await requireAdmin(supabase);
   if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return [];
 
   const { data: payments, error } = await supabase
     .from('payments')
@@ -92,20 +89,8 @@ export async function addPaymentTransaction(
 ) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: 'Nie jesteś zalogowany' };
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Brak uprawnień' };
-  }
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   // Pobierz płatność
   const { data: payment, error: paymentError } = await supabase
@@ -187,20 +172,8 @@ export async function markPaymentAsPaid(
 ) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: 'Nie jesteś zalogowany' };
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Brak uprawnień' };
-  }
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
@@ -305,20 +278,8 @@ export async function markPaymentAsPaid(
 export async function applyDiscount(paymentId: string, discountPercentage: number) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: 'Nie jesteś zalogowany' };
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Brak uprawnień' };
-  }
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   if (discountPercentage < 0 || discountPercentage > 100) {
     return { error: 'Zniżka musi być w zakresie 0-100%' };
@@ -479,10 +440,9 @@ export interface BankAccountInfo {
 export async function getPaymentsForParent(selectedChildId?: string): Promise<ParentPayment[]> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return [];
-  }
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+  if (!user) return [];
 
   // Pobierz dzieci — jeśli wybrano konkretne, pobierz tylko je
   let childrenQuery = supabase
@@ -611,7 +571,8 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
 export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     return {
       bank_account_pln: '39 1240 1444 1111 0010 7170 4855',
@@ -656,20 +617,8 @@ export async function updatePaymentStatus(
 ) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: 'Nie jesteś zalogowany' };
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Brak uprawnień' };
-  }
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   // Pobierz płatność (wraz ze starym statusem do audit logu)
   const { data: payment } = await supabase
@@ -690,13 +639,11 @@ export async function updatePaymentStatus(
     updated_at: new Date().toISOString(),
   };
 
-  // Jeśli oznaczamy jako opłacone, ustaw amount_paid i paid_at
   if (status === 'paid') {
     updateData.amount_paid = payment.amount;
     updateData.paid_at = new Date().toISOString();
     updateData.marked_by = user.id;
   } else if (status === 'pending') {
-    // Jeśli cofamy do oczekującej, wyzeruj
     updateData.amount_paid = 0;
     updateData.paid_at = null;
   }
@@ -711,7 +658,7 @@ export async function updatePaymentStatus(
     return { error: `Nie udało się zmienić statusu: ${error.message}` };
   }
 
-  // Audit log
+  // Audit log — nie blokuje
   logPaymentChange({
     paymentId,
     userId: user.id,
@@ -722,44 +669,46 @@ export async function updatePaymentStatus(
     action: 'status_changed',
   }).catch(console.error);
 
-  // Wyślij e-mail potwierdzenia gdy płatność oznaczona jako opłacona
+  // E-mail potwierdzenia — nie blokuje odpowiedzi (fire & forget)
   if (status === 'paid') {
-    try {
-      const { data: fullPayment } = await supabase
-        .from('payments')
-        .select(`
-          amount, currency, payment_type, installment_number,
-          registration:trip_registrations (
-            participant:participants (first_name, last_name, parent:profiles!parent_id (email, first_name)),
-            trip:trips (title)
-          )
-        `)
-        .eq('id', paymentId)
-        .single();
+    (async () => {
+      try {
+        const { data: fullPayment } = await supabase
+          .from('payments')
+          .select(`
+            amount, currency, payment_type, installment_number,
+            registration:trip_registrations (
+              participant:participants (first_name, last_name, parent:profiles!parent_id (email, first_name)),
+              trip:trips (title)
+            )
+          `)
+          .eq('id', paymentId)
+          .single();
 
-      const reg = fullPayment?.registration as unknown as {
-        participant: { first_name: string; last_name: string; parent: { email: string; first_name: string } };
-        trip: { title: string };
-      } | null;
+        const reg = fullPayment?.registration as unknown as {
+          participant: { first_name: string; last_name: string; parent: { email: string; first_name: string } };
+          trip: { title: string };
+        } | null;
 
-      if (reg && fullPayment) {
-        const paymentLabel = fullPayment.payment_type === 'installment'
-          ? `Rata ${fullPayment.installment_number}`
-          : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
+        if (reg && fullPayment) {
+          const paymentLabel = fullPayment.payment_type === 'installment'
+            ? `Rata ${fullPayment.installment_number}`
+            : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
 
-        sendPaymentConfirmedEmail(
-          reg.participant.parent.email,
-          reg.participant.parent.first_name,
-          `${reg.participant.first_name} ${reg.participant.last_name}`,
-          reg.trip.title,
-          fullPayment.amount,
-          fullPayment.currency,
-          paymentLabel,
-        ).catch(console.error);
+          await sendPaymentConfirmedEmail(
+            reg.participant.parent.email,
+            reg.participant.parent.first_name,
+            `${reg.participant.first_name} ${reg.participant.last_name}`,
+            reg.trip.title,
+            fullPayment.amount,
+            fullPayment.currency,
+            paymentLabel,
+          );
+        }
+      } catch {
+        // e-mail nie blokuje aktualizacji
       }
-    } catch {
-      // e-mail nie blokuje aktualizacji
-    }
+    })().catch(console.error);
   }
 
   revalidatePath('/admin/payments');
@@ -772,20 +721,8 @@ export async function updatePaymentStatus(
 export async function updatePaymentAmount(paymentId: string, newAmount: number) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: 'Nie jesteś zalogowany' };
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
-    return { error: 'Brak uprawnień' };
-  }
+  const { error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   if (newAmount < 0) {
     return { error: 'Kwota nie może być ujemna' };
@@ -814,13 +751,8 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
 export async function updatePaymentNote(paymentId: string, note: string) {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  const { error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   const { error } = await supabase
     .from('payments')
@@ -846,16 +778,8 @@ export async function bulkUpdatePaymentStatus(
 
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
 
   const now = new Date().toISOString();
 

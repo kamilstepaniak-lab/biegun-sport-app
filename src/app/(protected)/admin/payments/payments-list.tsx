@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useOptimistic, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/tooltip';
 
 import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote, bulkUpdatePaymentStatus } from '@/lib/actions/payments';
-import type { PaymentWithDetails } from '@/types';
+import type { PaymentWithDetails, PaymentStatus } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface PaymentsListProps {
@@ -64,10 +64,22 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const lastCheckedIndexRef = useRef<number | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  // Spłaszcz do płaskiej listy wierszy
+  // Optimistic status — natychmiastowa zmiana UI przed odpowiedzią serwera
+  const [optimisticPayments, setOptimisticPayments] = useOptimistic(
+    payments,
+    (current: PaymentWithDetails[], update: { id: string; status: PaymentStatus; amount_paid: number }) =>
+      current.map((p) =>
+        p.id === update.id
+          ? { ...p, status: update.status, amount_paid: update.amount_paid, paid_at: update.status === 'paid' ? new Date().toISOString() : null }
+          : p
+      )
+  );
+
+  // Spłaszcz do płaskiej listy wierszy (używa optimistic state)
   const flatRows = useMemo<FlatRow[]>(() => {
-    return payments
+    return optimisticPayments
       .filter((p) => p.registration)
       .map((p) => ({
         payment: p,
@@ -76,7 +88,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         tripId: p.registration.trip.id,
         tripDepartureDate: p.registration.trip.departure_datetime,
       }));
-  }, [payments]);
+  }, [optimisticPayments]);
 
   // Unikalne wyjazdy do filtra
   const availableTrips = useMemo(() => {
@@ -161,19 +173,29 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       await handleBulkAction(newStatus);
       return;
     }
-    setIsUpdating(paymentId);
-    try {
-      const result = await updatePaymentStatus(paymentId, newStatus);
-      if (result.error) toast.error(result.error);
-      else {
-        toast.success(newStatus === 'paid' ? 'Oznaczono jako opłacone' : 'Oznaczono jako nieopłacone');
+
+    // Znajdź aktualną płatność żeby znać kwotę do optimistic update
+    const currentPayment = payments.find((p) => p.id === paymentId);
+    const optimisticAmountPaid = newStatus === 'paid' ? (currentPayment?.amount ?? 0) : 0;
+
+    startTransition(async () => {
+      // Natychmiastowa zmiana UI
+      setOptimisticPayments({ id: paymentId, status: newStatus, amount_paid: optimisticAmountPaid });
+
+      try {
+        const result = await updatePaymentStatus(paymentId, newStatus);
+        if (result.error) {
+          toast.error(result.error);
+          router.refresh(); // Przywróć stan z serwera
+        } else {
+          toast.success(newStatus === 'paid' ? 'Oznaczono jako opłacone' : 'Oznaczono jako nieopłacone');
+          router.refresh();
+        }
+      } catch {
+        toast.error('Wystąpił błąd');
         router.refresh();
       }
-    } catch {
-      toast.error('Wystąpił błąd');
-    } finally {
-      setIsUpdating(null);
-    }
+    });
   }
 
   async function saveAmount(paymentId: string) {
@@ -280,11 +302,11 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     }
   }
 
-  const pendingPayments = payments.filter((p) => p.status !== 'paid' && p.status !== 'cancelled');
+  const pendingPayments = optimisticPayments.filter((p) => p.status !== 'paid' && p.status !== 'cancelled');
   const stats = {
-    total: payments.length,
+    total: optimisticPayments.length,
     pending: pendingPayments.length,
-    paid: payments.filter((p) => p.status === 'paid').length,
+    paid: optimisticPayments.filter((p) => p.status === 'paid').length,
     pendingPLN: pendingPayments.filter((p) => p.currency === 'PLN').reduce((s, p) => s + (p.amount - (p.amount_paid ?? 0)), 0),
     pendingEUR: pendingPayments.filter((p) => p.currency === 'EUR').reduce((s, p) => s + (p.amount - (p.amount_paid ?? 0)), 0),
   };
