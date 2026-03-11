@@ -263,7 +263,7 @@ const DEFAULTS = {
   },
   registration: {
     subject: '{{wyjazd}} – informacja o wyjeździe',
-    body_html: '<h2>Potwierdzenie zapisu ✅</h2><p>Cześć {{imie}},</p><p><strong>{{dziecko}}</strong> został/a pomyślnie zapisany/a na wyjazd <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}',
+    body_html: '<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 16px;">Potwierdzenie zapisu ✅</p><p style="font-size:14px;color:#374151;margin:0 0 10px;">Cześć {{imie}},</p><p style="font-size:14px;color:#374151;margin:0 0 16px;"><strong>{{dziecko}}</strong> został/a pomyślnie zapisany/a na wyjazd <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}',
   },
   payment_confirmed: {
     subject: '✅ Płatność przyjęta — {{wyjazd}}',
@@ -275,7 +275,7 @@ const DEFAULTS = {
   },
   trip_info: {
     subject: '{{wyjazd}} – informacja o wyjeździe',
-    body_html: '<h2>Informacja o wyjeździe 🏔️</h2><p>Szanowni Rodzice,</p><p>Przekazujemy informacje o planowanym wyjeździe <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}<p>W razie pytań prosimy o kontakt.</p><p>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>',
+    body_html: '<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 16px;">Informacja o wyjeździe 🏔️</p><p style="font-size:14px;color:#374151;margin:0 0 10px;">Szanowni Rodzice,</p><p style="font-size:14px;color:#374151;margin:0 0 16px;">Przekazujemy informacje o planowanym wyjeździe <strong>{{wyjazd}}</strong>.</p>{{szczegoly_wyjazdu}}<p style="font-size:14px;color:#374151;margin:16px 0 10px;">W razie pytań prosimy o kontakt.</p><p style="font-size:14px;color:#374151;margin:0;">Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>',
   },
 };
 

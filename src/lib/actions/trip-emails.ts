@@ -76,7 +76,7 @@ export async function getTripEmailPreview(tripId: string): Promise<{
     .maybeSingle();
 
   const defaultSubject = `${trip.title} – informacja o wyjeździe`;
-  const defaultBody = `<h2>Informacja o wyjeździe 🏔️</h2><p>Szanowni Rodzice,</p><p>Przekazujemy informacje o planowanym wyjeździe <strong>${trip.title}</strong>.</p>{{szczegoly_wyjazdu}}<p>W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>`;
+  const defaultBody = `<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 16px;">Informacja o wyjeździe 🏔️</p><p style="font-size:14px;color:#374151;margin:0 0 10px;">Szanowni Rodzice,</p><p style="font-size:14px;color:#374151;margin:0 0 16px;">Przekazujemy informacje o planowanym wyjeździe <strong>${trip.title}</strong>.</p>{{szczegoly_wyjazdu}}<p style="font-size:14px;color:#374151;margin:16px 0 10px;">W razie pytań prosimy o kontakt.<br>Pozdrawiamy,<br><strong>Zespół BiegunSport</strong></p>`;
 
   const templateSubject = templateRow?.subject
     ? templateRow.subject.replaceAll('{{wyjazd}}', trip.title)

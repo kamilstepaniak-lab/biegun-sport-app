@@ -178,7 +178,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
           {/* Payment info */}
           {trip.payment_templates && trip.payment_templates.length > 0 && (
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
@@ -188,8 +188,10 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                   Harmonogram płatności za wyjazd
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
+              <CardContent className="overflow-x-auto px-0 pb-0">
+                <div className="px-6 pb-6">
+                  <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
+                </div>
               </CardContent>
             </Card>
           )}

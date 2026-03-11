@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
 import {
   HoverCard,
@@ -20,6 +20,10 @@ import type { TripWithPaymentTemplates } from '@/types';
 
 interface CalendarViewProps {
   trips: TripWithPaymentTemplates[];
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 }
 
 export function CalendarView({ trips }: CalendarViewProps) {
@@ -90,22 +94,6 @@ export function CalendarView({ trips }: CalendarViewProps) {
   }
 
   const today = new Date();
-
-  function formatTripDates(departure: Date, returnDate: Date): string {
-    const depDay = format(departure, 'd');
-    const retDay = format(returnDate, 'd');
-    const depMonth = format(departure, 'MM');
-    const retMonth = format(returnDate, 'MM');
-    const retYear = format(returnDate, 'yyyy');
-
-    if (depMonth === retMonth) {
-      // Ten sam miesiąc: 6-9.03.2026
-      return `${depDay}–${retDay}.${retMonth}.${retYear}`;
-    } else {
-      // Różne miesiące: 28.02–3.03.2026
-      return `${depDay}.${depMonth}–${retDay}.${retMonth}.${retYear}`;
-    }
-  }
 
   const monthTrips = useMemo(() => {
     const todayStart = startOfDay(new Date());
@@ -233,21 +221,23 @@ export function CalendarView({ trips }: CalendarViewProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">
-                    Wyjazd
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">Tytuł wyjazdu</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
+                    <span className="flex items-center gap-1">
+                      <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
+                      Wyjazd
+                    </span>
                   </th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Powrót
+                    <span className="flex items-center gap-1">
+                      <ArrowDownLeft className="h-3.5 w-3.5 text-red-400" />
+                      Powrót
+                    </span>
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Tytuł
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
-                    Dni do wyjazdu
-                  </th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Dni do wyjazdu</th>
                   <th className="px-4 py-3 w-28" />
                 </tr>
               </thead>
@@ -268,40 +258,8 @@ export function CalendarView({ trips }: CalendarViewProps) {
 
                   return (
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
-                      {/* Wyjazd */}
-                      <td className="px-5 py-3.5 whitespace-nowrap align-top">
-                        <div className="flex flex-col gap-0.5 text-sm">
-                          <span className="font-semibold text-gray-900">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-500">{format(dep, 'HH:mm', { locale: pl })}</span>
-                          {trip.departure_location && (
-                            <span className="text-gray-400 text-xs">{trip.departure_location}</span>
-                          )}
-                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                            <span className="text-gray-400 text-xs">
-                              {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Powrót */}
-                      <td className="px-4 py-3.5 whitespace-nowrap align-top">
-                        <div className="flex flex-col gap-0.5 text-sm">
-                          <span className="font-semibold text-gray-900">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-500">{format(ret, 'HH:mm', { locale: pl })}</span>
-                          {trip.return_location && (
-                            <span className="text-gray-400 text-xs">{trip.return_location}</span>
-                          )}
-                          {trip.return_stop2_datetime && trip.return_stop2_location && (
-                            <span className="text-gray-400 text-xs">
-                              {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
                       {/* Tytuł */}
-                      <td className="px-4 py-3.5 align-top">
+                      <td className="px-5 py-3.5 align-top">
                         <div className="flex items-start gap-2">
                           <div className="flex gap-1 flex-shrink-0 mt-0.5">
                             {trip.groups.map((g) => (
@@ -309,6 +267,28 @@ export function CalendarView({ trips }: CalendarViewProps) {
                             ))}
                           </div>
                           <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                        </div>
+                      </td>
+
+                      {/* Wyjazd */}
+                      <td className="px-4 py-3.5 align-top">
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
+                          <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
+                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Powrót */}
+                      <td className="px-4 py-3.5 align-top">
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
+                          <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
+                          {trip.return_stop2_datetime && trip.return_stop2_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                          )}
                         </div>
                       </td>
 
@@ -503,37 +483,53 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
 
       <div className="space-y-2 text-sm">
         <div className="flex items-start gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 flex-shrink-0">
-            <Calendar className="h-3 w-3 text-white" />
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-green-600 flex-shrink-0">
+            <ArrowUpRight className="h-3 w-3 text-white" />
           </div>
           <div>
             <div className="font-medium text-gray-900">Wyjazd</div>
             <div className="text-gray-500">{format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}</div>
-            <div className="text-gray-400 flex items-center gap-1 text-xs">
-              <MapPin className="h-3 w-3" />
-              {trip.departure_location}
-            </div>
+            {trip.departure_location && (
+              <div className="text-gray-400 flex items-center gap-1 text-xs">
+                <MapPin className="h-3 w-3" />
+                {trip.departure_location}
+              </div>
+            )}
+            {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+              <div className="text-gray-400 flex items-center gap-1 text-xs mt-0.5">
+                <MapPin className="h-3 w-3" />
+                Przystanek: {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex items-start gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 flex-shrink-0">
-            <Calendar className="h-3 w-3 text-white" />
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-500 flex-shrink-0">
+            <ArrowDownLeft className="h-3 w-3 text-white" />
           </div>
           <div>
             <div className="font-medium text-gray-900">Powrót</div>
             <div className="text-gray-500">{format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}</div>
-            <div className="text-gray-400 flex items-center gap-1 text-xs">
-              <MapPin className="h-3 w-3" />
-              {trip.return_location}
-            </div>
+            {trip.return_location && (
+              <div className="text-gray-400 flex items-center gap-1 text-xs">
+                <MapPin className="h-3 w-3" />
+                {trip.return_location}
+              </div>
+            )}
+            {trip.return_stop2_datetime && trip.return_stop2_location && (
+              <div className="text-gray-400 flex items-center gap-1 text-xs mt-0.5">
+                <MapPin className="h-3 w-3" />
+                Przystanek: {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {trip.description && (
         <p className="text-xs text-gray-400 line-clamp-2">
-          {trip.description}
+          {stripHtml(trip.description)}
         </p>
       )}
 

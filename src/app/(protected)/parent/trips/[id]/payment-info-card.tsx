@@ -45,7 +45,7 @@ export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Banknote className="h-5 w-5" />
@@ -55,7 +55,7 @@ export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
           Skopiuj dane do wykonania przelewu
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 overflow-x-auto">
         {/* Wybór dziecka jeśli więcej niż jedno */}
         {children.length > 1 && (
           <div className="space-y-2">
@@ -101,7 +101,7 @@ export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Numer konta (PLN)</Label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 p-3 rounded-lg bg-muted font-mono text-sm break-all">
+            <div className="flex-1 p-3 rounded-lg bg-muted font-mono text-sm break-all min-w-0">
               {trip.bank_account_pln}
             </div>
             <Button
@@ -123,7 +123,7 @@ export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Numer konta (EUR)</Label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 p-3 rounded-lg bg-muted font-mono text-sm break-all">
+            <div className="flex-1 p-3 rounded-lg bg-muted font-mono text-sm break-all min-w-0">
               {trip.bank_account_eur}
             </div>
             <Button

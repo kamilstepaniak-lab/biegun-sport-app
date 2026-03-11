@@ -296,13 +296,15 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
   if (payments.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-x-auto">
+    <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
       {label && (
         <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
         </div>
       )}
-      <table className="w-full">
+      <p className="text-xs text-gray-400 px-4 pt-2 pb-0.5">Żeby zobaczyć całą tabelkę przesuń palcem w bok</p>
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[560px]">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/60">
             <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
@@ -319,6 +321,7 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

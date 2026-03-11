@@ -270,7 +270,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
                     // dangerouslySetInnerHTML ustawia HTML przy montowaniu (key wymusza remount)
                     // Po montowaniu React nie ingeruje — użytkownik edytuje swobodnie
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(serverPreviewHtml ?? '') }}
-                    className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 prose prose-sm max-w-none bg-white min-h-[280px]"
+                    className="flex-1 overflow-auto border border-gray-200 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-blue-300 max-w-none bg-white min-h-[280px] text-sm text-gray-800 leading-relaxed"
                   />
                 )}
               </div>

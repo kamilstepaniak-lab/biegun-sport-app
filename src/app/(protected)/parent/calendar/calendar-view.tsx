@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight, ArrowUpRight, ArrowDownLeft, X } from 'lucide-react';
 
 import {
   HoverCard,
@@ -22,8 +22,13 @@ interface ParentCalendarViewProps {
   trips: TripForParent[];
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+}
+
 export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedTrip, setSelectedTrip] = useState<TripForParent | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -80,10 +85,8 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
       if (aDone && !bDone) return 1;
       if (!aDone && bDone) return -1;
       if (!aDone) {
-        // oba aktywne → ASC po wyjeździe
         return new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime();
       }
-      // oba zakończone → DESC po wyjeździe (najnowszy na górze w grupie)
       return new Date(b.departure_datetime).getTime() - new Date(a.departure_datetime).getTime();
     });
   }, [trips, monthStart, monthEnd]);
@@ -148,12 +151,23 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <p className="text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
+            <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">Tytuł wyjazdu</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Wyjazd</th>
-                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Powrót</th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
+                    <span className="flex items-center gap-1">
+                      <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
+                      Wyjazd
+                    </span>
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
+                    <span className="flex items-center gap-1">
+                      <ArrowDownLeft className="h-3.5 w-3.5 text-red-400" />
+                      Powrót
+                    </span>
+                  </th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">Dni do wyjazdu</th>
                   <th className="px-4 py-3 w-28" />
                 </tr>
@@ -285,8 +299,9 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                         <HoverCard key={trip.id} openDelay={100} closeDelay={100}>
                           <HoverCardTrigger asChild>
                             <div
+                              onClick={() => setSelectedTrip(trip)}
                               className={cn(
-                                'block text-xs px-1 py-0.5 truncate cursor-default',
+                                'block text-xs px-1 py-0.5 truncate cursor-pointer',
                                 groupColor?.bg || 'bg-gray-100',
                                 groupColor?.text || 'text-gray-700',
                                 dayType === 'start' && 'rounded-l',
@@ -311,7 +326,7 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                               {dayType === 'end' && <span className="opacity-50">→</span>}
                             </div>
                           </HoverCardTrigger>
-                          <HoverCardContent side="right" align="start" className="w-80 rounded-xl">
+                          <HoverCardContent side="right" align="start" className="w-80 rounded-xl hidden md:block">
                             <div className="space-y-2.5">
                               {/* Tytuł */}
                               <div className="flex items-start gap-2">
@@ -325,14 +340,14 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
 
                               {/* Opis */}
                               {trip.description && (
-                                <p className="text-xs text-gray-500 leading-relaxed">{trip.description}</p>
+                                <p className="text-xs text-gray-500 leading-relaxed">{stripHtml(trip.description)}</p>
                               )}
 
                               {/* Daty i miejsca */}
                               <div className="space-y-1.5">
                                 <div className="flex items-start gap-1.5 text-xs">
-                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 flex-shrink-0 mt-0.5">
-                                    <Calendar className="h-3 w-3 text-white" />
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-green-600 flex-shrink-0 mt-0.5">
+                                    <ArrowUpRight className="h-3 w-3 text-white" />
                                   </div>
                                   <div className="text-gray-600">
                                     <span className="font-medium text-gray-700">Wyjazd: </span>
@@ -353,8 +368,8 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                                 </div>
 
                                 <div className="flex items-start gap-1.5 text-xs">
-                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-600 flex-shrink-0 mt-0.5">
-                                    <Calendar className="h-3 w-3 text-white" />
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-red-500 flex-shrink-0 mt-0.5">
+                                    <ArrowDownLeft className="h-3 w-3 text-white" />
                                   </div>
                                   <div className="text-gray-600">
                                     <span className="font-medium text-gray-700">Powrót: </span>
@@ -373,24 +388,6 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                                     )}
                                   </div>
                                 </div>
-                              </div>
-
-                              {/* Grupy */}
-                              <div className="flex flex-wrap gap-1 pt-0.5">
-                                {trip.groups.map((g) => {
-                                  const colors = getGroupColor(g.name);
-                                  return (
-                                    <span
-                                      key={g.id}
-                                      className={cn(
-                                        'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border',
-                                        colors.bg, colors.text, colors.border
-                                      )}
-                                    >
-                                      {g.name}
-                                    </span>
-                                  );
-                                })}
                               </div>
 
                               {/* Link do szczegółów */}
@@ -422,6 +419,119 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
         </div>
       </div>
 
+      {/* Modal mobilny - szczegóły wyjazdu */}
+      {selectedTrip && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setSelectedTrip(null)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm shadow-xl max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 p-4 border-b border-gray-100">
+              <div className="flex items-start gap-2 min-w-0">
+                <div className="flex gap-1 mt-0.5 flex-shrink-0">
+                  {selectedTrip.groups.map((g) => (
+                    <span key={g.id} className={cn('w-2.5 h-2.5 rounded-full mt-0.5', getGroupColor(g.name).dot)} />
+                  ))}
+                </div>
+                <h3 className="font-semibold text-gray-900 text-base leading-snug">{selectedTrip.title}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedTrip(null)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 flex-shrink-0 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3">
+              {/* Opis */}
+              {selectedTrip.description && (
+                <p className="text-sm text-gray-500 leading-relaxed">{stripHtml(selectedTrip.description)}</p>
+              )}
+
+              {/* Wyjazd */}
+              <div className="flex items-start gap-3 bg-green-50 rounded-xl p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 flex-shrink-0">
+                  <ArrowUpRight className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-sm">
+                  <p className="font-semibold text-gray-900">Wyjazd</p>
+                  <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.departure_datetime), 'd MMMM yyyy', { locale: pl })}</p>
+                  <p className="text-gray-600">{format(new Date(selectedTrip.departure_datetime), 'HH:mm', { locale: pl })}</p>
+                  {selectedTrip.departure_location && (
+                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      {selectedTrip.departure_location}
+                    </p>
+                  )}
+                  {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (
+                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      Przystanek: {format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {selectedTrip.departure_stop2_location}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Powrót */}
+              <div className="flex items-start gap-3 bg-red-50 rounded-xl p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 flex-shrink-0">
+                  <ArrowDownLeft className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-sm">
+                  <p className="font-semibold text-gray-900">Powrót</p>
+                  <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.return_datetime), 'd MMMM yyyy', { locale: pl })}</p>
+                  <p className="text-gray-600">{format(new Date(selectedTrip.return_datetime), 'HH:mm', { locale: pl })}</p>
+                  {selectedTrip.return_location && (
+                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      {selectedTrip.return_location}
+                    </p>
+                  )}
+                  {selectedTrip.return_stop2_datetime && selectedTrip.return_stop2_location && (
+                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      Przystanek: {format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {selectedTrip.return_stop2_location}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Grupy */}
+              <div className="flex flex-wrap gap-1.5">
+                {selectedTrip.groups.map((g) => {
+                  const colors = getGroupColor(g.name);
+                  return (
+                    <span
+                      key={g.id}
+                      className={cn(
+                        'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border',
+                        colors.bg, colors.text, colors.border
+                      )}
+                    >
+                      {g.name}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Przycisk szczegóły */}
+              <Link
+                href={`/parent/trips/${selectedTrip.id}`}
+                onClick={() => setSelectedTrip(null)}
+                className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors"
+              >
+                Szczegóły wyjazdu
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
