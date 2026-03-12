@@ -469,10 +469,13 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                     </p>
                   )}
                   {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (
-                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      Przystanek: {format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {selectedTrip.departure_stop2_location}
-                    </p>
+                    <div className="flex items-start gap-1 text-gray-500 mt-1 border-t border-green-100 pt-1">
+                      <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-600">{format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</p>
+                        <p>{selectedTrip.departure_stop2_location}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -493,10 +496,13 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                     </p>
                   )}
                   {selectedTrip.return_stop2_datetime && selectedTrip.return_stop2_location && (
-                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      Przystanek: {format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {selectedTrip.return_stop2_location}
-                    </p>
+                    <div className="flex items-start gap-1 text-gray-500 mt-1 border-t border-red-100 pt-1">
+                      <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-600">{format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl })}</p>
+                        <p>{selectedTrip.return_stop2_location}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

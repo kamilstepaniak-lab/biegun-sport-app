@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
 import { getTrip } from '@/lib/actions/trips';
-import { getMyChildren } from '@/lib/actions/participants';
+import { getMyChildren, getChildParticipationStatuses } from '@/lib/actions/participants';
 import { PaymentInfoCard } from './payment-info-card';
 
 interface TripDetailPageProps {
@@ -31,6 +31,11 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   const tripGroupIds = trip.groups?.map(g => g.id) || [];
   const eligibleChildren = children.filter(child =>
     child.group && tripGroupIds.includes(child.group.id)
+  );
+
+  const participationStatuses = await getChildParticipationStatuses(
+    id,
+    eligibleChildren.map(c => c.id)
   );
 
   return (
@@ -188,10 +193,8 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                   Harmonogram płatności za wyjazd
                 </CardDescription>
               </CardHeader>
-              <CardContent className="overflow-x-auto px-0 pb-0">
-                <div className="px-6 pb-6">
-                  <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
-                </div>
+              <CardContent>
+                <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
               </CardContent>
             </Card>
           )}
@@ -264,15 +267,24 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {eligibleChildren.map((child) => (
-                    <div key={child.id} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
-                        <p className="font-medium">{child.first_name} {child.last_name}</p>
-                        <p className="text-sm text-muted-foreground">{child.group?.name}</p>
+                  {eligibleChildren.map((child) => {
+                    const status = participationStatuses[child.id];
+                    return (
+                      <div key={child.id} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div>
+                          <p className="font-medium">{child.first_name} {child.last_name}</p>
+                          <p className="text-sm text-muted-foreground">{child.group?.name}</p>
+                        </div>
+                        {status === 'confirmed' ? (
+                          <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">Jedzie ✓</Badge>
+                        ) : status === 'not_going' ? (
+                          <Badge variant="destructive">Nie jedzie</Badge>
+                        ) : (
+                          <Badge variant="outline">Może jechać</Badge>
+                        )}
                       </div>
-                      <Badge variant="outline">Może jechać</Badge>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

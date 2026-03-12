@@ -260,34 +260,35 @@ export function CalendarView({ trips }: CalendarViewProps) {
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
                       {/* Tytuł */}
                       <td className="px-5 py-3.5 align-top">
-                        <div className="flex items-start gap-2">
-                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
-                            {trip.groups.map((g) => (
-                              <span key={g.id} className={cn('w-2 h-2 rounded-full', getGroupColor(g.name).dot)} title={g.name} />
-                            ))}
-                          </div>
-                          <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
-                        </div>
+                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
                       </td>
 
                       {/* Wyjazd */}
                       <td className="px-4 py-3.5 align-top">
-                        <div className="flex flex-col gap-0.5 text-sm">
-                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
+                        <div className="flex flex-col gap-1 text-sm">
+                          <div>
+                            <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
+                            <span className="block text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
+                          </div>
                           {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                            <div className="border-t border-gray-100 pt-1">
+                              <span className="block text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                            </div>
                           )}
                         </div>
                       </td>
 
                       {/* Powrót */}
                       <td className="px-4 py-3.5 align-top">
-                        <div className="flex flex-col gap-0.5 text-sm">
-                          <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
+                        <div className="flex flex-col gap-1 text-sm">
+                          <div>
+                            <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
+                            <span className="block text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
+                          </div>
                           {trip.return_stop2_datetime && trip.return_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                            <div className="border-t border-gray-100 pt-1">
+                              <span className="block text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                            </div>
                           )}
                         </div>
                       </td>

@@ -229,7 +229,7 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
           title="Kopiuj tytuł przelewu"
         >
           <span className="text-xs text-gray-400 truncate max-w-[190px] group-hover:text-blue-500 transition-colors">{transferTitle}</span>
-          <Copy className="h-3 w-3 text-gray-300 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
+          <Copy className="h-3 w-3 text-blue-500 flex-shrink-0" />
         </button>
       </td>
 
