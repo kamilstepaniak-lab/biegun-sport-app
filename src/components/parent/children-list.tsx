@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { differenceInYears, format } from 'date-fns';
@@ -79,7 +79,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [expandedMessage, setExpandedMessage] = useState<AppMessage | null>(null);
 
-  useEffect(() => {
+  // useLayoutEffect — runs before browser paints, eliminates CLS from 'all' → child switch
+  useLayoutEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
