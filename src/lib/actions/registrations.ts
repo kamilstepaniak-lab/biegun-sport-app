@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
 import { sendRegistrationConfirmationEmail, type TripEmailData, type PaymentLineItem } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
@@ -12,9 +13,7 @@ export async function registerParticipantToTrip(
   participantId: string,
   registrationType: 'parent' | 'admin' = 'parent'
 ) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
@@ -33,14 +32,7 @@ export async function registerParticipantToTrip(
     return { error: 'Nie znaleziono uczestnika' };
   }
 
-  // Sprawdź uprawnienia
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = role === 'admin';
 
   // Rodzic może zapisywać tylko swoje dzieci
   if (!isAdmin && participant.parent_id !== user.id) {
@@ -154,20 +146,12 @@ export async function registerParticipantToTrip(
 }
 
 export async function cancelRegistration(registrationId: string) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -242,9 +226,7 @@ export async function getTripRegistrations(tripId: string): Promise<Registration
 }
 
 export async function getMyRegistrations(): Promise<RegistrationWithDetails[]> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) return [];
 
   // Pobierz dzieci użytkownika

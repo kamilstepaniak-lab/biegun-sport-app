@@ -2,14 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
 import type { Participant, ParticipantWithGroup, ParticipantFull, Group } from '@/types';
 import { logActivity } from './activity-logs';
 
 export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) return [];
 
   // Pobierz uczestników wraz z grupą — 1 zapytanie zamiast 1+2N
@@ -49,17 +48,8 @@ export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
 }
 
 export async function getParticipant(id: string): Promise<ParticipantWithGroup | null> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) return null;
-
-  // Sprawdź rolę użytkownika
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
 
   // Pobierz uczestnika razem z grupą — 1 zapytanie zamiast 3 (JOIN)
   let query = supabase
@@ -73,7 +63,7 @@ export async function getParticipant(id: string): Promise<ParticipantWithGroup |
     .eq('id', id);
 
   // Rodzic może widzieć tylko swoje dzieci
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     query = query.eq('parent_id', user.id);
   }
 
@@ -103,16 +93,8 @@ export async function getParticipant(id: string): Promise<ParticipantWithGroup |
 }
 
 export async function getParticipantFull(id: string): Promise<ParticipantFull | null> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
 
   let query = supabase
     .from('participants')
@@ -126,7 +108,7 @@ export async function getParticipantFull(id: string): Promise<ParticipantFull | 
     `)
     .eq('id', id);
 
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     query = query.eq('parent_id', user.id);
   }
 
@@ -161,9 +143,7 @@ export async function getParticipantFull(id: string): Promise<ParticipantFull | 
 }
 
 export async function createParticipant(formData: ParticipantInput & { custom_fields?: Record<string, string> }) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
@@ -243,19 +223,10 @@ export async function updateParticipant(
     parent_notes_additional?: string;
   }
 ) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
-
-  // Sprawdź rolę
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
 
   // Walidacja
   const result = participantSchema.safeParse(formData);
@@ -283,7 +254,7 @@ export async function updateParticipant(
     .eq('id', id);
 
   // Rodzic może edytować tylko swoje dzieci
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     updateQuery = updateQuery.eq('parent_id', user.id);
   }
 
@@ -341,7 +312,7 @@ export async function updateParticipant(
   }
 
   // Activity log — loguj tylko gdy wywołuje rodzic (nie admin)
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     const { data: participantData } = await supabase
       .from('participants')
       .select('first_name, last_name')
@@ -364,19 +335,10 @@ export async function updateParticipant(
 }
 
 export async function deleteParticipant(id: string) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
-
-  // Sprawdź rolę
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
 
   // Pobierz informacje o zapisach na wyjazdy przed usunięciem
   const { data: registrations } = await supabase
@@ -395,7 +357,7 @@ export async function deleteParticipant(id: string) {
     .eq('id', id);
 
   // Rodzic może usuwać tylko swoje dzieci
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     deleteQuery = deleteQuery.eq('parent_id', user.id);
   }
 
@@ -441,19 +403,8 @@ export async function getParticipantRegistrations(id: string) {
 // Admin functions
 
 export async function getAllParticipants(): Promise<ParticipantFull[]> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  // Sprawdź czy admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return [];
+  const { supabase, user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const { data: participants, error } = await supabase
     .from('participants')
@@ -497,21 +448,12 @@ export async function getAllParticipants(): Promise<ParticipantFull[]> {
 }
 
 export async function assignParticipantToGroup(participantId: string, groupId: string | null) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  // Sprawdź czy admin
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -543,19 +485,10 @@ export async function assignParticipantToGroup(participantId: string, groupId: s
 }
 
 export async function updateParticipantNote(participantId: string, notes: string) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
-
-  // Sprawdź czy admin lub rodzic tego dziecka
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
 
   const { data: participant } = await supabase
     .from('participants')
@@ -563,7 +496,7 @@ export async function updateParticipantNote(participantId: string, notes: string
     .eq('id', participantId)
     .single();
 
-  if (profile?.role !== 'admin' && participant?.parent_id !== user.id) {
+  if (role !== 'admin' && participant?.parent_id !== user.id) {
     return { error: 'Brak uprawnień' };
   }
 

@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 interface TripsImportBufferRow {
   id: number;
@@ -115,22 +116,14 @@ export async function getTripsImportBuffer() {
 
 // Główna funkcja importu
 export async function runTripsImport(): Promise<ImportResult> {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  // Sprawdź uprawnienia
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, imported: 0, errors: 0, errorDetails: ['Nie jesteś zalogowany'] };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { success: false, imported: 0, errors: 0, errorDetails: ['Brak uprawnień administratora'] };
   }
 
@@ -363,21 +356,14 @@ export async function runTripsImport(): Promise<ImportResult> {
 
 // Resetowanie statusu importu (do ponownego importu)
 export async function resetTripsImportStatus(recordIds?: number[]) {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 

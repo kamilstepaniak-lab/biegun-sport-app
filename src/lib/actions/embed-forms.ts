@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 interface EmbedFormSettings {
   title?: string;
@@ -14,17 +15,9 @@ interface EmbedFormSettings {
 }
 
 async function checkAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  return profile?.role === 'admin' ? user : null;
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return null;
+  return user;
 }
 
 export async function createEmbedForm(tripId: string, settings: EmbedFormSettings) {

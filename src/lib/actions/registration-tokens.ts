@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import { logActivity } from './activity-logs';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -26,20 +27,11 @@ export async function createRegistrationToken(params: CreateTokenParams): Promis
   url?: string;
   error?: string;
 }> {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const admin = createAdminClient();
 
-  // Sprawdź uprawnienia admina
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Brak autoryzacji' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, id')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + (params.expiresInDays || 7));
@@ -56,7 +48,7 @@ export async function createRegistrationToken(params: CreateTokenParams): Promis
       trip_id: params.tripId,
       action: params.action,
       expires_at: expiresAt.toISOString(),
-      sent_by: profile.id,
+      sent_by: user.id,
     })
     .select('token')
     .single();
@@ -75,10 +67,9 @@ export async function createRegistrationToken(params: CreateTokenParams): Promis
  * Pobiera wszystkie tokeny dla danego wyjazdu (panel admina).
  */
 export async function getTripTokens(tripId: string) {
-  const supabase = await createClient();
+  const { user } = await getAuthUser();
   const admin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Brak autoryzacji' };
 
   const { data, error } = await admin
@@ -96,18 +87,11 @@ export async function getTripTokens(tripId: string) {
  * Unieważnia token.
  */
 export async function revokeToken(tokenId: string) {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const admin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Brak autoryzacji' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   await admin
     .from('registration_tokens')
@@ -125,18 +109,11 @@ export async function createTokensForTripParents(tripId: string): Promise<{
   tokens?: Array<{ email: string; participantName: string; url: string }>;
   error?: string;
 }> {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const admin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Brak autoryzacji' };
-
-  const { data: adminProfile } = await supabase
-    .from('profiles')
-    .select('role, id')
-    .eq('id', user.id)
-    .single();
-  if (adminProfile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   // Pobierz wszystkich uczestników w wyjeździe z danymi rodziców
   const { data: registrations, error } = await admin
@@ -180,7 +157,7 @@ export async function createTokensForTripParents(tripId: string): Promise<{
         trip_id: tripId,
         action: 'confirm',
         expires_at: expiresAt.toISOString(),
-        sent_by: adminProfile.id,
+        sent_by: user.id,
       })
       .select('token')
       .single();

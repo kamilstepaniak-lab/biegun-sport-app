@@ -1,6 +1,7 @@
 'use server';
 
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 export type ActivityActionType =
   | 'contract_accepted'
@@ -35,13 +36,8 @@ export async function logActivity(
 // ─── Read functions ───────────────────────────────────────────────────────────
 
 export async function getActivityLogs(days = 30) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return [];
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const since = new Date();
   since.setDate(since.getDate() - days);
@@ -58,13 +54,8 @@ export async function getActivityLogs(days = 30) {
 }
 
 export async function getEmailLogs(days = 30) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return [];
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const since = new Date();
   since.setDate(since.getDate() - days);

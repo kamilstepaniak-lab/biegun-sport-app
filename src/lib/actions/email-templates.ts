@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 export interface EmailTemplate {
   id: string;
@@ -13,15 +14,8 @@ export interface EmailTemplate {
 }
 
 export async function getEmailTemplates(): Promise<EmailTemplate[]> {
-  const supabase = await createClient();
-
-  // Tylko admin może przeglądać szablony emaili
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return [];
+  const { supabase, user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const { data, error } = await supabase
     .from('email_templates')
@@ -37,15 +31,8 @@ export async function getEmailTemplates(): Promise<EmailTemplate[]> {
 }
 
 export async function getEmailTemplate(id: string): Promise<EmailTemplate | null> {
-  const supabase = await createClient();
-
-  // Tylko admin może pobrać szablon
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return null;
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return null;
 
   const supabaseAdmin = createAdminClient();
   const { data, error } = await supabaseAdmin
@@ -63,14 +50,9 @@ export async function updateEmailTemplate(
   subject: string,
   body_html: string,
 ) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   const { error } = await supabase
     .from('email_templates')
