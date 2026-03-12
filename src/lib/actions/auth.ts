@@ -130,6 +130,61 @@ export const getUser = cache(async () => {
   return user;
 });
 
+export async function signInWithGoogle(next?: string) {
+  const supabase = await createClient();
+
+  const callbackUrl = new URL(
+    '/api/auth/callback',
+    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  );
+  if (next) callbackUrl.searchParams.set('next', next);
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: callbackUrl.toString(),
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  });
+
+  if (error) {
+    return { error: 'Nie udało się zalogować przez Google' };
+  }
+
+  if (data.url) {
+    redirect(data.url);
+  }
+}
+
+export async function sendMagicLink(email: string) {
+  const supabase = await createClient();
+
+  const callbackUrl = new URL(
+    '/api/auth/callback',
+    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  );
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: callbackUrl.toString(),
+      shouldCreateUser: false, // nie tworzy nowych kont - tylko istniejące
+    },
+  });
+
+  if (error) {
+    if (error.message.includes('not found') || error.message.includes('User not found')) {
+      return { error: 'Nie znaleziono konta z tym adresem email' };
+    }
+    return { error: 'Nie udało się wysłać linku. Spróbuj ponownie.' };
+  }
+
+  return { success: true };
+}
+
 export async function resetPassword(email: string) {
   const supabase = await createClient();
 

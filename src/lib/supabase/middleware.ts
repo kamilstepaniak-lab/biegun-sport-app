@@ -41,7 +41,12 @@ export async function updateSession(request: NextRequest) {
 
   // Publiczne ścieżki - dostępne bez logowania
   const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/'];
-  const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith('/api/auth'));
+  const isPublicPath =
+    publicPaths.some(path => pathname === path) ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/public') ||
+    pathname.startsWith('/confirm/') ||
+    pathname.startsWith('/embed/');
 
   // Jeśli użytkownik nie jest zalogowany i próbuje uzyskać dostęp do chronionej ścieżki
   if (!user && !isPublicPath) {
