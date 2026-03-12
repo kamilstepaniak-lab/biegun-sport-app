@@ -12,8 +12,7 @@ import {
   Clock,
   FileText,
   Backpack,
-  Info,
-  MessageCircle,
+  Info as InfoIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -102,234 +101,166 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
         </Button>
       </PageHeader>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Main content — identyczny układ jak u rodzica */}
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                Informacje o wyjeździe
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-6 sm:grid-cols-2">
-                {/* WYJAZD */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-blue-700">Wyjazd</h4>
-
-                  <div className="space-y-2 pl-3 border-l-2 border-blue-300">
-                    <p className="text-xs font-medium text-blue-600">Przystanek 1 (główny)</p>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span>{format(new Date(trip.departure_datetime), 'd MMMM yyyy', { locale: pl })}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span>{format(new Date(trip.departure_datetime), 'HH:mm')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span>{trip.departure_location}</span>
-                    </div>
-                  </div>
-
-                  {trip.departure_stop2_location && (
-                    <div className="space-y-2 pl-3 border-l-2 border-blue-200">
-                      <p className="text-xs font-medium text-blue-500">Przystanek 2</p>
-                      {trip.departure_stop2_datetime && (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy', { locale: pl })}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{format(new Date(trip.departure_stop2_datetime), 'HH:mm')}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{trip.departure_stop2_location}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* POWRÓT */}
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-blue-700">Powrót</h4>
-
-                  <div className="space-y-2 pl-3 border-l-2 border-blue-300">
-                    <p className="text-xs font-medium text-blue-600">Przystanek 1 (główny)</p>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span>{format(new Date(trip.return_datetime), 'd MMMM yyyy', { locale: pl })}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span>{format(new Date(trip.return_datetime), 'HH:mm')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      <span>{trip.return_location}</span>
-                    </div>
-                  </div>
-
-                  {trip.return_stop2_location && (
-                    <div className="space-y-2 pl-3 border-l-2 border-blue-200">
-                      <p className="text-xs font-medium text-blue-500">Przystanek 2</p>
-                      {trip.return_stop2_datetime && (
-                        <>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy', { locale: pl })}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{format(new Date(trip.return_stop2_datetime), 'HH:mm')}</span>
-                          </div>
-                        </>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{trip.return_stop2_location}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h4 className="font-medium text-sm text-muted-foreground mb-2">Grupy</h4>
-                <div className="flex flex-wrap gap-2">
-                  {trip.groups?.map((group) => (
-                    <Badge key={group.id} variant="secondary">
-                      {group.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {trip.description && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Opis</h4>
-                    <p className="text-sm">{trip.description}</p>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {trip.payment_templates && trip.payment_templates.length > 0 && (
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Cennik wyjazdu
-                </CardTitle>
-                <CardDescription>
-                  Harmonogram płatności za wyjazd
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="overflow-x-auto px-0 pb-0">
-                <div className="px-6 pb-6">
-                  <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {trip.packing_list && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Backpack className="h-5 w-5" />
-                  Co zabrać
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {trip.packing_list
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {trip.additional_info && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5" />
-                  Dodatkowe informacje
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {trip.additional_info
-                    .split('\n')
-                    .filter(Boolean)
-                    .map((line, i) => (
-                      <p key={i} className="text-sm text-muted-foreground">{line}</p>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar — admin-specific */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Status
-                <Badge variant={trip.status === 'published' ? 'default' : 'secondary'}>
-                  {statusLabels[trip.status]}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Podstawowe informacje */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Informacje
+              <Badge variant={trip.status === 'published' ? 'default' : 'secondary'}>
+                {statusLabels[trip.status]}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {trip.declaration_deadline && (
-              <CardContent>
-                <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-                  <span className="text-amber-700 text-sm font-medium">⏰ Deklaracja do:</span>
-                  <span className="text-amber-800 text-sm font-semibold">
-                    {format(new Date(trip.declaration_deadline), "d MMMM yyyy", { locale: pl })}
-                  </span>
-                </div>
-              </CardContent>
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <span className="text-amber-700 text-sm font-medium">⏰ Deklaracja do:</span>
+                <span className="text-amber-800 text-sm font-semibold">
+                  {format(new Date(trip.declaration_deadline), "d MMMM yyyy", { locale: pl })}
+                </span>
+              </div>
             )}
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Konta bankowe</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-xs text-muted-foreground">Konto PLN:</p>
+                <p className="font-medium">Wyjazd</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(trip.departure_datetime), "d MMMM yyyy, HH:mm", { locale: pl })}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium">Miejsce wyjazdu</p>
+                <p className="text-sm text-muted-foreground">{trip.departure_location}</p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium">Powrót</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(trip.return_datetime), "d MMMM yyyy, HH:mm", { locale: pl })}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium">Miejsce powrotu</p>
+                <p className="text-sm text-muted-foreground">{trip.return_location}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Grupy */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Grupy</CardTitle>
+            <CardDescription>
+              Wyjazd dostępny dla następujących grup
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {trip.groups.map((group) => (
+                <Badge key={group.id} variant="outline" className="text-sm">
+                  {group.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Płatności */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Szablony płatności ({trip.payment_templates.length})</CardTitle>
+            <CardDescription>
+              Konfiguracja rat i karnetów dla tego wyjazdu
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
+
+            <Separator className="my-4" />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-sm text-muted-foreground">Konto PLN:</p>
                 <p className="font-mono text-sm">{trip.bank_account_pln}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Konto EUR:</p>
+                <p className="text-sm text-muted-foreground">Konto EUR:</p>
                 <p className="font-mono text-sm">{trip.bank_account_eur}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Co zabrać */}
+        {trip.packing_list && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Backpack className="h-5 w-5" />
+                Co zabrać
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-1">
+                {trip.packing_list
+                  .split('\n')
+                  .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                  .filter(Boolean)
+                  .map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Dodatkowe informacje */}
+        {trip.additional_info && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <InfoIcon className="h-5 w-5" />
+                Dodatkowe informacje
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {trip.additional_info
+                  .split('\n')
+                  .filter(Boolean)
+                  .map((line, i) => (
+                    <p key={i} className="text-sm text-muted-foreground">{line}</p>
+                  ))}
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Wzór umowy — pełna szerokość */}
+        <div className="md:col-span-2">
+          <ContractTemplateEditor
+            tripId={id}
+            initialTemplate={contractTemplate}
+            defaultTemplateText={CONTRACT_TEMPLATE}
+          />
         </div>
       </div>
     </div>
