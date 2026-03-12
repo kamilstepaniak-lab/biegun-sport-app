@@ -221,6 +221,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
+            <p className="text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
             <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
