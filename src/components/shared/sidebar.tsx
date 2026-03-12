@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -105,13 +106,13 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
     collapsed ? (
       <div className="flex justify-center">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden flex-shrink-0">
-          <img src="/logo.png" alt="BSAPP" className="h-10 w-10 object-cover rounded-xl" />
+          <Image src="/logo.png" alt="BSAPP" width={40} height={40} className="object-cover rounded-xl" priority />
         </div>
       </div>
     ) : (
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden flex-shrink-0">
-          <img src="/logo.png" alt="BSAPP" className="h-10 w-10 object-cover rounded-xl" />
+          <Image src="/logo.png" alt="BSAPP" width={40} height={40} className="object-cover rounded-xl" priority />
         </div>
         <div className="min-w-0">
           <h2 className="text-base font-bold text-gray-900 truncate">{title}</h2>

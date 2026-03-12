@@ -1,7 +1,7 @@
 'use server';
 
 import { cache } from 'react';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, unstable_cache } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '@/lib/validations/auth';
@@ -218,20 +218,30 @@ export async function updatePassword(newPassword: string) {
   return { success: true };
 }
 
+// Pobiera profil z cache'a — odświeżany przy revalidatePath lub po 60s
+const fetchProfileById = unstable_cache(
+  async (userId: string) => {
+    const supabase = await createClient();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    return profile ? JSON.parse(JSON.stringify(profile)) : null;
+  },
+  ['user-profile'],
+  { revalidate: 60, tags: ['user-profile'] }
+);
+
 // cache() deduplikuje wywołania w ramach jednego renderowania —
 // layout + page + komponenty mogą wołać getUserProfile() bez dodatkowych zapytań
+// getSession() czyta JWT z ciasteczka lokalnie (~0ms) — middleware już zweryfikował sesję
 export const getUserProfile = cache(async () => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user;
 
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  // Serializuj do plain objects dla Client Components
-  return profile ? JSON.parse(JSON.stringify(profile)) : null;
+  return fetchProfileById(user.id);
 });
