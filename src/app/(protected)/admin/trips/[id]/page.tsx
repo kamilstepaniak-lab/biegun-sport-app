@@ -103,9 +103,8 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
       </PageHeader>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Main area */}
+        {/* Main content — identyczny układ jak u rodzica */}
         <div className="md:col-span-2 space-y-6">
-          {/* Informacje o wyjeździe */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -119,7 +118,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-blue-700">Wyjazd</h4>
 
-                  {/* Przystanek 1 */}
                   <div className="space-y-2 pl-3 border-l-2 border-blue-300">
                     <p className="text-xs font-medium text-blue-600">Przystanek 1 (główny)</p>
                     <div className="flex items-center gap-2">
@@ -136,7 +134,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                     </div>
                   </div>
 
-                  {/* Przystanek 2 */}
                   {trip.departure_stop2_location && (
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       <p className="text-xs font-medium text-blue-500">Przystanek 2</p>
@@ -164,7 +161,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-blue-700">Powrót</h4>
 
-                  {/* Przystanek 1 */}
                   <div className="space-y-2 pl-3 border-l-2 border-blue-300">
                     <p className="text-xs font-medium text-blue-600">Przystanek 1 (główny)</p>
                     <div className="flex items-center gap-2">
@@ -181,7 +177,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                     </div>
                   </div>
 
-                  {/* Przystanek 2 */}
                   {trip.return_stop2_location && (
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       <p className="text-xs font-medium text-blue-500">Przystanek 2</p>
@@ -211,7 +206,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-2">Grupy</h4>
                 <div className="flex flex-wrap gap-2">
-                  {trip.groups.map((group) => (
+                  {trip.groups?.map((group) => (
                     <Badge key={group.id} variant="secondary">
                       {group.name}
                     </Badge>
@@ -231,7 +226,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </CardContent>
           </Card>
 
-          {/* Cennik */}
           {trip.payment_templates && trip.payment_templates.length > 0 && (
             <Card className="overflow-hidden">
               <CardHeader>
@@ -251,7 +245,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </Card>
           )}
 
-          {/* Co zabrać */}
           {trip.packing_list && (
             <Card>
               <CardHeader>
@@ -277,7 +270,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </Card>
           )}
 
-          {/* Dodatkowe informacje */}
           {trip.additional_info && (
             <Card>
               <CardHeader>
@@ -300,9 +292,8 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar — admin-specific */}
         <div className="space-y-6">
-          {/* Status */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -324,10 +315,9 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             )}
           </Card>
 
-          {/* Konta bankowe */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Konta bankowe</CardTitle>
+              <CardTitle className="text-base">Konta bankowe</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
@@ -340,13 +330,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               </div>
             </CardContent>
           </Card>
-
-          {/* Wzór umowy */}
-          <ContractTemplateEditor
-            tripId={id}
-            initialTemplate={contractTemplate}
-            defaultTemplateText={CONTRACT_TEMPLATE}
-          />
         </div>
       </div>
     </div>
