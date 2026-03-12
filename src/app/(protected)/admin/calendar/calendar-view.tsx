@@ -221,6 +221,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
+            <p className="text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
             <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
@@ -260,14 +261,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
                       {/* Tytuł */}
                       <td className="px-5 py-3.5 align-top">
-                        <div className="flex items-start gap-2">
-                          <div className="flex gap-1 flex-shrink-0 mt-0.5">
-                            {trip.groups.map((g) => (
-                              <span key={g.id} className={cn('w-2 h-2 rounded-full', getGroupColor(g.name).dot)} title={g.name} />
-                            ))}
-                          </div>
-                          <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
-                        </div>
+                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
                       </td>
 
                       {/* Wyjazd */}
