@@ -168,7 +168,7 @@ export function LoginForm() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isGoogleLoading || isLoading}
-          className="w-full h-11 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 mb-4"
+          className="w-full h-11 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 mb-3"
         >
           {isGoogleLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -181,6 +181,17 @@ export function LoginForm() {
             </svg>
           )}
           Zaloguj się przez Google
+        </button>
+
+        {/* Magic Link */}
+        <button
+          type="button"
+          onClick={() => setView('magic-link')}
+          disabled={isGoogleLoading || isLoading}
+          className="w-full h-11 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 mb-4"
+        >
+          <Mail className="h-4 w-4 text-gray-500" />
+          Zaloguj się przez email (bez hasła)
         </button>
 
         <div className="flex items-center gap-3 mb-4">
@@ -249,15 +260,7 @@ export function LoginForm() {
               )}
             />
 
-            <div className="flex justify-between items-center">
-              <button
-                type="button"
-                onClick={() => setView('magic-link')}
-                className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
-              >
-                <Mail className="h-3.5 w-3.5" />
-                Zaloguj przez email (bez hasła)
-              </button>
+            <div className="flex justify-end">
               <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
                 Zapomniałem hasła
               </Link>
@@ -276,13 +279,7 @@ export function LoginForm() {
         </Form>
       </div>
 
-      <div className="px-8 py-4 bg-gray-50/50 border-t border-gray-100 text-center space-y-1">
-        <p className="text-sm text-gray-500">
-          Logujesz się pierwszy raz?{' '}
-          <Link href="/forgot-password" className="text-gray-900 hover:underline font-medium">
-            Ustaw hasło
-          </Link>
-        </p>
+      <div className="px-8 py-4 bg-gray-50/50 border-t border-gray-100 text-center">
         <p className="text-sm text-gray-500">
           Nie masz konta?{' '}
           <Link href="/register" className="text-gray-900 hover:underline font-medium">
