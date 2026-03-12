@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useOptimistic, useTransition } from 'react';
+import { useState, useMemo, useRef, useOptimistic, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -8,7 +8,6 @@ import {
   Check,
   Edit2,
   Save,
-  CreditCard,
   CircleDollarSign,
   CheckCircle2,
   MessageSquare,
@@ -16,6 +15,8 @@ import {
   ListFilter,
   MapPin,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -38,7 +39,7 @@ interface PaymentsListProps {
 }
 
 type StatusFilter = 'all' | 'pending' | 'overdue' | 'paid';
-type PageLimit = 25 | 50 | 100 | 200 | 'all';
+type PageSize = 25 | 50 | 100;
 
 interface FlatRow {
   payment: PaymentWithDetails;
@@ -53,7 +54,8 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [tripFilter, setTripFilter] = useState('all');
-  const [pageLimit, setPageLimit] = useState<PageLimit>(50);
+  const [pageSize, setPageSize] = useState<PageSize>(50);
+  const [currentPage, setCurrentPage] = useState(1);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
@@ -161,10 +163,17 @@ export function PaymentsList({ payments }: PaymentsListProps) {
     [filteredRows]
   );
 
+  const totalPages = Math.max(1, Math.ceil(allRows.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+
   const displayedRows = useMemo(() => {
-    if (pageLimit === 'all') return allRows;
-    return allRows.slice(0, pageLimit);
-  }, [allRows, pageLimit]);
+    return allRows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  }, [allRows, safePage, pageSize]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, tripFilter, statusFilter, dateFrom, dateTo, pageSize]);
 
   // Handlers
   async function handleStatusChange(paymentId: string, newStatus: 'pending' | 'paid') {
@@ -509,16 +518,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       <div className="space-y-6">
 
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-              <CreditCard className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-xs text-gray-500">Wszystkie płatności</p>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
               <CircleDollarSign className="h-5 w-5 text-red-600" />
@@ -537,7 +537,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
@@ -622,25 +622,25 @@ export function PaymentsList({ payments }: PaymentsListProps) {
               )}
             </div>
 
-            {/* Limit */}
+            {/* Rozmiar strony */}
             <div className="flex items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
               <ListFilter className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-xs text-gray-400">Pokaż</span>
+              <span className="text-xs text-gray-400">Na stronie</span>
               <div className="flex gap-1">
-                {([25, 50, 100, 200, 'all'] as PageLimit[]).map((limit) => (
+                {([25, 50, 100] as PageSize[]).map((size) => (
                   <button
-                    key={limit}
-                    onClick={() => setPageLimit(limit)}
-                    className={cn('px-2 py-0.5 rounded-lg text-xs font-medium transition-all', pageLimit === limit ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100')}
+                    key={size}
+                    onClick={() => setPageSize(size)}
+                    className={cn('px-2 py-0.5 rounded-lg text-xs font-medium transition-all', pageSize === size ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100')}
                   >
-                    {limit === 'all' ? 'Wszystkie' : limit}
+                    {size}
                   </button>
                 ))}
               </div>
             </div>
 
             <span className="text-xs text-gray-400">
-              {displayedRows.length} z {allRows.length}
+              {allRows.length} łącznie
             </span>
           </div>
         </div>
@@ -715,6 +715,55 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             </tbody>
           </table>
         </div>
+
+        {/* Paginacja */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs text-gray-400">
+              Strona {safePage} z {totalPages}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 7) {
+                  page = i + 1;
+                } else if (safePage <= 4) {
+                  page = i + 1;
+                } else if (safePage >= totalPages - 3) {
+                  page = totalPages - 6 + i;
+                } else {
+                  page = safePage - 3 + i;
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-all',
+                      safePage === page ? 'bg-blue-600 text-white' : 'bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-50'
+                    )}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </TooltipProvider>

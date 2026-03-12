@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
-import type { Participant, ParticipantWithGroup, ParticipantFull, Group } from '@/types';
+import type { Participant, ParticipantWithGroup, ParticipantFull, Group, ParticipationStatus } from '@/types';
 import { logActivity } from './activity-logs';
 
 export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
@@ -46,6 +46,25 @@ export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
 
   // Serializuj do plain objects dla Client Components
   return JSON.parse(JSON.stringify(result));
+}
+
+export async function getChildParticipationStatuses(
+  tripId: string,
+  participantIds: string[]
+): Promise<Record<string, ParticipationStatus>> {
+  if (participantIds.length === 0) return {};
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('trip_registrations')
+    .select('participant_id, participation_status')
+    .eq('trip_id', tripId)
+    .in('participant_id', participantIds)
+    .neq('status', 'cancelled');
+
+  if (error || !data) return {};
+
+  return Object.fromEntries(data.map((r) => [r.participant_id, r.participation_status as ParticipationStatus]));
 }
 
 export async function getParticipant(id: string): Promise<ParticipantWithGroup | null> {
