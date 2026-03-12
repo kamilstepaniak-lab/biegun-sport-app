@@ -13,6 +13,8 @@ import {
   MapPin,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -327,12 +329,15 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
 }
 
 // ── Główny komponent ──────────────────────────────────────────────────────
+const PAGE_SIZE = 50;
+
 type FilterType = 'all' | 'pending' | 'overdue' | 'paid';
 
 export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts }: ParentPaymentsListProps) {
   const [filter, setFilter] = useState<FilterType>('all');
   const [tripFilter, setTripFilter] = useState<string>('all');
   const [archivedOpen, setArchivedOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const allPayments = useMemo(() => {
     const byDue = (a: ParentPayment, b: ParentPayment) => {
@@ -398,6 +403,10 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
     }
   }, [filter, activeFiltered, pendingOnly, overduePayments, allPaid]);
 
+  const totalPages = Math.max(1, Math.ceil(displayPayments.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginatedPayments = displayPayments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   const filterTabs: { id: FilterType; label: string; count: number; activeClass: string }[] = [
     { id: 'all',     label: 'Wszystkie',   count: activeFiltered.length,  activeClass: 'bg-gray-900 text-white' },
     { id: 'pending', label: 'Do zapłaty',  count: pendingOnly.length,     activeClass: 'bg-amber-500 text-white' },
@@ -418,7 +427,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400 pointer-events-none" />
               <select
                 value={tripFilter}
-                onChange={(e) => setTripFilter(e.target.value)}
+                onChange={(e) => { setTripFilter(e.target.value); setPage(1); }}
                 className={cn(
                   'appearance-none pl-8 pr-8 py-2 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
                   tripFilter !== 'all'
@@ -438,7 +447,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setFilter(tab.id)}
+              onClick={() => { setFilter(tab.id); setPage(1); }}
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                 filter === tab.id ? tab.activeClass : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
@@ -467,7 +476,35 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
             }
           />
         ) : (
-          <PaymentsTable payments={displayPayments} />
+          <>
+            <PaymentsTable payments={paginatedPayments} />
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 bg-white rounded-2xl ring-1 ring-gray-100">
+                <p className="text-sm text-gray-500">
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, displayPayments.length)} z {displayPayments.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage(p => p - 1)}
+                    disabled={safePage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm font-medium text-gray-700 min-w-[60px] text-center">
+                    {safePage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={safePage === totalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Archiwum */}

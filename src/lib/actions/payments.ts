@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
@@ -48,35 +48,42 @@ export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDet
   return payments.filter((p: PaymentWithDetails) => p.registration) as PaymentWithDetails[];
 }
 
+const _fetchAllPaymentsDB = unstable_cache(
+  async (): Promise<PaymentWithDetails[]> => {
+    const supabaseAdmin = createAdminClient();
+    const { data: payments, error } = await supabaseAdmin
+      .from('payments')
+      .select(`
+        *,
+        registration:trip_registrations (
+          *,
+          participant:participants (
+            *,
+            parent:profiles!parent_id (*)
+          ),
+          trip:trips (*)
+        ),
+        transactions:payment_transactions (*)
+      `)
+      .neq('status', 'cancelled')
+      .order('due_date', { ascending: true });
+
+    if (error) {
+      console.error('Payments fetch error:', error);
+      return [];
+    }
+
+    return payments.filter((p: PaymentWithDetails) => p.registration) as PaymentWithDetails[];
+  },
+  ['admin-payments'],
+  { revalidate: 30, tags: ['payments'] },
+);
+
 export async function getAllPayments(): Promise<PaymentWithDetails[]> {
   const supabase = await createClient();
-
   const { user } = await requireAdmin(supabase);
   if (!user) return [];
-
-  const { data: payments, error } = await supabase
-    .from('payments')
-    .select(`
-      *,
-      registration:trip_registrations (
-        *,
-        participant:participants (
-          *,
-          parent:profiles!parent_id (*)
-        ),
-        trip:trips (*)
-      ),
-      transactions:payment_transactions (*)
-    `)
-    .neq('status', 'cancelled')
-    .order('due_date', { ascending: true });
-
-  if (error) {
-    console.error('Payments fetch error:', error);
-    return [];
-  }
-
-  return payments.filter((p: PaymentWithDetails) => p.registration) as PaymentWithDetails[];
+  return _fetchAllPaymentsDB();
 }
 
 export async function addPaymentTransaction(
@@ -159,6 +166,7 @@ export async function addPaymentTransaction(
     note: notes,
   }).catch(console.error);
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');
@@ -268,6 +276,7 @@ export async function markPaymentAsPaid(
     // e-mail nie blokuje aktualizacji
   }
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');
@@ -313,6 +322,7 @@ export async function applyDiscount(paymentId: string, discountPercentage: numbe
     return { error: 'Nie udało się zastosować zniżki' };
   }
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');
@@ -413,6 +423,7 @@ export async function createPaymentsForRegistration(registrationId: string, trip
 // Typ dla płatności rodzica
 export interface ParentPayment {
   id: string;
+  participant_id: string;
   trip_title: string;
   trip_id: string;
   trip_departure_date: string;
@@ -437,134 +448,135 @@ export interface BankAccountInfo {
   bank_account_eur: string | null;
 }
 
+// ── Cache DB fetch (bez cookies — tylko admin client) ─────────────────────
+const _fetchParentPaymentsDB = unstable_cache(
+  async (userId: string): Promise<ParentPayment[]> => {
+    const supabaseAdmin = createAdminClient();
+
+    const { data: children } = await supabaseAdmin
+      .from('participants')
+      .select('id, first_name, last_name')
+      .eq('parent_id', userId);
+
+    if (!children || children.length === 0) return [];
+
+    const childIds = children.map((c: { id: string }) => c.id);
+    const childDataMap = new Map(children.map((c: { id: string; first_name: string; last_name: string }) => [
+      c.id,
+      { name: `${c.first_name} ${c.last_name}`, first_name: c.first_name, last_name: c.last_name },
+    ]));
+
+    const { data: registrations } = await supabaseAdmin
+      .from('trip_registrations')
+      .select(`
+        id,
+        participant_id,
+        trip_id,
+        participation_status,
+        trip:trips (
+          id,
+          title,
+          departure_datetime,
+          return_datetime
+        )
+      `)
+      .in('participant_id', childIds)
+      .eq('status', 'active')
+      .eq('participation_status', 'confirmed');
+
+    if (!registrations || registrations.length === 0) return [];
+
+    const registrationIds = registrations.map((r: { id: string }) => r.id);
+
+    const { data: payments, error } = await supabaseAdmin
+      .from('payments')
+      .select('*')
+      .in('registration_id', registrationIds)
+      .neq('status', 'cancelled')
+      .order('due_date', { ascending: true });
+
+    if (error || !payments) {
+      console.error('Payments fetch error:', error);
+      return [];
+    }
+
+    const templateIds = [...new Set(
+      payments
+        .map((p: { template_id: string | null }) => p.template_id)
+        .filter((id: string | null): id is string => !!id),
+    )];
+
+    const templateMethodMap = new Map<string, 'cash' | 'transfer' | 'both' | null>();
+    if (templateIds.length > 0) {
+      const { data: templates } = await supabaseAdmin
+        .from('trip_payment_templates')
+        .select('id, payment_method')
+        .in('id', templateIds);
+      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null }) => {
+        templateMethodMap.set(t.id, t.payment_method);
+      });
+    }
+
+    const result: ParentPayment[] = payments.map((payment: {
+      id: string;
+      registration_id: string;
+      template_id: string | null;
+      payment_type: string;
+      installment_number: number | null;
+      amount: number;
+      original_amount: number;
+      currency: string;
+      due_date: string | null;
+      status: string;
+      amount_paid: number;
+    }) => {
+      const registration = registrations.find((r: { id: string }) => r.id === payment.registration_id) as {
+        id: string;
+        participant_id: string;
+        trip_id: string;
+        trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
+      } | undefined;
+      const childData = childDataMap.get(registration?.participant_id || '');
+      return {
+        id: payment.id,
+        participant_id: registration?.participant_id || '',
+        trip_title: registration?.trip?.title || 'Nieznany wyjazd',
+        trip_id: registration?.trip_id || '',
+        trip_departure_date: registration?.trip?.departure_datetime || '',
+        trip_return_date: registration?.trip?.return_datetime || null,
+        child_name: childData?.name || 'Nieznane dziecko',
+        child_first_name: childData?.first_name || '',
+        child_last_name: childData?.last_name || '',
+        payment_type: payment.payment_type,
+        installment_number: payment.installment_number,
+        amount: payment.amount,
+        original_amount: payment.original_amount,
+        currency: payment.currency,
+        due_date: payment.due_date,
+        status: payment.status,
+        amount_paid: payment.amount_paid || 0,
+        payment_method: payment.template_id ? (templateMethodMap.get(payment.template_id) || null) : null,
+      };
+    });
+
+    return JSON.parse(JSON.stringify(result));
+  },
+  ['parent-payments'],
+  { revalidate: 60, tags: ['payments'] },
+);
+
 export async function getPaymentsForParent(selectedChildId?: string): Promise<ParentPayment[]> {
   const supabase = await createClient();
-
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user ?? null;
   if (!user) return [];
 
-  // Pobierz dzieci — jeśli wybrano konkretne, pobierz tylko je
-  let childrenQuery = supabase
-    .from('participants')
-    .select('id, first_name, last_name')
-    .eq('parent_id', user.id);
+  const allPayments = await _fetchParentPaymentsDB(user.id);
 
   if (selectedChildId) {
-    childrenQuery = childrenQuery.eq('id', selectedChildId);
+    return allPayments.filter((p) => p.participant_id === selectedChildId);
   }
-
-  const { data: children } = await childrenQuery;
-
-  if (!children || children.length === 0) return [];
-
-  const childIds = children.map((c: { id: string }) => c.id);
-  const childDataMap = new Map(children.map((c: { id: string; first_name: string; last_name: string }) => [
-    c.id,
-    { name: `${c.first_name} ${c.last_name}`, first_name: c.first_name, last_name: c.last_name }
-  ]));
-
-  // Pobierz rejestracje gdzie dziecko jedzie (confirmed)
-  const { data: registrations, error: regError } = await supabase
-    .from('trip_registrations')
-    .select(`
-      id,
-      participant_id,
-      trip_id,
-      participation_status,
-      trip:trips (
-        id,
-        title,
-        departure_datetime,
-        return_datetime
-      )
-    `)
-    .in('participant_id', childIds)
-    .eq('status', 'active')
-    .eq('participation_status', 'confirmed');
-
-  if (!registrations || registrations.length === 0) return [];
-
-  const registrationIds = registrations.map((r: { id: string }) => r.id);
-
-  // Pobierz płatności używając admin client (omija RLS)
-  const supabaseAdmin = createAdminClient();
-  const { data: payments, error } = await supabaseAdmin
-    .from('payments')
-    .select('*')
-    .in('registration_id', registrationIds)
-    .neq('status', 'cancelled')
-    .order('due_date', { ascending: true });
-
-  if (error || !payments) {
-    console.error('Payments fetch error:', error);
-    return [];
-  }
-
-  // Pobierz szablony płatności żeby mieć payment_method
-  const templateIds = [...new Set(
-    payments
-      .map((p: { template_id: string | null }) => p.template_id)
-      .filter((id: string | null): id is string => !!id)
-  )];
-
-  const templateMethodMap = new Map<string, 'cash' | 'transfer' | 'both' | null>();
-  if (templateIds.length > 0) {
-    const { data: templates } = await supabaseAdmin
-      .from('trip_payment_templates')
-      .select('id, payment_method')
-      .in('id', templateIds);
-
-    (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null }) => {
-      templateMethodMap.set(t.id, t.payment_method);
-    });
-  }
-
-  // Złóż dane
-  const result: ParentPayment[] = payments.map((payment: {
-    id: string;
-    registration_id: string;
-    template_id: string | null;
-    payment_type: string;
-    installment_number: number | null;
-    amount: number;
-    original_amount: number;
-    currency: string;
-    due_date: string | null;
-    status: string;
-    amount_paid: number;
-  }) => {
-    const registration = registrations.find((r: { id: string }) => r.id === payment.registration_id) as {
-      id: string;
-      participant_id: string;
-      trip_id: string;
-      trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
-    } | undefined;
-
-    const childData = childDataMap.get(registration?.participant_id || '');
-
-    return {
-      id: payment.id,
-      trip_title: registration?.trip?.title || 'Nieznany wyjazd',
-      trip_id: registration?.trip_id || '',
-      trip_departure_date: registration?.trip?.departure_datetime || '',
-      trip_return_date: registration?.trip?.return_datetime || null,
-      child_name: childData?.name || 'Nieznane dziecko',
-      child_first_name: childData?.first_name || '',
-      child_last_name: childData?.last_name || '',
-      payment_type: payment.payment_type,
-      installment_number: payment.installment_number,
-      amount: payment.amount,
-      original_amount: payment.original_amount,
-      currency: payment.currency,
-      due_date: payment.due_date,
-      status: payment.status,
-      amount_paid: payment.amount_paid || 0,
-      payment_method: payment.template_id ? (templateMethodMap.get(payment.template_id) || null) : null,
-    };
-  });
-
-  return JSON.parse(JSON.stringify(result));
+  return allPayments;
 }
 
 // Pobierz dane do przelewu (konta bankowe) — z wyjazdu na który dziecko jest zapisane
@@ -711,6 +723,7 @@ export async function updatePaymentStatus(
     })().catch(console.error);
   }
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');
@@ -741,6 +754,7 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
     return { error: `Nie udało się zaktualizować kwoty: ${error.message}` };
   }
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   revalidatePath('/parent/payments');
@@ -764,6 +778,7 @@ export async function updatePaymentNote(paymentId: string, note: string) {
     return { error: `Nie udało się zapisać notatki: ${error.message}` };
   }
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
 
@@ -808,6 +823,7 @@ export async function bulkUpdatePaymentStatus(
     }
   }
 
+  revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   return { success: true };
