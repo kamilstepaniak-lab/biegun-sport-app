@@ -246,19 +246,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               <CardContent className="overflow-x-auto px-0 pb-0">
                 <div className="px-6 pb-6">
                   <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
-
-                  <Separator className="my-4" />
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Konto PLN:</p>
-                      <p className="font-mono text-sm">{trip.bank_account_pln}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Konto EUR:</p>
-                      <p className="font-mono text-sm">{trip.bank_account_eur}</p>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -335,6 +322,23 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                 </div>
               </CardContent>
             )}
+          </Card>
+
+          {/* Konta bankowe */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Konta bankowe</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Konto PLN:</p>
+                <p className="font-mono text-sm">{trip.bank_account_pln}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Konto EUR:</p>
+                <p className="font-mono text-sm">{trip.bank_account_eur}</p>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Wzór umowy */}
