@@ -381,6 +381,7 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                                   </Link>
                                 </div>
                               </div>
+                            </div>
                           </HoverCardContent>
                         </HoverCard>
                       );
