@@ -81,11 +81,11 @@ function getTemplateLabel(template: { payment_type: string; installment_number?:
   return template.payment_type;
 }
 
-function getMethodLabel(method: string | null | undefined) {
-  if (method === 'transfer') return 'Przelew';
-  if (method === 'cash') return 'Gotówka';
-  if (method === 'both') return 'Przelew/Gotówka';
-  return '-';
+function getMethodLabel(method: string | null | undefined): { label: string; className: string } {
+  if (method === 'transfer') return { label: 'Przelew', className: 'bg-blue-100 text-blue-700' };
+  if (method === 'cash') return { label: 'Gotówka', className: 'bg-amber-100 text-amber-700' };
+  if (method === 'both') return { label: 'Przelew/Gotówka', className: 'bg-violet-100 text-violet-700' };
+  return { label: '-', className: 'bg-gray-100 text-gray-600' };
 }
 
 function copyToClipboard(text: string, label: string) {
@@ -435,7 +435,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                       <tbody className="divide-y divide-gray-50">
                         {trip.payment_templates.map((template) => {
                           const label = getTemplateLabel(template);
-                          const methodLabel = getMethodLabel(template.payment_method);
+                          const method = getMethodLabel(template.payment_method);
 
                           return (
                             <tr key={template.id} className="hover:bg-gray-50/50">
@@ -446,8 +446,8 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                                   : '-'}
                               </td>
                               <td className="px-4 py-2.5 whitespace-nowrap">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600">
-                                  {methodLabel}
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>
+                                  {method.label}
                                 </span>
                               </td>
                               <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">

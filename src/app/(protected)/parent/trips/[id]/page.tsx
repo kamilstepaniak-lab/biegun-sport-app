@@ -192,7 +192,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                   .filter(Boolean)
                   .map((item, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                       {item}
                     </li>
                   ))}
@@ -211,14 +211,18 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <ul className="space-y-1">
                 {trip.additional_info
                   .split('\n')
+                  .map((line) => line.replace(/^[-•*]\s*/, '').trim())
                   .filter(Boolean)
                   .map((line, i) => (
-                    <p key={i} className="text-sm text-muted-foreground">{line}</p>
+                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                      {line}
+                    </li>
                   ))}
-              </div>
+              </ul>
             </CardContent>
           </Card>
         )}

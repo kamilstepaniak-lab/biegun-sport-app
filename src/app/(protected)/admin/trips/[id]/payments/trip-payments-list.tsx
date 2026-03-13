@@ -38,10 +38,10 @@ const paymentTypeLabel = (type: string, installmentNumber: number | null) => {
   return type;
 };
 
-const methodLabel = (method: string | null) => {
-  if (method === 'cash') return 'Gotówka';
-  if (method === 'transfer') return 'Przelew';
-  return '—';
+const methodBadge = (method: string | null) => {
+  if (method === 'cash') return { label: 'Gotówka', className: 'bg-amber-100 text-amber-700' };
+  if (method === 'transfer') return { label: 'Przelew', className: 'bg-blue-100 text-blue-700' };
+  return { label: '—', className: 'text-gray-400' };
 };
 
 function exportToCSV(payments: PaymentWithDetails[], tripTitle: string) {
@@ -73,7 +73,7 @@ function exportToCSV(payments: PaymentWithDetails[], tripTitle: string) {
     const amountRemaining = (p.amount - (p.amount_paid ?? 0)).toFixed(2);
     const status = statusLabels[p.status] ?? p.status;
     const dueDate = p.due_date ? format(new Date(p.due_date), 'dd.MM.yyyy') : '—';
-    const method = methodLabel(p.payment_method_used ?? null);
+    const method = methodBadge(p.payment_method_used ?? null).label;
     const paidAt = p.paid_at ? format(new Date(p.paid_at), 'dd.MM.yyyy') : '—';
     const notes = p.admin_notes ?? '—';
 
@@ -261,8 +261,8 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                         <td className="py-2.5 px-3 text-gray-600 text-xs">
                           {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : '—'}
                         </td>
-                        <td className="py-2.5 px-3 text-gray-600 text-xs">
-                          {methodLabel(p.payment_method_used ?? null)}
+                        <td className="py-2.5 px-3 text-xs">
+                          {(() => { const m = methodBadge(p.payment_method_used ?? null); return m.label === '—' ? <span className="text-gray-400">—</span> : <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md font-medium ${m.className}`}>{m.label}</span>; })()}
                         </td>
                         <td className="py-2.5 px-3 text-gray-600 text-xs">
                           {p.paid_at ? format(new Date(p.paid_at), 'd MMM yyyy', { locale: pl }) : '—'}

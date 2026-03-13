@@ -269,11 +269,13 @@ export function CalendarView({ trips }: CalendarViewProps) {
                         <div className="flex flex-col gap-1 text-sm">
                           <div>
                             <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                            <span className="block text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
+                            <span className="block text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}</span>
+                            {trip.departure_location && <span className="block text-xs text-gray-400 whitespace-nowrap">{trip.departure_location}</span>}
                           </div>
                           {trip.departure_stop2_datetime && trip.departure_stop2_location && (
                             <div className="border-t border-gray-100 pt-1">
-                              <span className="block text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                              <span className="block text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                              <span className="block text-xs text-gray-400 whitespace-nowrap">{trip.departure_stop2_location}</span>
                             </div>
                           )}
                         </div>
@@ -284,11 +286,13 @@ export function CalendarView({ trips }: CalendarViewProps) {
                         <div className="flex flex-col gap-1 text-sm">
                           <div>
                             <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                            <span className="block text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
+                            <span className="block text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}</span>
+                            {trip.return_location && <span className="block text-xs text-gray-400 whitespace-nowrap">{trip.return_location}</span>}
                           </div>
                           {trip.return_stop2_datetime && trip.return_stop2_location && (
                             <div className="border-t border-gray-100 pt-1">
-                              <span className="block text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                              <span className="block text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                              <span className="block text-xs text-gray-400 whitespace-nowrap">{trip.return_stop2_location}</span>
                             </div>
                           )}
                         </div>
