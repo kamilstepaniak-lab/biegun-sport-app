@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Calendar, Clock, MapPin, Users, Backpack, Info } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Backpack, Info as InfoIcon } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
 import { getTrip } from '@/lib/actions/trips';
@@ -52,8 +52,45 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
         description={[trip.location, trip.description].filter(Boolean).join(' · ') || 'Szczegóły wyjazdu narciarskiego'}
       />
 
+      {/* Twoje dzieci — sekcja specyficzna dla rodzica */}
+      {eligibleChildren.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Twoje dzieci
+            </CardTitle>
+            <CardDescription>Dzieci mogące uczestniczyć w tym wyjeździe</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {eligibleChildren.map((child) => {
+                const status = participationStatuses[child.id];
+                return (
+                  <div key={child.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div>
+                      <p className="font-medium">{child.first_name} {child.last_name}</p>
+                      <p className="text-sm text-muted-foreground">{child.group?.name}</p>
+                    </div>
+                    {status === 'confirmed' ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">Jedzie ✓</Badge>
+                    ) : status === 'not_going' ? (
+                      <Badge variant="destructive">Nie jedzie</Badge>
+                    ) : (
+                      <Badge variant="outline">Może jechać</Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bloki skopiowane 1:1 z widoku admina */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Podstawowe informacje */}
+
+        {/* Informacje — identyczne jak admin (bez statusu i daty deklaracji) */}
         <Card>
           <CardHeader>
             <CardTitle>Informacje</CardTitle>
@@ -99,15 +136,13 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </CardContent>
         </Card>
 
-        {/* Grupy */}
+        {/* Grupy — identyczne jak admin */}
         <Card>
           <CardHeader>
             <CardTitle>Grupy</CardTitle>
-            <CardDescription>
-              Wyjazd dostępny dla następujących grup
-            </CardDescription>
+            <CardDescription>Wyjazd dostępny dla następujących grup</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="flex flex-wrap gap-2">
               {trip.groups?.map((group) => (
                 <Badge key={group.id} variant="outline" className="text-sm">
@@ -115,46 +150,15 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                 </Badge>
               ))}
             </div>
-
-            {eligibleChildren.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Twoje dzieci</p>
-                  </div>
-                  <div className="space-y-2">
-                    {eligibleChildren.map((child) => {
-                      const status = participationStatuses[child.id];
-                      return (
-                        <div key={child.id} className="flex items-center justify-between">
-                          <p className="text-sm">{child.first_name} {child.last_name}</p>
-                          {status === 'confirmed' ? (
-                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs">Jedzie ✓</Badge>
-                          ) : status === 'not_going' ? (
-                            <Badge variant="destructive" className="text-xs">Nie jedzie</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">Może jechać</Badge>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
           </CardContent>
         </Card>
 
-        {/* Cennik */}
+        {/* Cennik — jak admin (bez kont bankowych, są w PaymentInfoCard) */}
         {trip.payment_templates && trip.payment_templates.length > 0 && (
-          <Card className="md:col-span-2 overflow-hidden">
+          <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Cennik wyjazdu</CardTitle>
-              <CardDescription>
-                Harmonogram płatności za wyjazd
-              </CardDescription>
+              <CardTitle>Cennik wyjazdu ({trip.payment_templates.length})</CardTitle>
+              <CardDescription>Harmonogram płatności za wyjazd</CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto px-0 pb-0">
               <div className="px-6 pb-6">
@@ -164,17 +168,14 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </Card>
         )}
 
-        {/* Dane do przelewu */}
+        {/* Dane do przelewu — specyficzne dla rodzica */}
         {eligibleChildren.length > 0 && (
           <div className="md:col-span-2">
-            <PaymentInfoCard
-              trip={trip}
-              children={eligibleChildren}
-            />
+            <PaymentInfoCard trip={trip} children={eligibleChildren} />
           </div>
         )}
 
-        {/* Co zabrać */}
+        {/* Co zabrać — identyczne jak admin */}
         {trip.packing_list && (
           <Card className="md:col-span-2">
             <CardHeader>
@@ -200,12 +201,12 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </Card>
         )}
 
-        {/* Dodatkowe informacje */}
+        {/* Dodatkowe informacje — identyczne jak admin */}
         {trip.additional_info && (
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5" />
+                <InfoIcon className="h-5 w-5" />
                 Dodatkowe informacje
               </CardTitle>
             </CardHeader>
@@ -221,6 +222,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </CardContent>
           </Card>
         )}
+
       </div>
     </div>
   );
