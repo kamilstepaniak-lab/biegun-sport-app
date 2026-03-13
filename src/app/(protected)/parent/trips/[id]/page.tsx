@@ -168,13 +168,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </Card>
         )}
 
-        {/* Dane do przelewu — specyficzne dla rodzica */}
-        {eligibleChildren.length > 0 && (
-          <div className="md:col-span-2">
-            <PaymentInfoCard trip={trip} children={eligibleChildren} />
-          </div>
-        )}
-
         {/* Co zabrać — identyczne jak admin */}
         {trip.packing_list && (
           <Card className="md:col-span-2">
@@ -225,6 +218,13 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               </ul>
             </CardContent>
           </Card>
+        )}
+
+        {/* Dane do przelewu — specyficzne dla rodzica */}
+        {eligibleChildren.length > 0 && (
+          <div className="md:col-span-2">
+            <PaymentInfoCard trip={trip} children={eligibleChildren} />
+          </div>
         )}
 
       </div>

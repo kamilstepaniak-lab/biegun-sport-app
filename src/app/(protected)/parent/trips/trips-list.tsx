@@ -10,6 +10,7 @@ import {
   X,
   HelpCircle,
   Clock,
+  Calendar,
   Banknote,
   Copy,
   Receipt,
@@ -566,6 +567,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                     <span className={cn(
                                       'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
                                       template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
+                                        : template.payment_method === 'both' ? 'bg-violet-100 text-violet-700'
                                         : 'bg-blue-100 text-blue-700'
                                     )}>
                                       {methodLabel}
