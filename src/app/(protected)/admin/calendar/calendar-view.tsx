@@ -402,14 +402,8 @@ export function CalendarView({ trips }: CalendarViewProps) {
                                 (dayType === 'middle' || dayType === 'end') && 'rounded-l-none ml-[-4px]'
                               )}
                             >
-                              {(dayType === 'start' || dayType === 'single') && (
-                                <span className="flex items-center gap-1">
-                                  {trip.groups.map((g) => (
-                                    <span
-                                      key={g.id}
-                                      className={cn('w-2 h-2 rounded-full flex-shrink-0', getGroupColor(g.name).dot)}
-                                    />
-                                  ))}
+                              {dayType !== 'middle' && dayType !== 'end' && (
+                                <span className="flex items-center w-full min-w-0">
                                   <span className="truncate">{trip.title}</span>
                                 </span>
                               )}
@@ -448,30 +442,8 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
   return (
     <div className="space-y-3">
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          {trip.groups.map((g) => (
-            <div
-              key={g.id}
-              className={cn('w-3 h-3 rounded-full', getGroupColor(g.name).dot)}
-            />
-          ))}
+        <div className="flex items-center mb-1">
           <h4 className="font-semibold text-gray-900">{trip.title}</h4>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {trip.groups.map((g) => {
-            const colors = getGroupColor(g.name);
-            return (
-              <span
-                key={g.id}
-                className={cn(
-                  'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border',
-                  colors.bg, colors.text, colors.border
-                )}
-              >
-                {g.name}
-              </span>
-            );
-          })}
         </div>
       </div>
 
