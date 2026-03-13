@@ -476,45 +476,43 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
       </div>
 
       <div className="space-y-2 text-sm">
+        {/* Wyjazd */}
         <div className="flex items-start gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-green-600 flex-shrink-0">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-green-600 flex-shrink-0 mt-0.5">
             <ArrowUpRight className="h-3 w-3 text-white" />
           </div>
-          <div>
+          <div className="space-y-0.5">
             <div className="font-medium text-gray-900">Wyjazd</div>
-            <div className="text-gray-500">{format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}</div>
-            {trip.departure_location && (
-              <div className="text-gray-400 flex items-center gap-1 text-xs">
-                <MapPin className="h-3 w-3" />
-                {trip.departure_location}
-              </div>
-            )}
+            <div className="text-gray-500">{format(departureDate, 'd MMMM yyyy', { locale: pl })}</div>
+            <div className="flex items-center gap-1 text-gray-600 text-xs">
+              <span className="font-medium">{format(departureDate, 'HH:mm', { locale: pl })}</span>
+              {trip.departure_location && <span className="text-gray-400">· {trip.departure_location}</span>}
+            </div>
             {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-              <div className="text-gray-400 flex items-center gap-1 text-xs mt-0.5">
-                <MapPin className="h-3 w-3" />
-                Przystanek: {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
+              <div className="flex items-center gap-1 text-gray-600 text-xs">
+                <span className="font-medium">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                <span className="text-gray-400">· {trip.departure_stop2_location}</span>
               </div>
             )}
           </div>
         </div>
 
+        {/* Powrót */}
         <div className="flex items-start gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-500 flex-shrink-0">
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-500 flex-shrink-0 mt-0.5">
             <ArrowDownLeft className="h-3 w-3 text-white" />
           </div>
-          <div>
+          <div className="space-y-0.5">
             <div className="font-medium text-gray-900">Powrót</div>
-            <div className="text-gray-500">{format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}</div>
-            {trip.return_location && (
-              <div className="text-gray-400 flex items-center gap-1 text-xs">
-                <MapPin className="h-3 w-3" />
-                {trip.return_location}
-              </div>
-            )}
+            <div className="text-gray-500">{format(returnDate, 'd MMMM yyyy', { locale: pl })}</div>
+            <div className="flex items-center gap-1 text-gray-600 text-xs">
+              <span className="font-medium">{format(returnDate, 'HH:mm', { locale: pl })}</span>
+              {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
+            </div>
             {trip.return_stop2_datetime && trip.return_stop2_location && (
-              <div className="text-gray-400 flex items-center gap-1 text-xs mt-0.5">
-                <MapPin className="h-3 w-3" />
-                Przystanek: {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
+              <div className="flex items-center gap-1 text-gray-600 text-xs">
+                <span className="font-medium">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                <span className="text-gray-400">· {trip.return_stop2_location}</span>
               </div>
             )}
           </div>

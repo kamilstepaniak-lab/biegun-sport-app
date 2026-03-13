@@ -340,53 +340,48 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
 
                               {/* Opis */}
                               {trip.description && (
-                                <p className="text-xs text-gray-500 leading-relaxed">{stripHtml(trip.description)}</p>
+                                <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{stripHtml(trip.description)}</p>
                               )}
 
-                              {/* Daty i miejsca */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-start gap-1.5 text-xs">
-                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-green-600 flex-shrink-0 mt-0.5">
-                                    <ArrowUpRight className="h-3 w-3 text-white" />
-                                  </div>
-                                  <div className="text-gray-600">
-                                    <span className="font-medium text-gray-700">Wyjazd: </span>
-                                    {format(new Date(trip.departure_datetime), 'd MMM yyyy, HH:mm', { locale: pl })}
-                                    {trip.departure_location && (
-                                      <div className="flex items-center gap-1 text-gray-400 mt-0.5">
-                                        <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                                        {trip.departure_location}
-                                      </div>
-                                    )}
-                                    {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                                      <div className="flex items-center gap-1 text-gray-400 mt-0.5">
-                                        <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                                        Przystanek: {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}
-                                      </div>
-                                    )}
-                                  </div>
+                              {/* Wyjazd */}
+                              <div className="flex items-start gap-1.5 text-xs">
+                                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-green-600 flex-shrink-0 mt-0.5">
+                                  <ArrowUpRight className="h-3 w-3 text-white" />
                                 </div>
+                                <div className="space-y-0.5">
+                                  <span className="font-medium text-gray-700">Wyjazd</span>
+                                  <div className="text-gray-500">{format(new Date(trip.departure_datetime), 'd MMM yyyy', { locale: pl })}</div>
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <span className="font-medium">{format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}</span>
+                                    {trip.departure_location && <span className="text-gray-400">· {trip.departure_location}</span>}
+                                  </div>
+                                  {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+                                    <div className="flex items-center gap-1 text-gray-600">
+                                      <span className="font-medium">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                                      <span className="text-gray-400">· {trip.departure_stop2_location}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
 
-                                <div className="flex items-start gap-1.5 text-xs">
-                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-red-500 flex-shrink-0 mt-0.5">
-                                    <ArrowDownLeft className="h-3 w-3 text-white" />
+                              {/* Powrót */}
+                              <div className="flex items-start gap-1.5 text-xs">
+                                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-red-500 flex-shrink-0 mt-0.5">
+                                  <ArrowDownLeft className="h-3 w-3 text-white" />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <span className="font-medium text-gray-700">Powrót</span>
+                                  <div className="text-gray-500">{format(new Date(trip.return_datetime), 'd MMM yyyy', { locale: pl })}</div>
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <span className="font-medium">{format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}</span>
+                                    {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
                                   </div>
-                                  <div className="text-gray-600">
-                                    <span className="font-medium text-gray-700">Powrót: </span>
-                                    {format(new Date(trip.return_datetime), 'd MMM yyyy, HH:mm', { locale: pl })}
-                                    {trip.return_location && (
-                                      <div className="flex items-center gap-1 text-gray-400 mt-0.5">
-                                        <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                                        {trip.return_location}
-                                      </div>
-                                    )}
-                                    {trip.return_stop2_datetime && trip.return_stop2_location && (
-                                      <div className="flex items-center gap-1 text-gray-400 mt-0.5">
-                                        <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-                                        Przystanek: {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}
-                                      </div>
-                                    )}
-                                  </div>
+                                  {trip.return_stop2_datetime && trip.return_stop2_location && (
+                                    <div className="flex items-center gap-1 text-gray-600">
+                                      <span className="font-medium">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                                      <span className="text-gray-400">· {trip.return_stop2_location}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
 
@@ -458,23 +453,17 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 flex-shrink-0">
                   <ArrowUpRight className="h-4 w-4 text-white" />
                 </div>
-                <div className="text-sm">
+                <div className="text-sm space-y-0.5">
                   <p className="font-semibold text-gray-900">Wyjazd</p>
                   <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.departure_datetime), 'd MMMM yyyy', { locale: pl })}</p>
-                  <p className="text-gray-600">{format(new Date(selectedTrip.departure_datetime), 'HH:mm', { locale: pl })}</p>
-                  {selectedTrip.departure_location && (
-                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      {selectedTrip.departure_location}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-1.5 text-gray-600">
+                    <span className="font-medium">{format(new Date(selectedTrip.departure_datetime), 'HH:mm', { locale: pl })}</span>
+                    {selectedTrip.departure_location && <span className="text-gray-500">· {selectedTrip.departure_location}</span>}
+                  </div>
                   {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (
-                    <div className="flex items-start gap-1 text-gray-500 mt-1 border-t border-green-100 pt-1">
-                      <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-medium text-gray-600">{format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</p>
-                        <p>{selectedTrip.departure_stop2_location}</p>
-                      </div>
+                    <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-green-100">
+                      <span className="font-medium">{format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                      <span className="text-gray-500">· {selectedTrip.departure_stop2_location}</span>
                     </div>
                   )}
                 </div>
@@ -485,23 +474,17 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 flex-shrink-0">
                   <ArrowDownLeft className="h-4 w-4 text-white" />
                 </div>
-                <div className="text-sm">
+                <div className="text-sm space-y-0.5">
                   <p className="font-semibold text-gray-900">Powrót</p>
                   <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.return_datetime), 'd MMMM yyyy', { locale: pl })}</p>
-                  <p className="text-gray-600">{format(new Date(selectedTrip.return_datetime), 'HH:mm', { locale: pl })}</p>
-                  {selectedTrip.return_location && (
-                    <p className="flex items-center gap-1 text-gray-500 mt-0.5">
-                      <MapPin className="h-3 w-3 flex-shrink-0" />
-                      {selectedTrip.return_location}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-1.5 text-gray-600">
+                    <span className="font-medium">{format(new Date(selectedTrip.return_datetime), 'HH:mm', { locale: pl })}</span>
+                    {selectedTrip.return_location && <span className="text-gray-500">· {selectedTrip.return_location}</span>}
+                  </div>
                   {selectedTrip.return_stop2_datetime && selectedTrip.return_stop2_location && (
-                    <div className="flex items-start gap-1 text-gray-500 mt-1 border-t border-red-100 pt-1">
-                      <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-medium text-gray-600">{format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl })}</p>
-                        <p>{selectedTrip.return_stop2_location}</p>
-                      </div>
+                    <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-red-100">
+                      <span className="font-medium">{format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
+                      <span className="text-gray-500">· {selectedTrip.return_stop2_location}</span>
                     </div>
                   )}
                 </div>

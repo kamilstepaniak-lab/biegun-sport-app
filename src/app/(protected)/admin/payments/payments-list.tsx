@@ -307,7 +307,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       case 'partially_paid_overdue': return { label: 'Po term. (częśc.)', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' };
       case 'partially_paid': return { label: 'Częściowo', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
       case 'cancelled': return { label: 'Anulowane', cls: 'bg-gray-100 text-gray-400' };
-      default: return { label: 'Nieopłacone', cls: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200' };
+      default: return { label: 'Do zapłaty', cls: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200' };
     }
   }
 
@@ -322,7 +322,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
 
   const statusFilters: { key: StatusFilter; label: string }[] = [
     { key: 'all', label: 'Wszystkie' },
-    { key: 'pending', label: 'Nieopłacone' },
+    { key: 'pending', label: 'Do zapłaty' },
     { key: 'overdue', label: 'Po terminie' },
     { key: 'paid', label: 'Opłacone' },
   ];
@@ -579,7 +579,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
                 )}
               >
-                <option value="all">Wszystkie wyjazdy</option>
+                <option value="all">Sortuj wg. wyjazdu</option>
                 {availableTrips.map((t) => (
                   <option key={t.id} value={t.id}>{t.title}</option>
                 ))}

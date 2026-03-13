@@ -30,12 +30,12 @@ interface ParentPaymentsListProps {
 }
 
 const statusConfig: Record<string, { label: string; bgClass: string; icon: typeof Check }> = {
-  pending:                  { label: 'Do zapłaty', bgClass: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',       icon: Clock },
-  partially_paid:           { label: 'Częściowo',  bgClass: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',          icon: Clock },
-  partially_paid_overdue:   { label: 'Zaległość',  bgClass: 'bg-red-50 text-red-700 ring-1 ring-red-200',             icon: AlertCircle },
-  overdue:                  { label: 'Zaległość',  bgClass: 'bg-red-50 text-red-700 ring-1 ring-red-200',             icon: AlertCircle },
-  paid:                     { label: 'Opłacone',   bgClass: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: Check },
-  cancelled:                { label: 'Anulowane',  bgClass: 'bg-gray-100 text-gray-400',                              icon: Check },
+  pending: { label: 'Do zapłaty', bgClass: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200', icon: Clock },
+  partially_paid: { label: 'Częściowo', bgClass: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200', icon: Clock },
+  partially_paid_overdue: { label: 'Zaległość', bgClass: 'bg-red-50 text-red-700 ring-1 ring-red-200', icon: AlertCircle },
+  overdue: { label: 'Zaległość', bgClass: 'bg-red-50 text-red-700 ring-1 ring-red-200', icon: AlertCircle },
+  paid: { label: 'Opłacone', bgClass: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: Check },
+  cancelled: { label: 'Anulowane', bgClass: 'bg-gray-100 text-gray-400', icon: Check },
 };
 
 function copyToClipboard(text: string, label: string) {
@@ -213,8 +213,8 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
         payment.status === 'paid'
           ? 'bg-emerald-50/20 hover:bg-emerald-50/40'
           : isOverdue
-          ? 'bg-red-50/10 hover:bg-red-50/20'
-          : 'hover:bg-gray-50/60',
+            ? 'bg-red-50/10 hover:bg-red-50/20'
+            : 'hover:bg-gray-50/60',
       )}
     >
       {/* Dziecko */}
@@ -306,30 +306,30 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
       )}
       <p className="text-xs text-gray-400 px-4 pt-2 pb-0.5">Żeby zobaczyć całą tabelkę przesuń palcem w bok</p>
       <div className="overflow-x-auto">
-      <table className="w-full min-w-[560px]">
-        <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/60">
-            <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
-            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Wyjazd</th>
-            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Za co</th>
-            <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
-            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Status</th>
-            <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payments.map((p) => (
-            <PaymentRow key={p.id} payment={p} />
-          ))}
-        </tbody>
-      </table>
+        <table className="w-full min-w-[560px]">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/60">
+              <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
+              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Wyjazd</th>
+              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Za co</th>
+              <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
+              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Status</th>
+              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p) => (
+              <PaymentRow key={p.id} payment={p} />
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
 // ── Główny komponent ──────────────────────────────────────────────────────
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 type FilterType = 'all' | 'pending' | 'overdue' | 'paid';
 
@@ -398,8 +398,8 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
     switch (filter) {
       case 'pending': return pendingOnly;
       case 'overdue': return overduePayments;
-      case 'paid':    return allPaid;
-      default:        return activeFiltered;
+      case 'paid': return allPaid;
+      default: return activeFiltered;
     }
   }, [filter, activeFiltered, pendingOnly, overduePayments, allPaid]);
 
@@ -408,10 +408,10 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
   const paginatedPayments = displayPayments.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const filterTabs: { id: FilterType; label: string; count: number; activeClass: string }[] = [
-    { id: 'all',     label: 'Wszystkie',   count: activeFiltered.length,  activeClass: 'bg-gray-900 text-white' },
-    { id: 'pending', label: 'Do zapłaty',  count: pendingOnly.length,     activeClass: 'bg-amber-500 text-white' },
+    { id: 'all', label: 'Wszystkie', count: activeFiltered.length, activeClass: 'bg-gray-900 text-white' },
+    { id: 'pending', label: 'Do zapłaty', count: pendingOnly.length, activeClass: 'bg-amber-500 text-white' },
     { id: 'overdue', label: 'Po terminie', count: overduePayments.length, activeClass: 'bg-red-500 text-white' },
-    { id: 'paid',    label: 'Opłacone',    count: allPaid.length,         activeClass: 'bg-emerald-600 text-white' },
+    { id: 'paid', label: 'Opłacone', count: allPaid.length, activeClass: 'bg-emerald-600 text-white' },
   ];
 
   return (
@@ -424,15 +424,15 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
         <div className="flex flex-wrap items-center gap-2">
           {availableTrips.length > 1 && (
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400 pointer-events-none" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-400" />
               <select
                 value={tripFilter}
                 onChange={(e) => { setTripFilter(e.target.value); setPage(1); }}
                 className={cn(
-                  'appearance-none pl-8 pr-8 py-2 rounded-xl text-sm font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                  'h-10 appearance-none pl-9 pr-8 rounded-xl text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
                   tripFilter !== 'all'
-                    ? 'bg-blue-600 text-white border border-blue-700'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100',
+                    ? 'bg-blue-600 text-white ring-1 ring-blue-700'
+                    : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
                 )}
               >
                 <option value="all">Sortuj wg. wyjazdu</option>
@@ -440,7 +440,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
                   <option key={t.id} value={t.id}>{t.title}</option>
                 ))}
               </select>
-              <ChevronDown className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none', tripFilter !== 'all' ? 'text-blue-200' : 'text-blue-400')} />
+              <ChevronDown className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none', tripFilter !== 'all' ? 'text-blue-200' : 'text-gray-400')} />
             </div>
           )}
 
@@ -449,13 +449,15 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
               key={tab.id}
               onClick={() => { setFilter(tab.id); setPage(1); }}
               className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                filter === tab.id ? tab.activeClass : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+                filter === tab.id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
               )}
             >
               {tab.label}
               {tab.count > 0 && (
-                <span className={cn('rounded-md px-1.5 py-0.5 text-[10px] font-bold', filter === tab.id ? 'bg-white/20' : 'bg-gray-200 text-gray-500')}>
+                <span className={cn('ml-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold', filter === tab.id ? 'bg-white/20' : 'bg-gray-100 text-gray-500')}>
                   {tab.count}
                 </span>
               )}
@@ -470,34 +472,55 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
             title="Brak płatności"
             description={
               filter === 'pending' ? 'Nie masz płatności do zapłaty.' :
-              filter === 'overdue' ? 'Nie masz płatności po terminie.' :
-              filter === 'paid'    ? 'Nie masz jeszcze opłaconych płatności.' :
-              'Nie masz jeszcze żadnych płatności.'
+                filter === 'overdue' ? 'Nie masz płatności po terminie.' :
+                  filter === 'paid' ? 'Nie masz jeszcze opłaconych płatności.' :
+                    'Nie masz jeszcze żadnych płatności.'
             }
           />
         ) : (
           <>
             <PaymentsTable payments={paginatedPayments} />
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 bg-white rounded-2xl ring-1 ring-gray-100">
-                <p className="text-sm text-gray-500">
-                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, displayPayments.length)} z {displayPayments.length}
-                </p>
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-gray-400">
+                  Strona {safePage} z {totalPages}
+                </span>
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setPage(p => p - 1)}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={safePage === 1}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
-                  <span className="text-sm font-medium text-gray-700 min-w-[60px] text-center">
-                    {safePage} / {totalPages}
-                  </span>
+                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 7) {
+                      pageNum = i + 1;
+                    } else if (safePage <= 4) {
+                      pageNum = i + 1;
+                    } else if (safePage >= totalPages - 3) {
+                      pageNum = totalPages - 6 + i;
+                    } else {
+                      pageNum = safePage - 3 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setPage(pageNum)}
+                        className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-all',
+                          safePage === pageNum ? 'bg-blue-600 text-white' : 'bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-50'
+                        )}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                   <button
-                    onClick={() => setPage(p => p + 1)}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage === totalPages}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>

@@ -265,7 +265,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                 <div onClick={(e) => toggleSelectTrip(trip.id, e)}>
                   <Checkbox
                     checked={isSelected}
-                    onCheckedChange={() => {}}
+                    onCheckedChange={() => { }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -543,14 +543,18 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                     </div>
                     <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
                   </div>
-                  <div className="bg-white rounded-xl p-3 space-y-1.5">
+                  <ul className="bg-white rounded-xl p-3 space-y-1.5">
                     {trip.additional_info
                       .split('\n')
+                      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
                       .filter(Boolean)
-                      .map((line, i) => (
-                        <p key={i} className="text-sm text-gray-700">{line}</p>
+                      .map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          {item}
+                        </li>
                       ))}
-                  </div>
+                  </ul>
                 </div>
               )}
 

@@ -160,7 +160,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
         toast.success(
           status === 'confirmed' ? 'Zapisano wybór przystanku!'
             : status === 'not_going' ? 'Zapisano - dziecko nie jedzie'
-            : 'Wiadomość wysłana'
+              : 'Wiadomość wysłana'
         );
       }
     } catch {
@@ -270,8 +270,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                       ? currentStop === 'stop2'
                         ? `Jedzie – ${trip.departure_stop2_location || 'Przystanek 2'}`
                         : currentStop === 'own'
-                        ? 'Jedzie – Dojazd własny'
-                        : `Jedzie – ${trip.departure_location || 'Przystanek 1'}`
+                          ? 'Jedzie – Dojazd własny'
+                          : `Jedzie – ${trip.departure_location || 'Przystanek 1'}`
                       : status.label;
 
                     return (
@@ -301,8 +301,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 currentStatus === 'confirmed' && currentStop === 'stop1'
                                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                                   : confirmPanel?.key === key && confirmPanel?.type === 'stop1'
-                                  ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                                  : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
+                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                               )}
                             >
                               {trip.departure_location?.length > 18
@@ -319,8 +319,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                   currentStatus === 'confirmed' && currentStop === 'stop2'
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                                     : confirmPanel?.key === key && confirmPanel?.type === 'stop2'
-                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                                      ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
+                                      : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                                 )}
                               >
                                 {(trip.departure_stop2_location?.length ?? 0) > 18
@@ -338,8 +338,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                   currentStatus === 'confirmed' && currentStop === 'own'
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                                     : confirmPanel?.key === key && confirmPanel?.type === 'own'
-                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                                      ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
+                                      : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
                                 )}
                               >
                                 Dojazd własny
@@ -354,8 +354,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                                 currentStatus === 'not_going'
                                   ? 'bg-red-500 text-white border-red-500 shadow-md'
                                   : confirmPanel?.key === key && confirmPanel?.type === 'not_going'
-                                  ? 'bg-red-100 text-red-600 border-red-500'
-                                  : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
+                                    ? 'bg-red-100 text-red-600 border-red-500'
+                                    : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
                               )}
                             >
                               <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -385,20 +385,20 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                           const stopName = pType === 'stop2'
                             ? (trip.departure_stop2_location || 'Przystanek 2')
                             : pType === 'own' ? 'Dojazd własny'
-                            : (trip.departure_location || 'Przystanek 1');
+                              : (trip.departure_location || 'Przystanek 1');
                           const headerLabel = isStop
                             ? `Jedzie – ${stopName}`
                             : isNotGoing ? 'Nie jedzie'
-                            : 'Wiadomość do admina';
+                              : 'Wiadomość do admina';
                           const panelCls = isStop
                             ? 'bg-emerald-50/70 border-emerald-100'
                             : isNotGoing ? 'bg-red-50/70 border-red-100'
-                            : 'bg-amber-50/70 border-amber-100';
+                              : 'bg-amber-50/70 border-amber-100';
                           const headerCls = isStop ? 'text-emerald-700' : isNotGoing ? 'text-red-700' : 'text-amber-700';
                           const confirmBtnCls = isStop
                             ? 'bg-emerald-600 hover:bg-emerald-700'
                             : isNotGoing ? 'bg-red-600 hover:bg-red-700'
-                            : 'bg-blue-600 hover:bg-blue-700';
+                              : 'bg-blue-600 hover:bg-blue-700';
                           const confirmLabel = pType === 'other' ? 'Wyślij' : 'Potwierdź';
                           return (
                             <div className={cn('ml-11 p-3 rounded-xl border space-y-2', panelCls)}>
@@ -455,215 +455,246 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
           <CollapsibleContent>
             <div className="px-3 sm:px-5 pb-4 sm:pb-5 space-y-4">
               <div className="h-px bg-gray-100" />
+
+              {/* Wyjazd i Powrót — side by side jak u admina */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                      <Calendar className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Wyjazd</h4>
+                  </div>
+                  <div className="bg-white rounded-xl p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
+                        <p className="text-xs text-gray-500">
+                          {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                        </p>
+                      </div>
+                    </div>
+                    {trip.departure_stop2_location && (
+                      <div className="flex items-start gap-2">
+                        <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
+                          {trip.departure_stop2_datetime && (
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                      <Calendar className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Powrót</h4>
+                  </div>
+                  <div className="bg-white rounded-xl p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
+                        <p className="text-xs text-gray-500">
+                          {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                        </p>
+                      </div>
+                    </div>
+                    {trip.return_stop2_location && (
+                      <div className="flex items-start gap-2">
+                        <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
+                          {trip.return_stop2_datetime && (
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Opis */}
               {trip.description && (
-                <div className="bg-white rounded-xl p-3 sm:p-4">
+                <div className="bg-gray-50 rounded-xl p-4">
                   <div
-                    className="rich-content text-sm text-gray-700 leading-relaxed"
+                    className="rich-content text-sm text-gray-600 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: trip.description }}
                   />
                 </div>
               )}
-              <div className="grid gap-4 lg:grid-cols-2">
-                {/* Wyjazd + Powrót — na mobile: drugi (po cenniku), na desktop: pierwszy (lewa kolumna) */}
-                <div className="order-2 lg:order-1 bg-gray-50 rounded-2xl p-3 sm:p-5 space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-                        <ArrowRight className="h-3.5 w-3.5 text-white" />
-                      </div>
-                      <h4 className="text-sm font-semibold text-gray-700">Wyjazd</h4>
-                    </div>
-                    <div className="bg-white rounded-xl p-3 space-y-2">
-                      <div className="flex items-start gap-2">
-                        <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-gray-800 text-sm">{trip.departure_location}</p>
-                          <p className="text-xs text-gray-500">{format(departureDate, 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
-                        </div>
-                      </div>
-                      {trip.departure_stop2_location && (
-                        <div className="flex items-start gap-2">
-                          <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="font-medium text-gray-800 text-sm">{trip.departure_stop2_location}</p>
-                            {trip.departure_stop2_datetime && (
-                              <p className="text-xs text-gray-500">
-                                {format(departureDate, 'EEEE, d MMMM yyyy', { locale: pl })}, {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="h-px bg-gray-200" />
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-                        <ArrowRight className="h-3.5 w-3.5 text-white rotate-180" />
-                      </div>
-                      <h4 className="text-sm font-semibold text-gray-700">Powrót</h4>
-                    </div>
-                    <div className="bg-white rounded-xl p-3 space-y-2">
-                      <div className="flex items-start gap-2">
-                        <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-gray-800 text-sm">{trip.return_location}</p>
-                          <p className="text-xs text-gray-500">{format(returnDate, 'EEEE, d MMMM yyyy, HH:mm', { locale: pl })}</p>
-                        </div>
-                      </div>
-                      {trip.return_stop2_location && (
-                        <div className="flex items-start gap-2">
-                          <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <p className="font-medium text-gray-800 text-sm">{trip.return_stop2_location}</p>
-                            {trip.return_stop2_datetime && (
-                              <p className="text-xs text-gray-500">
-                                {format(returnDate, 'EEEE, d MMMM yyyy', { locale: pl })}, {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
-                {/* Cennik + Przelew — na mobile: PIERWSZY (widoczny od razu), na desktop: prawa kolumna */}
-                <div className="order-1 lg:order-2 space-y-4">
-                  {trip.payment_templates && trip.payment_templates.length > 0 && (
-                    <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-                          <Receipt className="h-3.5 w-3.5 text-white" />
-                        </div>
-                        <h4 className="text-sm font-semibold text-gray-700">Cennik</h4>
-                      </div>
-                      <div className="bg-white rounded-xl ring-1 ring-gray-100 overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-100">
-                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Za co</th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Termin</th>
-                              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">Forma</th>
-                              <th className="px-3 py-2 text-right font-medium text-gray-500 whitespace-nowrap">Kwota</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50">
-                            {trip.payment_templates.map((template) => {
-                              const label = getTemplateLabel(template);
-                              const methodLabel = getMethodLabel(template.payment_method);
-                              return (
-                                <tr key={template.id} className="hover:bg-gray-50/50">
-                                  <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{label}</td>
-                                  <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
-                                    {template.due_date
-                                      ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
-                                        ? 'w dniu wyjazdu'
-                                        : `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`)
-                                      : '–'}
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <span className={cn(
-                                      'inline-flex items-center px-1.5 py-0.5 rounded-lg text-xs font-medium whitespace-nowrap',
-                                      template.payment_method === 'cash' ? 'bg-amber-100 text-amber-700'
-                                        : template.payment_method === 'both' ? 'bg-violet-100 text-violet-700'
-                                        : 'bg-blue-100 text-blue-700'
-                                    )}>
-                                      {methodLabel}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-right font-semibold text-gray-900 whitespace-nowrap">
-                                    {template.amount.toFixed(0)} {template.currency}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+              {/* Cennik */}
+              {trip.payment_templates && trip.payment_templates.length > 0 && (
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                      <Receipt className="h-3.5 w-3.5 text-white" />
                     </div>
-                  )}
-
-                  {(trip.bank_account_pln || trip.bank_account_eur) && (
-                    <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-                          <Banknote className="h-3.5 w-3.5 text-white" />
-                        </div>
-                        <h4 className="text-sm font-semibold text-gray-700">Dane do przelewu</h4>
-                      </div>
-                      <div className="space-y-2">
-                        {trip.children.map((child) => {
-                          const [firstName, ...lastNameParts] = child.child_name.split(' ');
-                          const lastName = lastNameParts.join(' ');
-                          const tripDate = format(departureDate, 'dd.MM.yyyy', { locale: pl });
-                          const transferTitle = `${lastName} ${firstName} ${trip.title} ${tripDate}`;
+                    <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
+                  </div>
+                  <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Typ</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Termin</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Forma</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kwota</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {trip.payment_templates.map((template) => {
+                          const label = getTemplateLabel(template);
+                          const methodLabel = getMethodLabel(template.payment_method);
+                          const methodCls = template.payment_method === 'cash'
+                            ? 'bg-amber-100 text-amber-700'
+                            : template.payment_method === 'both'
+                              ? 'bg-violet-100 text-violet-700'
+                              : 'bg-blue-100 text-blue-700';
                           return (
-                            <div key={child.child_id} className="flex items-center justify-between bg-white rounded-xl p-3">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-400">Tytuł przelewu – {child.child_name}</p>
-                                <p className="text-sm font-medium text-gray-800 break-all">{transferTitle}</p>
-                              </div>
-                              <button onClick={(e) => { e.stopPropagation(); copyToClipboard(transferTitle, 'Tytuł przelewu'); }} className="ml-2 w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                <Copy className="h-3.5 w-3.5 text-gray-400" />
-                              </button>
-                            </div>
+                            <tr key={template.id} className="hover:bg-gray-50/50">
+                              <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
+                              <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
+                                {template.due_date
+                                  ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
+                                    ? 'w dniu wyjazdu'
+                                    : format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl }))
+                                  : '-'}
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodCls}`}>
+                                  {methodLabel}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
+                                {template.amount.toFixed(0)} {template.currency}
+                              </td>
+                            </tr>
                           );
                         })}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {trip.bank_account_pln && (
-                            <div className="flex items-center justify-between bg-white rounded-xl p-3">
-                              <div className="min-w-0">
-                                <p className="text-xs text-gray-400">Konto PLN</p>
-                                <p className="text-sm text-gray-800 break-all">{trip.bank_account_pln}</p>
-                              </div>
-                              <button onClick={(e) => { e.stopPropagation(); copyToClipboard(trip.bank_account_pln!, 'Numer konta PLN'); }} className="ml-1 w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors flex-shrink-0">
-                                <Copy className="h-3.5 w-3.5 text-gray-400" />
-                              </button>
-                            </div>
-                          )}
-                          {trip.bank_account_eur && (
-                            <div className="flex items-center justify-between bg-white rounded-xl p-3">
-                              <div className="min-w-0">
-                                <p className="text-xs text-gray-400">Konto EUR</p>
-                                <p className="text-sm text-gray-800 break-all">{trip.bank_account_eur}</p>
-                              </div>
-                              <button onClick={(e) => { e.stopPropagation(); copyToClipboard(trip.bank_account_eur!, 'Numer konta EUR'); }} className="ml-1 w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors flex-shrink-0">
-                                <Copy className="h-3.5 w-3.5 text-gray-400" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Dane do przelewu */}
+              {(trip.bank_account_pln || trip.bank_account_eur) && (
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                      <Banknote className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-900">Dane do przelewu</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {trip.children.map((child) => {
+                      const [firstName, ...lastNameParts] = child.child_name.split(' ');
+                      const lastName = lastNameParts.join(' ');
+                      const tripDate = format(departureDate, 'dd.MM.yyyy', { locale: pl });
+                      const transferTitle = `${lastName} ${firstName} ${trip.title} ${tripDate}`;
+                      return (
+                        <div key={child.child_id} className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-400 mb-0.5">Tytuł przelewu – {child.child_name}</p>
+                            <p className="text-sm font-medium text-gray-900 break-all">{transferTitle}</p>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); copyToClipboard(transferTitle, 'Tytuł przelewu'); }} className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 flex-shrink-0">
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {trip.bank_account_pln && (
+                        <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                          <div>
+                            <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
+                            <p className="text-sm text-gray-900">{trip.bank_account_pln}</p>
+                          </div>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                            onClick={(e) => { e.stopPropagation(); copyToClipboard(trip.bank_account_pln!, 'Numer konta PLN'); }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                      {trip.bank_account_eur && (
+                        <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                          <div>
+                            <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
+                            <p className="text-sm text-gray-900">{trip.bank_account_eur}</p>
+                          </div>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                            onClick={(e) => { e.stopPropagation(); copyToClipboard(trip.bank_account_eur!, 'Numer konta EUR'); }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Co zabrać */}
               {trip.packing_list && (
-                <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Backpack className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-700">Co zabrać</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
                   </div>
-                  {renderBulletList(trip.packing_list)}
+                  <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                    {trip.packing_list
+                      .split('\n')
+                      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                      .filter(Boolean)
+                      .map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                  </ul>
                 </div>
               )}
 
               {/* Dodatkowe informacje */}
               {trip.additional_info && (
-                <div className="bg-gray-50 rounded-2xl p-3 sm:p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                       <Info className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-700">Dodatkowe informacje</h4>
+                    <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
                   </div>
-                  {renderBulletList(trip.additional_info)}
+                  <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                    {trip.additional_info
+                      .split('\n')
+                      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                      .filter(Boolean)
+                      .map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                  </ul>
                 </div>
               )}
 
