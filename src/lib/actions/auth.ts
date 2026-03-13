@@ -18,7 +18,7 @@ export async function login(formData: LoginInput) {
 
   const { email, password } = result.data;
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -30,16 +30,10 @@ export async function login(formData: LoginInput) {
     return { error: error.message };
   }
 
-  // Pobierz rolę użytkownika
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('email', email)
-    .single();
-
   revalidatePath('/', 'layout');
 
-  const redirectPath = profile?.role === 'admin' ? '/admin/groups' : '/parent/children';
+  const role = signInData?.user?.app_metadata?.role as string | undefined;
+  const redirectPath = role === 'admin' ? '/admin/groups' : '/parent/children';
   redirect(redirectPath);
 }
 
@@ -123,12 +117,6 @@ export async function getSession() {
   const { data: { session } } = await supabase.auth.getSession();
   return session;
 }
-
-export const getUser = cache(async () => {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-});
 
 export async function signInWithGoogle(next?: string) {
   const supabase = await createClient();
@@ -234,5 +222,5 @@ export const getUserProfile = cache(async () => {
     .eq('id', user.id)
     .single();
 
-  return profile ?? null;
+  return profile ? JSON.parse(JSON.stringify(profile)) : null;
 });

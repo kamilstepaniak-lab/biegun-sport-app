@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
 import {
   sendRegistrationConfirmationEmail,
@@ -19,16 +20,8 @@ import type {
 } from '@/types';
 
 export async function getTrips(): Promise<TripWithPaymentTemplates[]> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
 
   // Admin widzi wszystkie, rodzic tylko published
   let query = supabase
@@ -42,7 +35,7 @@ export async function getTrips(): Promise<TripWithPaymentTemplates[]> {
     `)
     .order('departure_datetime', { ascending: true });
 
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     query = query.eq('status', 'published');
   }
 
@@ -156,20 +149,12 @@ export async function getAvailableTripsForParent(parentId: string): Promise<Trip
 }
 
 export async function createTrip(input: CreateTripInput) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -278,21 +263,13 @@ export async function createTrip(input: CreateTripInput) {
 }
 
 export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -578,20 +555,12 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 }
 
 export async function updateTripStatus(id: string, status: TripStatus) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user, role } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -612,21 +581,13 @@ export async function updateTripStatus(id: string, status: TripStatus) {
 }
 
 export async function deleteTrip(id: string) {
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -894,10 +855,8 @@ export async function updateParticipationStatus(
   status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other',
   note?: string
 ) {
-  const supabase = await createClient();
+  const { supabase, user } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
@@ -1150,10 +1109,8 @@ export async function updateParticipationStatusByParent(
   status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other',
   note?: string
 ) {
-  const supabase = await createClient();
+  const { supabase, user } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
@@ -1322,21 +1279,13 @@ export async function updateParticipationStatusByParent(
 }
 
 export async function duplicateTrip(tripId: string) {
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 

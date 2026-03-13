@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 export interface NearestTrip {
   id: string;
@@ -71,12 +72,8 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
     attendance: { completed: 0, total: 0 },
   };
 
-  const supabase = await createClient();
+  const { supabase, user } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return empty;
 
   const now = new Date();

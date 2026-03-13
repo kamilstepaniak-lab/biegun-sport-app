@@ -3,14 +3,12 @@
 import { revalidatePath } from 'next/cache';
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import { GLOBAL_DOCUMENTS } from '@/lib/global-documents';
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return null;
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return null;
   return user;
 }
 

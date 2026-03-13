@@ -2,14 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import { profileSchema, type ProfileInput } from '@/lib/validations/profile';
 import type { Profile } from '@/types';
 import { logActivity } from './activity-logs';
 
 export async function updateProfile(formData: ProfileInput) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
@@ -56,9 +55,7 @@ export async function updateProfile(formData: ProfileInput) {
 }
 
 export async function getProfile(): Promise<Profile | null> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) return null;
 
   const { data: profile, error } = await supabase
@@ -82,8 +79,7 @@ export async function changePassword(
     return { error: 'Hasło musi mieć co najmniej 8 znaków' };
   }
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });

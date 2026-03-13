@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import { CONTRACT_TEMPLATE, fillContractTemplate, buildPaymentScheduleText } from '@/lib/contract-template';
 import { logActivity } from './activity-logs';
 
@@ -13,11 +14,8 @@ import { logActivity } from './activity-logs';
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return null;
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return null;
   return user;
 }
 
@@ -403,9 +401,7 @@ export async function getContractsForAdmin() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getContractsForParent(participantId?: string) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) return [];
 
   const { data: children } = await supabase
@@ -458,9 +454,7 @@ export async function getContractsForParent(participantId?: string) {
 export async function acceptContract(
   contractId: string
 ): Promise<{ success?: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
 
   const { data: contract } = await supabase
@@ -512,13 +506,12 @@ export async function acceptContract(
   }
 
   // Activity log
-  const { data: profile } = await supabase.from('profiles').select('email').eq('id', user.id).single();
   const contractData = contractFull as unknown as {
     contract_number: string | null;
     trips: { title: string } | null;
     participants: { first_name: string; last_name: string } | null;
   } | null;
-  logActivity(user.id, profile?.email, 'contract_accepted', {
+  logActivity(user.id, user.email, 'contract_accepted', {
     contractId,
     contractNumber: contractData?.contract_number,
     participantName: contractData?.participants

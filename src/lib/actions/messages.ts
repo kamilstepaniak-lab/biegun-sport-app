@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 export interface AppMessage {
   id: string;
@@ -22,12 +23,9 @@ export interface AdminMessage {
 }
 
 export async function getMessagesForParent(): Promise<AppMessage[]> {
-  const supabase = await createClient();
+  const { user } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data: messages, error } = await supabaseAdmin
@@ -58,11 +56,7 @@ export async function getMessagesForParent(): Promise<AppMessage[]> {
 }
 
 export async function markMessageRead(messageId: string): Promise<{ success?: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
 
   const supabaseAdmin = createAdminClient();
@@ -85,20 +79,9 @@ export async function createMessage(
   title: string,
   body: string
 ): Promise<{ success?: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, role } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   if (!title.trim() || !body.trim()) return { error: 'Tytuł i treść są wymagane' };
 
@@ -119,20 +102,9 @@ export async function createMessage(
 }
 
 export async function deleteMessage(messageId: string): Promise<{ success?: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, role } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   const supabaseAdmin = createAdminClient();
   const { error } = await supabaseAdmin.from('messages').delete().eq('id', messageId);
@@ -147,20 +119,8 @@ export async function deleteMessage(messageId: string): Promise<{ success?: bool
 }
 
 export async function getAdminMessages(): Promise<AdminMessage[]> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return [];
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const supabaseAdmin = createAdminClient();
   const { data: messages, error } = await supabaseAdmin

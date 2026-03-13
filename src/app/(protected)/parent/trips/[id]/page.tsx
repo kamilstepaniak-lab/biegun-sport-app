@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
 import { getTrip } from '@/lib/actions/trips';
-import { getMyChildren } from '@/lib/actions/participants';
+import { getMyChildren, getChildParticipationStatuses } from '@/lib/actions/participants';
 import { PaymentInfoCard } from './payment-info-card';
 
 interface TripDetailPageProps {
@@ -30,6 +30,11 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   const tripGroupIds = trip.groups?.map(g => g.id) || [];
   const eligibleChildren = children.filter(child =>
     child.group && tripGroupIds.includes(child.group.id)
+  );
+
+  const participationStatuses = await getChildParticipationStatuses(
+    id,
+    eligibleChildren.map(c => c.id)
   );
 
   return (
@@ -120,12 +125,21 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
                     <p className="text-sm font-medium">Twoje dzieci</p>
                   </div>
                   <div className="space-y-2">
-                    {eligibleChildren.map((child) => (
-                      <div key={child.id} className="flex items-center justify-between">
-                        <p className="text-sm">{child.first_name} {child.last_name}</p>
-                        <Badge variant="secondary" className="text-xs">{child.group?.name}</Badge>
-                      </div>
-                    ))}
+                    {eligibleChildren.map((child) => {
+                      const status = participationStatuses[child.id];
+                      return (
+                        <div key={child.id} className="flex items-center justify-between">
+                          <p className="text-sm">{child.first_name} {child.last_name}</p>
+                          {status === 'confirmed' ? (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-xs">Jedzie ✓</Badge>
+                          ) : status === 'not_going' ? (
+                            <Badge variant="destructive" className="text-xs">Nie jedzie</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Może jechać</Badge>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </>

@@ -1,6 +1,7 @@
 'use server';
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import {
   sendTripEmail,
   sendRegistrationConfirmationEmail,
@@ -127,20 +128,11 @@ export async function sendTripInfoEmailToGroup(
   skipped?: number;
   error?: string;
 }> {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  // Sprawdź uprawnienia admina
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   // Pobierz dane wyjazdu (tytuł zawsze potrzebny)
   const { data: trip, error: tripError } = await supabaseAdmin

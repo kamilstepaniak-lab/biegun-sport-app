@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 interface ImportBufferRow {
   id: number;
@@ -112,22 +113,10 @@ export async function getImportBufferStats() {
 }
 
 export async function runImport(): Promise<ImportStats> {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  // Sprawdź uprawnienia
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { total: 0, imported: 0, errors: 0, skipped: 0, newParents: 0, newGroups: 0, details: [] };
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (!user || role !== 'admin') {
     return { total: 0, imported: 0, errors: 0, skipped: 0, newParents: 0, newGroups: 0, details: [] };
   }
 
@@ -389,19 +378,10 @@ export async function runImport(): Promise<ImportStats> {
 }
 
 export async function fixContactData(): Promise<{ fixed: number; errors: number }> {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { fixed: 0, errors: 0 };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { fixed: 0, errors: 0 };
+  if (!user || role !== 'admin') return { fixed: 0, errors: 0 };
 
   // Pobierz wszystkie zaimportowane rekordy
   const { data: rows } = await supabaseAdmin
@@ -457,19 +437,11 @@ export async function fixContactData(): Promise<{ fixed: number; errors: number 
 }
 
 export async function resetImportStatus() {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return { error: 'Brak uprawnień' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   const { error } = await supabaseAdmin
     .from('import_buffer')

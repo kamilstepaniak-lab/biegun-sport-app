@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 import type { Group, ParticipantWithParent } from '@/types';
 
 export async function getGroups(): Promise<Group[]> {
@@ -207,21 +208,14 @@ export async function getGroupsWithParticipants(): Promise<GroupWithParticipants
 
 // Usuń wielu uczestników naraz
 export async function deleteParticipants(participantIds: string[]) {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -267,21 +261,14 @@ export async function deleteParticipants(participantIds: string[]) {
 
 // Dodaj nową grupę
 export async function createGroup(name: string) {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -328,21 +315,14 @@ export async function createGroup(name: string) {
 
 // Usuń grupę (usuwa też powiązania z uczestnikami i wyjazdami)
 export async function deleteGroup(groupId: string) {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 
@@ -384,21 +364,14 @@ export async function deleteGroup(groupId: string) {
 
 // Zmień nazwę grupy
 export async function renameGroup(groupId: string, newName: string) {
-  const supabase = await createClient();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') {
+  if (role !== 'admin') {
     return { error: 'Brak uprawnień' };
   }
 

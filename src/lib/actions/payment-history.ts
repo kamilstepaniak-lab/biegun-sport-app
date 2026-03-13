@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { getAuthUser } from './auth-helpers';
 
 export type PaymentAction = 'payment_added' | 'marked_paid' | 'status_changed' | 'cancelled';
 
@@ -57,18 +58,8 @@ export interface PaymentHistoryEntry {
 }
 
 export async function getPaymentHistory(limit = 300): Promise<PaymentHistoryEntry[]> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') return [];
+  const { supabase, user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const { data, error } = await supabase
     .from('payment_history_logs')
