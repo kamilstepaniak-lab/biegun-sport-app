@@ -32,17 +32,31 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
 
   const isAll = selectedChildId === ALL_CHILDREN_ID;
 
-  // Zapisz wybrane dziecko do localStorage
+  // Jeśli podane dziecko nie należy do tego rodzica — traktuj jak brak wyboru
+  const isValidChild = !selectedChildId || isAll || !childrenList || childrenList.some(c => c.id === selectedChildId);
+  const effectiveChildId = isValidChild ? selectedChildId : undefined;
+
+  // Jeśli dziecko w URL nie należy do tego rodzica — wyczyść oba klucze localStorage i URL
   useEffect(() => {
-    if (selectedChildId) {
+    if (selectedChildId && !isValidChild) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('biegun_selected_child');
+      router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
+    }
+  }, [selectedChildId, isValidChild, pathname, router]);
+
+  // Zapisz wybrane dziecko do localStorage (tylko gdy prawidłowe)
+  useEffect(() => {
+    if (selectedChildId && isValidChild) {
       const name = isAll ? ALL_CHILDREN_NAME : (selectedChildName ?? '');
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name }));
+      localStorage.setItem('biegun_selected_child', JSON.stringify({ id: selectedChildId, name }));
     }
-  }, [selectedChildId, selectedChildName, isAll]);
+  }, [selectedChildId, selectedChildName, isAll, isValidChild]);
 
-  // Jeśli brak dziecka w URL — domyślnie idź na "Wszystkie dzieci"
+  // Jeśli brak dziecka w URL lub dziecko nie należy do rodzica — domyślnie idź na "Wszystkie dzieci"
   useEffect(() => {
-    if (!selectedChildId && childrenList && childrenList.length > 0) {
+    if (!effectiveChildId && childrenList && childrenList.length > 0) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
@@ -63,7 +77,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
       setRedirecting(true);
       router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
     }
-  }, [selectedChildId, pathname, router, childrenList]);
+  }, [effectiveChildId, pathname, router, childrenList]);
 
   function navigateTo(child: ChildOption | { id: typeof ALL_CHILDREN_ID; name: string }) {
     if (child.id === ALL_CHILDREN_ID) {
@@ -73,7 +87,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     }
   }
 
-  if (!selectedChildId) {
+  if (!effectiveChildId) {
     if (redirecting) {
       return <div className="h-32" />;
     }
@@ -111,19 +125,24 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
             ))}
           </div>
         ) : (
-          <Link
-            href="/parent/children"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            <Users className="h-4 w-4" />
-            Przejdź do Moje dzieci
-          </Link>
+          <div className="space-y-3 text-center">
+            <p className="text-sm text-gray-500">
+              Nie masz jeszcze żadnego dziecka w systemie.<br />Dodaj dziecko, aby korzystać z tej sekcji.
+            </p>
+            <Link
+              href="/parent/children/add"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              <Users className="h-4 w-4" />
+              Dodaj dziecko
+            </Link>
+          </div>
         )}
       </div>
     );
   }
 
-  const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || 'Wybrane dziecko');
+  const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || childrenList?.find(c => c.id === effectiveChildId)?.name || 'Wybrane dziecko');
 
   return (
     <div className="space-y-5">
@@ -162,7 +181,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
                 onClick={() => navigateTo(child)}
                 className={cn(
                   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                  child.id === selectedChildId
+                  child.id === effectiveChildId
                     ? 'bg-white text-blue-700'
                     : 'bg-white/15 hover:bg-white/25 text-white'
                 )}
