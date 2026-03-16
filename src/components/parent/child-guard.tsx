@@ -21,7 +21,7 @@ interface ChildGuardProps {
   children: React.ReactNode;
 }
 
-const STORAGE_KEY = 'selectedChild';
+const STORAGE_KEY = 'biegun_selected_child';
 const ALL_CHILDREN_ID = 'all';
 const ALL_CHILDREN_NAME = 'Wszystkie dzieci';
 
@@ -40,7 +40,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
   useEffect(() => {
     if (selectedChildId && !isValidChild) {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('biegun_selected_child');
+      localStorage.removeItem('selectedChild');
       router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
     }
   }, [selectedChildId, isValidChild, pathname, router]);
@@ -50,7 +50,6 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     if (selectedChildId && isValidChild) {
       const name = isAll ? ALL_CHILDREN_NAME : (selectedChildName ?? '');
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name }));
-      localStorage.setItem('biegun_selected_child', JSON.stringify({ id: selectedChildId, name }));
     }
   }, [selectedChildId, selectedChildName, isAll, isValidChild]);
 

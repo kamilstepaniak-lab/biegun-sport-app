@@ -1,17 +1,22 @@
 import nodemailer from 'nodemailer';
 import { createAdminClient } from '@/lib/supabase/server';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_FROM,
-    pass: process.env.EMAIL_APP_PASSWORD,
-  },
-});
+let _transporter: nodemailer.Transporter | null = null;
 
-const FROM = `BiegunSport <${process.env.EMAIL_FROM}>`;
+function getTransporter() {
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_FROM,
+        pass: process.env.EMAIL_APP_PASSWORD,
+      },
+    });
+  }
+  return _transporter;
+}
 
 // ─── Pobieranie szablonu z bazy ───────────────────────────────────────────────
 
@@ -99,8 +104,9 @@ async function sendEmail(
     return;
   }
   try {
-    await transporter.sendMail({
-      from: FROM,
+    const from = `BiegunSport <${process.env.EMAIL_FROM}>`;
+    await getTransporter().sendMail({
+      from,
       to,
       subject: prefixedSubject,
       html: wrapInTemplate(bodyHtml),
@@ -119,6 +125,7 @@ async function sendEmail(
     }
   } catch (err) {
     console.error('Email send error:', err);
+    throw err;
   }
 }
 

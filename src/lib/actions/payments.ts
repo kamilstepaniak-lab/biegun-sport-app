@@ -7,10 +7,10 @@ import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 
-// Helper: szybkie sprawdzenie admina z JWT cookie (0ms zamiast ~400ms z getUser + DB)
+import { getAuthUser } from './auth-helpers';
+
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { user: null as null, error: 'Nie jesteś zalogowany' as const };
   const role = user.app_metadata?.role ?? user.user_metadata?.role;
   if (role !== 'admin') return { user: null as null, error: 'Brak uprawnień' as const };
@@ -333,6 +333,8 @@ export async function applyDiscount(paymentId: string, discountPercentage: numbe
 
 export async function getPaymentTransactions(paymentId: string): Promise<PaymentTransaction[]> {
   const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
 
   const { data: transactions, error } = await supabase
     .from('payment_transactions')
@@ -582,15 +584,9 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
 
 // Pobierz dane do przelewu (konta bankowe) — z wyjazdu na który dziecko jest zapisane
 export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
-  const supabase = await createClient();
-
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { supabase, user } = await getAuthUser();
   if (!user) {
-    return {
-      bank_account_pln: '39 1240 1444 1111 0010 7170 4855',
-      bank_account_eur: 'PL21 1240 1444 1978 0010 7136 2778',
-    };
+    return { bank_account_pln: null, bank_account_eur: null };
   }
 
   // Pobierz dziecko rodzica
@@ -601,10 +597,7 @@ export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
     .limit(1);
 
   if (!children || children.length === 0) {
-    return {
-      bank_account_pln: '39 1240 1444 1111 0010 7170 4855',
-      bank_account_eur: 'PL21 1240 1444 1978 0010 7136 2778',
-    };
+    return { bank_account_pln: null, bank_account_eur: null };
   }
 
   // Pobierz konto z wyjazdu na który dziecko jest zapisane
@@ -619,8 +612,8 @@ export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
   const trip = registration?.trip as unknown as { bank_account_pln: string | null; bank_account_eur: string | null } | null;
 
   return {
-    bank_account_pln: trip?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
-    bank_account_eur: trip?.bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+    bank_account_pln: trip?.bank_account_pln || null,
+    bank_account_eur: trip?.bank_account_eur || null,
   };
 }
 

@@ -143,7 +143,8 @@ export async function sendTripInfoEmailToGroup(
       departure_stop2_datetime, departure_stop2_location,
       return_datetime, return_location,
       return_stop2_datetime, return_stop2_location,
-      bank_account_pln, bank_account_eur
+      bank_account_pln, bank_account_eur,
+      declaration_deadline, packing_list, additional_info
     `)
     .eq('id', tripId)
     .single();
