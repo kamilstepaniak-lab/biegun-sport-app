@@ -397,7 +397,19 @@ export async function deleteParticipant(id: string) {
 }
 
 export async function getParticipantRegistrations(id: string) {
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
+  if (!user) return [];
+
+  // Jeśli rodzic — sprawdź czy dziecko należy do niego
+  if (role !== 'admin') {
+    const { data: participant } = await supabase
+      .from('participants')
+      .select('id')
+      .eq('id', id)
+      .eq('parent_id', user.id)
+      .single();
+    if (!participant) return [];
+  }
 
   const { data: registrations, error } = await supabase
     .from('trip_registrations')

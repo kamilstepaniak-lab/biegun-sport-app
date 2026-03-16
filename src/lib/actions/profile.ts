@@ -89,7 +89,11 @@ export async function changePassword(
 }
 
 export async function getProfileById(id: string): Promise<Profile | null> {
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
+  if (!user) return null;
+
+  // Rodzic może pobrać tylko swój profil
+  if (role !== 'admin' && user.id !== id) return null;
 
   const { data: profile, error } = await supabase
     .from('profiles')

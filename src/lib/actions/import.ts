@@ -72,6 +72,9 @@ function normalizePhone(phone: string | null): string {
 }
 
 export async function getImportBufferData() {
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
+
   const supabaseAdmin = createAdminClient();
 
   const { data, error } = await supabaseAdmin
@@ -88,6 +91,9 @@ export async function getImportBufferData() {
 }
 
 export async function getImportBufferStats() {
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return { total: 0, oczekuje: 0, zaimportowano: 0, blad: 0 };
+
   const supabaseAdmin = createAdminClient();
 
   const { data, error } = await supabaseAdmin

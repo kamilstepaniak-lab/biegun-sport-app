@@ -67,10 +67,11 @@ export async function createRegistrationToken(params: CreateTokenParams): Promis
  * Pobiera wszystkie tokeny dla danego wyjazdu (panel admina).
  */
 export async function getTripTokens(tripId: string) {
-  const { user } = await getAuthUser();
-  const admin = createAdminClient();
-
+  const { user, role } = await getAuthUser();
   if (!user) return { error: 'Brak autoryzacji' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
+
+  const admin = createAdminClient();
 
   const { data, error } = await admin
     .from('registration_tokens')

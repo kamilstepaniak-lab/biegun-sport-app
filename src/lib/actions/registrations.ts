@@ -200,7 +200,8 @@ export async function cancelRegistration(registrationId: string) {
 }
 
 export async function getTripRegistrations(tripId: string): Promise<RegistrationWithDetails[]> {
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
 
   const { data: registrations, error } = await supabase
     .from('trip_registrations')
