@@ -230,28 +230,19 @@ export async function getMyRegistrations(): Promise<RegistrationWithDetails[]> {
   const { supabase, user } = await getAuthUser();
   if (!user) return [];
 
-  // Pobierz dzieci użytkownika
-  const { data: children } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('parent_id', user.id);
-
-  if (!children || children.length === 0) return [];
-
-  const childIds = children.map((c) => c.id);
-
+  // Jedno zapytanie z !inner join — filtruje rejestracje po parent_id dziecka
   const { data: registrations, error } = await supabase
     .from('trip_registrations')
     .select(`
       *,
-      participant:participants (
+      participant:participants!inner (
         *,
         parent:profiles!parent_id (*)
       ),
       trip:trips (*),
       payments (*)
     `)
-    .in('participant_id', childIds)
+    .eq('participant.parent_id', user.id)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 

@@ -808,12 +808,14 @@ export async function bulkUpdatePaymentStatus(
       .neq('status', 'paid');
 
     if (rows && rows.length > 0) {
-      for (const row of rows as { id: string; amount: number }[]) {
-        await supabase
-          .from('payments')
-          .update({ status: 'paid', amount_paid: row.amount, paid_at: now, marked_by: user.id, updated_at: now })
-          .eq('id', row.id);
-      }
+      await Promise.all(
+        (rows as { id: string; amount: number }[]).map(row =>
+          supabase
+            .from('payments')
+            .update({ status: 'paid', amount_paid: row.amount, paid_at: now, marked_by: user.id, updated_at: now })
+            .eq('id', row.id)
+        )
+      );
     }
   }
 
