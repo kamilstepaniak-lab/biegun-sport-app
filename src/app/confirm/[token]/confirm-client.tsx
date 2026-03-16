@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
 
@@ -121,7 +122,7 @@ export function ConfirmTokenClient({
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="BiegunSport" className="h-16 w-16 rounded-2xl object-cover mx-auto mb-3" />
+          <Image src="/logo.png" alt="BiegunSport" width={64} height={64} className="rounded-2xl object-cover mx-auto mb-3" priority />
           <p className="text-sm text-gray-500">BiegunSport</p>
         </div>
 

@@ -582,39 +582,50 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
   return allPayments;
 }
 
+// ── Cache: konta bankowe rodzica ──────────────────────────────────────────
+const _fetchBankAccountsDB = unstable_cache(
+  async (userId: string): Promise<BankAccountInfo> => {
+    const supabaseAdmin = createAdminClient();
+
+    // Pobierz dziecko rodzica
+    const { data: children } = await supabaseAdmin
+      .from('participants')
+      .select('id')
+      .eq('parent_id', userId)
+      .limit(1);
+
+    if (!children || children.length === 0) {
+      return { bank_account_pln: null, bank_account_eur: null };
+    }
+
+    // Pobierz konto z wyjazdu na który dziecko jest zapisane
+    const { data: registration } = await supabaseAdmin
+      .from('trip_registrations')
+      .select('trip:trips(bank_account_pln, bank_account_eur)')
+      .eq('participant_id', children[0].id)
+      .eq('participation_status', 'confirmed')
+      .limit(1)
+      .maybeSingle();
+
+    const trip = registration?.trip as unknown as { bank_account_pln: string | null; bank_account_eur: string | null } | null;
+
+    return {
+      bank_account_pln: trip?.bank_account_pln || null,
+      bank_account_eur: trip?.bank_account_eur || null,
+    };
+  },
+  ['parent-bank-accounts'],
+  { revalidate: 120, tags: ['payments'] },
+);
+
 // Pobierz dane do przelewu (konta bankowe) — z wyjazdu na który dziecko jest zapisane
 export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
-  const { supabase, user } = await getAuthUser();
+  const { user } = await getAuthUser();
   if (!user) {
     return { bank_account_pln: null, bank_account_eur: null };
   }
 
-  // Pobierz dziecko rodzica
-  const { data: children } = await supabase
-    .from('participants')
-    .select('id')
-    .eq('parent_id', user.id)
-    .limit(1);
-
-  if (!children || children.length === 0) {
-    return { bank_account_pln: null, bank_account_eur: null };
-  }
-
-  // Pobierz konto z wyjazdu na który dziecko jest zapisane
-  const { data: registration } = await supabase
-    .from('trip_registrations')
-    .select('trip:trips(bank_account_pln, bank_account_eur)')
-    .eq('participant_id', children[0].id)
-    .eq('participation_status', 'confirmed')
-    .limit(1)
-    .maybeSingle();
-
-  const trip = registration?.trip as unknown as { bank_account_pln: string | null; bank_account_eur: string | null } | null;
-
-  return {
-    bank_account_pln: trip?.bank_account_pln || null,
-    bank_account_eur: trip?.bank_account_eur || null,
-  };
+  return _fetchBankAccountsDB(user.id);
 }
 
 export async function updatePaymentStatus(

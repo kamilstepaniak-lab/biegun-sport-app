@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 
 import { Sidebar, Header, type SidebarItem } from '@/components/shared';
@@ -76,7 +77,9 @@ export default async function AdminLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header user={profile} />
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 safe-bottom">
-          {children}
+          <Suspense fallback={<div className="h-32" />}>
+            {children}
+          </Suspense>
         </main>
       </div>
     </div>
