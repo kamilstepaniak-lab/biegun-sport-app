@@ -28,6 +28,24 @@ function formatPaymentMethod(method: string | null) {
   return 'gotówka lub przelew';
 }
 
+/** Konwertuje HTML (z edytora rich-text) na tekst WhatsApp */
+function htmlToWhatsApp(html: string): string {
+  return html
+    .replace(/<strong>(.*?)<\/strong>/gi, '*$1*')
+    .replace(/<b>(.*?)<\/b>/gi, '*$1*')
+    .replace(/<em>(.*?)<\/em>/gi, '_$1_')
+    .replace(/<i>(.*?)<\/i>/gi, '_$1_')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi, (_, c) => `• ${c.replace(/<[^>]+>/g, '').trim()}`)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bsapp.pro';
+
 /** Buduje tekst WhatsApp */
 function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   const lines: string[] = [];
@@ -36,7 +54,7 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   lines.push('');
 
   if (trip.description) {
-    lines.push(trip.description);
+    lines.push(htmlToWhatsApp(trip.description));
     lines.push('');
   }
 
@@ -90,6 +108,8 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
     lines.push(`⏰ *Potwierdzenie do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}*`);
   }
 
+  lines.push('');
+  lines.push(`👉 Zapisy i potwierdzenie w aplikacji: ${APP_URL}/parent/trips`);
   lines.push('');
   lines.push('W razie pytań piszcie! 🙂');
 
