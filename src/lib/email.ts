@@ -161,6 +161,8 @@ export interface PaymentLineItem {
 
 // ─── Blok HTML z detalami wyjazdu ────────────────────────────────────────────
 
+const T = 'font-family:Arial,sans-serif;font-size:14px;color:#111827;';
+
 export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineItem[], appUrl?: string): string {
   const fmt = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('pl-PL', {
@@ -172,7 +174,7 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
   let html = '';
 
   if (trip.description) {
-    html += `<p style="color:#6b7280;font-size:14px;margin:0 0 0;">${trip.description}</p>`;
+    html += `<p style="${T}margin:0 0 0;">${trip.description}</p>`;
   }
 
   // ZAPISY — niebieski box z datą deklaracji i przyciskiem do aplikacji
@@ -182,32 +184,32 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
       const dlFormatted = new Date(trip.declaration_deadline).toLocaleDateString('pl-PL', {
         day: 'numeric', month: 'long', year: 'numeric',
       });
-      html += `<p style="margin:0 0 12px;font-size:14px;color:#1e3a5f;">⏰ Prosimy o <strong>potwierdzenie udziału do ${dlFormatted}</strong> przez aplikację bsapp.pro.</p>`;
+      html += `<p style="${T}margin:0 0 12px;">⏰ Prosimy o <strong>potwierdzenie udziału do ${dlFormatted}</strong> przez aplikację bsapp.pro.</p>`;
     } else {
-      html += `<p style="margin:0 0 12px;font-size:14px;color:#1e3a5f;">Potwierdzenie udziału przez aplikację <strong>bsapp.pro</strong>.</p>`;
+      html += `<p style="${T}margin:0 0 12px;">Potwierdzenie udziału przez aplikację <strong>bsapp.pro</strong>.</p>`;
     }
     if (appUrl) {
-      html += `<a href="${appUrl}" style="display:inline-block;padding:11px 26px;background:#1e56d9;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">Przejdź do aplikacji →</a>`;
+      html += `<a href="${appUrl}" style="display:inline-block;padding:8px 18px;background:#1e56d9;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:700;text-decoration:none;border-radius:6px;">Przejdź do aplikacji</a>`;
     }
     html += `</div>`;
   }
 
   // TERMINY
   html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;">`;
-  html += `<tr><td colspan="2" style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">📅 TERMINY</td></tr>`;
+  html += `<tr><td colspan="2" style="${T}padding:16px 0 10px;font-weight:700;"><strong>TERMINY</strong></td></tr>`;
 
-  html += `<tr><td style="padding:4px 16px 4px 0;color:#6b7280;font-size:13px;white-space:nowrap;vertical-align:top;">📅 Wyjazd</td><td style="padding:4px 0;font-size:14px;font-weight:600;color:#111827;">${fmt(trip.departure_datetime)}</td></tr>`;
-  html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.departure_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.departure_location}</td></tr>`;
+  html += `<tr><td style="${T}padding:4px 16px 4px 0;white-space:nowrap;vertical-align:top;"><strong>Wyjazd</strong></td><td style="${T}padding:4px 0;">${fmt(trip.departure_datetime)}</td></tr>`;
+  html += `<tr><td style="${T}padding:2px 16px 2px 0;white-space:nowrap;">${fmtTime(trip.departure_datetime)}</td><td style="${T}padding:2px 0;">${trip.departure_location}</td></tr>`;
 
   if (trip.departure_stop2_datetime && trip.departure_stop2_location) {
-    html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.departure_stop2_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.departure_stop2_location}</td></tr>`;
+    html += `<tr><td style="${T}padding:2px 16px 2px 0;white-space:nowrap;">${fmtTime(trip.departure_stop2_datetime)}</td><td style="${T}padding:2px 0;">${trip.departure_stop2_location}</td></tr>`;
   }
 
-  html += `<tr><td style="padding:12px 16px 4px 0;color:#6b7280;font-size:13px;white-space:nowrap;vertical-align:top;">📅 Powrót</td><td style="padding:12px 0 4px;font-size:14px;font-weight:600;color:#111827;">${fmt(trip.return_datetime)}</td></tr>`;
-  html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.return_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.return_location}</td></tr>`;
+  html += `<tr><td style="${T}padding:12px 16px 4px 0;white-space:nowrap;vertical-align:top;"><strong>Powrót</strong></td><td style="${T}padding:12px 0 4px;">${fmt(trip.return_datetime)}</td></tr>`;
+  html += `<tr><td style="${T}padding:2px 16px 2px 0;white-space:nowrap;">${fmtTime(trip.return_datetime)}</td><td style="${T}padding:2px 0;">${trip.return_location}</td></tr>`;
 
   if (trip.return_stop2_datetime && trip.return_stop2_location) {
-    html += `<tr><td style="padding:2px 16px 2px 0;color:#6b7280;font-size:13px;white-space:nowrap;">📍 ${fmtTime(trip.return_stop2_datetime)}</td><td style="padding:2px 0;font-size:14px;">${trip.return_stop2_location}</td></tr>`;
+    html += `<tr><td style="${T}padding:2px 16px 2px 0;white-space:nowrap;">${fmtTime(trip.return_stop2_datetime)}</td><td style="${T}padding:2px 0;">${trip.return_stop2_location}</td></tr>`;
   }
 
   html += `</table>`;
@@ -215,7 +217,7 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
   // PŁATNOŚCI
   if (payments.length > 0) {
     html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;">`;
-    html += `<tr><td colspan="2" style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">💰 PŁATNOŚCI</td></tr>`;
+    html += `<tr><td colspan="2" style="${T}padding:16px 0 10px;font-weight:700;"><strong>PŁATNOŚCI</strong></td></tr>`;
 
     for (const p of payments) {
       const label = p.payment_type === 'season_pass'
@@ -227,28 +229,28 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
       const dueStr = p.due_date
         ? ` · termin: ${new Date(p.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`
         : '';
-      html += `<tr><td colspan="2" style="padding:3px 0;font-size:14px;">• <strong>${label}:</strong> ${p.amount.toFixed(0)} ${p.currency} (${method})${dueStr}</td></tr>`;
+      html += `<tr><td colspan="2" style="${T}padding:3px 0;">• <strong>${label}:</strong> ${p.amount.toFixed(0)} ${p.currency} (${method})${dueStr}</td></tr>`;
     }
 
     html += `<tr><td colspan="2" style="padding:12px 0 4px;">`;
     if (trip.bank_account_pln) {
-      html += `<p style="margin:4px 0;font-size:13px;color:#374151;">🏦 Konto PLN: <span style="font-family:monospace;">${trip.bank_account_pln}</span></p>`;
+      html += `<p style="${T}margin:4px 0;"><strong>Konto PLN:</strong> ${trip.bank_account_pln}</p>`;
     }
     if (trip.bank_account_eur) {
-      html += `<p style="margin:4px 0;font-size:13px;color:#374151;">🏦 Konto EUR: <span style="font-family:monospace;">${trip.bank_account_eur}</span></p>`;
+      html += `<p style="${T}margin:4px 0;"><strong>Konto EUR:</strong> ${trip.bank_account_eur}</p>`;
     }
-    html += `<p style="margin:10px 0 0;font-size:13px;color:#6b7280;">W tytule przelewu proszę podać: <strong>imię i nazwisko dziecka + nazwa wyjazdu</strong></p>`;
+    html += `<p style="${T}margin:10px 0 0;">W tytule przelewu proszę podać: <strong>imię i nazwisko dziecka + nazwa wyjazdu</strong></p>`;
     html += `</td></tr></table>`;
   }
 
   // CO ZABRAĆ
   if (trip.packing_list) {
     html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:20px;">`;
-    html += `<tr><td style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">🎒 CO ZABRAĆ</td></tr>`;
-    html += `<tr><td style="padding:0 0 12px;font-size:14px;color:#374151;"><ul style="margin:8px 0;padding-left:20px;">`;
+    html += `<tr><td style="${T}padding:16px 0 10px;font-weight:700;"><strong>CO ZABRAĆ</strong></td></tr>`;
+    html += `<tr><td style="padding:0 0 12px;"><ul style="${T}margin:4px 0;padding-left:20px;">`;
     const lines = trip.packing_list.split('\n').map((l) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
     for (const line of lines) {
-      html += `<li>${line}</li>`;
+      html += `<li style="${T}padding:2px 0;">${line}</li>`;
     }
     html += `</ul></td></tr></table>`;
   }
@@ -256,11 +258,11 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
   // DODATKOWE INFORMACJE
   if (trip.additional_info) {
     html += `<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:8px;">`;
-    html += `<tr><td style="padding:16px 0 10px;font-size:15px;font-weight:700;color:#111827;">ℹ️ DODATKOWE INFORMACJE</td></tr>`;
+    html += `<tr><td style="${T}padding:16px 0 10px;font-weight:700;"><strong>DODATKOWE INFORMACJE</strong></td></tr>`;
     const infoLines = trip.additional_info.split('\n').filter(Boolean);
-    html += `<tr><td style="padding:0 0 12px;font-size:14px;color:#374151;">`;
+    html += `<tr><td style="padding:0 0 12px;">`;
     for (const line of infoLines) {
-      html += `<p style="margin:0 0 8px;">${line}</p>`;
+      html += `<p style="${T}margin:0 0 8px;">${line}</p>`;
     }
     html += `</td></tr></table>`;
   }
