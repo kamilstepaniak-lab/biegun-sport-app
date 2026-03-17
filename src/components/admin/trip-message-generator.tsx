@@ -58,6 +58,13 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
     lines.push('');
   }
 
+  const dl = (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null }).declaration_deadline;
+  if (dl) {
+    lines.push(`⏰ *Potwierdzenie do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}*`);
+  }
+  lines.push(`👉 ${APP_URL}/parent/trips`);
+  lines.push('');
+
   lines.push(`📅 *Wyjazd:* ${format(new Date(trip.departure_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
   lines.push(`📍 ${format(new Date(trip.departure_datetime), 'HH:mm')} – ${trip.departure_location}`);
 
@@ -102,14 +109,6 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
     lines.push('_W tytule: imię, nazwisko dziecka + wyjazd_');
   }
 
-  const dl = (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null }).declaration_deadline;
-  if (dl) {
-    lines.push('');
-    lines.push(`⏰ *Potwierdzenie do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}*`);
-  }
-
-  lines.push('');
-  lines.push(`👉 Zapisy i potwierdzenie w aplikacji: ${APP_URL}/parent/trips`);
   lines.push('');
   lines.push('W razie pytań piszcie! 🙂');
 
