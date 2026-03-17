@@ -110,7 +110,7 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   }
 
   lines.push('');
-  lines.push('W razie pytań piszcie! 🙂');
+  lines.push('W razie pytań prosimy o kontakt.');
 
   return lines.join('\n');
 }
