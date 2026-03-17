@@ -12,19 +12,6 @@ import { logActivity } from './activity-logs';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-function buildConfirmationButtonsHtml(childName: string, appUrl: string): string {
-  return `
-<table style="width:100%;border-collapse:collapse;border-top:2px solid #e5e7eb;margin-top:28px;">
-  <tr><td style="padding:24px 0 8px;text-align:center;">
-    <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#111827;">Czy ${childName} bierze udział?</p>
-    <p style="margin:0 0 20px;font-size:13px;color:#6b7280;">Zaloguj się do aplikacji, wybierz przystanek i potwierdź udział.</p>
-    <a href="${appUrl}"
-       style="display:inline-block;padding:14px 32px;background:#1e56d9;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">
-      Przejdź do aplikacji →
-    </a>
-  </td></tr>
-</table>`;
-}
 
 // ─── Podgląd e-maila (do edytora w dialogu wyjazdu) ──────────────────────────
 
@@ -110,7 +97,7 @@ export async function getTripEmailPreview(tripId: string): Promise<{
     payment_method: pt.payment_method,
   }));
 
-  const tripDetailsHtml = buildTripDetailsHtml(trip as TripEmailData, payments);
+  const tripDetailsHtml = buildTripDetailsHtml(trip as TripEmailData, payments, `${APP_URL}/parent/trips`);
 
   // Zastąp zmienne
   templateBody = templateBody
@@ -244,12 +231,10 @@ export async function sendTripInfoEmailToGroup(
   const tripsAppUrl = `${APP_URL}/parent/trips`;
 
   for (const recipient of toSend) {
-    const confirmationBlock = buildConfirmationButtonsHtml(recipient.childName, tripsAppUrl);
-
     try {
       if (customBodyHtml) {
-        // Tryb: wyślij edytowany HTML admina + blok potwierdzenia
-        await sendTripEmail(recipient.parentEmail, subject, customBodyHtml + confirmationBlock, tripId);
+        // Tryb: wyślij edytowany HTML admina
+        await sendTripEmail(recipient.parentEmail, subject, customBodyHtml, tripId);
       } else {
         // Tryb: generuj HTML per-odbiorca (z filtrowaniem płatności wg rocznika)
         const emailPaymentLines: PaymentLineItem[] = (paymentTemplates || [])
@@ -269,10 +254,10 @@ export async function sendTripInfoEmailToGroup(
             payment_method: pt.payment_method,
           }));
 
-        const tripDetailsHtml = buildTripDetailsHtml(trip as TripEmailData, emailPaymentLines);
+        const tripDetailsHtml = buildTripDetailsHtml(trip as TripEmailData, emailPaymentLines, tripsAppUrl);
         const autoBodyHtml = `<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 16px;">Informacja o wyjeździe 🏔️</p><p style="font-size:14px;color:#374151;margin:0 0 10px;">Drogi/a ${recipient.parentFirstName || 'Rodzicu'},</p><p style="font-size:14px;color:#374151;margin:0 0 16px;">Przekazujemy informacje o planowanym wyjeździe <strong>${trip.title}</strong> dla <strong>${recipient.childName}</strong>.</p>${tripDetailsHtml}`;
 
-        await sendTripEmail(recipient.parentEmail, subject, autoBodyHtml + confirmationBlock, tripId);
+        await sendTripEmail(recipient.parentEmail, subject, autoBodyHtml, tripId);
       }
       sent++;
     } catch (err) {

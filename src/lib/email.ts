@@ -161,7 +161,7 @@ export interface PaymentLineItem {
 
 // ─── Blok HTML z detalami wyjazdu ────────────────────────────────────────────
 
-export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineItem[]): string {
+export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineItem[], appUrl?: string): string {
   const fmt = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('pl-PL', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -172,16 +172,21 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
   let html = '';
 
   if (trip.description) {
-    html += `<p style="color:#6b7280;font-size:14px;margin:0 0 16px;">${trip.description}</p>`;
+    html += `<p style="color:#6b7280;font-size:14px;margin:0 0 0;">${trip.description}</p>`;
   }
 
-  // DEKLARACJA
-  if (trip.declaration_deadline) {
-    const dlFormatted = new Date(trip.declaration_deadline).toLocaleDateString('pl-PL', {
-      day: 'numeric', month: 'long', year: 'numeric',
-    });
-    html += `<div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 16px;margin-bottom:20px;">`;
-    html += `<p style="margin:0;font-size:14px;color:#92400e;">⏰ Prosimy o <strong>potwierdzenie udziału do ${dlFormatted}</strong>. Brak odpowiedzi w tym terminie może skutkować utratą miejsca.</p>`;
+  // ZAPISY — blok z datą deklaracji i przyciskiem do aplikacji
+  if (trip.declaration_deadline || appUrl) {
+    html += `<div style="border-top:2px solid #e5e7eb;padding:20px 0;text-align:center;margin-top:20px;">`;
+    if (trip.declaration_deadline) {
+      const dlFormatted = new Date(trip.declaration_deadline).toLocaleDateString('pl-PL', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      });
+      html += `<p style="margin:0 0 14px;font-size:14px;color:#374151;">Zapisy przez aplikację <strong>bsapp.pro</strong> do dnia <strong>${dlFormatted}</strong></p>`;
+    }
+    if (appUrl) {
+      html += `<a href="${appUrl}" style="display:inline-block;padding:13px 30px;background:#1e56d9;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;border-radius:9px;">Przejdź do aplikacji →</a>`;
+    }
     html += `</div>`;
   }
 
