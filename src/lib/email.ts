@@ -261,9 +261,18 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
     html += `<tr><td style="${T}padding:16px 0 10px;font-weight:700;"><strong>DODATKOWE INFORMACJE</strong></td></tr>`;
     const infoLines = trip.additional_info.split('\n').filter(Boolean);
     html += `<tr><td style="padding:0 0 12px;">`;
+    let inList = false;
     for (const line of infoLines) {
-      html += `<p style="${T}margin:0 0 8px;">${line}</p>`;
+      const isBullet = /^[-•*]\s+/.test(line);
+      if (isBullet && !inList) { html += `<ul style="${T}margin:4px 0;padding-left:20px;">`; inList = true; }
+      if (!isBullet && inList) { html += `</ul>`; inList = false; }
+      if (isBullet) {
+        html += `<li style="${T}padding:2px 0;">${line.replace(/^[-•*]\s+/, '')}</li>`;
+      } else {
+        html += `<p style="${T}margin:0 0 8px;">${line}</p>`;
+      }
     }
+    if (inList) html += `</ul>`;
     html += `</td></tr></table>`;
   }
 
