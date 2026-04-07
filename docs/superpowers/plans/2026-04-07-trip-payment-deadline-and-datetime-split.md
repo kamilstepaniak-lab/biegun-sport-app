@@ -189,15 +189,42 @@ const { error, data } = await supabaseAdmin
   .single();
 ```
 
-- [ ] **Step 2: Update `createTrip` and `updateTrip` to pass new trip fields**
+- [ ] **Step 2: Update `createTrip` — destructuring + insert payload**
 
-Find `createTrip` in `src/lib/actions/trips.ts`. In the Supabase insert payload, add:
+In `createTrip` (around line 161), the function uses explicit destructuring. Add the new fields to the destructuring block:
 ```ts
-departure_time_known: data.departure_time_known ?? true,
-return_time_known: data.return_time_known ?? true,
+const {
+  title,
+  // ...existing fields...
+  additional_info,
+  departure_time_known,   // ADD
+  return_time_known,      // ADD
+} = input;
 ```
 
-Find `updateTrip` similarly and add the same fields to the update payload.
+Then in the `.insert({...})` payload (around line 187), add:
+```ts
+departure_time_known: departure_time_known ?? true,
+return_time_known: return_time_known ?? true,
+```
+
+- [ ] **Step 2b: Update `updateTrip` — destructuring + conditional updateData**
+
+In `updateTrip` (around line 276), add to the destructuring block:
+```ts
+const {
+  // ...existing fields...
+  additional_info,
+  departure_time_known,   // ADD
+  return_time_known,      // ADD
+} = input;
+```
+
+In the `updateData` conditional block (after line 321 where `additional_info` is handled), add:
+```ts
+if (departure_time_known !== undefined) updateData.departure_time_known = departure_time_known;
+if (return_time_known !== undefined) updateData.return_time_known = return_time_known;
+```
 
 - [ ] **Step 3: Update payment template insert/update to pass `due_days_from_confirmation`**
 
@@ -867,28 +894,44 @@ For `due_days_from_confirmation`, we need to extend `PaymentWithDetails` to incl
 
 - [ ] **Step 1: Extend `PaymentWithDetails` in `src/types/database.ts`**
 
-Change the existing `PaymentWithDetails` definition:
+Make `template` optional so `_fetchAllPaymentsDB` (which doesn't join template) continues to type-check:
 ```ts
 export interface PaymentWithDetails extends Payment {
   registration: TripRegistration & {
     participant: ParticipantWithParent;
     trip: Trip;
   };
-  template: Pick<TripPaymentTemplate, 'due_days_from_confirmation'> | null;
+  template?: Pick<TripPaymentTemplate, 'due_days_from_confirmation'> | null;  // optional
   transactions: PaymentTransaction[];
 }
 ```
 
-- [ ] **Step 2: Update the admin trip payments query** in `src/lib/actions/payments.ts`
+- [ ] **Step 2: Update only `getPaymentsForTrip` in `src/lib/actions/payments.ts`** (line 20 — the trip-scoped query)
 
-Find the query that fetches payments for admin trip view (search for `trip_payments` or a function returning `PaymentWithDetails[]` filtered by `trip_id`). Add a join for `template`:
-
+Add `template` join to the `.select()` string:
 ```ts
-// In the .select() string, add:
-template:trip_payment_templates(due_days_from_confirmation)
+const { data: payments, error } = await supabase
+  .from('payments')
+  .select(`
+    *,
+    registration:trip_registrations (
+      *,
+      participant:participants (
+        *,
+        parent:profiles!parent_id (*)
+      ),
+      trip:trips (*)
+    ),
+    template:trip_payment_templates (due_days_from_confirmation),
+    transactions:payment_transactions (*)
+  `)
+  .eq('registration.trip_id', tripId)
+  // ...rest unchanged
 ```
 
-Also ensure `registration` join includes `confirmed_at` — since `TripRegistration` uses `*` wildcard, this is automatic.
+Do NOT modify `_fetchAllPaymentsDB` (line 52) — it uses `template?: ...` (optional) so TypeScript won't complain. The global payments view doesn't need to show the confirmation deadline badge.
+
+Also: `registration.confirmed_at` is returned automatically since the `trip_registrations` join uses `*` wildcard and `confirmed_at` was added to the table in Task 1.
 
 - [ ] **Step 3: In `trip-payments-list.tsx`, add import:**
 ```ts
