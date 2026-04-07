@@ -118,6 +118,8 @@ export interface Trip {
   allow_own_transport: boolean;
   packing_list: string | null;
   additional_info: string | null;
+  departure_time_known: boolean;
+  return_time_known: boolean;
   status: TripStatus;
   created_at: string;
   updated_at: string;
@@ -143,6 +145,7 @@ export interface TripPaymentTemplate {
   amount: number;
   currency: Currency;
   due_date: string | null;
+  due_days_from_confirmation: number | null;
   payment_method: PaymentMethod | null;
   created_at: string;
 }
@@ -157,6 +160,7 @@ export interface TripRegistration {
   status: RegistrationStatus;
   participation_status: ParticipationStatus;
   participation_note: string | null;
+  confirmed_at: string | null;
   created_at: string;
 }
 
@@ -259,6 +263,7 @@ export interface PaymentWithDetails extends Payment {
     participant: ParticipantWithParent;
     trip: Trip;
   };
+  template?: Pick<TripPaymentTemplate, 'due_days_from_confirmation'> | null;
   transactions: PaymentTransaction[];
 }
 
@@ -329,6 +334,8 @@ export interface CreateTripInput {
   allow_own_transport?: boolean;
   packing_list?: string | null;
   additional_info?: string | null;
+  departure_time_known?: boolean;
+  return_time_known?: boolean;
 }
 
 export interface CreatePaymentTemplateInput {
@@ -342,6 +349,7 @@ export interface CreatePaymentTemplateInput {
   amount: number;
   currency: Currency;
   due_date?: string | null;
+  due_days_from_confirmation?: number | null;
   payment_method?: PaymentMethod | null;
 }
 
