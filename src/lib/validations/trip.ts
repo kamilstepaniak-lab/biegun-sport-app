@@ -39,6 +39,7 @@ export const paymentTemplateSchema = z.object({
     message: 'Waluta jest wymagana',
   }),
   due_date: z.string().nullable().optional(),
+  due_days_from_confirmation: z.number().int().positive().nullable().optional(),
   payment_method: z.enum(['cash', 'transfer', 'both']).nullable().optional(),
 }).refine((data) => {
   if (data.payment_type === 'installment' && !data.installment_number) {
@@ -64,6 +65,12 @@ export const paymentTemplateSchema = z.object({
 }, {
   message: 'Rocznik "od" nie może być większy niż rocznik "do"',
   path: ['birth_year_to'],
+}).refine((data) => {
+  if (data.due_date && data.due_days_from_confirmation) return false;
+  return true;
+}, {
+  message: 'Nie można jednocześnie ustawić konkretnej daty i "dni od potwierdzenia"',
+  path: ['due_days_from_confirmation'],
 });
 
 export const tripBasicInfoSchema = z.object({
@@ -85,6 +92,7 @@ export const tripDatesSchema = z.object({
   departure_datetime: z
     .string()
     .min(1, 'Data wyjazdu jest wymagana'),
+  departure_time_known: z.boolean().default(true),
   departure_location: z
     .string()
     .min(3, 'Miejsce wyjazdu musi mieć minimum 3 znaki')
@@ -92,6 +100,7 @@ export const tripDatesSchema = z.object({
   return_datetime: z
     .string()
     .min(1, 'Data powrotu jest wymagana'),
+  return_time_known: z.boolean().default(true),
   return_location: z
     .string()
     .min(3, 'Miejsce powrotu musi mieć minimum 3 znaki')
