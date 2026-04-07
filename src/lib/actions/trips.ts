@@ -179,6 +179,8 @@ export async function createTrip(input: CreateTripInput) {
     payment_templates,
     packing_list,
     additional_info,
+    departure_time_known,
+    return_time_known,
   } = input;
 
   // 1. Utwórz wyjazd
@@ -202,6 +204,8 @@ export async function createTrip(input: CreateTripInput) {
       allow_own_transport: allow_own_transport ?? false,
       packing_list: packing_list || null,
       additional_info: additional_info || null,
+      departure_time_known: departure_time_known ?? true,
+      return_time_known: return_time_known ?? true,
       status,
       created_by: user.id,
     })
@@ -244,6 +248,7 @@ export async function createTrip(input: CreateTripInput) {
       amount: template.amount,
       currency: template.currency,
       due_date: template.due_date || null,
+      due_days_from_confirmation: template.due_days_from_confirmation ?? null,
       payment_method: template.payment_method || null,
     }));
 
@@ -294,6 +299,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     payment_templates,
     packing_list,
     additional_info,
+    departure_time_known,
+    return_time_known,
   } = input;
 
   // 1. Aktualizuj wyjazd (używamy admin client żeby ominąć RLS)
@@ -319,6 +326,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (allow_own_transport !== undefined) updateData.allow_own_transport = allow_own_transport;
   if (packing_list !== undefined) updateData.packing_list = packing_list || null;
   if (additional_info !== undefined) updateData.additional_info = additional_info || null;
+  if (departure_time_known !== undefined) updateData.departure_time_known = departure_time_known;
+  if (return_time_known !== undefined) updateData.return_time_known = return_time_known;
 
   const { error: updateError } = await supabaseAdmin
     .from('trips')
@@ -1145,6 +1154,7 @@ export async function updateParticipationStatusByParent(
       .update({
         participation_status: status,
         participation_note: note || null,
+        ...(status === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
       })
       .eq('id', existing.id);
 
@@ -1165,6 +1175,7 @@ export async function updateParticipationStatusByParent(
         status: 'active',
         participation_status: status,
         participation_note: note || null,
+        ...(status === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
       })
       .select('id')
       .single();
