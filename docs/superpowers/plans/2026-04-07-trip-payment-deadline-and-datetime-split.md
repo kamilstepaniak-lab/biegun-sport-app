@@ -352,6 +352,18 @@ git commit -m "feat: add payment due date helpers for dynamic confirmation-based
 
 ### Task 7: Split departure/return datetime inputs
 
+- [ ] **Step 0: Add `departure_time_known` and `return_time_known` to `TripFormData` interface** (in `src/components/admin/trip-form/index.tsx`, around line 33):
+
+```ts
+export interface TripFormData {
+  // ...existing fields...
+  departure_time_known: boolean;   // ADD THIS
+  return_time_known: boolean;      // ADD THIS
+}
+```
+
+This must be done before the state initialization and JSX steps below, as those use `updateFormData({ departure_time_known: ... })` which requires the field to be typed.
+
 - [ ] **Step 1: Update `TripFormData` default state initialization**
 
 In `useState<TripFormData>` (around line 191), change datetime initialization:
@@ -480,7 +492,70 @@ const [returnTime, setReturnTime] = useState(
 </div>
 ```
 
-- [ ] **Step 4: Update `localToISO` usage** — the existing `localToISO` function expects `YYYY-MM-DDTHH:mm` format. Since we're now constructing the value ourselves, verify the format is consistent before the form submits. In the submit handler, the `departure_datetime` should already be in `YYYY-MM-DDTHH:mm` format — `localToISO` should still work correctly.
+- [ ] **Step 4: Split stop2 datetime inputs** (UI only — no DB flags for stop2, time defaults to `00:00` when empty)
+
+The stop2 fields (`departure_stop2_datetime`, `return_stop2_datetime`) currently use `datetime-local`. Replace each with a date + time pair. Add local state:
+
+```ts
+const [departureStop2Time, setDepartureStop2Time] = useState(
+  t?.departure_stop2_datetime ? formatDateTimeLocal(t.departure_stop2_datetime).split('T')[1] ?? '' : ''
+);
+const [returnStop2Time, setReturnStop2Time] = useState(
+  t?.return_stop2_datetime ? formatDateTimeLocal(t.return_stop2_datetime).split('T')[1] ?? '' : ''
+);
+```
+
+In the stop2 departure input (search for `departure_stop2_datetime` in the form), replace the `datetime-local` input:
+```tsx
+<div className="grid gap-4 md:grid-cols-2">
+  <div className="space-y-2">
+    <Label htmlFor="stop2_dep_date">Data przystanku 2</Label>
+    <Input
+      id="stop2_dep_date"
+      type="date"
+      value={formData.departure_stop2_datetime ? formData.departure_stop2_datetime.split('T')[0] : ''}
+      onChange={(e) => {
+        const dateVal = e.target.value;
+        const time = departureStop2Time || '00:00';
+        updateFormData({ departure_stop2_datetime: dateVal ? `${dateVal}T${time}` : '' });
+      }}
+    />
+  </div>
+  <div className="space-y-2">
+    <Label htmlFor="stop2_dep_time">Godzina przystanku 2</Label>
+    <Input
+      id="stop2_dep_time"
+      type="time"
+      value={departureStop2Time}
+      onChange={(e) => {
+        const timeVal = e.target.value;
+        setDepartureStop2Time(timeVal);
+        if (formData.departure_stop2_datetime) {
+          const datePart = formData.departure_stop2_datetime.split('T')[0];
+          updateFormData({ departure_stop2_datetime: `${datePart}T${timeVal || '00:00'}` });
+        }
+      }}
+    />
+  </div>
+</div>
+```
+
+Apply the same pattern for `return_stop2_datetime` using `returnStop2Time` / `setReturnStop2Time`.
+
+**Display note for stop2 times in calendars:** Since stop2 has no `_time_known` DB flag, use a convention in the calendar display: hide stop2 time if it is `00:00`. In `admin/calendar-view.tsx` and `parent/calendar-view.tsx`, wrap the stop2 time `<span>` in:
+```tsx
+{trip.departure_stop2_datetime && trip.departure_stop2_location && (() => {
+  const stop2Date = new Date(trip.departure_stop2_datetime);
+  const stop2Time = format(stop2Date, 'HH:mm', { locale: pl });
+  return (
+    <span className="text-gray-600 whitespace-nowrap">
+      {stop2Time !== '00:00' ? `${stop2Time} · ` : ''}{trip.departure_stop2_location}
+    </span>
+  );
+})()}
+```
+
+- [ ] **Step 5: Update `localToISO` usage** — the existing `localToISO` function expects `YYYY-MM-DDTHH:mm` format. Since we're now constructing the value ourselves, verify the format is consistent before the form submits. In the submit handler, the `departure_datetime` should already be in `YYYY-MM-DDTHH:mm` format — `localToISO` should still work correctly.
 
 - [ ] **Step 5: Update `isValid` check** — find where `departure_datetime` validity is checked and ensure it still correctly validates (the date-only part `YYYY-MM-DD` should be sufficient for the date being set check).
 
@@ -910,7 +985,15 @@ Wrap it with a conditional:
   </div>
 )}
 ```
-Same for return (around line 481) using `return_time_known`.
+Apply the same pattern for return (around line 481), replacing `departureDate` with `returnDate` (the local variable declared on line 440) and `departure_time_known` with `return_time_known`:
+```tsx
+{(trip.return_time_known ?? true) && (
+  <div className="flex items-center gap-1 text-gray-600 text-xs">
+    <span className="font-medium">{format(returnDate, 'HH:mm', { locale: pl })}</span>
+    {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
+  </div>
+)}
+```
 
 - [ ] **Step 3: Commit**
 
