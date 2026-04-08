@@ -37,10 +37,12 @@ export interface TripFormData {
   location: string;
   status: TripStatus;
   departure_datetime: string;
+  departure_time_known: boolean;
   departure_location: string;
   departure_stop2_datetime: string;
   departure_stop2_location: string;
   return_datetime: string;
+  return_time_known: boolean;
   return_location: string;
   return_stop2_datetime: string;
   return_stop2_location: string;
@@ -70,6 +72,7 @@ const emptyPayment: CreatePaymentTemplateInput = {
   amount: 0,
   currency: 'PLN',
   due_date: null,
+  due_days_from_confirmation: null,
   payment_method: 'transfer',
 };
 
@@ -188,17 +191,50 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   const [showPackingList, setShowPackingList] = useState(!!t?.packing_list);
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(!!t?.additional_info);
 
+  const [departureTime, setDepartureTime] = useState(
+    trip?.departure_datetime && (trip as any)?.departure_time_known !== false
+      ? formatDateTimeLocal(trip.departure_datetime).split('T')[1] ?? ''
+      : ''
+  );
+  const [returnTime, setReturnTime] = useState(
+    trip?.return_datetime && (trip as any)?.return_time_known !== false
+      ? formatDateTimeLocal(trip.return_datetime).split('T')[1] ?? ''
+      : ''
+  );
+  const [departureStop2Time, setDepartureStop2Time] = useState(
+    trip?.departure_stop2_datetime ? formatDateTimeLocal(trip.departure_stop2_datetime).split('T')[1] ?? '' : ''
+  );
+  const [returnStop2Time, setReturnStop2Time] = useState(
+    trip?.return_stop2_datetime ? formatDateTimeLocal(trip.return_stop2_datetime).split('T')[1] ?? '' : ''
+  );
+
   const [formData, setFormData] = useState<TripFormData>({
     title: t?.title || '',
     description: t?.description || '',
     declaration_deadline: t?.declaration_deadline || '',
     location: t?.location || '',
     status: t?.status || 'draft',
-    departure_datetime: formatDateTimeLocal(trip?.departure_datetime),
+    departure_datetime: trip?.departure_datetime
+      ? (() => {
+          const full = formatDateTimeLocal(trip.departure_datetime);
+          const datePart = full.split('T')[0];
+          const timePart = (trip as any)?.departure_time_known !== false ? (full.split('T')[1] ?? '00:00') : '00:00';
+          return datePart ? `${datePart}T${timePart}` : '';
+        })()
+      : '',
+    departure_time_known: (trip as any)?.departure_time_known ?? true,
     departure_location: trip?.departure_location || '',
     departure_stop2_datetime: formatDateTimeLocal(t?.departure_stop2_datetime),
     departure_stop2_location: t?.departure_stop2_location || '',
-    return_datetime: formatDateTimeLocal(t?.return_datetime),
+    return_datetime: trip?.return_datetime
+      ? (() => {
+          const full = formatDateTimeLocal(trip.return_datetime);
+          const datePart = full.split('T')[0];
+          const timePart = (trip as any)?.return_time_known !== false ? (full.split('T')[1] ?? '00:00') : '00:00';
+          return datePart ? `${datePart}T${timePart}` : '';
+        })()
+      : '',
+    return_time_known: (trip as any)?.return_time_known ?? true,
     return_location: t?.return_location || '',
     return_stop2_datetime: formatDateTimeLocal(t?.return_stop2_datetime),
     return_stop2_location: t?.return_stop2_location || '',
@@ -417,19 +453,48 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             </h4>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Data i godzina *</Label>
+                <Label htmlFor="departure_date">Data wyjazdu *</Label>
                 <Input
-                  type="datetime-local"
-                  value={formData.departure_datetime}
-                  onChange={(e) => updateFormData({ departure_datetime: e.target.value })}
+                  id="departure_date"
+                  type="date"
+                  value={formData.departure_datetime ? formData.departure_datetime.split('T')[0] : ''}
+                  onChange={(e) => {
+                    const dateVal = e.target.value;
+                    const time = departureTime || '00:00';
+                    updateFormData({
+                      departure_datetime: dateVal ? `${dateVal}T${time}` : '',
+                      departure_time_known: !!departureTime,
+                    });
+                  }}
                 />
               </div>
-              <LocationSelect
-                label={formData.allow_own_transport ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
-                value={formData.departure_location}
-                onChange={(val) => updateFormData({ departure_location: val })}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="departure_time">Godzina wyjazdu</Label>
+                <Input
+                  id="departure_time"
+                  type="time"
+                  value={departureTime}
+                  placeholder="nieznana"
+                  onChange={(e) => {
+                    const timeVal = e.target.value;
+                    setDepartureTime(timeVal);
+                    if (formData.departure_datetime) {
+                      const datePart = formData.departure_datetime.split('T')[0];
+                      updateFormData({
+                        departure_datetime: `${datePart}T${timeVal || '00:00'}`,
+                        departure_time_known: !!timeVal,
+                      });
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Opcjonalna — jeśli nieznana, nie będzie wyświetlana</p>
+              </div>
             </div>
+            <LocationSelect
+              label={formData.allow_own_transport ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
+              value={formData.departure_location}
+              onChange={(val) => updateFormData({ departure_location: val })}
+            />
 
             {/* Checkbox dojazd własny */}
             <div className="flex items-center gap-2">
@@ -471,19 +536,40 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Data i godzina</Label>
+                    <Label htmlFor="stop2_dep_date">Data przystanku 2</Label>
                     <Input
-                      type="datetime-local"
-                      value={formData.departure_stop2_datetime}
-                      onChange={(e) => updateFormData({ departure_stop2_datetime: e.target.value })}
+                      id="stop2_dep_date"
+                      type="date"
+                      value={formData.departure_stop2_datetime ? formData.departure_stop2_datetime.split('T')[0] : ''}
+                      onChange={(e) => {
+                        const dateVal = e.target.value;
+                        const time = departureStop2Time || '00:00';
+                        updateFormData({ departure_stop2_datetime: dateVal ? `${dateVal}T${time}` : '' });
+                      }}
                     />
                   </div>
-                  <LocationSelect
-                    label="Miejsce"
-                    value={formData.departure_stop2_location}
-                    onChange={(val) => updateFormData({ departure_stop2_location: val })}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="stop2_dep_time">Godzina przystanku 2</Label>
+                    <Input
+                      id="stop2_dep_time"
+                      type="time"
+                      value={departureStop2Time}
+                      onChange={(e) => {
+                        const timeVal = e.target.value;
+                        setDepartureStop2Time(timeVal);
+                        if (formData.departure_stop2_datetime) {
+                          const datePart = formData.departure_stop2_datetime.split('T')[0];
+                          updateFormData({ departure_stop2_datetime: `${datePart}T${timeVal || '00:00'}` });
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
+                <LocationSelect
+                  label="Miejsce"
+                  value={formData.departure_stop2_location}
+                  onChange={(val) => updateFormData({ departure_stop2_location: val })}
+                />
               </div>
             )}
           </div>
@@ -501,11 +587,19 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
             </h4>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Data i godzina *</Label>
+                <Label htmlFor="return_date">Data powrotu *</Label>
                 <Input
-                  type="datetime-local"
-                  value={formData.return_datetime}
-                  onChange={(e) => updateFormData({ return_datetime: e.target.value })}
+                  id="return_date"
+                  type="date"
+                  value={formData.return_datetime ? formData.return_datetime.split('T')[0] : ''}
+                  onChange={(e) => {
+                    const dateVal = e.target.value;
+                    const time = returnTime || '00:00';
+                    updateFormData({
+                      return_datetime: dateVal ? `${dateVal}T${time}` : '',
+                      return_time_known: !!returnTime,
+                    });
+                  }}
                 />
                 {formData.departure_datetime && formData.return_datetime &&
                   new Date(formData.return_datetime) <= new Date(formData.departure_datetime) && (
@@ -514,12 +608,33 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                     </p>
                   )}
               </div>
-              <LocationSelect
-                label={formData.allow_own_transport ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
-                value={formData.return_location}
-                onChange={(val) => updateFormData({ return_location: val })}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="return_time">Godzina powrotu</Label>
+                <Input
+                  id="return_time"
+                  type="time"
+                  value={returnTime}
+                  placeholder="nieznana"
+                  onChange={(e) => {
+                    const timeVal = e.target.value;
+                    setReturnTime(timeVal);
+                    if (formData.return_datetime) {
+                      const datePart = formData.return_datetime.split('T')[0];
+                      updateFormData({
+                        return_datetime: `${datePart}T${timeVal || '00:00'}`,
+                        return_time_known: !!timeVal,
+                      });
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Opcjonalna — jeśli nieznana, nie będzie wyświetlana</p>
+              </div>
             </div>
+            <LocationSelect
+              label={formData.allow_own_transport ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
+              value={formData.return_location}
+              onChange={(val) => updateFormData({ return_location: val })}
+            />
 
             {!showStop2Return ? (
               <Button
@@ -549,19 +664,40 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Data i godzina</Label>
+                    <Label htmlFor="stop2_ret_date">Data powrotu przystanku 2</Label>
                     <Input
-                      type="datetime-local"
-                      value={formData.return_stop2_datetime}
-                      onChange={(e) => updateFormData({ return_stop2_datetime: e.target.value })}
+                      id="stop2_ret_date"
+                      type="date"
+                      value={formData.return_stop2_datetime ? formData.return_stop2_datetime.split('T')[0] : ''}
+                      onChange={(e) => {
+                        const dateVal = e.target.value;
+                        const time = returnStop2Time || '00:00';
+                        updateFormData({ return_stop2_datetime: dateVal ? `${dateVal}T${time}` : '' });
+                      }}
                     />
                   </div>
-                  <LocationSelect
-                    label="Miejsce"
-                    value={formData.return_stop2_location}
-                    onChange={(val) => updateFormData({ return_stop2_location: val })}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="stop2_ret_time">Godzina powrotu przystanku 2</Label>
+                    <Input
+                      id="stop2_ret_time"
+                      type="time"
+                      value={returnStop2Time}
+                      onChange={(e) => {
+                        const timeVal = e.target.value;
+                        setReturnStop2Time(timeVal);
+                        if (formData.return_stop2_datetime) {
+                          const datePart = formData.return_stop2_datetime.split('T')[0];
+                          updateFormData({ return_stop2_datetime: `${datePart}T${timeVal || '00:00'}` });
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
+                <LocationSelect
+                  label="Miejsce"
+                  value={formData.return_stop2_location}
+                  onChange={(val) => updateFormData({ return_stop2_location: val })}
+                />
               </div>
             )}
           </div>
@@ -799,18 +935,34 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                         <Input
                           type="date"
                           value={payment.due_date || ''}
+                          disabled={
+                            (!!formData.departure_datetime && payment.due_date === formData.departure_datetime.split('T')[0]) ||
+                            !!payment.due_days_from_confirmation
+                          }
                           onChange={(e) =>
-                            updatePayment(index, { due_date: e.target.value || null })
+                            updatePayment(index, {
+                              due_date: e.target.value || null,
+                              due_days_from_confirmation: null,
+                            })
                           }
                         />
+                        {/* Checkbox: W dniu wyjazdu */}
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             id={`due-departure-${index}`}
-                            checked={!!formData.departure_datetime && !!payment.due_date && payment.due_date === formData.departure_datetime.split('T')[0]}
+                            checked={
+                              !!formData.departure_datetime &&
+                              !!payment.due_date &&
+                              payment.due_date === formData.departure_datetime.split('T')[0]
+                            }
                             onChange={(e) => {
                               if (e.target.checked && formData.departure_datetime) {
-                                updatePayment(index, { due_date: formData.departure_datetime.split('T')[0], payment_method: 'cash' });
+                                updatePayment(index, {
+                                  due_date: formData.departure_datetime.split('T')[0],
+                                  due_days_from_confirmation: null,
+                                  payment_method: 'cash',
+                                });
                               } else {
                                 updatePayment(index, { due_date: null, payment_method: 'transfer' });
                               }
@@ -819,6 +971,28 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                           />
                           <label htmlFor={`due-departure-${index}`} className="text-xs text-gray-500 cursor-pointer select-none">
                             W dniu wyjazdu
+                          </label>
+                        </div>
+                        {/* Checkbox: 5 dni od potwierdzenia */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`due-confirmation-${index}`}
+                            checked={!!payment.due_days_from_confirmation}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                updatePayment(index, {
+                                  due_date: null,
+                                  due_days_from_confirmation: 5,
+                                });
+                              } else {
+                                updatePayment(index, { due_date: null, due_days_from_confirmation: null });
+                              }
+                            }}
+                            className="w-4 h-4 rounded accent-gray-900 cursor-pointer"
+                          />
+                          <label htmlFor={`due-confirmation-${index}`} className="text-xs text-gray-500 cursor-pointer select-none">
+                            5 dni od potwierdzenia obozu
                           </label>
                         </div>
                       </div>
