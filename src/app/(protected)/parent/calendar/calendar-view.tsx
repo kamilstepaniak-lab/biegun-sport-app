@@ -193,19 +193,31 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                       <td className="px-4 py-3.5 align-top">
                         <div className="flex flex-col gap-0.5 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
-                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                          {(trip.departure_time_known ?? true) && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
                           )}
+                          {!(trip.departure_time_known ?? true) && trip.departure_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{trip.departure_location}</span>
+                          )}
+                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (() => {
+                            const stop2Time = format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl });
+                            return <span className="text-gray-600 whitespace-nowrap">{stop2Time !== '00:00' ? `${stop2Time} · ` : ''}{trip.departure_stop2_location}</span>;
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-3.5 align-top">
                         <div className="flex flex-col gap-0.5 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
-                          {trip.return_stop2_datetime && trip.return_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                          {(trip.return_time_known ?? true) && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
                           )}
+                          {!(trip.return_time_known ?? true) && trip.return_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{trip.return_location}</span>
+                          )}
+                          {trip.return_stop2_datetime && trip.return_stop2_location && (() => {
+                            const stop2Time = format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl });
+                            return <span className="text-gray-600 whitespace-nowrap">{stop2Time !== '00:00' ? `${stop2Time} · ` : ''}{trip.return_stop2_location}</span>;
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap align-top">
@@ -336,16 +348,23 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                                   <div className="space-y-0.5">
                                     <span className="font-medium text-gray-700">Wyjazd</span>
                                     <div className="text-gray-500">{format(new Date(trip.departure_datetime), 'd MMM yyyy', { locale: pl })}</div>
-                                    <div className="flex items-center gap-1 text-gray-600">
-                                      <span className="font-medium">{format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}</span>
-                                      {trip.departure_location && <span className="text-gray-400">· {trip.departure_location}</span>}
-                                    </div>
-                                    {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+                                    {(trip.departure_time_known ?? true) ? (
                                       <div className="flex items-center gap-1 text-gray-600">
-                                        <span className="font-medium">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                                        <span className="text-gray-400">· {trip.departure_stop2_location}</span>
+                                        <span className="font-medium">{format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}</span>
+                                        {trip.departure_location && <span className="text-gray-400">· {trip.departure_location}</span>}
                                       </div>
+                                    ) : (
+                                      trip.departure_location && <div className="text-gray-600">{trip.departure_location}</div>
                                     )}
+                                    {trip.departure_stop2_datetime && trip.departure_stop2_location && (() => {
+                                      const stop2Time = format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl });
+                                      return (
+                                        <div className="flex items-center gap-1 text-gray-600">
+                                          {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                                          <span className="text-gray-400">{stop2Time !== '00:00' ? '· ' : ''}{trip.departure_stop2_location}</span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
 
@@ -357,16 +376,23 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                                   <div className="space-y-0.5">
                                     <span className="font-medium text-gray-700">Powrót</span>
                                     <div className="text-gray-500">{format(new Date(trip.return_datetime), 'd MMM yyyy', { locale: pl })}</div>
-                                    <div className="flex items-center gap-1 text-gray-600">
-                                      <span className="font-medium">{format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}</span>
-                                      {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
-                                    </div>
-                                    {trip.return_stop2_datetime && trip.return_stop2_location && (
+                                    {(trip.return_time_known ?? true) ? (
                                       <div className="flex items-center gap-1 text-gray-600">
-                                        <span className="font-medium">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                                        <span className="text-gray-400">· {trip.return_stop2_location}</span>
+                                        <span className="font-medium">{format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}</span>
+                                        {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
                                       </div>
+                                    ) : (
+                                      trip.return_location && <div className="text-gray-600">{trip.return_location}</div>
                                     )}
+                                    {trip.return_stop2_datetime && trip.return_stop2_location && (() => {
+                                      const stop2Time = format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl });
+                                      return (
+                                        <div className="flex items-center gap-1 text-gray-600">
+                                          {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                                          <span className="text-gray-400">{stop2Time !== '00:00' ? '· ' : ''}{trip.return_stop2_location}</span>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
 
@@ -433,16 +459,23 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                 <div className="text-sm space-y-0.5">
                   <p className="font-semibold text-gray-900">Wyjazd</p>
                   <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.departure_datetime), 'd MMMM yyyy', { locale: pl })}</p>
-                  <div className="flex items-center gap-1.5 text-gray-600">
-                    <span className="font-medium">{format(new Date(selectedTrip.departure_datetime), 'HH:mm', { locale: pl })}</span>
-                    {selectedTrip.departure_location && <span className="text-gray-500">· {selectedTrip.departure_location}</span>}
-                  </div>
-                  {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (
-                    <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-green-100">
-                      <span className="font-medium">{format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                      <span className="text-gray-500">· {selectedTrip.departure_stop2_location}</span>
+                  {(selectedTrip.departure_time_known ?? true) ? (
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <span className="font-medium">{format(new Date(selectedTrip.departure_datetime), 'HH:mm', { locale: pl })}</span>
+                      {selectedTrip.departure_location && <span className="text-gray-500">· {selectedTrip.departure_location}</span>}
                     </div>
+                  ) : (
+                    selectedTrip.departure_location && <div className="text-gray-600">{selectedTrip.departure_location}</div>
                   )}
+                  {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (() => {
+                    const stop2Time = format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl });
+                    return (
+                      <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-green-100">
+                        {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                        <span className="text-gray-500">{stop2Time !== '00:00' ? '· ' : ''}{selectedTrip.departure_stop2_location}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -454,16 +487,23 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                 <div className="text-sm space-y-0.5">
                   <p className="font-semibold text-gray-900">Powrót</p>
                   <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.return_datetime), 'd MMMM yyyy', { locale: pl })}</p>
-                  <div className="flex items-center gap-1.5 text-gray-600">
-                    <span className="font-medium">{format(new Date(selectedTrip.return_datetime), 'HH:mm', { locale: pl })}</span>
-                    {selectedTrip.return_location && <span className="text-gray-500">· {selectedTrip.return_location}</span>}
-                  </div>
-                  {selectedTrip.return_stop2_datetime && selectedTrip.return_stop2_location && (
-                    <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-red-100">
-                      <span className="font-medium">{format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                      <span className="text-gray-500">· {selectedTrip.return_stop2_location}</span>
+                  {(selectedTrip.return_time_known ?? true) ? (
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <span className="font-medium">{format(new Date(selectedTrip.return_datetime), 'HH:mm', { locale: pl })}</span>
+                      {selectedTrip.return_location && <span className="text-gray-500">· {selectedTrip.return_location}</span>}
                     </div>
+                  ) : (
+                    selectedTrip.return_location && <div className="text-gray-600">{selectedTrip.return_location}</div>
                   )}
+                  {selectedTrip.return_stop2_datetime && selectedTrip.return_stop2_location && (() => {
+                    const stop2Time = format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl });
+                    return (
+                      <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-red-100">
+                        {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                        <span className="text-gray-500">{stop2Time !== '00:00' ? '· ' : ''}{selectedTrip.return_stop2_location}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
