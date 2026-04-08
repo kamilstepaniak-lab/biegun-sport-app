@@ -1,9 +1,8 @@
 'use client';
 
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
 import { CreditCard, Clock } from 'lucide-react';
 import { EmptyState } from './empty-state';
+import { formatPaymentDueDate } from '@/lib/payment-due';
 import type { TripPaymentTemplate } from '@/types';
 
 function getMethodLabel(method: string | null): { label: string; className: string } {
@@ -58,7 +57,7 @@ export function PricingTable({ templates, departureDate }: PricingTableProps) {
                     {sortedTemplates.map((template) => {
                         const methodStyle = getMethodLabel(template.payment_method);
                         const label = getPaymentTypeLabel(template);
-                        const isDepartureDay = departureDate && template.due_date === new Date(departureDate).toISOString().split('T')[0];
+                        const dueDateLabel = formatPaymentDueDate(template, departureDate);
 
                         return (
                             <tr key={template.id} className="hover:bg-muted/30 transition-colors">
@@ -73,10 +72,10 @@ export function PricingTable({ templates, departureDate }: PricingTableProps) {
                                     )}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
-                                    {template.due_date ? (
+                                    {(template.due_date || template.due_days_from_confirmation) ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-300">
                                             <Clock className="h-3 w-3" />
-                                            {isDepartureDay ? 'w dniu wyjazdu' : `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`}
+                                            {dueDateLabel}
                                         </span>
                                     ) : (
                                         <span className="text-xs text-muted-foreground italic">wg ustaleń</span>
