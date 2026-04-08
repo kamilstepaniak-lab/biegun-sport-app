@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
+import { formatTripDatetime } from '@/lib/trip-datetime';
 import { Calendar, Clock, MapPin, Users, Backpack, Info as InfoIcon } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -101,7 +100,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               <div>
                 <p className="font-medium">Wyjazd</p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(trip.departure_datetime), "d MMMM yyyy, HH:mm", { locale: pl })}
+                  {formatTripDatetime(trip.departure_datetime, trip.departure_time_known ?? true)}
                 </p>
               </div>
             </div>
@@ -121,7 +120,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
               <div>
                 <p className="font-medium">Powrót</p>
                 <p className="text-sm text-muted-foreground">
-                  {format(new Date(trip.return_datetime), "d MMMM yyyy, HH:mm", { locale: pl })}
+                  {formatTripDatetime(trip.return_datetime, trip.return_time_known ?? true)}
                 </p>
               </div>
             </div>
