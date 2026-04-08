@@ -268,10 +268,16 @@ export function CalendarView({ trips }: CalendarViewProps) {
                       <td className="px-4 py-3.5 align-top">
                         <div className="flex flex-col gap-0.5 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(dep, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
-                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.departure_stop2_location}</span>
+                          {(trip.departure_time_known ?? true) && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</span>
                           )}
+                          {!(trip.departure_time_known ?? true) && trip.departure_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{trip.departure_location}</span>
+                          )}
+                          {trip.departure_stop2_datetime && trip.departure_stop2_location && (() => {
+                            const stop2Time = format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl });
+                            return <span className="text-gray-600 whitespace-nowrap">{stop2Time !== '00:00' ? `${stop2Time} · ` : ''}{trip.departure_stop2_location}</span>;
+                          })()}
                         </div>
                       </td>
 
@@ -279,10 +285,16 @@ export function CalendarView({ trips }: CalendarViewProps) {
                       <td className="px-4 py-3.5 align-top">
                         <div className="flex flex-col gap-0.5 text-sm">
                           <span className="font-semibold text-gray-900 whitespace-nowrap">{format(ret, 'd.MM.yyyy', { locale: pl })}</span>
-                          <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
-                          {trip.return_stop2_datetime && trip.return_stop2_location && (
-                            <span className="text-gray-600 whitespace-nowrap">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })} · {trip.return_stop2_location}</span>
+                          {(trip.return_time_known ?? true) && (
+                            <span className="text-gray-600 whitespace-nowrap">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</span>
                           )}
+                          {!(trip.return_time_known ?? true) && trip.return_location && (
+                            <span className="text-gray-600 whitespace-nowrap">{trip.return_location}</span>
+                          )}
+                          {trip.return_stop2_datetime && trip.return_stop2_location && (() => {
+                            const stop2Time = format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl });
+                            return <span className="text-gray-600 whitespace-nowrap">{stop2Time !== '00:00' ? `${stop2Time} · ` : ''}{trip.return_stop2_location}</span>;
+                          })()}
                         </div>
                       </td>
 
@@ -456,16 +468,21 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
           <div className="space-y-0.5">
             <div className="font-medium text-gray-900">Wyjazd</div>
             <div className="text-gray-500">{format(departureDate, 'd MMMM yyyy', { locale: pl })}</div>
-            <div className="flex items-center gap-1 text-gray-600 text-xs">
-              <span className="font-medium">{format(departureDate, 'HH:mm', { locale: pl })}</span>
-              {trip.departure_location && <span className="text-gray-400">· {trip.departure_location}</span>}
-            </div>
-            {trip.departure_stop2_datetime && trip.departure_stop2_location && (
+            {(trip.departure_time_known ?? true) && (
               <div className="flex items-center gap-1 text-gray-600 text-xs">
-                <span className="font-medium">{format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                <span className="text-gray-400">· {trip.departure_stop2_location}</span>
+                <span className="font-medium">{format(departureDate, 'HH:mm', { locale: pl })}</span>
+                {trip.departure_location && <span className="text-gray-400">· {trip.departure_location}</span>}
               </div>
             )}
+            {trip.departure_stop2_datetime && trip.departure_stop2_location && (() => {
+              const stop2Time = format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl });
+              return (
+                <div className="flex items-center gap-1 text-gray-600 text-xs">
+                  {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                  <span className="text-gray-400">{stop2Time !== '00:00' ? '· ' : ''}{trip.departure_stop2_location}</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -477,16 +494,21 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
           <div className="space-y-0.5">
             <div className="font-medium text-gray-900">Powrót</div>
             <div className="text-gray-500">{format(returnDate, 'd MMMM yyyy', { locale: pl })}</div>
-            <div className="flex items-center gap-1 text-gray-600 text-xs">
-              <span className="font-medium">{format(returnDate, 'HH:mm', { locale: pl })}</span>
-              {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
-            </div>
-            {trip.return_stop2_datetime && trip.return_stop2_location && (
+            {(trip.return_time_known ?? true) && (
               <div className="flex items-center gap-1 text-gray-600 text-xs">
-                <span className="font-medium">{format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}</span>
-                <span className="text-gray-400">· {trip.return_stop2_location}</span>
+                <span className="font-medium">{format(returnDate, 'HH:mm', { locale: pl })}</span>
+                {trip.return_location && <span className="text-gray-400">· {trip.return_location}</span>}
               </div>
             )}
+            {trip.return_stop2_datetime && trip.return_stop2_location && (() => {
+              const stop2Time = format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl });
+              return (
+                <div className="flex items-center gap-1 text-gray-600 text-xs">
+                  {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                  <span className="text-gray-400">{stop2Time !== '00:00' ? '· ' : ''}{trip.return_stop2_location}</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
