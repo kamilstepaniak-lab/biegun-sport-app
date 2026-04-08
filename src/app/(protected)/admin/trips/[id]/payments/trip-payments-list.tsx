@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { calcConfirmationDueDate, isConfirmationDeadlineOverdue } from '@/lib/payment-due';
 import type { PaymentWithDetails } from '@/types';
 
 interface TripPaymentsListProps {
@@ -259,7 +260,26 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-gray-600 text-xs">
-                          {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : '—'}
+                          {p.template?.due_days_from_confirmation ? (
+                            (() => {
+                              const confirmedAt = p.registration?.confirmed_at;
+                              const dueDate = calcConfirmationDueDate(p.template.due_days_from_confirmation, confirmedAt);
+                              const overdue = isConfirmationDeadlineOverdue(p.template.due_days_from_confirmation, confirmedAt);
+                              return (
+                                <div className="flex flex-col gap-0.5">
+                                  <span>{dueDate ? format(dueDate, 'd MMM yyyy', { locale: pl }) : 'czeka na potwierdzenie'}</span>
+                                  {overdue && p.status !== 'paid' && (
+                                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      PO TERMINIE
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : '—'
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-xs">
                           {(() => { const m = methodBadge(p.payment_method_used ?? null); return m.label === '—' ? <span className="text-gray-400">—</span> : <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md font-medium ${m.className}`}>{m.label}</span>; })()}

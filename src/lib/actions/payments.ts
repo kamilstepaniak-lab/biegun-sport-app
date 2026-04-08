@@ -35,6 +35,7 @@ export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDet
         ),
         trip:trips (*)
       ),
+      template:trip_payment_templates (due_days_from_confirmation),
       transactions:payment_transactions (*)
     `)
     .eq('registration.trip_id', tripId)
