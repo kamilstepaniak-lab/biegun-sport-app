@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { formatTripDatetime } from '@/lib/trip-datetime';
+import { formatPaymentDueDate } from '@/lib/payment-due';
 import {
   ChevronDown,
   ChevronUp,
@@ -471,7 +473,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
                         <p className="text-xs text-gray-500">
-                          {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                          {formatTripDatetime(trip.departure_datetime, trip.departure_time_known ?? true)}
                         </p>
                       </div>
                     </div>
@@ -503,7 +505,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
                         <p className="text-xs text-gray-500">
-                          {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                          {formatTripDatetime(trip.return_datetime, trip.return_time_known ?? true)}
                         </p>
                       </div>
                     </div>
@@ -566,11 +568,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                             <tr key={template.id} className="hover:bg-gray-50/50">
                               <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
                               <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                                {template.due_date
-                                  ? (trip.departure_datetime && template.due_date === new Date(trip.departure_datetime).toISOString().split('T')[0]
-                                    ? 'w dniu wyjazdu'
-                                    : format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl }))
-                                  : '-'}
+                                {formatPaymentDueDate(template, trip.departure_datetime)}
                               </td>
                               <td className="px-4 py-2.5 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodCls}`}>
