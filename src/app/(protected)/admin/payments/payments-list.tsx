@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -30,7 +31,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote, bulkUpdatePaymentStatus } from '@/lib/actions/payments';
+import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote, bulkUpdatePaymentStatus, deletePayment, bulkDeletePayments } from '@/lib/actions/payments';
 import type { PaymentWithDetails, PaymentStatus } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +66,10 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [deletingConfirm, setDeletingConfirm] = useState<string | null>(null);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const lastCheckedIndexRef = useRef<number | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -82,7 +87,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
   // Spłaszcz do płaskiej listy wierszy (używa optimistic state)
   const flatRows = useMemo<FlatRow[]>(() => {
     return optimisticPayments
-      .filter((p) => p.registration)
+      .filter((p) => p.registration && !deletedIds.has(p.id))
       .map((p) => ({
         payment: p,
         participantName: `${p.registration.participant.last_name} ${p.registration.participant.first_name}`,
@@ -90,7 +95,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
         tripId: p.registration.trip.id,
         tripDepartureDate: p.registration.trip.departure_datetime,
       }));
-  }, [optimisticPayments]);
+  }, [optimisticPayments, deletedIds]);
 
   // Unikalne wyjazdy do filtra
   const availableTrips = useMemo(() => {
@@ -246,6 +251,45 @@ export function PaymentsList({ payments }: PaymentsListProps) {
       }
     } catch { toast.error('Wystąpił błąd'); }
     finally { setIsBulkUpdating(false); }
+  }
+
+  async function handleDelete(paymentId: string) {
+    setDeletedIds((prev) => new Set(prev).add(paymentId));
+    setDeletingConfirm(null);
+    try {
+      const result = await deletePayment(paymentId);
+      if (result.error) {
+        setDeletedIds((prev) => { const next = new Set(prev); next.delete(paymentId); return next; });
+        toast.error(result.error);
+      } else {
+        toast.success('Płatność usunięta');
+        router.refresh();
+      }
+    } catch {
+      setDeletedIds((prev) => { const next = new Set(prev); next.delete(paymentId); return next; });
+      toast.error('Wystąpił błąd');
+    }
+  }
+
+  async function handleBulkDelete() {
+    const ids = Array.from(selectedIds);
+    setIsBulkDeleting(true);
+    setBulkDeleteConfirm(false);
+    try {
+      const result = await bulkDeletePayments(ids);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        setDeletedIds((prev) => { const next = new Set(prev); ids.forEach((id) => next.add(id)); return next; });
+        toast.success(`Usunięto ${ids.length} płatności`);
+        setSelectedIds(new Set());
+        router.refresh();
+      }
+    } catch {
+      toast.error('Wystąpił błąd');
+    } finally {
+      setIsBulkDeleting(false);
+    }
   }
 
   function toggleSelect(id: string, index: number, shiftKey: boolean) {
@@ -475,40 +519,73 @@ export function PaymentsList({ payments }: PaymentsListProps) {
           )}
         </td>
 
-        {/* Opłacono? */}
-        {!isCancelled && (
-          <td className="py-3 pl-3 pr-5">
-            <div className="flex gap-1.5">
-              <button
-                className={cn(
-                  'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                  isPaid
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                    : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
-                )}
-                onClick={() => handleStatusChange(payment.id, 'paid')}
-                disabled={isUpdating === payment.id}
-              >
-                <Check className="h-3 w-3" />
-                Tak
-              </button>
-              <button
-                className={cn(
-                  'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                  !isPaid
-                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
-                    : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
-                )}
-                onClick={() => handleStatusChange(payment.id, 'pending')}
-                disabled={isUpdating === payment.id}
-              >
-                <X className="h-3 w-3" />
-                Nie
-              </button>
+        {/* Opłacono? + Usuń */}
+        <td className="py-3 pl-3 pr-5">
+          <div className="flex gap-1.5 items-center">
+            {!isCancelled && (
+              <>
+                <button
+                  className={cn(
+                    'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                    isPaid
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                      : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
+                  )}
+                  onClick={() => handleStatusChange(payment.id, 'paid')}
+                  disabled={isUpdating === payment.id}
+                >
+                  <Check className="h-3 w-3" />
+                  Tak
+                </button>
+                <button
+                  className={cn(
+                    'h-7 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                    !isPaid
+                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                      : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
+                  )}
+                  onClick={() => handleStatusChange(payment.id, 'pending')}
+                  disabled={isUpdating === payment.id}
+                >
+                  <X className="h-3 w-3" />
+                  Nie
+                </button>
+              </>
+            )}
+            {/* Usuń */}
+            <div className="ml-1 pl-1.5 border-l border-gray-200 flex items-center gap-1">
+              {deletingConfirm === payment.id ? (
+                <>
+                  <span className="text-xs text-red-600 font-medium">Usuń?</span>
+                  <button
+                    onClick={() => handleDelete(payment.id)}
+                    className="h-6 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  >
+                    Tak
+                  </button>
+                  <button
+                    onClick={() => setDeletingConfirm(null)}
+                    className="h-6 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                  >
+                    Nie
+                  </button>
+                </>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setDeletingConfirm(payment.id)}
+                      className="h-7 w-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="rounded-lg">Usuń płatność</TooltipContent>
+                </Tooltip>
+              )}
             </div>
-          </td>
-        )}
-        {isCancelled && <td className="py-3 pl-3 pr-5" />}
+          </div>
+        </td>
       </tr>
     );
   }
@@ -651,7 +728,7 @@ export function PaymentsList({ payments }: PaymentsListProps) {
             <span className="text-sm font-semibold text-blue-800">
               {selectedIds.size} zaznaczonych
             </span>
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2 ml-auto flex-wrap">
               <button
                 onClick={() => handleBulkAction('paid')}
                 disabled={isBulkUpdating}
@@ -668,8 +745,36 @@ export function PaymentsList({ payments }: PaymentsListProps) {
                 <X className="h-3.5 w-3.5" />
                 Oznacz jako nieopłacone
               </button>
+              {bulkDeleteConfirm ? (
+                <>
+                  <span className="text-xs text-red-700 font-semibold self-center">Usunąć {selectedIds.size} płatności?</span>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={isBulkDeleting}
+                    className="h-8 px-4 text-xs font-semibold rounded-xl bg-red-700 text-white hover:bg-red-800 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Tak, usuń
+                  </button>
+                  <button
+                    onClick={() => setBulkDeleteConfirm(false)}
+                    className="h-8 px-3 text-xs font-medium rounded-xl bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    Anuluj
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setBulkDeleteConfirm(true)}
+                  disabled={isBulkDeleting}
+                  className="h-8 px-4 text-xs font-semibold rounded-xl bg-white text-red-600 ring-1 ring-red-200 hover:bg-red-50 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Usuń zaznaczone
+                </button>
+              )}
               <button
-                onClick={() => setSelectedIds(new Set())}
+                onClick={() => { setSelectedIds(new Set()); setBulkDeleteConfirm(false); }}
                 className="h-8 px-3 text-xs font-medium rounded-xl bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
               >
                 Odznacz

@@ -791,6 +791,58 @@ export async function updatePaymentNote(paymentId: string, note: string) {
   return { success: true };
 }
 
+export async function deletePayment(paymentId: string) {
+  const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
+
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
+
+  const { error } = await supabaseAdmin
+    .from('payments')
+    .delete()
+    .eq('id', paymentId);
+
+  if (error) {
+    console.error('Delete payment error:', error);
+    return { error: 'Nie udało się usunąć płatności' };
+  }
+
+  revalidateTag('payments');
+  revalidatePath('/admin/payments');
+  revalidatePath('/admin/trips');
+  revalidatePath('/parent/payments');
+
+  return { success: true };
+}
+
+export async function bulkDeletePayments(paymentIds: string[]) {
+  if (!paymentIds.length) return { success: true };
+
+  const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
+
+  const { error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
+
+  const { error } = await supabaseAdmin
+    .from('payments')
+    .delete()
+    .in('id', paymentIds);
+
+  if (error) {
+    console.error('Bulk delete payments error:', error);
+    return { error: 'Nie udało się usunąć płatności' };
+  }
+
+  revalidateTag('payments');
+  revalidatePath('/admin/payments');
+  revalidatePath('/admin/trips');
+  revalidatePath('/parent/payments');
+
+  return { success: true };
+}
+
 export async function bulkUpdatePaymentStatus(
   paymentIds: string[],
   status: 'paid' | 'pending'
