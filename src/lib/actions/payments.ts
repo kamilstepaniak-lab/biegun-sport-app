@@ -6,6 +6,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
+import { logActivity } from './activity-logs';
 
 import { getAuthUser } from './auth-helpers';
 
@@ -65,6 +66,7 @@ const _fetchAllPaymentsDB = unstable_cache(
           ),
           trip:trips (*)
         ),
+        template:trip_payment_templates (due_days_from_confirmation),
         transactions:payment_transactions (*)
       `)
       .neq('status', 'cancelled')
@@ -441,6 +443,8 @@ export interface ParentPayment {
   original_amount: number;
   currency: string;
   due_date: string | null;
+  due_days_from_confirmation: number | null;
+  confirmed_at: string | null;
   status: string;
   amount_paid: number;
   payment_method: 'cash' | 'transfer' | 'both' | null;
@@ -477,6 +481,7 @@ const _fetchParentPaymentsDB = unstable_cache(
         participant_id,
         trip_id,
         participation_status,
+        confirmed_at,
         trip:trips (
           id,
           title,
@@ -511,13 +516,15 @@ const _fetchParentPaymentsDB = unstable_cache(
     )];
 
     const templateMethodMap = new Map<string, 'cash' | 'transfer' | 'both' | null>();
+    const templateDueDaysMap = new Map<string, number | null>();
     if (templateIds.length > 0) {
       const { data: templates } = await supabaseAdmin
         .from('trip_payment_templates')
-        .select('id, payment_method')
+        .select('id, payment_method, due_days_from_confirmation')
         .in('id', templateIds);
-      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null }) => {
+      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null; due_days_from_confirmation: number | null }) => {
         templateMethodMap.set(t.id, t.payment_method);
+        templateDueDaysMap.set(t.id, t.due_days_from_confirmation);
       });
     }
 
@@ -538,6 +545,7 @@ const _fetchParentPaymentsDB = unstable_cache(
         id: string;
         participant_id: string;
         trip_id: string;
+        confirmed_at: string | null;
         trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
       } | undefined;
       const childData = childDataMap.get(registration?.participant_id || '');
@@ -557,6 +565,8 @@ const _fetchParentPaymentsDB = unstable_cache(
         original_amount: payment.original_amount,
         currency: payment.currency,
         due_date: payment.due_date,
+        due_days_from_confirmation: payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null,
+        confirmed_at: registration?.confirmed_at ?? null,
         status: payment.status,
         amount_paid: payment.amount_paid || 0,
         payment_method: payment.template_id ? (templateMethodMap.get(payment.template_id) || null) : null,
@@ -798,6 +808,13 @@ export async function deletePayment(paymentId: string) {
   const { user, error: authError } = await requireAdmin(supabase);
   if (authError) return { error: authError };
 
+  // Pobierz snapshot przed usunięciem (do audytu)
+  const { data: snapshot } = await supabaseAdmin
+    .from('payments')
+    .select('id, registration_id, payment_type, installment_number, amount, amount_paid, currency, status')
+    .eq('id', paymentId)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin
     .from('payments')
     .delete()
@@ -807,6 +824,11 @@ export async function deletePayment(paymentId: string) {
     console.error('Delete payment error:', error);
     return { error: 'Nie udało się usunąć płatności' };
   }
+
+  logActivity(user.id, user.email ?? null, 'payment_deleted', {
+    paymentId,
+    snapshot: snapshot ?? null,
+  }).catch(console.error);
 
   revalidateTag('payments');
   revalidatePath('/admin/payments');
@@ -822,8 +844,13 @@ export async function bulkDeletePayments(paymentIds: string[]) {
   const supabase = await createClient();
   const supabaseAdmin = createAdminClient();
 
-  const { error: authError } = await requireAdmin(supabase);
+  const { user, error: authError } = await requireAdmin(supabase);
   if (authError) return { error: authError };
+
+  const { data: snapshots } = await supabaseAdmin
+    .from('payments')
+    .select('id, registration_id, payment_type, installment_number, amount, amount_paid, currency, status')
+    .in('id', paymentIds);
 
   const { error } = await supabaseAdmin
     .from('payments')
@@ -834,6 +861,12 @@ export async function bulkDeletePayments(paymentIds: string[]) {
     console.error('Bulk delete payments error:', error);
     return { error: 'Nie udało się usunąć płatności' };
   }
+
+  logActivity(user.id, user.email ?? null, 'payment_deleted', {
+    paymentIds,
+    count: paymentIds.length,
+    snapshots: snapshots ?? null,
+  }).catch(console.error);
 
   revalidateTag('payments');
   revalidatePath('/admin/payments');

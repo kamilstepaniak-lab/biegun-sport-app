@@ -5,13 +5,12 @@ import { createAdminClient } from '@/lib/supabase/server';
 function corsHeaders(origin: string | null, allowedOrigins?: string[] | null) {
   const headers = new Headers();
 
-  if (!allowedOrigins || allowedOrigins.length === 0) {
-    headers.set('Access-Control-Allow-Origin', '*');
-  } else if (origin && allowedOrigins.includes(origin)) {
+  // Bezpieczeństwo: zwracamy Access-Control-Allow-Origin TYLKO gdy origin
+  // pasuje do whitelisty formularza. Brak whitelisty = brak nagłówka CORS
+  // (przeglądarka zablokuje cross-origin). Nigdy nie używamy '*'.
+  if (allowedOrigins && allowedOrigins.length > 0 && origin && allowedOrigins.includes(origin)) {
     headers.set('Access-Control-Allow-Origin', origin);
     headers.set('Vary', 'Origin');
-  } else {
-    headers.set('Access-Control-Allow-Origin', allowedOrigins[0]);
   }
 
   headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

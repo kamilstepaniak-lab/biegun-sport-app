@@ -3,7 +3,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 
-export type PaymentAction = 'payment_added' | 'marked_paid' | 'status_changed' | 'cancelled';
+export type PaymentAction =
+  | 'payment_added'
+  | 'marked_paid'
+  | 'status_changed'
+  | 'cancelled'
+  | 'payment_deleted';
 
 interface LogPaymentChangeParams {
   paymentId: string;

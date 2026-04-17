@@ -81,18 +81,16 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
       entry.participants.add(participantId);
       entry.totalPayments++;
 
+      // Sumujemy zarówno pełne jak i częściowe wpłaty (amount_paid),
+      // a paidPayments liczy tylko płatności w pełni opłacone.
       if (p.currency === 'PLN') {
         entry.totalPLN += p.amount;
-        if (p.status === 'paid') {
-          entry.paidPLN += p.amount;
-          entry.paidPayments++;
-        }
+        entry.paidPLN += p.amount_paid ?? 0;
+        if (p.status === 'paid') entry.paidPayments++;
       } else if (p.currency === 'EUR') {
         entry.totalEUR += p.amount;
-        if (p.status === 'paid') {
-          entry.paidEUR += p.amount;
-          entry.paidPayments++;
-        }
+        entry.paidEUR += p.amount_paid ?? 0;
+        if (p.status === 'paid') entry.paidPayments++;
       }
     });
 

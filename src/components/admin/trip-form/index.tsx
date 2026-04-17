@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/collapsible';
 
 import { createTrip, updateTrip } from '@/lib/actions/trips';
+import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
 import type { Group, Trip, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
 
 export interface TripFormData {
@@ -243,8 +244,8 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       ...pt,
       due_date: pt.due_date ? pt.due_date.split('T')[0] : null,
     })) || [],
-    bank_account_pln: t?.bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
-    bank_account_eur: t?.bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+    bank_account_pln: t?.bank_account_pln || DEFAULT_BANK_ACCOUNT_PLN,
+    bank_account_eur: t?.bank_account_eur || DEFAULT_BANK_ACCOUNT_EUR,
     allow_own_transport: t?.allow_own_transport ?? false,
     packing_list: t?.packing_list || '',
     additional_info: t?.additional_info || '',

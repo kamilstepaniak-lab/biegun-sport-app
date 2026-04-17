@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
+import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
 import {
   sendRegistrationConfirmationEmail,
   type TripEmailData,
@@ -199,8 +200,8 @@ export async function createTrip(input: CreateTripInput) {
       return_location,
       return_stop2_datetime: return_stop2_datetime || null,
       return_stop2_location: return_stop2_location || null,
-      bank_account_pln: bank_account_pln || '39 1240 1444 1111 0010 7170 4855',
-      bank_account_eur: bank_account_eur || 'PL21 1240 1444 1978 0010 7136 2778',
+      bank_account_pln: bank_account_pln || DEFAULT_BANK_ACCOUNT_PLN,
+      bank_account_eur: bank_account_eur || DEFAULT_BANK_ACCOUNT_EUR,
       allow_own_transport: allow_own_transport ?? false,
       packing_list: packing_list || null,
       additional_info: additional_info || null,
@@ -408,6 +409,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         amount: template.amount,
         currency: template.currency,
         due_date: template.due_date || null,
+        due_days_from_confirmation: template.due_days_from_confirmation ?? null,
         payment_method: template.payment_method || null,
       }));
 
@@ -426,7 +428,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   // Synchronizuj płatności dla wszystkich zapisanych uczestników (zawsze przy edycji)
   const { data: newTemplates } = await supabaseAdmin
     .from('trip_payment_templates')
-    .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, payment_method')
+    .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
     .eq('trip_id', id);
 
   const { data: activeRegs } = await supabaseAdmin
@@ -457,6 +459,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         amount: number;
         currency: string;
         due_date: string | null;
+        due_days_from_confirmation: number | null;
         payment_method: string | null;
       }[];
 
@@ -966,6 +969,7 @@ export interface PaymentTemplateForParent {
   amount: number;
   currency: string;
   due_date: string | null;
+  due_days_from_confirmation: number | null;
   payment_method: string | null;
 }
 
@@ -1041,6 +1045,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
         amount,
         currency,
         due_date,
+        due_days_from_confirmation,
         payment_method
       )
     `)
@@ -1154,7 +1159,9 @@ export async function updateParticipationStatusByParent(
       .update({
         participation_status: status,
         participation_note: note || null,
-        ...(status === 'confirmed' ? { confirmed_at: new Date().toISOString() } : {}),
+        // Set confirmed_at only on confirm; clear it when reverting to non-confirmed states
+        // so that "X dni od potwierdzenia" deadline restarts on re-confirm and reports stay accurate.
+        confirmed_at: status === 'confirmed' ? new Date().toISOString() : null,
       })
       .eq('id', existing.id);
 
@@ -1241,7 +1248,7 @@ export async function updateParticipationStatusByParent(
       // Pobierz szablony płatności dla wyjazdu
       const { data: paymentTemplates } = await supabaseAdmin
         .from('trip_payment_templates')
-        .select('payment_type, installment_number, amount, currency, due_date, payment_method, birth_year_from, birth_year_to')
+        .select('payment_type, installment_number, amount, currency, due_date, due_days_from_confirmation, payment_method, birth_year_from, birth_year_to')
         .eq('trip_id', tripId)
         .order('installment_number', { ascending: true });
 
@@ -1267,6 +1274,7 @@ export async function updateParticipationStatusByParent(
             amount: pt.amount,
             currency: pt.currency,
             due_date: pt.due_date,
+            due_days_from_confirmation: pt.due_days_from_confirmation,
             payment_method: pt.payment_method,
           }));
 

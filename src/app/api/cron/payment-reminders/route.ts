@@ -25,13 +25,15 @@ export async function GET(request: NextRequest) {
   const todayStr = today.toISOString().split('T')[0];
   const in3daysStr = in3days.toISOString().split('T')[0];
 
-  // Znajdź płatności których termin upływa za 3 dni i które nie są opłacone
+  // Znajdź wszystkie nieopłacone płatności (zarówno ze stałą datą jak i terminem
+  // liczonym od potwierdzenia uczestnictwa) — filtrowanie do "za 3 dni" robimy w pamięci.
   const { data: payments, error } = await supabase
     .from('payments')
     .select(`
       id, amount, currency, payment_type, installment_number, due_date,
+      template:trip_payment_templates!template_id ( due_days_from_confirmation ),
       registration:trip_registrations (
-        participation_status,
+        participation_status, confirmed_at,
         participant:participants (
           first_name, last_name, birth_date,
           parent:profiles!parent_id (email, first_name)
@@ -39,14 +41,27 @@ export async function GET(request: NextRequest) {
         trip:trips (title)
       )
     `)
-    .eq('due_date', in3daysStr)
-    .in('status', ['pending', 'partially_paid', 'overdue', 'partially_paid_overdue'])
-    .neq('status', 'cancelled');
+    .in('status', ['pending', 'partially_paid', 'overdue', 'partially_paid_overdue']);
 
   if (error) {
     console.error('Cron payment-reminders: DB error', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Pomocnicza: oblicz efektywny termin płatności (YYYY-MM-DD)
+  const computeEffectiveDueDate = (
+    fixedDueDate: string | null,
+    daysFromConfirmation: number | null | undefined,
+    confirmedAt: string | null | undefined,
+  ): string | null => {
+    if (fixedDueDate) return fixedDueDate;
+    if (daysFromConfirmation && confirmedAt) {
+      const d = new Date(confirmedAt);
+      d.setDate(d.getDate() + daysFromConfirmation);
+      return d.toISOString().split('T')[0];
+    }
+    return null;
+  };
 
   let sent = 0;
   let skipped = 0;
@@ -55,6 +70,7 @@ export async function GET(request: NextRequest) {
   for (const payment of (payments || [])) {
     const reg = payment.registration as unknown as {
       participation_status: string;
+      confirmed_at: string | null;
       participant: {
         first_name: string;
         last_name: string;
@@ -63,8 +79,24 @@ export async function GET(request: NextRequest) {
       trip: { title: string } | null;
     } | null;
 
+    const tpl = payment.template as unknown as {
+      due_days_from_confirmation: number | null;
+    } | null;
+
     // Pomijaj dzieci które nie jadą
     if (!reg || reg.participation_status !== 'confirmed') {
+      skipped++;
+      continue;
+    }
+
+    const effectiveDue = computeEffectiveDueDate(
+      payment.due_date,
+      tpl?.due_days_from_confirmation,
+      reg.confirmed_at,
+    );
+
+    // Wysyłamy tylko gdy efektywny termin to dokładnie za 3 dni
+    if (effectiveDue !== in3daysStr) {
       skipped++;
       continue;
     }
@@ -92,7 +124,7 @@ export async function GET(request: NextRequest) {
         trip.title,
         payment.amount,
         payment.currency,
-        payment.due_date,
+        effectiveDue,
         paymentLabel,
       );
       sent++;

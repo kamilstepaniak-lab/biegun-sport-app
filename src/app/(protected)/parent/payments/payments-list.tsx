@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/shared';
 import { cn } from '@/lib/utils';
+import { calcConfirmationDueDate, isConfirmationDeadlineOverdue } from '@/lib/payment-due';
 
 import type { ParentPayment, BankAccountInfo } from '@/lib/actions/payments';
 
@@ -45,6 +46,9 @@ function copyToClipboard(text: string, label: string) {
 
 function isOverduePayment(p: ParentPayment) {
   if (p.status === 'paid' || p.status === 'cancelled') return false;
+  if (p.due_days_from_confirmation) {
+    return isConfirmationDeadlineOverdue(p.due_days_from_confirmation, p.confirmed_at);
+  }
   return !!(p.due_date && new Date(p.due_date) < new Date());
 }
 
@@ -187,24 +191,35 @@ function usePaymentData(payment: ParentPayment) {
   const cfg = statusConfig[payment.status] ?? statusConfig.pending;
   const StatusIcon = cfg.icon;
   const isOverdue = isOverduePayment(payment);
-  const daysOverdue = isOverdue && payment.due_date
-    ? differenceInCalendarDays(new Date(), new Date(payment.due_date))
-    : 0;
   const remaining = payment.amount - payment.amount_paid;
-  const dueDate = payment.due_date ? new Date(payment.due_date) : null;
+
+  // Confirmation-based deadline
+  const isConfirmationBased = !!payment.due_days_from_confirmation;
+  const confDueDate = isConfirmationBased
+    ? calcConfirmationDueDate(payment.due_days_from_confirmation!, payment.confirmed_at)
+    : null;
+
+  // Regular due date
+  const dueDate = isConfirmationBased ? confDueDate : (payment.due_date ? new Date(payment.due_date) : null);
+  const daysOverdue = isOverdue && dueDate
+    ? differenceInCalendarDays(new Date(), dueDate)
+    : 0;
   const isDepartureDay =
+    !isConfirmationBased &&
     payment.trip_departure_date &&
     payment.due_date === new Date(payment.trip_departure_date).toISOString().split('T')[0];
+  const awaitingConfirmation = isConfirmationBased && !payment.confirmed_at;
+
   const tripDate = payment.trip_departure_date
     ? format(new Date(payment.trip_departure_date), 'dd.MM.yyyy', { locale: pl })
     : '';
   const transferTitle = `${payment.child_last_name} ${payment.child_first_name} ${payment.trip_title} ${tripDate}`;
-  return { cfg, StatusIcon, isOverdue, daysOverdue, remaining, dueDate, isDepartureDay, transferTitle };
+  return { cfg, StatusIcon, isOverdue, daysOverdue, remaining, dueDate, isDepartureDay, awaitingConfirmation, transferTitle };
 }
 
 // ── Wiersz tabeli ─────────────────────────────────────────────────────────
 function PaymentRow({ payment }: { payment: ParentPayment }) {
-  const { cfg, StatusIcon, isOverdue, daysOverdue, remaining, dueDate, isDepartureDay, transferTitle } = usePaymentData(payment);
+  const { cfg, StatusIcon, isOverdue, daysOverdue, remaining, dueDate, isDepartureDay, awaitingConfirmation, transferTitle } = usePaymentData(payment);
 
   return (
     <tr
@@ -275,7 +290,9 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
 
       {/* Termin */}
       <td className="py-3 px-3 whitespace-nowrap">
-        {dueDate ? (
+        {awaitingConfirmation ? (
+          <span className="text-sm text-gray-400 italic">czeka na potwierdzenie</span>
+        ) : dueDate ? (
           <div>
             <span className={cn('text-sm tabular-nums', isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500')}>
               {isDepartureDay ? 'w dniu wyjazdu' : format(dueDate, 'd.MM.yyyy', { locale: pl })}
@@ -340,11 +357,21 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
   const [page, setPage] = useState(1);
 
   const allPayments = useMemo(() => {
+    const effectiveDue = (p: ParentPayment): Date | null => {
+      if (p.due_date) return new Date(p.due_date);
+      if (p.due_days_from_confirmation) {
+        const d = calcConfirmationDueDate(p.due_days_from_confirmation, p.confirmed_at);
+        if (d) return d;
+      }
+      return null;
+    };
     const byDue = (a: ParentPayment, b: ParentPayment) => {
-      if (!a.due_date && !b.due_date) return 0;
-      if (!a.due_date) return 1;
-      if (!b.due_date) return -1;
-      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      const da = effectiveDue(a);
+      const db = effectiveDue(b);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da.getTime() - db.getTime();
     };
     return [...[...pendingPayments].sort(byDue), ...[...paidPayments].sort(byDue)];
   }, [pendingPayments, paidPayments]);

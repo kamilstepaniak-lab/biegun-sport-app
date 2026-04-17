@@ -67,7 +67,7 @@ export async function getTripEmailPreview(tripId: string): Promise<{
   // Pobierz szablony płatności
   const { data: paymentTemplates } = await supabaseAdmin
     .from('trip_payment_templates')
-    .select('payment_type, installment_number, amount, currency, due_date, payment_method')
+    .select('payment_type, installment_number, amount, currency, due_date, due_days_from_confirmation, payment_method')
     .eq('trip_id', tripId)
     .order('installment_number', { ascending: true });
 
@@ -94,6 +94,7 @@ export async function getTripEmailPreview(tripId: string): Promise<{
     amount: pt.amount,
     currency: pt.currency,
     due_date: pt.due_date,
+    due_days_from_confirmation: pt.due_days_from_confirmation,
     payment_method: pt.payment_method,
   }));
 
@@ -158,7 +159,7 @@ export async function sendTripInfoEmailToGroup(
     ? { data: null }
     : await supabaseAdmin
         .from('trip_payment_templates')
-        .select('payment_type, installment_number, amount, currency, due_date, payment_method, birth_year_from, birth_year_to')
+        .select('payment_type, installment_number, amount, currency, due_date, due_days_from_confirmation, payment_method, birth_year_from, birth_year_to')
         .eq('trip_id', tripId)
         .order('installment_number', { ascending: true });
 
@@ -251,6 +252,7 @@ export async function sendTripInfoEmailToGroup(
             amount: pt.amount,
             currency: pt.currency,
             due_date: pt.due_date,
+            due_days_from_confirmation: pt.due_days_from_confirmation,
             payment_method: pt.payment_method,
           }));
 

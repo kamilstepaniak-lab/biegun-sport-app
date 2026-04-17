@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
+import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
 
 interface TripsImportBufferRow {
   id: number;
@@ -220,8 +221,8 @@ export async function runTripsImport(): Promise<ImportResult> {
           return_location: record.miejsce_powrotu?.trim() || 'Do ustalenia',
           status: 'draft',
           created_by: user.id,
-          bank_account_pln: '39 1240 1444 1111 0010 7170 4855',
-          bank_account_eur: 'PL21 1240 1444 1978 0010 7136 2778',
+          bank_account_pln: DEFAULT_BANK_ACCOUNT_PLN,
+          bank_account_eur: DEFAULT_BANK_ACCOUNT_EUR,
         })
         .select('id')
         .single();

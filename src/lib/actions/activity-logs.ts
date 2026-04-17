@@ -8,7 +8,8 @@ export type ActivityActionType =
   | 'profile_updated'
   | 'registration_created'
   | 'registration_cancelled'
-  | 'trip_email_sent';
+  | 'trip_email_sent'
+  | 'payment_deleted';
 
 /**
  * Loguje zdarzenie aplikacyjne. Wywoływany z server actions.

@@ -10,13 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { changePassword } from '@/lib/actions/profile';
 
 export function ChangePasswordForm() {
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const isValid = newPassword.length >= 8 && newPassword === confirmPassword;
+  const isValid =
+    currentPassword.length > 0 &&
+    newPassword.length >= 8 &&
+    newPassword === confirmPassword;
   const mismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
 
   function handleSubmit(e: React.FormEvent) {
@@ -24,11 +29,12 @@ export function ChangePasswordForm() {
     if (!isValid) return;
 
     startTransition(async () => {
-      const result = await changePassword(newPassword);
+      const result = await changePassword(newPassword, currentPassword);
       if (result.error) {
         toast.error(result.error);
       } else {
         toast.success('Hasło zostało zmienione');
+        setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       }
@@ -49,6 +55,30 @@ export function ChangePasswordForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
           <div className="space-y-1.5">
+            <Label htmlFor="current_password">Aktualne hasło</Label>
+            <div className="relative">
+              <Input
+                id="current_password"
+                type={showCurrent ? 'text' : 'password'}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Wpisz aktualne hasło"
+                disabled={isPending}
+                autoComplete="current-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+              >
+                {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="new_password">Nowe hasło</Label>
             <div className="relative">
               <Input
@@ -58,6 +88,7 @@ export function ChangePasswordForm() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Minimum 8 znaków"
                 disabled={isPending}
+                autoComplete="new-password"
                 className="pr-10"
               />
               <button
@@ -84,6 +115,7 @@ export function ChangePasswordForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Wpisz hasło ponownie"
                 disabled={isPending}
+                autoComplete="new-password"
                 className={`pr-10 ${mismatch ? 'border-red-300 focus-visible:ring-red-300' : ''}`}
               />
               <button

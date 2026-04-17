@@ -73,17 +73,33 @@ export async function getProfile(): Promise<Profile | null> {
 }
 
 export async function changePassword(
-  newPassword: string
+  newPassword: string,
+  currentPassword?: string,
 ): Promise<{ error?: string }> {
   if (!newPassword || newPassword.length < 8) {
     return { error: 'Hasło musi mieć co najmniej 8 znaków' };
   }
+  if (!currentPassword) {
+    return { error: 'Podaj aktualne hasło, aby je zmienić' };
+  }
 
   const { supabase, user } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
+  if (!user.email) return { error: 'Brak adresu e-mail w koncie' };
+
+  // Weryfikacja aktualnego hasła — próba ponownego zalogowania
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (verifyError) {
+    return { error: 'Aktualne hasło jest nieprawidłowe' };
+  }
 
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { error: 'Nie udało się zmienić hasła. Spróbuj ponownie.' };
+
+  logActivity(user.id, user.email, 'profile_updated', { fields: ['password'] }).catch(console.error);
 
   return {};
 }

@@ -67,8 +67,9 @@ export async function updateSession(request: NextRequest) {
 
   if (needsRoleCheck) {
     // Rola jest w JWT app_metadata — odczyt lokalny, bez sieci.
-    const role = (user!.app_metadata?.role as string | undefined)
-      ?? (user!.user_metadata?.role as string | undefined);
+    // Bezpieczeństwo: rola wyłącznie z app_metadata (server-managed),
+    // nigdy z user_metadata (które użytkownik może modyfikować).
+    const role = user!.app_metadata?.role as string | undefined;
 
     const url = request.nextUrl.clone();
 

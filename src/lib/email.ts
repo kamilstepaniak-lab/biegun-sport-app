@@ -36,9 +36,22 @@ async function getTemplate(id: string): Promise<{ subject: string; body_html: st
 
 // ─── Podstawianie zmiennych ───────────────────────────────────────────────────
 
+/**
+ * Escape values before inserting into HTML email bodies.
+ * Prevents HTML/script injection from user-supplied fields (names, notes, titles).
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function interpolate(text: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
-    (result, [key, value]) => result.replaceAll(key, value),
+    (result, [key, value]) => result.replaceAll(key, escapeHtml(value ?? '')),
     text
   );
 }
@@ -156,6 +169,7 @@ export interface PaymentLineItem {
   amount: number;
   currency: string;
   due_date?: string | null;
+  due_days_from_confirmation?: number | null;
   payment_method?: string | null;
 }
 
@@ -226,9 +240,11 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
       const method = p.payment_method === 'cash' ? 'gotówka'
         : p.payment_method === 'transfer' ? 'przelew'
         : 'gotówka lub przelew';
-      const dueStr = p.due_date
-        ? ` · termin: ${new Date(p.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`
-        : '';
+      const dueStr = p.due_days_from_confirmation
+        ? ` · termin: ${p.due_days_from_confirmation} dni od potwierdzenia udziału`
+        : p.due_date
+          ? ` · termin: ${new Date(p.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`
+          : '';
       html += `<tr><td colspan="2" style="${T}padding:3px 0;">• <strong>${label}:</strong> ${p.amount.toFixed(0)} ${p.currency} (${method})${dueStr}</td></tr>`;
     }
 

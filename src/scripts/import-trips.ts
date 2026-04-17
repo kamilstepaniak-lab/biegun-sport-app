@@ -196,8 +196,8 @@ async function main() {
             return_datetime: `${rDate}T${rTime}:00`,
             return_location: tripData.retDetails || 'TBD',
             status: 'draft', // Safety first
-            bank_account_pln: '39 1240 1444 1111 0010 7170 4855', // Default
-            bank_account_eur: 'PL21 1240 1444 1978 0010 7136 2778', // Default
+            bank_account_pln: process.env.NEXT_PUBLIC_DEFAULT_BANK_ACCOUNT_PLN ?? '',
+            bank_account_eur: process.env.NEXT_PUBLIC_DEFAULT_BANK_ACCOUNT_EUR ?? '',
             created_by: null // Admin import
         };
 
