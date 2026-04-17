@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { formatPaymentDueDate } from '@/lib/payment-due';
 import {
   ChevronDown,
   ChevronUp,
@@ -441,9 +442,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                             <tr key={template.id} className="hover:bg-gray-50/50">
                               <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
                               <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                                {template.due_date
-                                  ? format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })
-                                  : '-'}
+                                {formatPaymentDueDate(template, trip.departure_datetime)}
                               </td>
                               <td className="px-4 py-2.5 whitespace-nowrap">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>

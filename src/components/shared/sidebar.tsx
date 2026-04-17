@@ -13,6 +13,7 @@ import {
   Menu,
   LayoutDashboard,
   Users,
+  UsersRound,
   CreditCard,
   MapPin,
   User,
@@ -32,6 +33,7 @@ import {
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
   Users,
+  UsersRound,
   CreditCard,
   MapPin,
   User,

@@ -7,8 +7,13 @@ import { getUserProfile } from '@/lib/actions/auth';
 const adminNavItems: SidebarItem[] = [
   {
     title: 'Uczestnicy',
-    href: '/admin/groups',
+    href: '/admin/participants',
     icon: 'Users',
+  },
+  {
+    title: 'Grupy',
+    href: '/admin/groups',
+    icon: 'UsersRound',
   },
   {
     title: 'Wyjazdy',

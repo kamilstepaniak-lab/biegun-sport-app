@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { formatTripDatetime } from '@/lib/trip-datetime';
-import { Calendar, Clock, MapPin, Users, Backpack, Info as InfoIcon } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Backpack, Info as InfoIcon, Home } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,6 +95,15 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             <CardTitle>Informacje</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {trip.location && (
+              <div className="flex items-start gap-3">
+                <Home className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="font-medium">Miejsce (hotel / miejscowość)</p>
+                  <p className="text-sm text-muted-foreground">{trip.location}</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-start gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
