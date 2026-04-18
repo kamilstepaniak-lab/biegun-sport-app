@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
+import { PageHeader, Breadcrumbs, PricingTable, SanitizedHtml } from '@/components/shared';
 import { TripMessageGenerator } from '@/components/admin/trip-message-generator';
 import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
 import { getTrip } from '@/lib/actions/trips';
@@ -62,7 +62,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
 
       <PageHeader
         title={trip.title}
-        description={[trip.location, trip.description].filter(Boolean).join(' · ') || undefined}
+        description={trip.location || undefined}
       >
         <Button variant="outline" asChild>
           <Link href="/admin/trips">
@@ -103,6 +103,24 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
       </PageHeader>
 
       <div className="grid gap-6 md:grid-cols-2">
+        {/* Opis programu */}
+        {trip.description && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <InfoIcon className="h-5 w-5" />
+                Opis programu
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SanitizedHtml
+                html={trip.description}
+                className="prose prose-sm max-w-none text-muted-foreground prose-ul:my-2 prose-li:my-0 prose-p:my-1"
+              />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Podstawowe informacje */}
         <Card>
           <CardHeader>
@@ -259,14 +277,6 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
           </Card>
         )}
 
-        {/* Wzór umowy — pełna szerokość */}
-        <div className="md:col-span-2">
-          <ContractTemplateEditor
-            tripId={id}
-            initialTemplate={contractTemplate}
-            defaultTemplateText={CONTRACT_TEMPLATE}
-          />
-        </div>
       </div>
     </div>
   );

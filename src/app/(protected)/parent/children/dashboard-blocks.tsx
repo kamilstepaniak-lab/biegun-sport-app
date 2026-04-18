@@ -269,9 +269,11 @@ export function DashboardBlocks({ participantId, participantName }: DashboardBlo
                         <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
                       )}
                       <p className={`text-xs ${p.isOverdue ? 'text-red-500' : 'text-gray-400'}`}>
-                        {p.due_date
-                          ? `${p.isOverdue ? 'Termin minął' : 'Do'} ${format(new Date(p.due_date), 'd MMM yyyy', { locale: pl })}`
-                          : 'Brak terminu'}
+                        {p.awaiting_confirmation
+                          ? `${p.due_days_from_confirmation} dni od potwierdzenia`
+                          : p.effective_due_date
+                            ? `${p.isOverdue ? 'Termin minął' : 'Do'} ${format(new Date(p.effective_due_date), 'd MMM yyyy', { locale: pl })}`
+                            : 'Brak terminu'}
                       </p>
                     </div>
                   </div>
