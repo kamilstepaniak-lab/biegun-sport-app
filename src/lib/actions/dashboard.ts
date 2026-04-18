@@ -179,7 +179,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
   if (registrationIds.length > 0) {
     const { data: payments, error: payError } = await supabaseAdmin
       .from('payments')
-      .select('id, registration_id, amount, currency, due_date, status, amount_paid, template:trip_payment_templates(due_days_from_confirmation)')
+      .select('id, registration_id, amount, currency, due_date, status, amount_paid, template:trip_payment_templates!template_id(due_days_from_confirmation)')
       .in('registration_id', registrationIds)
       .not('status', 'in', '("cancelled","paid")')
       .order('due_date', { ascending: true });
