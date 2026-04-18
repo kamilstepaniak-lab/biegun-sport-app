@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { format, differenceInYears } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { ArrowLeft, Mail, Phone } from 'lucide-react';
+import { format } from 'date-fns';
+import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -72,17 +71,17 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Imię i nazwisko</TableHead>
-                    <TableHead>Data urodzenia</TableHead>
-                    <TableHead>Wiek</TableHead>
-                    <TableHead>Rodzic</TableHead>
-                    <TableHead>Kontakt</TableHead>
+                    <TableHead>Nazwisko i imię</TableHead>
+                    <TableHead>Data ur.</TableHead>
+                    <TableHead>Grupa</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefon</TableHead>
+                    <TableHead>Notatka</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {participants.map((participant) => {
                     const birthDate = new Date(participant.birth_date);
-                    const age = differenceInYears(new Date(), birthDate);
 
                     return (
                       <TableRow key={participant.id}>
@@ -91,31 +90,21 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
                             href={`/admin/participants/${participant.id}`}
                             className="hover:underline"
                           >
-                            {participant.first_name} {participant.last_name}
+                            {participant.last_name} {participant.first_name}
                           </Link>
                         </TableCell>
-                        <TableCell>
-                          {format(birthDate, 'd MMM yyyy', { locale: pl })}
+                        <TableCell className="whitespace-nowrap">
+                          {format(birthDate, 'dd.MM.yyyy')}
                         </TableCell>
-                        <TableCell>{age} lat</TableCell>
-                        <TableCell>
-                          {participant.parent.first_name} {participant.parent.last_name}
+                        <TableCell>{group.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground truncate max-w-[240px]">
+                          {participant.parent.email || '—'}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1 text-sm">
-                              <Mail className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                {participant.parent.email}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1 text-sm">
-                              <Phone className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                {participant.parent.phone}
-                              </span>
-                            </div>
-                          </div>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {participant.parent.phone || '—'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[280px] truncate">
+                          {participant.notes?.trim() || '—'}
                         </TableCell>
                       </TableRow>
                     );

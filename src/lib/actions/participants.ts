@@ -43,8 +43,7 @@ export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
     return { ...rest, group };
   });
 
-  // Serializuj do plain objects dla Client Components
-  return JSON.parse(JSON.stringify(result));
+  return result;
 }
 
 export async function getChildParticipationStatuses(
@@ -107,8 +106,7 @@ export async function getParticipant(id: string): Promise<ParticipantWithGroup |
   const { participant_groups: _pg, ...rest } = participant as typeof participant & { participant_groups: unknown };
   void _pg;
 
-  // Serializuj do plain objects
-  return JSON.parse(JSON.stringify({ ...rest, group }));
+  return { ...rest, group } as ParticipantWithGroup;
 }
 
 export async function getParticipantFull(id: string): Promise<ParticipantFull | null> {
@@ -157,8 +155,7 @@ export async function getParticipantFull(id: string): Promise<ParticipantFull | 
     group,
   };
 
-  // Serializuj do plain objects
-  return JSON.parse(JSON.stringify(result));
+  return result as ParticipantFull;
 }
 
 export async function createParticipant(formData: ParticipantInput & { custom_fields?: Record<string, string> }) {

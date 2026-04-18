@@ -222,5 +222,5 @@ export const getUserProfile = cache(async () => {
     .eq('id', user.id)
     .single();
 
-  return profile ? JSON.parse(JSON.stringify(profile)) : null;
+  return profile ?? null;
 });

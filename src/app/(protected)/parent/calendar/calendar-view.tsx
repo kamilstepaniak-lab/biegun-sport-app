@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -11,19 +11,12 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
-import {
-  TooltipProvider,
-} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getGroupColor } from '@/lib/group-colors';
 import type { TripForParent } from '@/lib/actions/trips';
 
 interface ParentCalendarViewProps {
   trips: TripForParent[];
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 }
 
 export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
@@ -43,26 +36,36 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
     return [...paddedDays, ...daysInMonth];
   }, [monthStart, monthEnd]);
 
-  function getTripsForDay(day: Date): TripForParent[] {
-    return trips.filter((trip) => {
-      const tripStart = startOfDay(new Date(trip.departure_datetime));
-      const tripEnd = endOfDay(new Date(trip.return_datetime));
-      const dayStart = startOfDay(day);
-      return isWithinInterval(dayStart, { start: tripStart, end: tripEnd });
+  // Prekalkulacja intervali wyjazd\u00f3w \u2014 eliminuje N*M new Date() wywo\u0142a\u0144 przy renderze kalendarza
+  const tripIntervals = useMemo(() => {
+    return trips.map((trip) => {
+      const startTs = startOfDay(new Date(trip.departure_datetime)).getTime();
+      const endStartTs = startOfDay(new Date(trip.return_datetime)).getTime();
+      const endEndTs = endOfDay(new Date(trip.return_datetime)).getTime();
+      return { trip, startTs, endStartTs, endEndTs };
     });
-  }
+  }, [trips]);
 
-  function getTripDayType(day: Date, trip: TripForParent): 'start' | 'end' | 'middle' | 'single' {
-    const tripStart = startOfDay(new Date(trip.departure_datetime));
-    const tripEnd = startOfDay(new Date(trip.return_datetime));
-    const dayStart = startOfDay(day);
-    const isStart = isSameDay(dayStart, tripStart);
-    const isEnd = isSameDay(dayStart, tripEnd);
+  const getTripsForDay = useCallback((day: Date): TripForParent[] => {
+    const dayTs = startOfDay(day).getTime();
+    const result: TripForParent[] = [];
+    for (const i of tripIntervals) {
+      if (dayTs >= i.startTs && dayTs <= i.endEndTs) result.push(i.trip);
+    }
+    return result;
+  }, [tripIntervals]);
+
+  const getTripDayType = useCallback((day: Date, trip: TripForParent): 'start' | 'end' | 'middle' | 'single' => {
+    const dayTs = startOfDay(day).getTime();
+    const interval = tripIntervals.find((i) => i.trip.id === trip.id);
+    if (!interval) return 'middle';
+    const isStart = dayTs === interval.startTs;
+    const isEnd = dayTs === interval.endStartTs;
     if (isStart && isEnd) return 'single';
     if (isStart) return 'start';
     if (isEnd) return 'end';
     return 'middle';
-  }
+  }, [tripIntervals]);
 
   const today = new Date();
 
@@ -301,8 +304,7 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                 </div>
 
                 <div className="space-y-0.5">
-                  <TooltipProvider delayDuration={200}>
-                    {dayTrips.slice(0, 3).map((trip) => {
+                  {dayTrips.slice(0, 3).map((trip) => {
                       const dayType = getTripDayType(day, trip);
                       const primaryGroup = trip.groups[0];
                       const groupColor = primaryGroup ? getGroupColor(primaryGroup.name) : null;
@@ -412,7 +414,6 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                         </HoverCard>
                       );
                     })}
-                  </TooltipProvider>
 
                   {dayTrips.length > 3 && (
                     <div className="text-xs text-gray-400 px-1">

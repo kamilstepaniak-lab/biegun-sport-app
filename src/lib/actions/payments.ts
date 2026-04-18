@@ -573,7 +573,7 @@ const _fetchParentPaymentsDB = unstable_cache(
       };
     });
 
-    return JSON.parse(JSON.stringify(result));
+    return result;
   },
   ['parent-payments'],
   { revalidate: 60, tags: ['payments'] },
@@ -598,22 +598,11 @@ const _fetchBankAccountsDB = unstable_cache(
   async (userId: string): Promise<BankAccountInfo> => {
     const supabaseAdmin = createAdminClient();
 
-    // Pobierz dziecko rodzica
-    const { data: children } = await supabaseAdmin
-      .from('participants')
-      .select('id')
-      .eq('parent_id', userId)
-      .limit(1);
-
-    if (!children || children.length === 0) {
-      return { bank_account_pln: null, bank_account_eur: null };
-    }
-
-    // Pobierz konto z wyjazdu na który dziecko jest zapisane
+    // Jedno zapytanie: participant (rodzica) → trip_registrations → trips
     const { data: registration } = await supabaseAdmin
       .from('trip_registrations')
-      .select('trip:trips(bank_account_pln, bank_account_eur)')
-      .eq('participant_id', children[0].id)
+      .select('trip:trips(bank_account_pln, bank_account_eur), participant:participants!inner(parent_id)')
+      .eq('participant.parent_id', userId)
       .eq('participation_status', 'confirmed')
       .limit(1)
       .maybeSingle();

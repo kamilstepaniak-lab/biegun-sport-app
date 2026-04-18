@@ -53,7 +53,7 @@ export async function getTrips(): Promise<TripWithPaymentTemplates[]> {
     payment_templates: t.payment_templates || [],
   }));
 
-  return JSON.parse(JSON.stringify(result)) as TripWithPaymentTemplates[];
+  return result as TripWithPaymentTemplates[];
 }
 
 export async function getTrip(id: string): Promise<TripWithPaymentTemplates | null> {
@@ -81,8 +81,7 @@ export async function getTrip(id: string): Promise<TripWithPaymentTemplates | nu
     groups: trip.trip_groups?.map((tg: { group: Group }) => tg.group) || [],
   };
 
-  // Serializuj do plain objects dla Client Components
-  return JSON.parse(JSON.stringify(result)) as TripWithPaymentTemplates;
+  return result as TripWithPaymentTemplates;
 }
 
 export async function getAvailableTripsForParent(parentId: string): Promise<TripWithGroups[]> {
@@ -145,8 +144,7 @@ export async function getAvailableTripsForParent(parentId: string): Promise<Trip
     groups: t.trip_groups?.map((tg) => tg.group) || [],
   }));
 
-  // Serializuj do plain objects dla Client Components
-  return JSON.parse(JSON.stringify(result)) as TripWithGroups[];
+  return result as TripWithGroups[];
 }
 
 export async function createTrip(input: CreateTripInput) {
@@ -265,6 +263,8 @@ export async function createTrip(input: CreateTripInput) {
   revalidatePath('/admin/trips');
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true, data: trip };
 }
 
@@ -561,8 +561,11 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   }
 
   revalidatePath('/admin/trips');
+  revalidatePath(`/admin/trips/${id}`);
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true };
 }
 
@@ -587,8 +590,11 @@ export async function updateTripStatus(id: string, status: TripStatus) {
   }
 
   revalidatePath('/admin/trips');
+  revalidatePath(`/admin/trips/${id}`);
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true };
 }
 
@@ -678,6 +684,8 @@ export async function deleteTrip(id: string) {
   revalidatePath('/admin/trips');
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true };
 }
 
@@ -858,7 +866,7 @@ export async function getTripParticipants(tripId: string): Promise<TripParticipa
     .filter((p: TripParticipant | null): p is TripParticipant => p !== null)
     .sort((a: TripParticipant, b: TripParticipant) => a.last_name.localeCompare(b.last_name, 'pl'));
 
-  return JSON.parse(JSON.stringify(result));
+  return result;
 }
 
 export async function updateParticipationStatus(
@@ -948,8 +956,11 @@ export async function updateParticipationStatus(
   }
 
   revalidatePath('/admin/trips');
+  revalidatePath(`/admin/trips/${tripId}`);
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true };
 }
 
@@ -1029,39 +1040,42 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
 
   const tripIds = [...new Set(tripGroups.map((tg: { trip_id: string }) => tg.trip_id))];
 
-  // 3. Pobierz szczegóły wyjazdów wraz z szablonami płatności
-  const { data: trips } = await supabase
-    .from('trips')
-    .select(`
-      *,
-      trip_groups (
-        group:groups (*)
-      ),
-      trip_payment_templates (
-        id,
-        payment_type,
-        installment_number,
-        category_name,
-        amount,
-        currency,
-        due_date,
-        due_days_from_confirmation,
-        payment_method
-      )
-    `)
-    .in('id', tripIds)
-    .eq('status', 'published')
-    .order('departure_datetime', { ascending: true });
+  // 3+4. Pobierz równolegle: szczegóły wyjazdów + rejestracje (zapytania niezależne)
+  const childIds = children.map((c: { id: string }) => c.id);
+  const [tripsRes, registrationsRes] = await Promise.all([
+    supabase
+      .from('trips')
+      .select(`
+        *,
+        trip_groups (
+          group:groups (*)
+        ),
+        trip_payment_templates (
+          id,
+          payment_type,
+          installment_number,
+          category_name,
+          amount,
+          currency,
+          due_date,
+          due_days_from_confirmation,
+          payment_method
+        )
+      `)
+      .in('id', tripIds)
+      .eq('status', 'published')
+      .order('departure_datetime', { ascending: true }),
+    supabase
+      .from('trip_registrations')
+      .select('trip_id, participant_id, participation_status, participation_note')
+      .in('participant_id', childIds)
+      .in('trip_id', tripIds),
+  ]);
+
+  const trips = tripsRes.data;
+  const registrations = registrationsRes.data;
 
   if (!trips) return [];
-
-  // 4. Pobierz rejestracje dla dzieci tego rodzica
-  const childIds = children.map((c: { id: string }) => c.id);
-  const { data: registrations } = await supabase
-    .from('trip_registrations')
-    .select('trip_id, participant_id, participation_status, participation_note')
-    .in('participant_id', childIds)
-    .in('trip_id', tripIds);
 
   const registrationMap = new Map<string, { participation_status: string; participation_note: string | null }>();
   (registrations || []).forEach((r: { trip_id: string; participant_id: string; participation_status: string; participation_note: string | null }) => {
@@ -1114,7 +1128,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
     };
   });
 
-  return JSON.parse(JSON.stringify(result));
+  return result;
 }
 
 export async function updateParticipationStatusByParent(
@@ -1292,8 +1306,11 @@ export async function updateParticipationStatusByParent(
   }
 
   revalidatePath('/admin/trips');
+  revalidatePath(`/admin/trips/${tripId}`);
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true };
 }
 
@@ -1427,5 +1444,7 @@ export async function duplicateTrip(tripId: string) {
   revalidatePath('/admin/trips');
   revalidatePath('/admin/calendar');
   revalidatePath('/parent/trips');
+  revalidatePath('/parent/trips', 'layout');
+  revalidatePath('/parent/calendar');
   return { success: true, data: newTrip };
 }

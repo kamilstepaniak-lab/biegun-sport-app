@@ -136,10 +136,13 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
                     Grupa
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">
-                    Rodzic
+                    Email
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">
-                    Email
+                    Telefon
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">
+                    Notatka
                   </th>
                   <th className="px-4 py-3 bg-gray-50/30 w-24"></th>
                 </tr>
@@ -176,11 +179,14 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
                           <span className="text-xs text-gray-400 italic">— Brak —</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                        {p.parent ? `${p.parent.first_name ?? ''} ${p.parent.last_name ?? ''}`.trim() || '—' : '—'}
-                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500 truncate max-w-[240px]">
                         {p.parent?.email ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                        {p.parent?.phone ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500 truncate max-w-[280px]">
+                        {p.notes?.trim() || <span className="text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <Link

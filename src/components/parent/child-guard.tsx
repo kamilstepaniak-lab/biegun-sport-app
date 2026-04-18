@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Users } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
 interface ChildOption {
@@ -32,59 +32,62 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
 
   const isAll = selectedChildId === ALL_CHILDREN_ID;
 
-  // Jeśli podane dziecko nie należy do tego rodzica — traktuj jak brak wyboru
-  const isValidChild = !selectedChildId || isAll || !childrenList || childrenList.some(c => c.id === selectedChildId);
-  const effectiveChildId = isValidChild ? selectedChildId : undefined;
+  // Memoizowane — pozwala uniknąć re-kalkulacji przy re-renderach layoutu
+  const { isValidChild, effectiveChildId } = useMemo(() => {
+    const valid = !selectedChildId || isAll || !childrenList || childrenList.some(c => c.id === selectedChildId);
+    return {
+      isValidChild: valid,
+      effectiveChildId: valid ? selectedChildId : undefined,
+    };
+  }, [selectedChildId, isAll, childrenList]);
 
-  // Jeśli dziecko w URL nie należy do tego rodzica — wyczyść oba klucze localStorage i URL
+  // Scalona logika: walidacja + localStorage sync + default redirect w jednym efekcie
   useEffect(() => {
+    // 1. Nieprawidłowe dziecko w URL — wyczyść i przekieruj
     if (selectedChildId && !isValidChild) {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('selectedChild');
       router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
+      return;
     }
-  }, [selectedChildId, isValidChild, pathname, router]);
 
-  // Zapisz wybrane dziecko do localStorage (tylko gdy prawidłowe)
-  useEffect(() => {
+    // 2. Prawidłowe dziecko — zapisz do localStorage
     if (selectedChildId && isValidChild) {
       const name = isAll ? ALL_CHILDREN_NAME : (selectedChildName ?? '');
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name }));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: selectedChildId, name }));
+      } catch {}
+      return;
     }
-  }, [selectedChildId, selectedChildName, isAll, isValidChild]);
 
-  // Jeśli brak dziecka w URL lub dziecko nie należy do rodzica — domyślnie idź na "Wszystkie dzieci"
-  useEffect(() => {
+    // 3. Brak dziecka w URL — spróbuj przywrócić z localStorage, inaczej "wszystkie"
     if (!effectiveChildId && childrenList && childrenList.length > 0) {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      let targetParams = `?child=${ALL_CHILDREN_ID}`;
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
       if (stored) {
         try {
           const { id, name } = JSON.parse(stored);
-          if (id === ALL_CHILDREN_ID || childrenList.some(c => c.id === id)) {
-            setRedirecting(true);
-            const params = id === ALL_CHILDREN_ID
-              ? `?child=${ALL_CHILDREN_ID}`
-              : `?child=${id}&childName=${encodeURIComponent(name)}`;
-            router.replace(`${pathname}${params}`);
-            return;
+          if (id === ALL_CHILDREN_ID) {
+            targetParams = `?child=${ALL_CHILDREN_ID}`;
+          } else if (childrenList.some(c => c.id === id)) {
+            targetParams = `?child=${id}&childName=${encodeURIComponent(name)}`;
           }
         } catch {
           localStorage.removeItem(STORAGE_KEY);
         }
       }
-      // Brak w localStorage — domyślnie "Wszystkie dzieci"
       setRedirecting(true);
-      router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
+      router.replace(`${pathname}${targetParams}`);
     }
-  }, [effectiveChildId, pathname, router, childrenList]);
+  }, [selectedChildId, selectedChildName, isAll, isValidChild, effectiveChildId, pathname, router, childrenList]);
 
-  function navigateTo(child: ChildOption | { id: typeof ALL_CHILDREN_ID; name: string }) {
+  const navigateTo = useCallback((child: ChildOption | { id: typeof ALL_CHILDREN_ID; name: string }) => {
     if (child.id === ALL_CHILDREN_ID) {
       router.push(`${pathname}?child=${ALL_CHILDREN_ID}`);
     } else {
       router.push(`${pathname}?child=${child.id}&childName=${encodeURIComponent(child.name)}`);
     }
-  }
+  }, [router, pathname]);
 
   if (!effectiveChildId) {
     if (redirecting) {

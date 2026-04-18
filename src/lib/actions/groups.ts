@@ -202,8 +202,7 @@ export async function getGroupsWithParticipants(): Promise<GroupWithParticipants
     return { ...groupRest, participantCount: participants.length, participants };
   });
 
-  // Serializuj dla Client Components
-  return JSON.parse(JSON.stringify(result));
+  return result;
 }
 
 // Usuń wielu uczestników naraz
