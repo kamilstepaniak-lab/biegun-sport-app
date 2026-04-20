@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { calcConfirmationDueDate, isConfirmationDeadlineOverdue } from '@/lib/payment-due';
 import type { PaymentWithDetails } from '@/types';
 
 interface TripPaymentsListProps {
@@ -260,14 +259,15 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-gray-600 text-xs">
-                          {p.template?.due_days_from_confirmation ? (
+                          {p.due_date ? (
                             (() => {
-                              const confirmedAt = p.registration?.confirmed_at;
-                              const dueDate = calcConfirmationDueDate(p.template.due_days_from_confirmation, confirmedAt);
-                              const overdue = isConfirmationDeadlineOverdue(p.template.due_days_from_confirmation, confirmedAt);
+                              const dueDate = new Date(p.due_date);
+                              const overdue = dueDate < new Date();
                               return (
                                 <div className="flex flex-col gap-0.5">
-                                  <span>{dueDate ? format(dueDate, 'd MMM yyyy', { locale: pl }) : 'czeka na potwierdzenie'}</span>
+                                  <span className={overdue && p.status !== 'paid' ? 'text-red-600 font-semibold' : ''}>
+                                    {format(dueDate, 'd MMM yyyy', { locale: pl })}
+                                  </span>
                                   {overdue && p.status !== 'paid' && (
                                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
                                       <AlertTriangle className="h-3 w-3" />
@@ -278,7 +278,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                               );
                             })()
                           ) : (
-                            p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : '—'
+                            '—'
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-xs">

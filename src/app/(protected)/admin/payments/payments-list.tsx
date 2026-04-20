@@ -32,7 +32,6 @@ import {
 } from '@/components/ui/tooltip';
 
 import { updatePaymentStatus, updatePaymentAmount, updatePaymentNote, bulkUpdatePaymentStatus, deletePayment, bulkDeletePayments } from '@/lib/actions/payments';
-import { calcConfirmationDueDate, isConfirmationDeadlineOverdue } from '@/lib/payment-due';
 import type { PaymentWithDetails, PaymentStatus } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -468,29 +467,15 @@ export function PaymentsList({ payments }: PaymentsListProps) {
 
         {/* Termin */}
         <td className="py-3 px-3">
-          {payment.template?.due_days_from_confirmation ? (
-            (() => {
-              const confirmedAt = payment.registration?.confirmed_at;
-              const confDueDate = calcConfirmationDueDate(payment.template.due_days_from_confirmation, confirmedAt);
-              const overdue = isConfirmationDeadlineOverdue(payment.template.due_days_from_confirmation, confirmedAt);
-              return (
-                <div className="flex flex-col gap-0.5">
-                  <span className={cn('text-sm tabular-nums', overdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500')}>
-                    {confDueDate ? format(confDueDate, 'd.MM.yyyy', { locale: pl }) : 'czeka na potwierdzenie'}
-                  </span>
-                  {overdue && !isPaid && (
-                    <span className="text-[11px] font-semibold text-red-600">PO TERMINIE</span>
-                  )}
-                </div>
-              );
-            })()
-          ) : dueDate ? (
-            <span className={cn(
-              'text-sm tabular-nums',
-              isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500'
-            )}>
-              {format(dueDate, 'd.MM.yyyy', { locale: pl })}
-            </span>
+          {dueDate ? (
+            <div className="flex flex-col gap-0.5">
+              <span className={cn('text-sm tabular-nums', isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500')}>
+                {format(dueDate, 'd.MM.yyyy', { locale: pl })}
+              </span>
+              {isDueDateOverdue && !isPaid && (
+                <span className="text-[11px] font-semibold text-red-600">PO TERMINIE</span>
+              )}
+            </div>
           ) : (
             <span className="text-gray-300 text-sm">—</span>
           )}

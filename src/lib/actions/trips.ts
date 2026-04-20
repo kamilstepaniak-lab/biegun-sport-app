@@ -902,6 +902,7 @@ export async function updateParticipationStatus(
       .update({
         participation_status: status,
         participation_note: finalNote,
+        confirmed_at: status === 'confirmed' ? new Date().toISOString() : null,
       })
       .eq('id', existing.id);
 
@@ -944,7 +945,7 @@ export async function updateParticipationStatus(
       .limit(1);
 
     if (!existingPayments || existingPayments.length === 0) {
-      await createPaymentsForRegistration(registrationId, tripId, participantId);
+      await createPaymentsForRegistration(registrationId, tripId, participantId, new Date().toISOString());
     }
   } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
     // Admin ustawia "Nie jedzie" lub "Niepotwierdzony" — anuluj oczekujące płatności
@@ -965,11 +966,22 @@ export async function updateParticipationStatus(
 }
 
 // Typy dla wyjazdów rodzica z dziećmi
+export interface ChildPaymentSummary {
+  template_id: string | null;
+  payment_type: string;
+  installment_number: number | null;
+  amount: number;
+  currency: string;
+  due_date: string | null;
+}
+
 export interface ChildTripStatus {
   child_id: string;
   child_name: string;
   participation_status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other';
   participation_note: string | null;
+  registration_id: string | null;
+  payments: ChildPaymentSummary[];
 }
 
 export interface PaymentTemplateForParent {
@@ -1067,7 +1079,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
       .order('departure_datetime', { ascending: true }),
     supabase
       .from('trip_registrations')
-      .select('trip_id, participant_id, participation_status, participation_note')
+      .select('id, trip_id, participant_id, participation_status, participation_note')
       .in('participant_id', childIds)
       .in('trip_id', tripIds),
   ]);
@@ -1077,9 +1089,10 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
 
   if (!trips) return [];
 
-  const registrationMap = new Map<string, { participation_status: string; participation_note: string | null }>();
-  (registrations || []).forEach((r: { trip_id: string; participant_id: string; participation_status: string; participation_note: string | null }) => {
+  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null }>();
+  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null }) => {
     registrationMap.set(`${r.trip_id}-${r.participant_id}`, {
+      id: r.id,
       participation_status: r.participation_status,
       participation_note: r.participation_note,
     });
@@ -1117,6 +1130,8 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
         child_name: `${child.first_name} ${child.last_name}`,
         participation_status: (reg?.participation_status as 'unconfirmed' | 'confirmed' | 'not_going' | 'other') || 'unconfirmed',
         participation_note: reg?.participation_note || null,
+        registration_id: reg?.id ?? null,
+        payments: [],
       };
     });
 
@@ -1127,6 +1142,35 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
       payment_templates: trip.trip_payment_templates || [],
     };
   });
+
+  // Fetch payments for confirmed registrations and attach to each child status
+  const allRegIds = result
+    .flatMap((t) => t.children)
+    .filter((c) => c.registration_id && c.participation_status === 'confirmed')
+    .map((c) => c.registration_id as string);
+
+  if (allRegIds.length > 0) {
+    const { data: allPayments } = await supabase
+      .from('payments')
+      .select('registration_id, template_id, payment_type, installment_number, amount, currency, due_date')
+      .in('registration_id', allRegIds)
+      .neq('status', 'cancelled')
+      .order('installment_number', { ascending: true });
+
+    const paymentsByReg = new Map<string, ChildPaymentSummary[]>();
+    for (const p of allPayments ?? []) {
+      if (!paymentsByReg.has(p.registration_id)) paymentsByReg.set(p.registration_id, []);
+      paymentsByReg.get(p.registration_id)!.push(p);
+    }
+
+    result.forEach((t) => {
+      t.children.forEach((c) => {
+        if (c.registration_id) {
+          c.payments = paymentsByReg.get(c.registration_id) ?? [];
+        }
+      });
+    });
+  }
 
   return result;
 }
@@ -1218,7 +1262,7 @@ export async function updateParticipationStatusByParent(
       .limit(1);
 
     if (!existingPayments || existingPayments.length === 0) {
-      await createPaymentsForRegistration(registrationId, tripId, participantId);
+      await createPaymentsForRegistration(registrationId, tripId, participantId, new Date().toISOString());
     }
   } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
     // Dziecko nie jedzie lub cofnięto potwierdzenie — anuluj płatności (pending)
@@ -1259,36 +1303,24 @@ export async function updateParticipationStatusByParent(
         .eq('id', participantId)
         .single();
 
-      // Pobierz szablony płatności dla wyjazdu
-      const { data: paymentTemplates } = await supabaseAdmin
-        .from('trip_payment_templates')
-        .select('payment_type, installment_number, amount, currency, due_date, due_days_from_confirmation, payment_method, birth_year_from, birth_year_to')
-        .eq('trip_id', tripId)
+      // Pobierz płatności dla tej rejestracji (mają już konkretne due_date ustawione przy potwierdzeniu)
+      const { data: registrationPayments } = await supabaseAdmin
+        .from('payments')
+        .select('payment_type, installment_number, amount, currency, due_date, payment_method, template_id')
+        .eq('registration_id', registrationId!)
+        .neq('status', 'cancelled')
         .order('installment_number', { ascending: true });
 
       const parentInfo = participantData?.parent as unknown as { email: string; first_name: string } | null;
 
       if (tripData && participantData && parentInfo?.email) {
-        const childBirthYear = participantData.birth_date
-          ? new Date(participantData.birth_date).getFullYear()
-          : null;
-
-        // Filtruj raty do szablonów pasujących do rocznika dziecka
-        const emailPaymentLines: PaymentLineItem[] = (paymentTemplates || [])
-          .filter(pt => {
-            if (pt.payment_type !== 'season_pass') return true;
-            if (!childBirthYear) return true;
-            if (pt.birth_year_from && childBirthYear < pt.birth_year_from) return false;
-            if (pt.birth_year_to && childBirthYear > pt.birth_year_to) return false;
-            return true;
-          })
+        const emailPaymentLines: PaymentLineItem[] = (registrationPayments || [])
           .map(pt => ({
             payment_type: pt.payment_type,
             installment_number: pt.installment_number,
             amount: pt.amount,
             currency: pt.currency,
             due_date: pt.due_date,
-            due_days_from_confirmation: pt.due_days_from_confirmation,
             payment_method: pt.payment_method,
           }));
 

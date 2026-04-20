@@ -7,6 +7,7 @@ import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
+import { addDays, format } from 'date-fns';
 
 import { getAuthUser } from './auth-helpers';
 
@@ -354,7 +355,7 @@ export async function getPaymentTransactions(paymentId: string): Promise<Payment
 }
 
 // Tworzy płatności dla uczestnika na podstawie szablonów wyjazdu
-export async function createPaymentsForRegistration(registrationId: string, tripId: string, participantId: string) {
+export async function createPaymentsForRegistration(registrationId: string, tripId: string, participantId: string, confirmedAt: string) {
   // Używamy admin client żeby ominąć RLS
   const supabaseAdmin = createAdminClient();
 
@@ -400,20 +401,30 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       amount: number;
       currency: string;
       due_date: string | null;
+      due_days_from_confirmation: number | null;
       payment_method: string | null;
-    }) => ({
-      registration_id: registrationId,
-      template_id: template.id,
-      payment_type: template.payment_type,
-      installment_number: template.installment_number,
-      original_amount: template.amount,
-      discount_percentage: 0,
-      amount: template.amount,
-      currency: template.currency,
-      due_date: template.due_date,
-      status: 'pending',
-      amount_paid: 0,
-    }));
+    }) => {
+      let dueDate: string | null = template.due_date ?? null;
+      if (template.due_days_from_confirmation != null) {
+        dueDate = format(
+          addDays(new Date(confirmedAt), template.due_days_from_confirmation),
+          'yyyy-MM-dd'
+        );
+      }
+      return {
+        registration_id: registrationId,
+        template_id: template.id,
+        payment_type: template.payment_type,
+        installment_number: template.installment_number,
+        original_amount: template.amount,
+        discount_percentage: 0,
+        amount: template.amount,
+        currency: template.currency,
+        due_date: dueDate,
+        status: 'pending',
+        amount_paid: 0,
+      };
+    });
 
   if (paymentsToCreate.length > 0) {
     const { error } = await supabaseAdmin.from('payments').insert(paymentsToCreate);
@@ -443,8 +454,6 @@ export interface ParentPayment {
   original_amount: number;
   currency: string;
   due_date: string | null;
-  due_days_from_confirmation: number | null;
-  confirmed_at: string | null;
   status: string;
   amount_paid: number;
   payment_method: 'cash' | 'transfer' | 'both' | null;
@@ -481,7 +490,6 @@ const _fetchParentPaymentsDB = unstable_cache(
         participant_id,
         trip_id,
         participation_status,
-        confirmed_at,
         trip:trips (
           id,
           title,
@@ -516,15 +524,13 @@ const _fetchParentPaymentsDB = unstable_cache(
     )];
 
     const templateMethodMap = new Map<string, 'cash' | 'transfer' | 'both' | null>();
-    const templateDueDaysMap = new Map<string, number | null>();
     if (templateIds.length > 0) {
       const { data: templates } = await supabaseAdmin
         .from('trip_payment_templates')
-        .select('id, payment_method, due_days_from_confirmation')
+        .select('id, payment_method')
         .in('id', templateIds);
-      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null; due_days_from_confirmation: number | null }) => {
+      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null }) => {
         templateMethodMap.set(t.id, t.payment_method);
-        templateDueDaysMap.set(t.id, t.due_days_from_confirmation);
       });
     }
 
@@ -545,7 +551,6 @@ const _fetchParentPaymentsDB = unstable_cache(
         id: string;
         participant_id: string;
         trip_id: string;
-        confirmed_at: string | null;
         trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
       } | undefined;
       const childData = childDataMap.get(registration?.participant_id || '');
@@ -565,8 +570,6 @@ const _fetchParentPaymentsDB = unstable_cache(
         original_amount: payment.original_amount,
         currency: payment.currency,
         due_date: payment.due_date,
-        due_days_from_confirmation: payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null,
-        confirmed_at: registration?.confirmed_at ?? null,
         status: payment.status,
         amount_paid: payment.amount_paid || 0,
         payment_method: payment.template_id ? (templateMethodMap.get(payment.template_id) || null) : null,

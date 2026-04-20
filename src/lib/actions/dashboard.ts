@@ -2,7 +2,6 @@
 
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
-import { calcConfirmationDueDate } from '@/lib/payment-due';
 
 export interface NearestTrip {
   id: string;
@@ -24,10 +23,7 @@ export interface PaymentSummaryItem {
   amount: number;
   currency: string;
   due_date: string | null;
-  due_days_from_confirmation: number | null;
-  confirmed_at: string | null;
   effective_due_date: string | null;
-  awaiting_confirmation: boolean;
   status: string;
   amount_paid: number;
   isOverdue: boolean;
@@ -179,7 +175,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
   if (registrationIds.length > 0) {
     const { data: payments, error: payError } = await supabaseAdmin
       .from('payments')
-      .select('id, registration_id, amount, currency, due_date, status, amount_paid, template:trip_payment_templates!template_id(due_days_from_confirmation)')
+      .select('id, registration_id, amount, currency, due_date, status, amount_paid')
       .in('registration_id', registrationIds)
       .not('status', 'in', '("cancelled","paid")')
       .order('due_date', { ascending: true });
@@ -197,21 +193,11 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
           due_date: string | null;
           status: string;
           amount_paid: number;
-          template: { due_days_from_confirmation: number | null } | { due_days_from_confirmation: number | null }[] | null;
         }) => {
           const reg = regs.find((r) => r.id === p.registration_id);
           const t = reg ? getTrip(reg) : null;
-          const tpl = Array.isArray(p.template) ? p.template[0] : p.template;
-          const dueDaysFromConfirmation = tpl?.due_days_from_confirmation ?? null;
-          const confirmedAt = reg?.confirmed_at ?? null;
 
-          const confDueDate = dueDaysFromConfirmation
-            ? calcConfirmationDueDate(dueDaysFromConfirmation, confirmedAt)
-            : null;
-          const effectiveDueDate = dueDaysFromConfirmation
-            ? (confDueDate ? confDueDate.toISOString().split('T')[0] : null)
-            : p.due_date;
-          const awaitingConfirmation = !!dueDaysFromConfirmation && !confirmedAt;
+          const effectiveDueDate = p.due_date ?? null;
 
           const isOverdue = !!effectiveDueDate && new Date(effectiveDueDate) < today;
           const daysOverdue =
@@ -232,10 +218,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
             amount: p.amount,
             currency: p.currency,
             due_date: p.due_date,
-            due_days_from_confirmation: dueDaysFromConfirmation,
-            confirmed_at: confirmedAt,
             effective_due_date: effectiveDueDate,
-            awaiting_confirmation: awaitingConfirmation,
             status: p.status,
             amount_paid: p.amount_paid,
             isOverdue,

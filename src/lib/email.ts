@@ -240,11 +240,9 @@ export function buildTripDetailsHtml(trip: TripEmailData, payments: PaymentLineI
       const method = p.payment_method === 'cash' ? 'gotówka'
         : p.payment_method === 'transfer' ? 'przelew'
         : 'gotówka lub przelew';
-      const dueStr = p.due_days_from_confirmation
-        ? ` · termin: ${p.due_days_from_confirmation} dni od potwierdzenia udziału`
-        : p.due_date
-          ? ` · termin: ${new Date(p.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`
-          : '';
+      const dueStr = p.due_date
+        ? ` · termin: ${new Date(p.due_date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}`
+        : '';
       html += `<tr><td colspan="2" style="${T}padding:3px 0;">• <strong>${label}:</strong> ${p.amount.toFixed(0)} ${p.currency} (${method})${dueStr}</td></tr>`;
     }
 
