@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { PageHeader, Breadcrumbs, PricingTable } from '@/components/shared';
 import { getTrip } from '@/lib/actions/trips';
 import { getMyChildren, getChildParticipationStatuses } from '@/lib/actions/participants';
+import { getActualPaymentDueDatesForTrip } from '@/lib/actions/payments';
 import { PaymentInfoCard } from './payment-info-card';
 
 interface TripDetailPageProps {
@@ -35,6 +36,12 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
     id,
     eligibleChildren.map(c => c.id)
   );
+
+  // Dla potwierdzonego dziecka pobierz rzeczywiste daty płatności (do cennika)
+  const confirmedChild = eligibleChildren.find(c => participationStatuses[c.id] === 'confirmed');
+  const actualDueDatesByTemplateId = confirmedChild
+    ? await getActualPaymentDueDatesForTrip(id, confirmedChild.id)
+    : {};
 
   return (
     <div className="space-y-6">
@@ -170,7 +177,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
             </CardHeader>
             <CardContent className="overflow-x-auto px-0 pb-0">
               <div className="px-6 pb-6">
-                <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} />
+                <PricingTable templates={trip.payment_templates} departureDate={trip.departure_datetime} actualDueDatesByTemplateId={actualDueDatesByTemplateId} />
               </div>
             </CardContent>
           </Card>

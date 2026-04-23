@@ -490,6 +490,7 @@ const _fetchParentPaymentsDB = unstable_cache(
         participant_id,
         trip_id,
         participation_status,
+        confirmed_at,
         trip:trips (
           id,
           title,
@@ -524,13 +525,15 @@ const _fetchParentPaymentsDB = unstable_cache(
     )];
 
     const templateMethodMap = new Map<string, 'cash' | 'transfer' | 'both' | null>();
+    const templateDueDaysMap = new Map<string, number | null>();
     if (templateIds.length > 0) {
       const { data: templates } = await supabaseAdmin
         .from('trip_payment_templates')
-        .select('id, payment_method')
+        .select('id, payment_method, due_days_from_confirmation')
         .in('id', templateIds);
-      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null }) => {
+      (templates || []).forEach((t: { id: string; payment_method: 'cash' | 'transfer' | 'both' | null; due_days_from_confirmation: number | null }) => {
         templateMethodMap.set(t.id, t.payment_method);
+        templateDueDaysMap.set(t.id, t.due_days_from_confirmation);
       });
     }
 
@@ -551,9 +554,15 @@ const _fetchParentPaymentsDB = unstable_cache(
         id: string;
         participant_id: string;
         trip_id: string;
+        confirmed_at: string | null;
         trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
       } | undefined;
       const childData = childDataMap.get(registration?.participant_id || '');
+      const dueDays = payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null;
+      const confirmedAt = registration?.confirmed_at ?? null;
+      const computedDueDate = (!payment.due_date && dueDays != null && confirmedAt)
+        ? format(addDays(new Date(confirmedAt), dueDays), 'yyyy-MM-dd')
+        : payment.due_date;
       return {
         id: payment.id,
         participant_id: registration?.participant_id || '',
@@ -569,7 +578,7 @@ const _fetchParentPaymentsDB = unstable_cache(
         amount: payment.amount,
         original_amount: payment.original_amount,
         currency: payment.currency,
-        due_date: payment.due_date,
+        due_date: computedDueDate,
         status: payment.status,
         amount_paid: payment.amount_paid || 0,
         payment_method: payment.template_id ? (templateMethodMap.get(payment.template_id) || null) : null,
@@ -594,6 +603,46 @@ export async function getPaymentsForParent(selectedChildId?: string): Promise<Pa
     return allPayments.filter((p) => p.participant_id === selectedChildId);
   }
   return allPayments;
+}
+
+// Pobierz rzeczywiste daty płatności (z payments) dla uczestnika na danym wyjeździe.
+// Zwraca mapę template_id → due_date (obliczone z confirmed_at gdy due_date jest null).
+export async function getActualPaymentDueDatesForTrip(
+  tripId: string,
+  participantId: string,
+): Promise<Record<string, string>> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data: registration } = await supabaseAdmin
+    .from('trip_registrations')
+    .select('id, confirmed_at')
+    .eq('trip_id', tripId)
+    .eq('participant_id', participantId)
+    .eq('participation_status', 'confirmed')
+    .maybeSingle();
+
+  if (!registration) return {};
+
+  const { data: payments } = await supabaseAdmin
+    .from('payments')
+    .select('template_id, due_date, template:trip_payment_templates!template_id(due_days_from_confirmation)')
+    .eq('registration_id', registration.id)
+    .neq('status', 'cancelled');
+
+  if (!payments) return {};
+
+  const result: Record<string, string> = {};
+  for (const p of payments) {
+    if (!p.template_id) continue;
+    const dueDays = (p.template as { due_days_from_confirmation?: number | null } | null)?.due_days_from_confirmation ?? null;
+    const dueDate = p.due_date ?? (
+      dueDays != null && registration.confirmed_at
+        ? format(addDays(new Date(registration.confirmed_at), dueDays), 'yyyy-MM-dd')
+        : null
+    );
+    if (dueDate) result[p.template_id] = dueDate;
+  }
+  return result;
 }
 
 // ── Cache: konta bankowe rodzica ──────────────────────────────────────────

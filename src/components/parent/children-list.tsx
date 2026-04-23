@@ -695,7 +695,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
                                 {p.trip_title || 'Płatność'}
                               </p>
                               <p className="text-[11px] text-gray-400 mt-0.5">
-                                {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : 'Brak terminu'}
+                                {(p.effective_due_date || p.due_date) ? format(new Date((p.effective_due_date || p.due_date)!), 'd MMM yyyy', { locale: pl }) : 'Brak terminu'}
                                 {p.daysUntilDue !== null && p.daysUntilDue >= 0 && (
                                   <span className="text-blue-400">
                                     {p.daysUntilDue === 0 ? ' · dziś!' : p.daysUntilDue === 1 ? ' · jutro' : ` · za ${p.daysUntilDue}d`}

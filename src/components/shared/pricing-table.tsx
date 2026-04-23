@@ -1,5 +1,7 @@
 'use client';
 
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import { CreditCard, Clock } from 'lucide-react';
 import { EmptyState } from './empty-state';
 import { formatPaymentDueDate } from '@/lib/payment-due';
@@ -20,9 +22,10 @@ function getPaymentTypeLabel(template: TripPaymentTemplate): string {
 interface PricingTableProps {
     templates: TripPaymentTemplate[];
     departureDate?: string;
+    actualDueDatesByTemplateId?: Record<string, string>;
 }
 
-export function PricingTable({ templates, departureDate }: PricingTableProps) {
+export function PricingTable({ templates, departureDate, actualDueDatesByTemplateId }: PricingTableProps) {
     if (!templates || templates.length === 0) {
         return (
             <EmptyState
@@ -57,7 +60,11 @@ export function PricingTable({ templates, departureDate }: PricingTableProps) {
                     {sortedTemplates.map((template) => {
                         const methodStyle = getMethodLabel(template.payment_method);
                         const label = getPaymentTypeLabel(template);
-                        const dueDateLabel = formatPaymentDueDate(template, departureDate);
+                        const actualDueDate = actualDueDatesByTemplateId?.[template.id];
+                        const dueDateLabel = actualDueDate
+                            ? `do ${format(new Date(actualDueDate), 'd.MM.yyyy', { locale: pl })}`
+                            : formatPaymentDueDate(template, departureDate);
+                        const hasDueDate = !!(template.due_date || template.due_days_from_confirmation || actualDueDate);
 
                         return (
                             <tr key={template.id} className="hover:bg-muted/30 transition-colors">
@@ -72,7 +79,7 @@ export function PricingTable({ templates, departureDate }: PricingTableProps) {
                                     )}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
-                                    {(template.due_date || template.due_days_from_confirmation) ? (
+                                    {hasDueDate ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-300">
                                             <Clock className="h-3 w-3" />
                                             {dueDateLabel}

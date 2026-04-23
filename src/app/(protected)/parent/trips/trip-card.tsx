@@ -281,26 +281,6 @@ function TripCardInner({
                           </button>
                         </div>
                       </div>
-                      {currentStatus === 'confirmed' && child.payments.length > 0 && (
-                        <div className="px-3 pb-1 space-y-0.5">
-                          {child.payments.map((p, i) => {
-                            const label = p.payment_type === 'installment'
-                              ? `Rata ${p.installment_number}`
-                              : p.payment_type === 'season_pass'
-                                ? 'Karnet'
-                                : 'Opłata';
-                            const dateStr = p.due_date
-                              ? `do ${format(new Date(p.due_date), 'd MMM yyyy', { locale: pl })}`
-                              : 'brak terminu';
-                            return (
-                              <p key={i} className="text-xs text-gray-500">
-                                {label}: <span className="font-medium text-gray-700">{p.amount.toFixed(0)} {p.currency}</span>
-                                {' · '}{dateStr}
-                              </p>
-                            );
-                          })}
-                        </div>
-                      )}
                       {confirmPanel?.key === key && (() => {
                         const pType = confirmPanel.type;
                         const isStop = ['stop1', 'stop2', 'own'].includes(pType);

@@ -1,5 +1,6 @@
 'use server';
 
+import { addDays, format } from 'date-fns';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 
@@ -175,7 +176,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
   if (registrationIds.length > 0) {
     const { data: payments, error: payError } = await supabaseAdmin
       .from('payments')
-      .select('id, registration_id, amount, currency, due_date, status, amount_paid')
+      .select('id, registration_id, amount, currency, due_date, status, amount_paid, template_id, template:trip_payment_templates!template_id(due_days_from_confirmation)')
       .in('registration_id', registrationIds)
       .not('status', 'in', '("cancelled","paid")')
       .order('due_date', { ascending: true });
@@ -193,11 +194,18 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
           due_date: string | null;
           status: string;
           amount_paid: number;
+          template_id: string | null;
+          template: { due_days_from_confirmation: number | null }[] | null;
         }) => {
           const reg = regs.find((r) => r.id === p.registration_id);
           const t = reg ? getTrip(reg) : null;
 
-          const effectiveDueDate = p.due_date ?? null;
+          const templateDueDays = p.template?.[0]?.due_days_from_confirmation ?? null;
+          const effectiveDueDate = p.due_date ?? (
+            templateDueDays != null && reg?.confirmed_at
+              ? format(addDays(new Date(reg.confirmed_at), templateDueDays), 'yyyy-MM-dd')
+              : null
+          );
 
           const isOverdue = !!effectiveDueDate && new Date(effectiveDueDate) < today;
           const daysOverdue =
