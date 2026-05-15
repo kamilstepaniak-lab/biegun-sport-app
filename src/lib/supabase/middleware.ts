@@ -45,8 +45,7 @@ export async function updateSession(request: NextRequest) {
     publicPaths.some(path => pathname === path) ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/public') ||
-    pathname.startsWith('/confirm/') ||
-    pathname.startsWith('/embed/');
+    pathname.startsWith('/confirm/');
 
   // Jeśli użytkownik nie jest zalogowany i próbuje uzyskać dostęp do chronionej ścieżki
   if (!user && !isPublicPath) {

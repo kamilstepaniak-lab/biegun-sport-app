@@ -19,14 +19,14 @@ import type { TripWithPaymentTemplates, ParticipantWithGroup } from '@/types';
 
 interface PaymentInfoCardProps {
   trip: TripWithPaymentTemplates;
-  children: ParticipantWithGroup[];
+  participants: ParticipantWithGroup[];
 }
 
-export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
-  const [selectedChild, setSelectedChild] = useState<string>(children[0]?.id || '');
+export function PaymentInfoCard({ trip, participants }: PaymentInfoCardProps) {
+  const [selectedChild, setSelectedChild] = useState<string>(participants[0]?.id || '');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const currentChild = children.find(c => c.id === selectedChild);
+  const currentChild = participants.find(c => c.id === selectedChild);
 
   // Generuj tytuł przelewu
   const transferTitle = currentChild
@@ -57,7 +57,7 @@ export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
       </CardHeader>
       <CardContent className="space-y-4 overflow-x-auto">
         {/* Wybór dziecka jeśli więcej niż jedno */}
-        {children.length > 1 && (
+        {participants.length > 1 && (
           <div className="space-y-2">
             <Label>Wybierz dziecko</Label>
             <Select value={selectedChild} onValueChange={setSelectedChild}>
@@ -65,7 +65,7 @@ export function PaymentInfoCard({ trip, children }: PaymentInfoCardProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {children.map((child) => (
+                {participants.map((child) => (
                   <SelectItem key={child.id} value={child.id}>
                     {child.first_name} {child.last_name}
                   </SelectItem>

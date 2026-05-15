@@ -23,7 +23,7 @@ export default async function ParentChildrenPage() {
         </Link>
       </PageHeader>
 
-      <ChildrenList children={children} />
+      <ChildrenList participants={children} />
     </div>
   );
 }

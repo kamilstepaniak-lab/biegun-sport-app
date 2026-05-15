@@ -451,7 +451,15 @@ function TripCardInner({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {trip.payment_templates.map((template) => {
+                      {(() => {
+                        // Po potwierdzeniu udziału płatność ma już konkretną datę —
+                        // pokazujemy ją zamiast "X dni od potwierdzenia".
+                        const confirmedChild = trip.children.find((c) => c.participation_status === 'confirmed');
+                        const actualDueByTemplate = new Map<string, string>();
+                        (confirmedChild?.payments ?? []).forEach((p) => {
+                          if (p.template_id && p.due_date) actualDueByTemplate.set(p.template_id, p.due_date);
+                        });
+                        return trip.payment_templates.map((template) => {
                         const label = getTemplateLabel(template);
                         const methodLabel = getMethodLabel(template.payment_method);
                         const methodCls = template.payment_method === 'cash'
@@ -459,11 +467,14 @@ function TripCardInner({
                           : template.payment_method === 'both'
                             ? 'bg-violet-100 text-violet-700'
                             : 'bg-blue-100 text-blue-700';
+                        const actualDue = actualDueByTemplate.get(template.id);
                         return (
                           <tr key={template.id} className="hover:bg-gray-50/50">
                             <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
                             <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                              {formatPaymentDueDate(template, trip.departure_datetime)}
+                              {actualDue
+                                ? `do ${format(new Date(actualDue), 'd.MM.yyyy', { locale: pl })}`
+                                : formatPaymentDueDate(template, trip.departure_datetime)}
                             </td>
                             <td className="px-4 py-2.5 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodCls}`}>
@@ -475,7 +486,8 @@ function TripCardInner({
                             </td>
                           </tr>
                         );
-                      })}
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>

@@ -12,14 +12,6 @@ export type PaymentMethod = 'cash' | 'transfer' | 'both';
 
 export type Currency = 'PLN' | 'EUR';
 
-export type NotificationType = 'payment_reminder' | 'new_trip' | 'trip_update' | 'custom';
-
-export type NotificationTargetType = 'all' | 'group' | 'trip' | 'individual';
-
-export type NotificationChannel = 'email' | 'sms' | 'both';
-
-export type NotificationStatus = 'draft' | 'approved' | 'sent' | 'failed';
-
 export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean' | 'select';
 
 export type RegistrationStatus = 'active' | 'cancelled';
@@ -200,33 +192,6 @@ export interface PaymentTransaction {
   created_at: string;
 }
 
-export interface Notification {
-  id: string;
-  notification_type: NotificationType;
-  target_type: NotificationTargetType;
-  target_group_id: string | null;
-  target_trip_id: string | null;
-  target_user_id: string | null;
-  subject: string;
-  body: string;
-  channel: NotificationChannel;
-  status: NotificationStatus;
-  created_at: string;
-  approved_at: string | null;
-  approved_by: string | null;
-  sent_at: string | null;
-}
-
-export interface NotificationLog {
-  id: string;
-  notification_id: string;
-  recipient_id: string;
-  channel: 'email' | 'sms';
-  status: 'sent' | 'failed' | 'bounced';
-  sent_at: string;
-  error_message: string | null;
-}
-
 // Typy rozszerzone (z relacjami)
 
 export interface ParticipantWithGroup extends Participant {
@@ -326,8 +291,6 @@ export interface CreateTripInput {
   return_location: string;
   return_stop2_datetime?: string | null;
   return_stop2_location?: string | null;
-  bank_account_pln?: string;
-  bank_account_eur?: string;
   status: TripStatus;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
@@ -374,13 +337,3 @@ export interface UpdateProfileInput {
   pesel?: string | null;
 }
 
-export interface CreateNotificationInput {
-  notification_type: NotificationType;
-  target_type: NotificationTargetType;
-  target_group_id?: string | null;
-  target_trip_id?: string | null;
-  target_user_id?: string | null;
-  subject: string;
-  body: string;
-  channel: NotificationChannel;
-}

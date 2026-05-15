@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+import { MapPin, Users } from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
@@ -27,6 +27,12 @@ export default async function ParentTripsPage({ searchParams }: Props) {
     name: `${c.first_name} ${c.last_name}`,
   }));
 
+  // Czy (wybrane) dzieci czekają na przypisanie do grupy przez organizatora?
+  const relevantChildren = selectedChildId && selectedChildId !== 'all'
+    ? myChildren.filter(c => c.id === selectedChildId)
+    : myChildren;
+  const awaitingGroup = relevantChildren.length > 0 && relevantChildren.every(c => !c.group);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -36,11 +42,19 @@ export default async function ParentTripsPage({ searchParams }: Props) {
 
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
         {trips.length === 0 ? (
-          <EmptyState
-            icon={MapPin}
-            title="Brak dostępnych wyjazdów"
-            description="Aktualnie nie ma wyjazdów dla grup tego dziecka."
-          />
+          awaitingGroup ? (
+            <EmptyState
+              icon={Users}
+              title="Dziecko czeka na przypisanie do grupy"
+              description="Organizator nie przypisał jeszcze dziecka do grupy treningowej. Po przypisaniu zobaczysz tutaj dostępne wyjazdy."
+            />
+          ) : (
+            <EmptyState
+              icon={MapPin}
+              title="Brak dostępnych wyjazdów"
+              description="Aktualnie nie ma wyjazdów dla grup tego dziecka."
+            />
+          )
         ) : (
           <ParentTripsList trips={trips} />
         )}

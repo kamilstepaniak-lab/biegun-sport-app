@@ -158,9 +158,8 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
   }).filter(Boolean) as NearestTrip[];
 
   // ── Attendance ────────────────────────────────────────────────────────────
-  const participatingRegs = regs.filter((r) =>
-    ['confirmed', 'unconfirmed'].includes(r.participation_status)
-  );
+  // Liczymy tylko wyjazdy, które rodzic potwierdził ("Jedzie").
+  const participatingRegs = regs.filter((r) => r.participation_status === 'confirmed');
   const total = participatingRegs.length;
   const completed = participatingRegs.filter((r) => {
     const t = getTrip(r);
@@ -236,11 +235,12 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
         }
       );
 
-      // Zaległe — most overdue first, top 3
-      overduePayments = allMapped
+      // Zaległe — most overdue first
+      const allOverdue = allMapped
         .filter((p) => p.isOverdue)
-        .sort((a, b) => b.daysOverdue - a.daysOverdue)
-        .slice(0, 3);
+        .sort((a, b) => b.daysOverdue - a.daysOverdue);
+      // Lista pokazuje top 3, ale licznik odzwierciedla wszystkie zaległości
+      overduePayments = allOverdue.slice(0, 3);
 
       // Przyszłe — nearest due date first, top 3
       upcomingPayments = allMapped
@@ -255,7 +255,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
         })
         .slice(0, 3);
 
-      overdueCount = overduePayments.length;
+      overdueCount = allOverdue.length;
     }
   }
 

@@ -155,7 +155,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
     }
   }
 
-  function SortIcon({ field }: { field: keyof TripSummary }) {
+  function sortIcon(field: keyof TripSummary) {
     if (sortField !== field) return <ChevronDown className="h-3 w-3 text-gray-300" />;
     return sortDir === 'asc'
       ? <ChevronUp className="h-3 w-3 text-gray-500" />
@@ -233,7 +233,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('tripTitle')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600"
                   >
-                    Wyjazd <SortIcon field="tripTitle" />
+                    Wyjazd {sortIcon('tripTitle')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-center">
@@ -241,7 +241,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('tripDeparture')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 mx-auto"
                   >
-                    Data wyjazdu <SortIcon field="tripDeparture" />
+                    Data wyjazdu {sortIcon('tripDeparture')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-center">
@@ -249,7 +249,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('participantCount')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 mx-auto"
                   >
-                    Uczest. <SortIcon field="participantCount" />
+                    Uczest. {sortIcon('participantCount')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -257,7 +257,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('totalPLN')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 ml-auto"
                   >
-                    Do zapłaty PLN <SortIcon field="totalPLN" />
+                    Do zapłaty PLN {sortIcon('totalPLN')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -265,7 +265,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('paidPLN')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 ml-auto"
                   >
-                    Zebrano PLN <SortIcon field="paidPLN" />
+                    Zebrano PLN {sortIcon('paidPLN')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -273,7 +273,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('missingPLN')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 ml-auto"
                   >
-                    Brakuje PLN <SortIcon field="missingPLN" />
+                    Brakuje PLN {sortIcon('missingPLN')}
                   </button>
                 </th>
                 {totals.totalEUR > 0 && (
@@ -300,7 +300,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('pct')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 mx-auto"
                   >
-                    % opłac. <SortIcon field="pct" />
+                    % opłac. {sortIcon('pct')}
                   </button>
                 </th>
                 <th className="px-5 py-3 text-right">

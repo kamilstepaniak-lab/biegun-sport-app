@@ -33,12 +33,15 @@ export function DashboardBlocks({ participantId, participantName }: DashboardBlo
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
+    // Stan ładowania ustawiany przed asynchronicznym pobraniem danych poniżej.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (isFirstLoad.current) {
       setIsLoading(true);
     } else {
       // Przy zmianie dziecka — tylko subtelny indicator, stare dane zostają
       setIsRefreshing(true);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     Promise.all([getDashboardData(participantId), getMessagesForParent()])
       .then(([dashboardData, messagesData]) => {

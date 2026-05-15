@@ -10,6 +10,7 @@ import { logActivity } from './activity-logs';
 import { addDays, format } from 'date-fns';
 
 import { getAuthUser } from './auth-helpers';
+import { getBankAccounts } from './settings';
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -645,39 +646,18 @@ export async function getActualPaymentDueDatesForTrip(
   return result;
 }
 
-// ── Cache: konta bankowe rodzica ──────────────────────────────────────────
-const _fetchBankAccountsDB = unstable_cache(
-  async (userId: string): Promise<BankAccountInfo> => {
-    const supabaseAdmin = createAdminClient();
-
-    // Jedno zapytanie: participant (rodzica) → trip_registrations → trips
-    const { data: registration } = await supabaseAdmin
-      .from('trip_registrations')
-      .select('trip:trips(bank_account_pln, bank_account_eur), participant:participants!inner(parent_id)')
-      .eq('participant.parent_id', userId)
-      .eq('participation_status', 'confirmed')
-      .limit(1)
-      .maybeSingle();
-
-    const trip = registration?.trip as unknown as { bank_account_pln: string | null; bank_account_eur: string | null } | null;
-
-    return {
-      bank_account_pln: trip?.bank_account_pln || null,
-      bank_account_eur: trip?.bank_account_eur || null,
-    };
-  },
-  ['parent-bank-accounts'],
-  { revalidate: 120, tags: ['payments'] },
-);
-
-// Pobierz dane do przelewu (konta bankowe) — z wyjazdu na który dziecko jest zapisane
+// Pobierz dane do przelewu — wspólne konto bankowe z ustawień aplikacji
 export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
   const { user } = await getAuthUser();
   if (!user) {
     return { bank_account_pln: null, bank_account_eur: null };
   }
 
-  return _fetchBankAccountsDB(user.id);
+  const accounts = await getBankAccounts();
+  return {
+    bank_account_pln: accounts.bank_account_pln || null,
+    bank_account_eur: accounts.bank_account_eur || null,
+  };
 }
 
 export async function updatePaymentStatus(

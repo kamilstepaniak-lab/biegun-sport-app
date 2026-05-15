@@ -10,7 +10,7 @@ interface TokenInfo {
   parentEmail: string;
   participantName: string | null;
   trip: {
-    name: string;
+    title: string;
     departure_datetime: string;
     location?: string;
   } | null;
@@ -19,8 +19,7 @@ interface TokenInfo {
 interface ConfirmResult {
   success: boolean;
   action: string;
-  trip: { name: string; departure_datetime: string } | null;
-  isNewAccount: boolean;
+  trip: { title: string; departure_datetime: string } | null;
   parentEmail: string;
 }
 
@@ -172,13 +171,13 @@ export function ConfirmTokenClient({
             <div>
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-1">
-                  {tokenInfo.action === 'confirm' || tokenInfo.action === 'register'
+                  {tokenInfo.action === 'confirm'
                     ? 'Potwierdzenie udziału'
                     : 'Rezygnacja z wyjazdu'}
                 </h2>
                 {tokenInfo.trip && (
                   <p className="text-sm text-gray-500">
-                    Wyjazd: <span className="font-medium text-gray-900">{tokenInfo.trip.name}</span>
+                    Wyjazd: <span className="font-medium text-gray-900">{tokenInfo.trip.title}</span>
                     {tripDate && <>, {tripDate}</>}
                   </p>
                 )}
@@ -191,7 +190,7 @@ export function ConfirmTokenClient({
                 </div>
               )}
 
-              {tokenInfo.action === 'confirm' || tokenInfo.action === 'register' ? (
+              {tokenInfo.action === 'confirm' ? (
                 <div className="space-y-3">
                   <button
                     onClick={() => handleConfirm('confirm')}
@@ -240,27 +239,16 @@ export function ConfirmTokenClient({
           {/* Sukces */}
           {phase === 'done' && result && (
             <div className="text-center py-4">
-              {result.action === 'confirm' || result.action === 'register' ? (
+              {result.action === 'confirm' ? (
                 <>
                   <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Gotowe!</h2>
                   <p className="text-sm text-gray-600 mb-4">
                     Udział został potwierdzony.
                     {result.trip && (
-                      <> Dziecko jest zapisane na <strong>{result.trip.name}</strong>.</>
+                      <> Dziecko jest zapisane na <strong>{result.trip.title}</strong>.</>
                     )}
                   </p>
-                  {result.isNewAccount && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-left">
-                      <p className="text-sm font-medium text-blue-900 mb-1">
-                        Utworzyliśmy dla Ciebie konto
-                      </p>
-                      <p className="text-xs text-blue-700">
-                        Na adres <strong>{result.parentEmail}</strong> wyślemy dane do logowania.
-                        Możesz zalogować się, aby zarządzać zapisami.
-                      </p>
-                    </div>
-                  )}
                 </>
               ) : (
                 <>

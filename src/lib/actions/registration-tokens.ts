@@ -12,9 +12,8 @@ export interface CreateTokenParams {
   parentFirstName?: string;
   parentLastName?: string;
   parentPhone?: string;
-  participantId?: string;
-  participantName?: string; // jeśli uczestnik jeszcze nie istnieje w bazie
-  action: 'confirm' | 'decline' | 'register';
+  participantId: string;
+  action: 'confirm' | 'decline';
   expiresInDays?: number;
 }
 
@@ -44,7 +43,6 @@ export async function createRegistrationToken(params: CreateTokenParams): Promis
       parent_last_name: params.parentLastName,
       parent_phone: params.parentPhone,
       participant_id: params.participantId,
-      participant_name: params.participantName,
       trip_id: params.tripId,
       action: params.action,
       expires_at: expiresAt.toISOString(),

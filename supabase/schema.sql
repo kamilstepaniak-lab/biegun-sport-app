@@ -224,44 +224,11 @@ CREATE TABLE payment_transactions (
 CREATE INDEX idx_transactions_payment ON payment_transactions(payment_id);
 CREATE INDEX idx_transactions_date ON payment_transactions(transaction_date);
 
--- ====================================
--- TABELA: notifications
--- ====================================
-CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  notification_type TEXT NOT NULL CHECK (notification_type IN ('payment_reminder', 'new_trip', 'trip_update', 'custom')),
-  target_type TEXT NOT NULL CHECK (target_type IN ('all', 'group', 'trip', 'individual')),
-  target_group_id UUID REFERENCES groups(id),
-  target_trip_id UUID REFERENCES trips(id),
-  target_user_id UUID REFERENCES profiles(id),
-  subject TEXT NOT NULL,
-  body TEXT NOT NULL,
-  channel TEXT NOT NULL CHECK (channel IN ('email', 'sms', 'both')),
-  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent', 'failed')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  approved_at TIMESTAMPTZ,
-  approved_by UUID REFERENCES profiles(id),
-  sent_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_notifications_status ON notifications(status);
-CREATE INDEX idx_notifications_type ON notifications(notification_type);
-
--- ====================================
--- TABELA: notification_logs
--- ====================================
-CREATE TABLE notification_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  notification_id UUID NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
-  recipient_id UUID NOT NULL REFERENCES profiles(id),
-  channel TEXT NOT NULL CHECK (channel IN ('email', 'sms')),
-  status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'bounced')),
-  sent_at TIMESTAMPTZ DEFAULT NOW(),
-  error_message TEXT
-);
-
-CREATE INDEX idx_logs_notification ON notification_logs(notification_id);
-CREATE INDEX idx_logs_recipient ON notification_logs(recipient_id);
+-- UWAGA: pełny, aktualny schemat bazy = ten plik + pliki w supabase/migrations/.
+-- Dodatkowe kolumny (participation_status, stop2, location, allow_own_transport,
+-- notes, amount_remaining) oraz tabele (trip_contracts, email/contract templates,
+-- messages, app_settings, activity/email/payment logs, registration_tokens)
+-- są definiowane w migracjach.
 
 -- ====================================
 -- SEED DATA: Grupy

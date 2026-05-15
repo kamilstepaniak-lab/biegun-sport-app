@@ -51,7 +51,7 @@ import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ChildrenListProps {
-  children: ParticipantWithGroup[];
+  participants: ParticipantWithGroup[];
 }
 
 interface DeleteDialogState {
@@ -70,7 +70,7 @@ const avatarColors = [
   { bg: 'bg-blue-100', text: 'text-blue-700' },
 ];
 
-export function ChildrenList({ children }: ChildrenListProps) {
+export function ChildrenList({ participants }: ChildrenListProps) {
   const router = useRouter();
   const [selectedChildId, setSelectedChildId] = useState<string>('all');
   const [messages, setMessages] = useState<AppMessage[]>([]);
@@ -122,7 +122,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
 
   async function handleDeleteClick(e: React.MouseEvent, childId: string) {
     e.stopPropagation();
-    const child = children.find((c) => c.id === childId);
+    const child = participants.find((c) => c.id === childId);
     if (!child) return;
     const registrations = await getParticipantRegistrations(childId);
     setDeleteDialog({
@@ -179,7 +179,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
     );
   }
 
-  if (children.length === 0) {
+  if (participants.length === 0) {
     return (
       <div className="max-w-lg mx-auto mt-12 text-center space-y-6">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white mx-auto">
@@ -216,7 +216,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
     r.payments.some((p) => p.status !== 'paid' && p.status !== 'cancelled')
   );
 
-  const selectedChild = children.find((c) => c.id === selectedChildId);
+  const selectedChild = participants.find((c) => c.id === selectedChildId);
   const unreadCount = messages.filter((m) => !m.is_read).length;
   const isAll = selectedChildId === 'all';
 
@@ -305,7 +305,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
               </div>
             </div>
 
-            {children.map((child, index) => {
+            {participants.map((child, index) => {
               const birthDate = new Date(child.birth_date);
               const age = differenceInYears(new Date(), birthDate);
               const isSelected = selectedChildId === child.id;

@@ -76,6 +76,8 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
           localStorage.removeItem(STORAGE_KEY);
         }
       }
+      // Flaga zasłaniająca UI na czas przekierowania (router.replace poniżej)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRedirecting(true);
       router.replace(`${pathname}${targetParams}`);
     }

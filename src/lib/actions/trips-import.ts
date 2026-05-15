@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
-import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
+import { getBankAccounts } from './settings';
 
 interface TripsImportBufferRow {
   id: number;
@@ -153,6 +153,8 @@ export async function runTripsImport(): Promise<ImportResult> {
     groupMap.set(g.name.toLowerCase().trim(), g.id);
   });
 
+  const bankAccounts = await getBankAccounts();
+
   let imported = 0;
   let errors = 0;
   const errorDetails: string[] = [];
@@ -221,8 +223,8 @@ export async function runTripsImport(): Promise<ImportResult> {
           return_location: record.miejsce_powrotu?.trim() || 'Do ustalenia',
           status: 'draft',
           created_by: user.id,
-          bank_account_pln: DEFAULT_BANK_ACCOUNT_PLN,
-          bank_account_eur: DEFAULT_BANK_ACCOUNT_EUR,
+          bank_account_pln: bankAccounts.bank_account_pln,
+          bank_account_eur: bankAccounts.bank_account_eur,
         })
         .select('id')
         .single();

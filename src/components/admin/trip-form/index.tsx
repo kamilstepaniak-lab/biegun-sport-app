@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/collapsible';
 
 import { createTrip, updateTrip } from '@/lib/actions/trips';
-import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
 import type { Group, Trip, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
 
 export interface TripFormData {
@@ -49,8 +48,6 @@ export interface TripFormData {
   return_stop2_location: string;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
-  bank_account_pln: string;
-  bank_account_eur: string;
   allow_own_transport: boolean;
   packing_list: string;
   additional_info: string;
@@ -193,12 +190,12 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(!!t?.additional_info);
 
   const [departureTime, setDepartureTime] = useState(
-    trip?.departure_datetime && (trip as any)?.departure_time_known !== false
+    trip?.departure_datetime && trip?.departure_time_known !== false
       ? formatDateTimeLocal(trip.departure_datetime).split('T')[1] ?? ''
       : ''
   );
   const [returnTime, setReturnTime] = useState(
-    trip?.return_datetime && (trip as any)?.return_time_known !== false
+    trip?.return_datetime && trip?.return_time_known !== false
       ? formatDateTimeLocal(trip.return_datetime).split('T')[1] ?? ''
       : ''
   );
@@ -219,11 +216,11 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       ? (() => {
           const full = formatDateTimeLocal(trip.departure_datetime);
           const datePart = full.split('T')[0];
-          const timePart = (trip as any)?.departure_time_known !== false ? (full.split('T')[1] ?? '00:00') : '00:00';
+          const timePart = trip?.departure_time_known !== false ? (full.split('T')[1] ?? '00:00') : '00:00';
           return datePart ? `${datePart}T${timePart}` : '';
         })()
       : '',
-    departure_time_known: (trip as any)?.departure_time_known ?? true,
+    departure_time_known: trip?.departure_time_known ?? true,
     departure_location: trip?.departure_location || '',
     departure_stop2_datetime: formatDateTimeLocal(t?.departure_stop2_datetime),
     departure_stop2_location: t?.departure_stop2_location || '',
@@ -231,11 +228,11 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       ? (() => {
           const full = formatDateTimeLocal(trip.return_datetime);
           const datePart = full.split('T')[0];
-          const timePart = (trip as any)?.return_time_known !== false ? (full.split('T')[1] ?? '00:00') : '00:00';
+          const timePart = trip?.return_time_known !== false ? (full.split('T')[1] ?? '00:00') : '00:00';
           return datePart ? `${datePart}T${timePart}` : '';
         })()
       : '',
-    return_time_known: (trip as any)?.return_time_known ?? true,
+    return_time_known: trip?.return_time_known ?? true,
     return_location: t?.return_location || '',
     return_stop2_datetime: formatDateTimeLocal(t?.return_stop2_datetime),
     return_stop2_location: t?.return_stop2_location || '',
@@ -244,8 +241,6 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       ...pt,
       due_date: pt.due_date ? pt.due_date.split('T')[0] : null,
     })) || [],
-    bank_account_pln: t?.bank_account_pln || DEFAULT_BANK_ACCOUNT_PLN,
-    bank_account_eur: t?.bank_account_eur || DEFAULT_BANK_ACCOUNT_EUR,
     allow_own_transport: t?.allow_own_transport ?? false,
     packing_list: t?.packing_list || '',
     additional_info: t?.additional_info || '',
@@ -1060,26 +1055,10 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
 
               <Separator className="my-4" />
 
-              {/* Dane do przelewu */}
-              <div className="space-y-4">
-                <h4 className="font-medium">Dane do przelewu</h4>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Konto PLN</Label>
-                    <Input
-                      value={formData.bank_account_pln}
-                      onChange={(e) => updateFormData({ bank_account_pln: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Konto EUR</Label>
-                    <Input
-                      value={formData.bank_account_eur}
-                      onChange={(e) => updateFormData({ bank_account_eur: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Numer konta do przelewu jest wspólny dla wszystkich wyjazdów —
+                ustawisz go w <span className="font-medium">Ustawienia → Konta bankowe</span>.
+              </p>
             </CardContent>
           </CollapsibleContent>
         </Collapsible>
