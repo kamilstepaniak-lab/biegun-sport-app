@@ -42,22 +42,6 @@ CREATE INDEX idx_participants_parent ON participants(parent_id);
 CREATE INDEX idx_participants_birth_date ON participants(birth_date);
 
 -- ====================================
--- TABELA: custom_field_definitions
--- ====================================
-CREATE TABLE custom_field_definitions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  field_name TEXT UNIQUE NOT NULL,
-  field_label TEXT NOT NULL,
-  field_type TEXT NOT NULL CHECK (field_type IN ('text', 'number', 'date', 'boolean', 'select')),
-  options JSONB,
-  is_required BOOLEAN DEFAULT FALSE,
-  display_order INTEGER,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_field_definitions_order ON custom_field_definitions(display_order);
-
--- ====================================
 -- TABELA: participant_custom_fields
 -- ====================================
 CREATE TABLE participant_custom_fields (
@@ -223,45 +207,6 @@ CREATE TABLE payment_transactions (
 
 CREATE INDEX idx_transactions_payment ON payment_transactions(payment_id);
 CREATE INDEX idx_transactions_date ON payment_transactions(transaction_date);
-
--- ====================================
--- TABELA: notifications
--- ====================================
-CREATE TABLE notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  notification_type TEXT NOT NULL CHECK (notification_type IN ('payment_reminder', 'new_trip', 'trip_update', 'custom')),
-  target_type TEXT NOT NULL CHECK (target_type IN ('all', 'group', 'trip', 'individual')),
-  target_group_id UUID REFERENCES groups(id),
-  target_trip_id UUID REFERENCES trips(id),
-  target_user_id UUID REFERENCES profiles(id),
-  subject TEXT NOT NULL,
-  body TEXT NOT NULL,
-  channel TEXT NOT NULL CHECK (channel IN ('email', 'sms', 'both')),
-  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'sent', 'failed')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  approved_at TIMESTAMPTZ,
-  approved_by UUID REFERENCES profiles(id),
-  sent_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_notifications_status ON notifications(status);
-CREATE INDEX idx_notifications_type ON notifications(notification_type);
-
--- ====================================
--- TABELA: notification_logs
--- ====================================
-CREATE TABLE notification_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  notification_id UUID NOT NULL REFERENCES notifications(id) ON DELETE CASCADE,
-  recipient_id UUID NOT NULL REFERENCES profiles(id),
-  channel TEXT NOT NULL CHECK (channel IN ('email', 'sms')),
-  status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'bounced')),
-  sent_at TIMESTAMPTZ DEFAULT NOW(),
-  error_message TEXT
-);
-
-CREATE INDEX idx_logs_notification ON notification_logs(notification_id);
-CREATE INDEX idx_logs_recipient ON notification_logs(recipient_id);
 
 -- ====================================
 -- SEED DATA: Grupy
