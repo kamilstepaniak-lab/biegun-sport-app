@@ -94,7 +94,7 @@ function TemplateEditor({
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full h-10 px-3 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all"
+          className="w-full h-11 px-3 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all"
           placeholder="Temat e-maila..."
         />
       </div>

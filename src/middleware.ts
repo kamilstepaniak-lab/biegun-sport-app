@@ -12,9 +12,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - manifest.json, sw.js (PWA — muszą być serwowane bez redirectu)
      * - public folder
      * - demo (demo pages)
      */
-    '/((?!_next/static|_next/image|favicon.ico|demo|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|demo|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

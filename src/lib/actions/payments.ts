@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 'next/cache';
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
+import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
@@ -90,6 +90,125 @@ export async function getAllPayments(): Promise<PaymentWithDetails[]> {
   const { user } = await requireAdmin(supabase);
   if (!user) return [];
   return _fetchAllPaymentsDB();
+}
+
+// ── Ekran /admin/payments — paginacja i filtrowanie po stronie bazy ─────────
+// Wymaga widoku admin_payments_view (migracja: supabase/migrations/admin-payments-view.sql).
+
+export type AdminPaymentsStatusFilter = 'all' | 'pending' | 'overdue' | 'paid';
+
+export interface AdminPaymentsPageParams {
+  page: number;
+  pageSize: number;
+  search: string;
+  tripId: string;
+  status: AdminPaymentsStatusFilter;
+  dateFrom: string;
+  dateTo: string;
+}
+
+export async function getAdminPaymentsPage(
+  params: AdminPaymentsPageParams
+): Promise<{ rows: AdminPaymentRow[]; total: number }> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return { rows: [], total: 0 };
+
+  const admin = createAdminClient();
+  let query = admin
+    .from('admin_payments_view')
+    .select('*', { count: 'exact' })
+    .neq('status', 'cancelled');
+
+  if (params.tripId && params.tripId !== 'all') {
+    query = query.eq('trip_id', params.tripId);
+  }
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  if (params.status === 'pending') {
+    query = query.in('status', ['pending', 'partially_paid']);
+  } else if (params.status === 'paid') {
+    query = query.eq('status', 'paid');
+  } else if (params.status === 'overdue') {
+    query = query.or(
+      `status.in.(overdue,partially_paid_overdue),and(due_date.lt.${today},status.not.in.(paid,cancelled))`
+    );
+  }
+
+  if (params.search.trim()) {
+    // Usuń znaki specjalne PostgREST (zapobiega rozbiciu składni .or)
+    const s = params.search.trim().replace(/[%,()*]/g, ' ');
+    query = query.or(`participant_name.ilike.%${s}%,trip_title.ilike.%${s}%`);
+  }
+
+  if (params.dateFrom) query = query.gte('created_at', params.dateFrom);
+  if (params.dateTo) query = query.lte('created_at', `${params.dateTo}T23:59:59.999Z`);
+
+  const fromIdx = (params.page - 1) * params.pageSize;
+  query = query
+    // id jako tiebreaker — płatności z jednej partii mają identyczny created_at;
+    // bez tego kolejność jest niestabilna i wiersze skaczą między stronami.
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(fromIdx, fromIdx + params.pageSize - 1);
+
+  const { data, error, count } = await query;
+  if (error) {
+    console.error('getAdminPaymentsPage error:', error);
+    return { rows: [], total: 0 };
+  }
+  return { rows: (data ?? []) as AdminPaymentRow[], total: count ?? 0 };
+}
+
+export async function getAdminPaymentsStats(): Promise<{
+  pending: number;
+  paid: number;
+  pendingPLN: number;
+  pendingEUR: number;
+}> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+
+  const admin = createAdminClient();
+  // Tylko 4 lekkie kolumny — nawet przy dziesiątkach tysięcy wierszy to ułamek
+  // payloadu pełnego pobrania z zagnieżdżonymi relacjami.
+  const { data, error } = await admin
+    .from('payments')
+    .select('status, amount, amount_paid, currency')
+    .neq('status', 'cancelled');
+
+  if (error || !data) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+
+  let pending = 0;
+  let paid = 0;
+  let pendingPLN = 0;
+  let pendingEUR = 0;
+  for (const p of data) {
+    if (p.status === 'paid') {
+      paid++;
+    } else {
+      pending++;
+      const remaining = (p.amount ?? 0) - (p.amount_paid ?? 0);
+      if (p.currency === 'PLN') pendingPLN += remaining;
+      else pendingEUR += remaining;
+    }
+  }
+  return { pending, paid, pendingPLN, pendingEUR };
+}
+
+export async function getAdminPaymentsTrips(): Promise<{ id: string; title: string }[]> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('trips')
+    .select('id, title, departure_datetime')
+    .order('departure_datetime', { ascending: true });
+
+  return (data ?? []).map((t) => ({ id: t.id, title: t.title }));
 }
 
 export async function addPaymentTransaction(

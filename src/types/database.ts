@@ -232,6 +232,17 @@ export interface PaymentWithDetails extends Payment {
   transactions: PaymentTransaction[];
 }
 
+// Płaski wiersz z widoku admin_payments_view — pod paginację server-side
+// ekranu /admin/payments (płatność + nazwisko dziecka + tytuł wyjazdu).
+export interface AdminPaymentRow extends Payment {
+  participant_first_name: string;
+  participant_last_name: string;
+  participant_name: string;
+  trip_id: string;
+  trip_title: string;
+  trip_departure_datetime: string;
+}
+
 export interface TripContractTemplate {
   id: string;
   trip_id: string;

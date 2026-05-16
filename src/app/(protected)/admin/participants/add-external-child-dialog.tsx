@@ -219,7 +219,7 @@ export function AddExternalChildDialog({ open, onOpenChange, groups }: AddExtern
                 id="group_id"
                 value={form.group_id}
                 onChange={(e) => update('group_id', e.target.value)}
-                className="w-full h-10 px-3 rounded-md bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+                className="w-full h-11 px-3 rounded-md bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
               >
                 <option value="">— Brak (jednorazowy event) —</option>
                 {groups.map((g) => (

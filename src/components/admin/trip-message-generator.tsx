@@ -253,7 +253,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
                 <input
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl bg-gray-50 ring-1 ring-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all"
+                  className="w-full h-11 px-3 rounded-xl bg-gray-50 ring-1 ring-gray-200 text-base md:text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all"
                 />
               </div>
 

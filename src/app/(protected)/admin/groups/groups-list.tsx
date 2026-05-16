@@ -402,7 +402,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                 placeholder="Szukaj po nazwisku..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+                className="w-full h-11 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
               />
               {searchQuery && (
                 <button

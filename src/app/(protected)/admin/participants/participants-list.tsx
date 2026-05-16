@@ -64,7 +64,7 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
               placeholder="Szukaj po nazwisku, imieniu, rodzicu lub emailu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+              className="w-full h-11 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
             />
             {searchQuery && (
               <button
@@ -80,7 +80,7 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
           <select
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
-            className="h-10 px-3 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+            className="h-11 px-3 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
           >
             <option value="all">Wszystkie grupy</option>
             <option value={NO_GROUP}>Bez grupy (z zewnątrz)</option>

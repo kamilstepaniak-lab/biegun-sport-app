@@ -211,7 +211,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
               placeholder="Szukaj wyjazdu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+              className="w-full h-11 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
             />
             {searchQuery && (
               <button

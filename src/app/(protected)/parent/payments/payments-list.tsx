@@ -436,7 +436,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
                 value={tripFilter}
                 onChange={(e) => { setTripFilter(e.target.value); setPage(1); }}
                 className={cn(
-                  'h-10 appearance-none pl-9 pr-8 rounded-xl text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                  'h-11 appearance-none pl-9 pr-8 rounded-xl text-base md:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
                   tripFilter !== 'all'
                     ? 'bg-blue-600 text-white ring-1 ring-blue-700'
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'

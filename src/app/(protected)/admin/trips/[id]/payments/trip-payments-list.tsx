@@ -200,7 +200,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                 placeholder="Szukaj po nazwisku..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="h-11 w-48 rounded-md border border-input bg-background px-3 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <Button
                 size="sm"
