@@ -221,7 +221,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <p className="text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
+            <p className="md:hidden text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
             <table className="w-full min-w-[560px]">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
@@ -324,8 +324,8 @@ export function CalendarView({ trips }: CalendarViewProps) {
         )}
       </div>
 
-      {/* Kalendarz */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
+      {/* Kalendarz — siatka miesięczna tylko na desktopie (na mobile tabela powyżej) */}
+      <div className="hidden md:block bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setCurrentDate(subMonths(currentDate, 1))}
