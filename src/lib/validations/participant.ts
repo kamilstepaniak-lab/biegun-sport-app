@@ -36,9 +36,4 @@ export const participantSchema = z.object({
     .optional(),
 });
 
-export const participantWithCustomFieldsSchema = participantSchema.extend({
-  custom_fields: z.record(z.string(), z.string()).optional(),
-});
-
 export type ParticipantInput = z.infer<typeof participantSchema>;
-export type ParticipantWithCustomFieldsInput = z.infer<typeof participantWithCustomFieldsSchema>;

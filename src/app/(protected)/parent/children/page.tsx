@@ -12,7 +12,7 @@ export default async function ParentChildrenPage() {
     <div className="space-y-6">
       <PageHeader
         title="Moje dzieci"
-        description="Wybierz dane dla wszystkich dzieci razem lub dla jednego wybranego dziecka"
+        description="Zarządzaj danymi dzieci i sprawdzaj ich wyjazdy oraz płatności"
       >
         <Link
           href="/parent/children/add"

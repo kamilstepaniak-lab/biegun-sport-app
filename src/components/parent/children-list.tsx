@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Clock,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,7 +40,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { EmptyState } from '@/components/shared';
 import { saveChildToStorage } from './child-url-sync';
 
 const STORAGE_KEY = 'biegun_selected_child';
@@ -68,7 +68,20 @@ interface DeleteDialogState {
 
 const avatarColors = [
   { bg: 'bg-blue-100', text: 'text-blue-700' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  { bg: 'bg-amber-100', text: 'text-amber-700' },
+  { bg: 'bg-violet-100', text: 'text-violet-700' },
+  { bg: 'bg-rose-100', text: 'text-rose-700' },
+  { bg: 'bg-cyan-100', text: 'text-cyan-700' },
 ];
+
+function pluralizeTrips(n: number): string {
+  if (n === 1) return 'wyjazd';
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'wyjazdy';
+  return 'wyjazdów';
+}
 
 export function ChildrenList({ participants }: ChildrenListProps) {
   const router = useRouter();
@@ -78,6 +91,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [expandedMessage, setExpandedMessage] = useState<AppMessage | null>(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
 
   // useLayoutEffect — runs before browser paints, eliminates CLS from 'all' → child switch
   useLayoutEffect(() => {
@@ -123,15 +137,22 @@ export function ChildrenList({ participants }: ChildrenListProps) {
   async function handleDeleteClick(e: React.MouseEvent, childId: string) {
     e.stopPropagation();
     const child = participants.find((c) => c.id === childId);
-    if (!child) return;
-    const registrations = await getParticipantRegistrations(childId);
-    setDeleteDialog({
-      isOpen: true,
-      childId,
-      childName: `${child.first_name} ${child.last_name}`,
-      registrations: registrations as DeleteDialogState['registrations'],
-      isLoading: false,
-    });
+    if (!child || deleteLoadingId) return;
+    setDeleteLoadingId(childId);
+    try {
+      const registrations = await getParticipantRegistrations(childId);
+      setDeleteDialog({
+        isOpen: true,
+        childId,
+        childName: `${child.first_name} ${child.last_name}`,
+        registrations: registrations as DeleteDialogState['registrations'],
+        isLoading: false,
+      });
+    } catch {
+      toast.error('Nie udało się pobrać danych dziecka');
+    } finally {
+      setDeleteLoadingId(null);
+    }
   }
 
   async function handleDeleteConfirm() {
@@ -301,7 +322,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-gray-400 mt-0.5">Widok zbiorczy wszystkich dzieci</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Wybierz dziecko, aby zobaczyć jego wyjazdy i płatności</p>
               </div>
             </div>
 
@@ -356,10 +377,15 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                           {child.height_cm} cm
                         </span>
                       )}
-                      {child.group && (
+                      {child.group ? (
                         <span className="flex items-center gap-1">
                           <Users className="h-2.5 w-2.5" />
                           {child.group.name}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-amber-600">
+                          <AlertCircle className="h-2.5 w-2.5" />
+                          Brak grupy
                         </span>
                       )}
                     </div>
@@ -374,9 +400,15 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                     </Link>
                     <button
                       onClick={(e) => handleDeleteClick(e, child.id)}
-                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors"
+                      disabled={deleteLoadingId === child.id}
+                      aria-label={`Usuń ${child.first_name} ${child.last_name}`}
+                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors disabled:opacity-60"
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                      {deleteLoadingId === child.id ? (
+                        <Loader2 className="h-3.5 w-3.5 text-gray-400 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -386,7 +418,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
 
           {!isAll && (
             <div className="px-5 py-3 border-t border-gray-50">
-              <p className="text-xs text-gray-400 text-center">Kliknij ponownie aby wrócić do widoku zbiorczego</p>
+              <p className="text-xs text-gray-400 text-center">Kliknij ponownie, aby odznaczyć dziecko</p>
             </div>
           )}
         </div>
@@ -764,7 +796,8 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                     <AlertTitle>UWAGA</AlertTitle>
                     <AlertDescription>
                       <p className="mb-2">
-                        Dziecko jest zapisane na {deleteDialog.registrations.length} wyjazdy:
+                        Dziecko jest zapisane na {deleteDialog.registrations.length}{' '}
+                        {pluralizeTrips(deleteDialog.registrations.length)}:
                       </p>
                       <ul className="list-disc list-inside space-y-1">
                         {deleteDialog.registrations.map((r) => (

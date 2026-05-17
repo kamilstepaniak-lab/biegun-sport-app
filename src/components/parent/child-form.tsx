@@ -30,13 +30,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 import { createParticipant, updateParticipant } from '@/lib/actions/participants';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
-import type { Group, ParticipantWithGroup, CustomFieldDefinition } from '@/types';
+import type { Group, ParticipantWithGroup } from '@/types';
 
 interface ChildFormProps {
   groups: Group[];
-  customFields?: CustomFieldDefinition[];
   child?: ParticipantWithGroup & {
-    custom_fields?: Array<{ field_name: string; field_value: string | null }>;
     parent_notes_health?: string | null;
     parent_notes_food?: string | null;
     parent_notes_accommodation?: string | null;
@@ -45,7 +43,7 @@ interface ChildFormProps {
   mode: 'create' | 'edit';
 }
 
-export function ChildForm({ groups, customFields = [], child, mode }: ChildFormProps) {
+export function ChildForm({ groups, child, mode }: ChildFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(
@@ -58,12 +56,7 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
   const [notesAccommodation, setNotesAccommodation] = useState(child?.parent_notes_accommodation ?? '');
   const [notesAdditional, setNotesAdditional] = useState(child?.parent_notes_additional ?? '');
 
-  const defaultCustomFields: Record<string, string> = {};
-  child?.custom_fields?.forEach((cf) => {
-    defaultCustomFields[cf.field_name] = cf.field_value || '';
-  });
-
-  const form = useForm<ParticipantInput & { custom_fields?: Record<string, string> }>({
+  const form = useForm<ParticipantInput>({
     resolver: zodResolver(participantSchema),
     defaultValues: {
       first_name: child?.first_name || '',
@@ -71,23 +64,23 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
       birth_date: child?.birth_date || '',
       height_cm: child?.height_cm || undefined,
       group_id: child?.group?.id || undefined,
-      custom_fields: defaultCustomFields,
     },
   });
 
-  async function onSubmit(data: ParticipantInput & { custom_fields?: Record<string, string> }) {
+  async function onSubmit(data: ParticipantInput) {
     setIsLoading(true);
+
+    const notes = {
+      parent_notes_health: notesHealth || undefined,
+      parent_notes_food: notesFood || undefined,
+      parent_notes_accommodation: notesAccommodation || undefined,
+      parent_notes_additional: notesAdditional || undefined,
+    };
 
     try {
       const result = mode === 'create'
-        ? await createParticipant(data)
-        : await updateParticipant(child!.id, {
-            ...data,
-            parent_notes_health: notesHealth || undefined,
-            parent_notes_food: notesFood || undefined,
-            parent_notes_accommodation: notesAccommodation || undefined,
-            parent_notes_additional: notesAdditional || undefined,
-          });
+        ? await createParticipant({ ...data, ...notes })
+        : await updateParticipant(child!.id, { ...data, ...notes });
 
       if (result.error) {
         toast.error(result.error);
@@ -244,135 +237,57 @@ export function ChildForm({ groups, customFields = [], child, mode }: ChildFormP
           </CardContent>
         </Card>
 
-        {customFields.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Dodatkowe informacje</CardTitle>
-              <CardDescription>
-                Opcjonalne pola uzupełniające
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {customFields.map((field) => (
-                <FormField
-                  key={field.id}
-                  control={form.control}
-                  name={`custom_fields.${field.field_name}`}
-                  render={({ field: formField }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {field.field_label}
-                        {field.is_required && ' *'}
-                      </FormLabel>
-                      <FormControl>
-                        {field.field_type === 'boolean' ? (
-                          <Select
-                            onValueChange={formField.onChange}
-                            defaultValue={formField.value}
-                            disabled={isLoading}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Wybierz" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="true">Tak</SelectItem>
-                              <SelectItem value="false">Nie</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : field.field_type === 'select' && field.options ? (
-                          <Select
-                            onValueChange={formField.onChange}
-                            defaultValue={formField.value}
-                            disabled={isLoading}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Wybierz" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {(field.options as { values?: string[] })?.values?.map((option: string) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            type={
-                              field.field_type === 'number'
-                                ? 'number'
-                                : field.field_type === 'date'
-                                ? 'date'
-                                : 'text'
-                            }
-                            disabled={isLoading}
-                            {...formField}
-                            value={formField.value || ''}
-                          />
-                        )}
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Notatki dla organizatora — tylko w trybie edycji */}
-        {mode === 'edit' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Notatki dla organizatora</CardTitle>
-              <CardDescription>
-                Te informacje będą widoczne wyłącznie dla organizatora — nie są publiczne.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium block">🏥 Zdrowie i leki</label>
-                <Textarea
-                  placeholder="Alergie, przyjmowane leki, choroby przewlekłe, ograniczenia fizyczne..."
-                  value={notesHealth}
-                  onChange={(e) => setNotesHealth(e.target.value)}
-                  disabled={isLoading}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium block">🍽️ Jedzenie i dieta</label>
-                <Textarea
-                  placeholder="Alergie pokarmowe, nietolerancje, preferencje żywieniowe..."
-                  value={notesFood}
-                  onChange={(e) => setNotesFood(e.target.value)}
-                  disabled={isLoading}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium block">🛏️ Zakwaterowanie</label>
-                <Textarea
-                  placeholder="Z kim dziecko chce mieszkać, preferencje dotyczące pokoju..."
-                  value={notesAccommodation}
-                  onChange={(e) => setNotesAccommodation(e.target.value)}
-                  disabled={isLoading}
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium block">ℹ️ Dodatkowe informacje</label>
-                <Textarea
-                  placeholder="Inne ważne informacje dla organizatora..."
-                  value={notesAdditional}
-                  onChange={(e) => setNotesAdditional(e.target.value)}
-                  disabled={isLoading}
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Notatki dla organizatora */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Notatki dla organizatora</CardTitle>
+            <CardDescription>
+              Te informacje będą widoczne wyłącznie dla organizatora — nie są publiczne.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium block">🏥 Zdrowie i leki</label>
+              <Textarea
+                placeholder="Alergie, przyjmowane leki, choroby przewlekłe, ograniczenia fizyczne..."
+                value={notesHealth}
+                onChange={(e) => setNotesHealth(e.target.value)}
+                disabled={isLoading}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium block">🍽️ Jedzenie i dieta</label>
+              <Textarea
+                placeholder="Alergie pokarmowe, nietolerancje, preferencje żywieniowe..."
+                value={notesFood}
+                onChange={(e) => setNotesFood(e.target.value)}
+                disabled={isLoading}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium block">🛏️ Zakwaterowanie</label>
+              <Textarea
+                placeholder="Z kim dziecko chce mieszkać, preferencje dotyczące pokoju..."
+                value={notesAccommodation}
+                onChange={(e) => setNotesAccommodation(e.target.value)}
+                disabled={isLoading}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium block">ℹ️ Dodatkowe informacje</label>
+              <Textarea
+                placeholder="Inne ważne informacje dla organizatora..."
+                value={notesAdditional}
+                onChange={(e) => setNotesAdditional(e.target.value)}
+                disabled={isLoading}
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="flex justify-end gap-4">
           <Button

@@ -194,12 +194,18 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
           status: string;
           amount_paid: number;
           template_id: string | null;
-          template: { due_days_from_confirmation: number | null }[] | null;
+          template:
+            | { due_days_from_confirmation: number | null }[]
+            | { due_days_from_confirmation: number | null }
+            | null;
         }) => {
           const reg = regs.find((r) => r.id === p.registration_id);
           const t = reg ? getTrip(reg) : null;
 
-          const templateDueDays = p.template?.[0]?.due_days_from_confirmation ?? null;
+          // Supabase zwraca relację many-to-one jako obiekt, ale w niektórych
+          // przypadkach jako tablicę — obsługujemy oba warianty.
+          const tmpl = Array.isArray(p.template) ? p.template[0] : p.template;
+          const templateDueDays = tmpl?.due_days_from_confirmation ?? null;
           const effectiveDueDate = p.due_date ?? (
             templateDueDays != null && reg?.confirmed_at
               ? format(addDays(new Date(reg.confirmed_at), templateDueDays), 'yyyy-MM-dd')
