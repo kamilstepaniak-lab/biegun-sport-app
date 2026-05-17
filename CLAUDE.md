@@ -3,6 +3,14 @@
 Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 (Next.js App Router + Supabase + Vercel).
 
+## Sposób pracy
+
+- Pracuj **bezpośrednio na gałęzi `main`** — nie twórz nowych branchy.
+  Nowy branch utwórz tylko gdy użytkownik wyraźnie o to poprosi na początku
+  danego czatu.
+- Na końcu każdego zadania w czacie **zapytaj użytkownika, czy zrobić push
+  na `main` / wdrożenie na Vercel** — nie pushuj bez potwierdzenia.
+
 ## Baza danych i migracje
 
 - Migracje to zwykłe pliki `.sql` w `supabase/migrations/`.
@@ -18,8 +26,8 @@ Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 - Push dowolnej gałęzi → automatyczny **deployment preview** (nie trzeba
   niczego deployować ręcznie).
 - **Produkcja wdrażana jest wyłącznie z gałęzi `main`.**
-- Aby zmiany trafiły na produkcję: scal gałąź do `main` przez pull request —
-  Vercel sam zbuduje produkcję.
+- Pracujemy bezpośrednio na `main` — push na `main` = automatyczny build
+  produkcji. Pushuj dopiero po potwierdzeniu przez użytkownika.
 - Jeśli zmiany wymagają migracji bazy — migracja musi być uruchomiona, zanim
   produkcja zostanie zbudowana.
 
