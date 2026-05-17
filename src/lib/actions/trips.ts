@@ -978,6 +978,7 @@ export interface ChildTripStatus {
   participation_status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other';
   participation_note: string | null;
   registration_id: string | null;
+  confirmed_at: string | null;
   payments: ChildPaymentSummary[];
 }
 
@@ -1076,7 +1077,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
       .order('departure_datetime', { ascending: true }),
     supabase
       .from('trip_registrations')
-      .select('id, trip_id, participant_id, participation_status, participation_note')
+      .select('id, trip_id, participant_id, participation_status, participation_note, confirmed_at')
       .in('participant_id', childIds)
       .in('trip_id', tripIds),
   ]);
@@ -1086,12 +1087,13 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
 
   if (!trips) return [];
 
-  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null }>();
-  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null }) => {
+  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null; confirmed_at: string | null }>();
+  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null; confirmed_at: string | null }) => {
     registrationMap.set(`${r.trip_id}-${r.participant_id}`, {
       id: r.id,
       participation_status: r.participation_status,
       participation_note: r.participation_note,
+      confirmed_at: r.confirmed_at,
     });
   });
 
@@ -1128,6 +1130,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
         participation_status: (reg?.participation_status as 'unconfirmed' | 'confirmed' | 'not_going' | 'other') || 'unconfirmed',
         participation_note: reg?.participation_note || null,
         registration_id: reg?.id ?? null,
+        confirmed_at: reg?.confirmed_at ?? null,
         payments: [],
       };
     });

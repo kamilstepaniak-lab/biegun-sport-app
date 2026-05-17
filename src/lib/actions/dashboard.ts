@@ -1,7 +1,7 @@
 'use server';
 
-import { addDays, format } from 'date-fns';
 import { createAdminClient } from '@/lib/supabase/server';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
 import { getAuthUser } from './auth-helpers';
 
 export interface NearestTrip {
@@ -206,11 +206,11 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
           // przypadkach jako tablicę — obsługujemy oba warianty.
           const tmpl = Array.isArray(p.template) ? p.template[0] : p.template;
           const templateDueDays = tmpl?.due_days_from_confirmation ?? null;
-          const effectiveDueDate = p.due_date ?? (
-            templateDueDays != null && reg?.confirmed_at
-              ? format(addDays(new Date(reg.confirmed_at), templateDueDays), 'yyyy-MM-dd')
-              : null
-          );
+          const effectiveDueDate = resolveEffectiveDueDate({
+            paymentDueDate: p.due_date,
+            dueDaysFromConfirmation: templateDueDays,
+            confirmedAt: reg?.confirmed_at,
+          });
 
           const isOverdue = !!effectiveDueDate && new Date(effectiveDueDate) < today;
           const daysOverdue =

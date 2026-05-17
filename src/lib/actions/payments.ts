@@ -7,7 +7,8 @@ import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow }
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
-import { addDays, format } from 'date-fns';
+import { format } from 'date-fns';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
 
 import { getAuthUser } from './auth-helpers';
 import { getBankAccounts } from './settings';
@@ -584,13 +585,11 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       due_days_from_confirmation: number | null;
       payment_method: string | null;
     }) => {
-      let dueDate: string | null = template.due_date ?? null;
-      if (template.due_days_from_confirmation != null) {
-        dueDate = format(
-          addDays(new Date(confirmedAt), template.due_days_from_confirmation),
-          'yyyy-MM-dd'
-        );
-      }
+      const dueDate = resolveEffectiveDueDate({
+        templateDueDate: template.due_date,
+        dueDaysFromConfirmation: template.due_days_from_confirmation,
+        confirmedAt,
+      });
       return {
         registration_id: registrationId,
         template_id: template.id,
@@ -740,9 +739,11 @@ const _fetchParentPaymentsDB = unstable_cache(
       const childData = childDataMap.get(registration?.participant_id || '');
       const dueDays = payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null;
       const confirmedAt = registration?.confirmed_at ?? null;
-      const computedDueDate = (!payment.due_date && dueDays != null && confirmedAt)
-        ? format(addDays(new Date(confirmedAt), dueDays), 'yyyy-MM-dd')
-        : payment.due_date;
+      const computedDueDate = resolveEffectiveDueDate({
+        paymentDueDate: payment.due_date,
+        dueDaysFromConfirmation: dueDays,
+        confirmedAt,
+      });
       return {
         id: payment.id,
         participant_id: registration?.participant_id || '',
@@ -815,11 +816,11 @@ export async function getActualPaymentDueDatesForTrip(
   for (const p of payments) {
     if (!p.template_id) continue;
     const dueDays = (p.template as { due_days_from_confirmation?: number | null } | null)?.due_days_from_confirmation ?? null;
-    const dueDate = p.due_date ?? (
-      dueDays != null && registration.confirmed_at
-        ? format(addDays(new Date(registration.confirmed_at), dueDays), 'yyyy-MM-dd')
-        : null
-    );
+    const dueDate = resolveEffectiveDueDate({
+      paymentDueDate: p.due_date,
+      dueDaysFromConfirmation: dueDays,
+      confirmedAt: registration.confirmed_at,
+    });
     if (dueDate) result[p.template_id] = dueDate;
   }
   return result;

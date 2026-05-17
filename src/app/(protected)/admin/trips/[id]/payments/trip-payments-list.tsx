@@ -10,10 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PaymentWithDetails } from '@/types';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
+import { PaymentDue } from '@/components/shared/payment-due';
 
 interface TripPaymentsListProps {
   payments: PaymentWithDetails[];
   tripTitle: string;
+}
+
+// Efektywny termin płatności — jedno źródło prawdy (zob. resolveEffectiveDueDate).
+function effectiveDueDate(p: PaymentWithDetails): string | null {
+  const tmpl = p.template as { due_days_from_confirmation?: number | null } | null;
+  const reg = p.registration as { confirmed_at?: string | null } | null;
+  return resolveEffectiveDueDate({
+    paymentDueDate: p.due_date,
+    dueDaysFromConfirmation: tmpl?.due_days_from_confirmation,
+    confirmedAt: reg?.confirmed_at,
+  });
 }
 
 const statusLabels: Record<string, string> = {
@@ -72,7 +85,8 @@ function exportToCSV(payments: PaymentWithDetails[], tripTitle: string) {
     const amountPaid = (p.amount_paid ?? 0).toFixed(2);
     const amountRemaining = (p.amount - (p.amount_paid ?? 0)).toFixed(2);
     const status = statusLabels[p.status] ?? p.status;
-    const dueDate = p.due_date ? format(new Date(p.due_date), 'dd.MM.yyyy') : '—';
+    const resolvedDue = effectiveDueDate(p);
+    const dueDate = resolvedDue ? format(new Date(resolvedDue), 'dd.MM.yyyy') : '—';
     const method = methodBadge(p.payment_method_used ?? null).label;
     const paidAt = p.paid_at ? format(new Date(p.paid_at), 'dd.MM.yyyy') : '—';
     const notes = p.admin_notes ?? '—';
@@ -258,28 +272,14 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                             {statusLabels[p.status] ?? p.status}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-gray-600 text-xs">
-                          {p.due_date ? (
-                            (() => {
-                              const dueDate = new Date(p.due_date);
-                              const overdue = dueDate < new Date();
-                              return (
-                                <div className="flex flex-col gap-0.5">
-                                  <span className={overdue && p.status !== 'paid' ? 'text-red-600 font-semibold' : ''}>
-                                    {format(dueDate, 'd MMM yyyy', { locale: pl })}
-                                  </span>
-                                  {overdue && p.status !== 'paid' && (
-                                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-                                      <AlertTriangle className="h-3 w-3" />
-                                      PO TERMINIE
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            '—'
-                          )}
+                        <td className="py-2.5 px-3 text-xs">
+                          <PaymentDue
+                            paymentDueDate={p.due_date}
+                            dueDaysFromConfirmation={(p.template as { due_days_from_confirmation?: number | null } | null)?.due_days_from_confirmation}
+                            confirmedAt={(p.registration as { confirmed_at?: string | null } | null)?.confirmed_at}
+                            departureDate={(p.registration as { trip?: { departure_datetime?: string | null } | null } | null)?.trip?.departure_datetime}
+                            status={p.status}
+                          />
                         </td>
                         <td className="py-2.5 px-3 text-xs">
                           {(() => { const m = methodBadge(p.payment_method_used ?? null); return m.label === '—' ? <span className="text-gray-400">—</span> : <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md font-medium ${m.className}`}>{m.label}</span>; })()}
