@@ -15,7 +15,6 @@ import { BasicInfoSection } from './basic-info-section';
 import { ScheduleSection } from './schedule-section';
 import { GroupsSection } from './groups-section';
 import { PaymentsSection } from './payments-section';
-import { EmailContentSection } from './email-content-section';
 
 interface TripFormProps {
   groups: Group[];
@@ -79,24 +78,34 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   });
 
   function updateFormData(data: Partial<TripFormData>) {
-    setFormData((prev) => ({ ...prev, ...data }));
+    setFormData((prev) => {
+      const next = { ...prev, ...data };
+      // Płatności oznaczone „W dniu wyjazdu" (due_date == data wyjazdu) podążają
+      // za zmianą daty wyjazdu, żeby zaznaczenie nie cofało się do „Konkretna data".
+      if (data.departure_datetime !== undefined) {
+        const oldDate = prev.departure_datetime.split('T')[0];
+        const newDate = next.departure_datetime.split('T')[0];
+        if (oldDate && oldDate !== newDate) {
+          next.payment_templates = next.payment_templates.map((p) =>
+            p.due_date === oldDate ? { ...p, due_date: newDate || null } : p
+          );
+        }
+      }
+      return next;
+    });
   }
 
   // Sprawdź co blokuje walidację
   const validationErrors: string[] = [];
   if (formData.title.trim().length < 3) validationErrors.push('Tytuł za krótki (min 3 znaki)');
   if (!formData.departure_datetime) validationErrors.push('Brak daty wyjazdu');
-  // Miejsce wyjazdu: wymagane tylko gdy NIE ma dojazdu własnego; gdy jest, akceptujemy puste
-  if (!formData.allow_own_transport && formData.departure_location.trim().length < 3) {
-    validationErrors.push('Miejsce wyjazdu (Przystanek 1) jest wymagane');
-  } else if (formData.departure_location.trim().length > 0 && formData.departure_location.trim().length < 3) {
+  // Miejsce wyjazdu/powrotu: zawsze opcjonalne (czasem nie jest jeszcze znane);
+  // gdy wpisane, pilnujemy tylko minimalnej długości.
+  if (formData.departure_location.trim().length > 0 && formData.departure_location.trim().length < 3) {
     validationErrors.push('Miejsce wyjazdu za krótkie (min 3 znaki)');
   }
   if (!formData.return_datetime) validationErrors.push('Brak daty powrotu');
-  // Miejsce powrotu: wymagane tylko gdy NIE ma dojazdu własnego
-  if (!formData.allow_own_transport && formData.return_location.trim().length < 3) {
-    validationErrors.push('Miejsce powrotu (Przystanek 1) jest wymagane');
-  } else if (formData.return_location.trim().length > 0 && formData.return_location.trim().length < 3) {
+  if (formData.return_location.trim().length > 0 && formData.return_location.trim().length < 3) {
     validationErrors.push('Miejsce powrotu za krótkie (min 3 znaki)');
   }
   if (formData.departure_datetime && formData.return_datetime &&
@@ -176,18 +185,17 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         updateFormData={updateFormData}
         hasErrors={hasDateErrors}
       />
+      <PaymentsSection
+        formData={formData}
+        updateFormData={updateFormData}
+        hasErrors={hasPaymentErrors}
+      />
       <GroupsSection
         formData={formData}
         updateFormData={updateFormData}
         groups={groups}
         hasErrors={hasGroupErrors}
       />
-      <PaymentsSection
-        formData={formData}
-        updateFormData={updateFormData}
-        hasErrors={hasPaymentErrors}
-      />
-      <EmailContentSection formData={formData} updateFormData={updateFormData} />
 
       {/* Przyciski akcji */}
       <div className="sticky bottom-4 bg-background rounded-lg border shadow-lg overflow-hidden">

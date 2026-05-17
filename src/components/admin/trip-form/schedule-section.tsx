@@ -14,7 +14,7 @@ import type { SectionProps } from './types';
 
 const ACCENT = {
   green: { heading: 'text-green-700', sub: 'text-green-600', border: 'border-green-200' },
-  blue: { heading: 'text-blue-700', sub: 'text-blue-600', border: 'border-blue-200' },
+  red: { heading: 'text-red-700', sub: 'text-red-600', border: 'border-red-200' },
 } as const;
 
 interface DirectionBlockProps {
@@ -92,7 +92,7 @@ function DirectionBlock({
         </div>
       </div>
       <LocationSelect
-        label={optional ? 'Miejsce (opcjonalne)' : 'Miejsce *'}
+        label="Miejsce"
         value={location}
         onChange={onLocationChange}
       />
@@ -250,7 +250,7 @@ export function ScheduleSection({
           />
 
           <DirectionBlock
-            accent="blue"
+            accent="red"
             title="Powrót"
             idPrefix="return"
             optional={optional}

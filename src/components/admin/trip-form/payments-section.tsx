@@ -109,10 +109,9 @@ export function PaymentsSection({
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">
-                        Płatność {index + 1}
-                        {payment.payment_type === 'installment' && payment.installment_number &&
-                          ` - Rata ${payment.installment_number}`}
-                        {payment.payment_type === 'season_pass' && ' - Karnet'}
+                        {payment.payment_type === 'season_pass'
+                          ? 'Karnet'
+                          : `Rata ${payment.installment_number || index + 1}`}
                       </CardTitle>
                       <Button
                         variant="ghost"
@@ -236,84 +235,93 @@ export function PaymentsSection({
                     )}
 
                     {/* Wspólne pola */}
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Kwota *</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={payment.amount || ''}
-                          onChange={(e) =>
-                            updatePayment(index, { amount: parseFloat(e.target.value) || 0 })
-                          }
-                          placeholder="500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Waluta</Label>
-                        <Select
-                          value={payment.currency}
-                          onValueChange={(value) =>
-                            updatePayment(index, { currency: value as 'PLN' | 'EUR' })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="PLN">PLN</SelectItem>
-                            <SelectItem value="EUR">EUR</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label>Kwota *</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={payment.amount || ''}
+                            onChange={(e) =>
+                              updatePayment(index, { amount: parseFloat(e.target.value) || 0 })
+                            }
+                            placeholder="500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Waluta</Label>
+                          <Select
+                            value={payment.currency}
+                            onValueChange={(value) =>
+                              updatePayment(index, { currency: value as 'PLN' | 'EUR' })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PLN">PLN</SelectItem>
+                              <SelectItem value="EUR">EUR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Forma płatności</Label>
+                          <Select
+                            value={payment.payment_method || 'both'}
+                            onValueChange={(value) =>
+                              updatePayment(index, { payment_method: value as 'cash' | 'transfer' | 'both' })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="both">Gotówka/Przelew</SelectItem>
+                              <SelectItem value="transfer">Przelew</SelectItem>
+                              <SelectItem value="cash">Gotówka</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <Label>Termin płatności</Label>
-                        <Select
-                          value={mode}
-                          onValueChange={(value) => changeDueMode(index, value as DueMode)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="specific">Konkretna data</SelectItem>
-                            <SelectItem value="departure" disabled={!departureDate}>
-                              W dniu wyjazdu
-                            </SelectItem>
-                            <SelectItem value="confirmation">5 dni od potwierdzenia obozu</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {mode === 'specific' && (
-                          <Input
-                            type="date"
-                            value={payment.due_date || ''}
-                            onChange={(e) =>
-                              updatePayment(index, {
-                                due_date: e.target.value || null,
-                                due_days_from_confirmation: null,
-                              })
-                            }
-                          />
+                        <div className={mode === 'specific' ? 'grid gap-3 sm:grid-cols-2' : ''}>
+                          <Select
+                            value={mode}
+                            onValueChange={(value) => changeDueMode(index, value as DueMode)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="specific">Konkretna data</SelectItem>
+                              <SelectItem value="departure" disabled={!departureDate}>
+                                W dniu wyjazdu
+                              </SelectItem>
+                              <SelectItem value="confirmation">5 dni od potwierdzenia obozu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {mode === 'specific' && (
+                            <Input
+                              type="date"
+                              value={payment.due_date || ''}
+                              onChange={(e) =>
+                                updatePayment(index, {
+                                  due_date: e.target.value || null,
+                                  due_days_from_confirmation: null,
+                                })
+                              }
+                            />
+                          )}
+                        </div>
+                        {!departureDate && (
+                          <p className="text-xs text-muted-foreground">
+                            Opcja &bdquo;W dniu wyjazdu&rdquo; będzie dostępna po ustawieniu daty wyjazdu.
+                          </p>
                         )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Forma płatności</Label>
-                        <Select
-                          value={payment.payment_method || 'both'}
-                          onValueChange={(value) =>
-                            updatePayment(index, { payment_method: value as 'cash' | 'transfer' | 'both' })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="both">Gotówka/Przelew</SelectItem>
-                            <SelectItem value="transfer">Tylko przelew</SelectItem>
-                            <SelectItem value="cash">Tylko gotówka</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
                   </CardContent>
