@@ -45,6 +45,8 @@ export async function updateSession(request: NextRequest) {
     publicPaths.some(path => pathname === path) ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/public') ||
+    // Cron — chroniony własnym CRON_SECRET; middleware nie może go redirectować
+    pathname.startsWith('/api/cron') ||
     pathname.startsWith('/confirm/');
 
   // Jeśli użytkownik nie jest zalogowany i próbuje uzyskać dostęp do chronionej ścieżki
