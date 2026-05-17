@@ -36,6 +36,7 @@ import {
   updatePaymentStatus,
   updatePaymentAmount,
   updatePaymentNote,
+  applyDiscount,
   bulkUpdatePaymentStatus,
   deletePayment,
   bulkDeletePayments,
@@ -79,6 +80,8 @@ export function PaymentsList({
 
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
+  // Tryb edycji kwoty: 'amount' = wpisz docelową kwotę, 'percent' = wpisz % zniżki
+  const [editMode, setEditMode] = useState<'amount' | 'percent'>('amount');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editNote, setEditNote] = useState('');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -172,17 +175,25 @@ export function PaymentsList({
   }
 
   async function saveAmount(paymentId: string) {
-    const newAmount = parseFloat(editAmount);
-    if (isNaN(newAmount) || newAmount < 0) {
-      toast.error('Podaj poprawną kwotę');
+    const value = parseFloat(editAmount);
+    if (isNaN(value) || value < 0) {
+      toast.error(editMode === 'percent' ? 'Podaj poprawny procent' : 'Podaj poprawną kwotę');
+      return;
+    }
+    if (editMode === 'percent' && value > 100) {
+      toast.error('Zniżka nie może przekraczać 100%');
       return;
     }
     setIsUpdating(paymentId);
     try {
-      const result = await updatePaymentAmount(paymentId, newAmount);
+      // 'percent' → applyDiscount liczy kwotę z ceny bazowej; 'amount' → wpisana kwota wprost.
+      const result =
+        editMode === 'percent'
+          ? await applyDiscount(paymentId, value)
+          : await updatePaymentAmount(paymentId, value);
       if (result.error) toast.error(result.error);
       else {
-        toast.success('Kwota zaktualizowana');
+        toast.success(editMode === 'percent' ? 'Zniżka zastosowana' : 'Kwota zaktualizowana');
         setEditingPayment(null);
         router.refresh();
       }
@@ -403,6 +414,28 @@ export function PaymentsList({
         <td className="py-3 px-3">
           {editingPayment === row.id ? (
             <div className="flex items-center gap-1">
+              <div className="flex rounded-lg ring-1 ring-gray-200 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setEditMode('amount')}
+                  className={cn(
+                    'h-9 px-2 text-xs font-semibold transition-colors',
+                    editMode === 'amount' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+                  )}
+                >
+                  zł
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditMode('percent')}
+                  className={cn(
+                    'h-9 px-2 text-xs font-semibold transition-colors',
+                    editMode === 'percent' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+                  )}
+                >
+                  %
+                </button>
+              </div>
               <Input
                 type="number"
                 value={editAmount}
@@ -411,12 +444,14 @@ export function PaymentsList({
                   if (e.key === 'Enter') saveAmount(row.id);
                   if (e.key === 'Escape') setEditingPayment(null);
                 }}
-                className="h-9 w-24 text-xs rounded-lg"
+                className="h-9 w-20 text-xs rounded-lg"
                 min="0"
+                max={editMode === 'percent' ? '100' : undefined}
                 step="0.01"
+                placeholder={editMode === 'percent' ? '% zniżki' : 'kwota'}
                 autoFocus
               />
-              <span className="text-xs text-gray-400">{row.currency}</span>
+              <span className="text-xs text-gray-400">{editMode === 'percent' ? '%' : row.currency}</span>
               <button
                 className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
                 onClick={() => saveAmount(row.id)}
@@ -437,6 +472,7 @@ export function PaymentsList({
                 <button
                   onClick={() => {
                     setEditingPayment(row.id);
+                    setEditMode('amount');
                     setEditAmount(row.amount.toString());
                   }}
                   className="flex items-center gap-1 group"
@@ -450,6 +486,33 @@ export function PaymentsList({
               <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
             </Tooltip>
           )}
+        </td>
+
+        {/* Zniżka */}
+        <td className="py-3 px-3">
+          {(() => {
+            const discount = row.original_amount - row.amount;
+            if (discount > 0.5) {
+              return (
+                <div className="leading-tight">
+                  <span className="text-sm font-semibold text-amber-600 tabular-nums">
+                    −{discount.toFixed(0)} {row.currency}
+                  </span>
+                  <p className="text-[11px] text-gray-400 tabular-nums">
+                    z {row.original_amount.toFixed(0)} {row.currency}
+                  </p>
+                </div>
+              );
+            }
+            if (discount < -0.5) {
+              return (
+                <span className="text-sm font-semibold text-gray-500 tabular-nums">
+                  +{Math.abs(discount).toFixed(0)} {row.currency}
+                </span>
+              );
+            }
+            return <span className="text-gray-300 text-sm">—</span>;
+          })()}
         </td>
 
         {/* Status */}
@@ -871,6 +934,9 @@ export function PaymentsList({
                   Kwota
                 </th>
                 <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                  Zniżka
+                </th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
                   Status
                 </th>
                 <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
@@ -887,7 +953,7 @@ export function PaymentsList({
             <tbody>
               {displayedRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-sm text-gray-400">
+                  <td colSpan={9} className="py-16 text-center text-sm text-gray-400">
                     {search || tripId !== 'all' || status !== 'all' || dateFrom || dateTo
                       ? 'Brak płatności pasujących do filtrów'
                       : 'Brak płatności'}

@@ -30,7 +30,7 @@ export default async function TripPaymentsPage({ params }: TripPaymentsPageProps
         homeHref="/admin/groups"
         items={[
           { label: 'Wyjazdy', href: '/admin/trips' },
-          { label: trip.title, href: `/admin/trips/${id}` },
+          { label: trip.title },
           { label: 'Płatności' },
         ]}
       />
@@ -40,7 +40,7 @@ export default async function TripPaymentsPage({ params }: TripPaymentsPageProps
         description={`${payments.length} płatności`}
       >
         <Button variant="outline" asChild>
-          <Link href={`/admin/trips/${id}`}>
+          <Link href="/admin/trips">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Powrót
           </Link>
