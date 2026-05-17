@@ -211,6 +211,66 @@ export async function getAdminPaymentsTrips(): Promise<{ id: string; title: stri
   return (data ?? []).map((t) => ({ id: t.id, title: t.title }));
 }
 
+// ── Ekran /admin/finance — agregacja per wyjazd po stronie bazy ─────────────
+// Wymaga widoku admin_finance_summary (migracja: admin-finance-summary-view.sql).
+
+export interface TripFinanceSummary {
+  tripId: string;
+  tripTitle: string;
+  tripDeparture: string;
+  participantCount: number;
+  totalPLN: number;
+  paidPLN: number;
+  missingPLN: number;
+  totalEUR: number;
+  paidEUR: number;
+  missingEUR: number;
+  totalPayments: number;
+  paidPayments: number;
+  pct: number;
+}
+
+export async function getFinanceSummary(): Promise<TripFinanceSummary[]> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('admin_finance_summary')
+    .select('*')
+    .order('trip_departure', { ascending: true });
+
+  if (error) {
+    console.error('getFinanceSummary error:', error);
+    return [];
+  }
+
+  return (data ?? []).map((r) => {
+    const totalPLN = Number(r.total_pln) || 0;
+    const paidPLN = Number(r.paid_pln) || 0;
+    const totalEUR = Number(r.total_eur) || 0;
+    const paidEUR = Number(r.paid_eur) || 0;
+    const totalPayments = Number(r.total_payments) || 0;
+    const paidPayments = Number(r.paid_payments) || 0;
+    return {
+      tripId: r.trip_id,
+      tripTitle: r.trip_title,
+      tripDeparture: r.trip_departure,
+      participantCount: Number(r.participant_count) || 0,
+      totalPLN,
+      paidPLN,
+      missingPLN: totalPLN - paidPLN,
+      totalEUR,
+      paidEUR,
+      missingEUR: totalEUR - paidEUR,
+      totalPayments,
+      paidPayments,
+      pct: totalPayments > 0 ? Math.round((paidPayments / totalPayments) * 100) : 0,
+    };
+  });
+}
+
 export async function addPaymentTransaction(
   paymentId: string,
   amount: number,
