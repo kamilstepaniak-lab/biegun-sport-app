@@ -636,7 +636,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
         <div />
 
         {selectedTrips.size > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-gray-500 bg-white rounded-xl px-3 py-1.5 ring-1 ring-gray-100">
               Zaznaczono: {selectedTrips.size}
             </span>
