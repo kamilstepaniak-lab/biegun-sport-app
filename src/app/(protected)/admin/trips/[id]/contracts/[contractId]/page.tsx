@@ -52,7 +52,7 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
         homeHref="/admin/groups"
         items={[
           { label: 'Wyjazdy', href: '/admin/trips' },
-          { label: trip?.title ?? 'Wyjazd', href: `/admin/trips/${id}` },
+          { label: trip?.title ?? 'Wyjazd' },
           { label: 'Umowy', href: `/admin/trips/${id}/contracts` },
           { label: childName },
         ]}
