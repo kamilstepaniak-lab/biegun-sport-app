@@ -19,7 +19,7 @@ export const registerSchema = z.object({
   password: z
     .string()
     .min(1, 'Hasło jest wymagane')
-    .min(6, 'Hasło musi mieć minimum 6 znaków')
+    .min(8, 'Hasło musi mieć minimum 8 znaków')
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       'Hasło musi zawierać małą literę, wielką literę i cyfrę'
@@ -39,6 +39,9 @@ export const registerSchema = z.object({
     .string()
     .min(9, 'Numer telefonu musi mieć minimum 9 cyfr')
     .regex(/^[0-9+\s-]+$/, 'Nieprawidłowy format numeru telefonu'),
+  rodoAccepted: z.boolean().refine((v) => v === true, {
+    message: 'Zapoznanie się z informacją o przetwarzaniu danych jest wymagane',
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Hasła muszą być identyczne',
   path: ['confirmPassword'],

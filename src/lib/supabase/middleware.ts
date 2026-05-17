@@ -40,13 +40,14 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Publiczne ścieżki - dostępne bez logowania
-  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/'];
+  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/', '/polityka-prywatnosci'];
   const isPublicPath =
     publicPaths.some(path => pathname === path) ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/public') ||
-    pathname.startsWith('/confirm/') ||
-    pathname.startsWith('/embed/');
+    // Cron — chroniony własnym CRON_SECRET; middleware nie może go redirectować
+    pathname.startsWith('/api/cron') ||
+    pathname.startsWith('/confirm/');
 
   // Jeśli użytkownik nie jest zalogowany i próbuje uzyskać dostęp do chronionej ścieżki
   if (!user && !isPublicPath) {

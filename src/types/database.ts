@@ -4,6 +4,8 @@ export type UserRole = 'parent' | 'admin';
 
 export type TripStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 
+export type AttendanceType = 'mandatory' | 'optional';
+
 export type PaymentType = 'installment' | 'season_pass';
 
 export type PaymentStatus = 'pending' | 'partially_paid' | 'paid' | 'overdue' | 'partially_paid_overdue' | 'cancelled';
@@ -113,6 +115,7 @@ export interface Trip {
   departure_time_known: boolean;
   return_time_known: boolean;
   status: TripStatus;
+  attendance_type: AttendanceType;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -232,6 +235,17 @@ export interface PaymentWithDetails extends Payment {
   transactions: PaymentTransaction[];
 }
 
+// Płaski wiersz z widoku admin_payments_view — pod paginację server-side
+// ekranu /admin/payments (płatność + nazwisko dziecka + tytuł wyjazdu).
+export interface AdminPaymentRow extends Payment {
+  participant_first_name: string;
+  participant_last_name: string;
+  participant_name: string;
+  trip_id: string;
+  trip_title: string;
+  trip_departure_datetime: string;
+}
+
 export interface TripContractTemplate {
   id: string;
   trip_id: string;
@@ -291,9 +305,8 @@ export interface CreateTripInput {
   return_location: string;
   return_stop2_datetime?: string | null;
   return_stop2_location?: string | null;
-  bank_account_pln?: string;
-  bank_account_eur?: string;
   status: TripStatus;
+  attendance_type?: AttendanceType;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
   allow_own_transport?: boolean;

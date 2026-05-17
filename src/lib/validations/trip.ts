@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
 
 export const paymentTemplateSchema = z.object({
   payment_type: z.enum(['installment', 'season_pass'], {
@@ -125,14 +124,6 @@ export const tripPaymentsSchema = z.object({
   payment_templates: z
     .array(paymentTemplateSchema)
     .min(1, 'Dodaj przynajmniej jedną płatność'),
-  bank_account_pln: z
-    .string()
-    .min(1, 'Numer konta PLN jest wymagany')
-    .default(DEFAULT_BANK_ACCOUNT_PLN),
-  bank_account_eur: z
-    .string()
-    .min(1, 'Numer konta EUR jest wymagany')
-    .default(DEFAULT_BANK_ACCOUNT_EUR),
 });
 
 export const tripFullSchema = tripBasicInfoSchema

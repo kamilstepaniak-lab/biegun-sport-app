@@ -8,6 +8,7 @@ import { Loader2, Eye, EyeOff, Mail, CheckCircle2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
@@ -38,6 +39,7 @@ export function RegisterForm() {
       firstName: '',
       lastName: '',
       phone: '',
+      rodoAccepted: false,
     },
   });
 
@@ -256,6 +258,42 @@ export function RegisterForm() {
                 </FormItem>
               )}
             />
+
+            {/* Zgody RODO */}
+            <div className="space-y-3 pt-1">
+              <FormField
+                control={form.control}
+                name="rodoAccepted"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <div className="flex items-start gap-2.5">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isLoading}
+                          className="mt-0.5"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-xs font-normal leading-snug text-gray-600 cursor-pointer">
+                        Oświadczam, że zapoznałem/am się z{' '}
+                        <Link
+                          href="/polityka-prywatnosci"
+                          target="_blank"
+                          className="text-blue-600 hover:underline"
+                        >
+                          Polityką Prywatności
+                        </Link>{' '}
+                        oraz informacją o przetwarzaniu danych osobowych. Oświadczam również, że
+                        zapoznałem/am moje dziecko z tą informacją w zakresie, w jakim dotyczy ona
+                        jego danych osobowych. <span className="text-red-500">*</span>
+                      </FormLabel>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (

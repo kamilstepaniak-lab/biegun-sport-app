@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
-import { DEFAULT_BANK_ACCOUNT_PLN, DEFAULT_BANK_ACCOUNT_EUR } from '@/lib/constants/bank-accounts';
+import { getBankAccounts } from './settings';
 import {
   sendRegistrationConfirmationEmail,
   type TripEmailData,
@@ -170,9 +170,8 @@ export async function createTrip(input: CreateTripInput) {
     return_location,
     return_stop2_datetime,
     return_stop2_location,
-    bank_account_pln,
-    bank_account_eur,
     status,
+    attendance_type,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -181,6 +180,9 @@ export async function createTrip(input: CreateTripInput) {
     departure_time_known,
     return_time_known,
   } = input;
+
+  // Wspólne konto bankowe — zapisujemy snapshot na wyjeździe przy tworzeniu
+  const bankAccounts = await getBankAccounts();
 
   // 1. Utwórz wyjazd
   const { data: trip, error: tripError } = await supabase
@@ -198,14 +200,15 @@ export async function createTrip(input: CreateTripInput) {
       return_location,
       return_stop2_datetime: return_stop2_datetime || null,
       return_stop2_location: return_stop2_location || null,
-      bank_account_pln: bank_account_pln || DEFAULT_BANK_ACCOUNT_PLN,
-      bank_account_eur: bank_account_eur || DEFAULT_BANK_ACCOUNT_EUR,
+      bank_account_pln: bankAccounts.bank_account_pln,
+      bank_account_eur: bankAccounts.bank_account_eur,
       allow_own_transport: allow_own_transport ?? false,
       packing_list: packing_list || null,
       additional_info: additional_info || null,
       departure_time_known: departure_time_known ?? true,
       return_time_known: return_time_known ?? true,
       status,
+      attendance_type: attendance_type ?? 'optional',
       created_by: user.id,
     })
     .select()
@@ -292,9 +295,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     return_location,
     return_stop2_datetime,
     return_stop2_location,
-    bank_account_pln,
-    bank_account_eur,
     status,
+    attendance_type,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -321,9 +323,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (return_location !== undefined) updateData.return_location = return_location;
   if (return_stop2_datetime !== undefined) updateData.return_stop2_datetime = return_stop2_datetime || null;
   if (return_stop2_location !== undefined) updateData.return_stop2_location = return_stop2_location || null;
-  if (bank_account_pln !== undefined) updateData.bank_account_pln = bank_account_pln;
-  if (bank_account_eur !== undefined) updateData.bank_account_eur = bank_account_eur;
   if (status !== undefined) updateData.status = status;
+  if (attendance_type !== undefined) updateData.attendance_type = attendance_type;
   if (allow_own_transport !== undefined) updateData.allow_own_transport = allow_own_transport;
   if (packing_list !== undefined) updateData.packing_list = packing_list || null;
   if (additional_info !== undefined) updateData.additional_info = additional_info || null;
@@ -480,7 +481,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 
       const { data: existingPayments } = await supabaseAdmin
         .from('payments')
-        .select('id, payment_type, installment_number, status')
+        .select('id, payment_type, installment_number, status, amount, original_amount, amount_paid, discount_percentage')
         .eq('registration_id', reg.id)
         .neq('status', 'cancelled');
 
@@ -489,6 +490,10 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         payment_type: string;
         installment_number: number | null;
         status: string;
+        amount: number;
+        original_amount: number;
+        amount_paid: number | null;
+        discount_percentage: number | null;
       }[];
 
       // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
@@ -500,8 +505,30 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         );
 
         if (match) {
-          const isUpdatable = ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(match.status);
-          if (isUpdatable) {
+          // Płatność jest "zablokowana finansowo" gdy: ma jakąkolwiek wpłatę,
+          // jest w pełni opłacona, albo admin zmienił jej kwotę indywidualnie
+          // (zniżka przez applyDiscount lub ręczna korekta updatePaymentAmount —
+          // jedno i drugie daje amount != original_amount). Edycja cennika
+          // całego wyjazdu NIE może nadpisywać takiej indywidualnej kwoty.
+          const isAmountLocked =
+            (match.amount_paid ?? 0) > 0 ||
+            match.status === 'paid' ||
+            (match.discount_percentage ?? 0) > 0 ||
+            match.amount !== match.original_amount;
+
+          if (isAmountLocked) {
+            // Zachowaj kwotę i walutę; zsynchronizuj tylko powiązanie z szablonem
+            // oraz pola nie-finansowe (termin, oczekiwana forma płatności).
+            await supabaseAdmin
+              .from('payments')
+              .update({
+                template_id: template.id,
+                due_date: template.due_date,
+                payment_method: template.payment_method,
+              })
+              .eq('id', match.id);
+          } else {
+            // Płatność nietknięta — pełna synchronizacja z szablonem cennika
             await supabaseAdmin
               .from('payments')
               .update({
@@ -512,12 +539,6 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
                 template_id: template.id,
                 payment_method: template.payment_method,
               })
-              .eq('id', match.id);
-          } else {
-            // Opłacone — tylko zaktualizuj template_id
-            await supabaseAdmin
-              .from('payments')
-              .update({ template_id: template.id })
               .eq('id', match.id);
           }
         } else {
@@ -772,7 +793,7 @@ export async function getTripParticipants(tripId: string): Promise<TripParticipa
 
   // 4. Pobierz płatności dla wszystkich rejestracji
   const registrationIds = (registrations || []).map((r: { id: string }) => r.id);
-  let paymentsMap = new Map<string, ParticipantPayment[]>();
+  const paymentsMap = new Map<string, ParticipantPayment[]>();
 
   if (registrationIds.length > 0) {
     const { data: payments } = await supabase
@@ -981,6 +1002,7 @@ export interface ChildTripStatus {
   participation_status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other';
   participation_note: string | null;
   registration_id: string | null;
+  confirmed_at: string | null;
   payments: ChildPaymentSummary[];
 }
 
@@ -1079,7 +1101,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
       .order('departure_datetime', { ascending: true }),
     supabase
       .from('trip_registrations')
-      .select('id, trip_id, participant_id, participation_status, participation_note')
+      .select('id, trip_id, participant_id, participation_status, participation_note, confirmed_at')
       .in('participant_id', childIds)
       .in('trip_id', tripIds),
   ]);
@@ -1089,12 +1111,13 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
 
   if (!trips) return [];
 
-  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null }>();
-  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null }) => {
+  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null; confirmed_at: string | null }>();
+  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null; confirmed_at: string | null }) => {
     registrationMap.set(`${r.trip_id}-${r.participant_id}`, {
       id: r.id,
       participation_status: r.participation_status,
       participation_note: r.participation_note,
+      confirmed_at: r.confirmed_at,
     });
   });
 
@@ -1131,6 +1154,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
         participation_status: (reg?.participation_status as 'unconfirmed' | 'confirmed' | 'not_going' | 'other') || 'unconfirmed',
         participation_note: reg?.participation_note || null,
         registration_id: reg?.id ?? null,
+        confirmed_at: reg?.confirmed_at ?? null,
         payments: [],
       };
     });
@@ -1303,10 +1327,11 @@ export async function updateParticipationStatusByParent(
         .eq('id', participantId)
         .single();
 
-      // Pobierz płatności dla tej rejestracji (mają już konkretne due_date ustawione przy potwierdzeniu)
+      // Pobierz płatności dla tej rejestracji (mają już konkretne due_date ustawione przy potwierdzeniu).
+      // payment_method nie istnieje na payments — bierzemy go z powiązanego szablonu.
       const { data: registrationPayments } = await supabaseAdmin
         .from('payments')
-        .select('payment_type, installment_number, amount, currency, due_date, payment_method, template_id')
+        .select('payment_type, installment_number, amount, currency, due_date, template:trip_payment_templates!template_id(payment_method)')
         .eq('registration_id', registrationId!)
         .neq('status', 'cancelled')
         .order('installment_number', { ascending: true });
@@ -1321,7 +1346,7 @@ export async function updateParticipationStatusByParent(
             amount: pt.amount,
             currency: pt.currency,
             due_date: pt.due_date,
-            payment_method: pt.payment_method,
+            payment_method: (pt.template as { payment_method?: string | null } | null)?.payment_method ?? null,
           }));
 
         sendRegistrationConfirmationEmail(
@@ -1380,6 +1405,8 @@ export async function duplicateTrip(tripId: string) {
   originalDeparture.setFullYear(originalDeparture.getFullYear() + 1);
   originalReturn.setFullYear(originalReturn.getFullYear() + 1);
 
+  const duplicateBankAccounts = await getBankAccounts();
+
   // Utwórz kopię wyjazdu
   const { data: newTrip, error: createError } = await supabaseAdmin
     .from('trips')
@@ -1402,8 +1429,8 @@ export async function duplicateTrip(tripId: string) {
           )).toISOString()
         : null,
       return_stop2_location: originalTrip.return_stop2_location,
-      bank_account_pln: originalTrip.bank_account_pln,
-      bank_account_eur: originalTrip.bank_account_eur,
+      bank_account_pln: duplicateBankAccounts.bank_account_pln,
+      bank_account_eur: duplicateBankAccounts.bank_account_eur,
       status: 'draft', // Kopia zawsze jako szkic
       created_by: user.id,
     })

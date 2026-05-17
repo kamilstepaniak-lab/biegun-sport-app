@@ -2,28 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
 import {
   Upload,
-  RefreshCw,
-  Check,
-  X,
-  Clock,
+  Download,
+  FileSpreadsheet,
+  Loader2,
+  CheckCircle,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import {
   Table,
   TableBody,
@@ -33,280 +24,263 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { runTripsImport, resetTripsImportStatus } from '@/lib/actions/trips-import';
+import { bulkImportTrips, type ImportTripRow, type BulkImportResult } from '@/lib/actions/trips-import';
 
-interface ImportRecord {
-  id: number;
-  tytul_wyjazdu: string | null;
-  opis: string | null;
-  sekcja: string | null;
-  data_wyjazdu: string | null;
-  data_powrotu: string | null;
-  miejsce_wyjazdu: string | null;
-  miejsce_powrotu: string | null;
-  godzina_wyjazdu: string | null;
-  godzina_powrotu: string | null;
-  kwota_1: string | null;
-  termin_1: string | null;
-  forma_platnosci_1: string | null;
-  kwota_2: string | null;
-  termin_2: string | null;
-  forma_platnosci_2: string | null;
-  karnety_reguly: string | null;
-  status_importu: string;
-  blad_opis: string | null;
+// Minimalny parser CSV — obsługuje cudzysłowy oraz separator ; lub ,
+function parseCSV(text: string): string[][] {
+  const clean = text.replace(/^﻿/, '');
+  const firstLine = clean.split('\n')[0] ?? '';
+  const delim = firstLine.includes(';') ? ';' : ',';
+
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < clean.length; i++) {
+    const c = clean[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (clean[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === delim) {
+      row.push(field);
+      field = '';
+    } else if (c === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else if (c !== '\r') {
+      field += c;
+    }
+  }
+  if (field !== '' || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+
+  return rows.filter((r) => r.some((c) => c.trim() !== ''));
 }
 
-interface TripsImportClientProps {
-  records: ImportRecord[];
-}
-
-const statusConfig = {
-  oczekuje: { label: 'Oczekuje', color: 'bg-amber-100 text-amber-700', icon: Clock },
-  zaimportowano: { label: 'Zaimportowano', color: 'bg-green-100 text-green-700', icon: Check },
-  blad: { label: 'Błąd', color: 'bg-red-100 text-red-700', icon: X },
-};
-
-export function TripsImportClient({ records }: TripsImportClientProps) {
+export function TripsImportClient() {
   const router = useRouter();
+  const [rows, setRows] = useState<ImportTripRow[]>([]);
+  const [fileName, setFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    imported: number;
-    errors: number;
-    errorDetails: string[];
-  } | null>(null);
-  const [errorsOpen, setErrorsOpen] = useState(false);
+  const [result, setResult] = useState<BulkImportResult | null>(null);
 
-  const pendingCount = records.filter(r => r.status_importu === 'oczekuje').length;
-  const importedCount = records.filter(r => r.status_importu === 'zaimportowano').length;
-  const errorCount = records.filter(r => r.status_importu === 'blad').length;
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setResult(null);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const matrix = parseCSV(String(reader.result ?? ''));
+      if (matrix.length < 2) {
+        toast.error('Plik jest pusty lub zawiera tylko nagłówek');
+        return;
+      }
+      const header = matrix[0].map((h) => h.trim().toLowerCase());
+      const parsed: ImportTripRow[] = matrix.slice(1).map((cells) => {
+        const obj: Record<string, string> = {};
+        header.forEach((h, idx) => {
+          obj[h] = (cells[idx] ?? '').trim();
+        });
+        return obj as ImportTripRow;
+      });
+      setRows(parsed);
+      setFileName(file.name);
+    };
+    reader.readAsText(file, 'UTF-8');
+    // pozwól wgrać ten sam plik ponownie
+    e.target.value = '';
+  }
 
   async function handleImport() {
+    if (rows.length === 0) return;
     setIsImporting(true);
-    setImportResult(null);
-
+    setResult(null);
     try {
-      const result = await runTripsImport();
-
-      setImportResult({
-        imported: result.imported,
-        errors: result.errors,
-        errorDetails: result.errorDetails,
-      });
-
-      if (result.imported > 0) {
-        toast.success(`Zaimportowano ${result.imported} wyjazdów`);
+      const res = await bulkImportTrips(rows);
+      setResult(res);
+      if (res.imported > 0) {
+        toast.success(`Zaimportowano ${res.imported} wyjazdów`);
+        router.refresh();
       }
-      if (result.errors > 0) {
-        toast.error(`${result.errors} rekordów z błędami`);
-        setErrorsOpen(true);
+      if (res.errors > 0) {
+        toast.error(`${res.errors} wierszy z błędami`);
       }
-
-      router.refresh();
-    } catch (err) {
-      toast.error('Błąd podczas importu');
-      console.error('Import error:', err);
+    } catch {
+      toast.error('Wystąpił błąd podczas importu');
     } finally {
       setIsImporting(false);
     }
   }
 
-  async function handleReset() {
-    setIsResetting(true);
-
-    try {
-      const result = await resetTripsImportStatus();
-
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Statusy zresetowane - można ponowić import');
-        router.refresh();
-      }
-    } catch (err) {
-      toast.error('Błąd podczas resetowania');
-      console.error('Reset error:', err);
-    } finally {
-      setIsResetting(false);
-    }
+  function reset() {
+    setRows([]);
+    setFileName('');
+    setResult(null);
   }
 
   return (
     <div className="space-y-6">
-      {/* Statystyki */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{records.length}</div>
-            <div className="text-sm text-muted-foreground">Wszystkich rekordów</div>
-          </CardContent>
-        </Card>
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-amber-700">{pendingCount}</div>
-            <div className="text-sm text-amber-600">Oczekujących</div>
-          </CardContent>
-        </Card>
-        <Card className="border-green-200 bg-green-50/50">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-700">{importedCount}</div>
-            <div className="text-sm text-green-600">Zaimportowanych</div>
-          </CardContent>
-        </Card>
-        <Card className="border-red-200 bg-red-50/50">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-700">{errorCount}</div>
-            <div className="text-sm text-red-600">Błędów</div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Instrukcja + szablon */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Jak to działa</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <ol className="list-decimal list-inside space-y-1">
+            <li>Pobierz szablon CSV i wypełnij go w Excelu (jeden wyjazd = jeden wiersz).</li>
+            <li>Zapisz plik w formacie CSV i wgraj go poniżej.</li>
+            <li>Sprawdź podgląd i kliknij „Importuj”.</li>
+          </ol>
+          <p>
+            Wyjazdy trafiają jako <strong>szkice</strong> — daty, ceny i grupę można potem
+            poprawić. Karnety i drugi przystanek dodajesz ręcznie w edycji wyjazdu.
+          </p>
+          <Button variant="outline" asChild>
+            <a href="/szablon-wyjazdy.csv" download>
+              <Download className="mr-2 h-4 w-4" />
+              Pobierz szablon CSV
+            </a>
+          </Button>
+        </CardContent>
+      </Card>
 
-      {/* Przyciski akcji */}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={handleImport}
-          disabled={isImporting || pendingCount === 0}
-        >
-          {isImporting ? (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Importowanie...
-            </>
+      {/* Upload */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Wgraj plik</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {rows.length === 0 ? (
+            <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-8 cursor-pointer hover:bg-gray-50 transition-colors">
+              <Upload className="h-8 w-8 text-gray-400" />
+              <span className="text-sm font-medium text-gray-700">Kliknij, aby wybrać plik CSV</span>
+              <span className="text-xs text-muted-foreground">Obsługiwany jest plik z szablonu</span>
+              <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
+            </label>
           ) : (
-            <>
-              <Upload className="h-4 w-4 mr-2" />
-              Uruchom import ({pendingCount} rekordów)
-            </>
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 p-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileSpreadsheet className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-gray-700 truncate">{fileName}</span>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  ({rows.length} wierszy)
+                </span>
+              </div>
+              <button
+                onClick={reset}
+                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           )}
-        </Button>
+        </CardContent>
+      </Card>
 
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          disabled={isResetting || (errorCount === 0 && importedCount === 0)}
-        >
-          {isResetting ? (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Resetowanie...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Resetuj statusy
-            </>
-          )}
-        </Button>
-      </div>
-
-      {/* Wyniki importu */}
-      {importResult && importResult.errorDetails.length > 0 && (
-        <Collapsible open={errorsOpen} onOpenChange={setErrorsOpen}>
-          <Card className="border-red-200">
-            <CardHeader className="pb-3">
-              <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between cursor-pointer">
-                  <CardTitle className="text-base flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" />
-                    Błędy importu ({importResult.errors})
-                  </CardTitle>
-                  {errorsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </div>
-              </CollapsibleTrigger>
-            </CardHeader>
-            <CollapsibleContent>
-              <CardContent className="pt-0">
-                <ul className="space-y-1 text-sm text-red-600">
-                  {importResult.errorDetails.map((error, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <X className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
-      )}
-
-      {/* Tabela danych */}
-      {records.length > 0 ? (
+      {/* Podgląd */}
+      {rows.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Dane do importu</CardTitle>
+            <CardTitle className="text-base">Podgląd ({rows.length})</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="rounded-md border overflow-auto">
+          <CardContent className="space-y-4">
+            <div className="rounded-md border overflow-auto max-h-[420px]">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]">ID</TableHead>
                     <TableHead>Tytuł</TableHead>
-                    <TableHead>Sekcja</TableHead>
-                    <TableHead>Data wyjazdu</TableHead>
-                    <TableHead>Data powrotu</TableHead>
+                    <TableHead>Typ</TableHead>
+                    <TableHead>Grupa</TableHead>
+                    <TableHead>Wyjazd</TableHead>
+                    <TableHead>Powrót</TableHead>
                     <TableHead>Rata 1</TableHead>
                     <TableHead>Rata 2</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {records.map((record) => {
-                    const status = statusConfig[record.status_importu as keyof typeof statusConfig] || statusConfig.oczekuje;
-                    const StatusIcon = status.icon;
-
-                    return (
-                      <TableRow key={record.id} className={record.status_importu === 'blad' ? 'bg-red-50' : ''}>
-                        <TableCell className="font-mono text-xs">{record.id}</TableCell>
-                        <TableCell className="font-medium max-w-[200px] truncate">
-                          {record.tytul_wyjazdu || '-'}
-                        </TableCell>
-                        <TableCell>{record.sekcja || '-'}</TableCell>
-                        <TableCell className="text-sm">
-                          {record.data_wyjazdu || '-'}
-                          {record.godzina_wyjazdu && <span className="text-muted-foreground ml-1">{record.godzina_wyjazdu}</span>}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {record.data_powrotu || '-'}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {record.kwota_1 ? `${record.kwota_1} PLN` : '-'}
-                          {record.termin_1 && <span className="text-muted-foreground ml-1">(do {record.termin_1})</span>}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {record.kwota_2 ? `${record.kwota_2} PLN` : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <Badge className={`${status.color} border-none`}>
-                              <StatusIcon className="h-3 w-3 mr-1" />
-                              {status.label}
-                            </Badge>
-                            {record.blad_opis && (
-                              <p className="text-xs text-red-600 max-w-[150px] truncate" title={record.blad_opis}>
-                                {record.blad_opis}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {rows.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{r.tytul || '—'}</TableCell>
+                      <TableCell>
+                        {(r.typ || '').toLowerCase().includes('obow') ? 'Obowiązkowy' : 'Dla chętnych'}
+                      </TableCell>
+                      <TableCell>{r.grupa || '—'}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">{r.data_wyjazdu || '—'}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">{r.data_powrotu || '—'}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {r.kwota_1 ? `${r.kwota_1} ${r.waluta_1 || 'PLN'}` : '—'}
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {r.kwota_2 ? `${r.kwota_2} ${r.waluta_2 || 'PLN'}` : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
+
+            <Button onClick={handleImport} disabled={isImporting}>
+              {isImporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Importowanie...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Importuj {rows.length} wyjazdów
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
-      ) : (
+      )}
+
+      {/* Wynik */}
+      {result && (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            <Upload className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">Brak danych do importu</p>
-            <p className="text-sm">
-              Dodaj dane do tabeli <code className="bg-muted px-1 rounded">trips_import_buffer</code> w Supabase
-            </p>
+          <CardHeader>
+            <CardTitle className="text-base">Wynik importu</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-4">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+                <CheckCircle className="h-4 w-4" />
+                Zaimportowano: {result.imported}
+              </span>
+              {result.errors > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-red-700">
+                  <AlertTriangle className="h-4 w-4" />
+                  Błędy: {result.errors}
+                </span>
+              )}
+            </div>
+            {result.details.length > 0 && (
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {result.details.map((d, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       )}

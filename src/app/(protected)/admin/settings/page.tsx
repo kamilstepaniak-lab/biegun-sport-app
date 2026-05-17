@@ -1,9 +1,11 @@
-import { Activity, Mail, ChevronDown, UserPlus, ShieldCheck } from 'lucide-react';
+import { Activity, Mail, ChevronDown, UserPlus, ShieldCheck, Landmark } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { getActivityLogs, getEmailLogs } from '@/lib/actions/activity-logs';
+import { getBankAccounts } from '@/lib/actions/settings';
 import { ParentAccountsManager } from './parent-accounts-manager';
 import { SyncJwtRolesButton } from './sync-jwt-roles';
+import { BankAccountsForm } from './bank-accounts-form';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,9 +92,10 @@ function renderDetails(details: Record<string, unknown> | null, actionType: stri
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function SettingsPage() {
-  const [activityLogs, emailLogs] = await Promise.all([
+  const [activityLogs, emailLogs, bankAccounts] = await Promise.all([
     getActivityLogs(30),
     getEmailLogs(30),
+    getBankAccounts(),
   ]);
 
   return (
@@ -101,6 +104,25 @@ export default async function SettingsPage() {
         title="Ustawienia"
         description="Konfiguracja aplikacji, logi i narzędzia administracyjne"
       />
+
+      {/* ── Konta bankowe ─────────────────────────────────────────── */}
+      <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+        <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+              <Landmark className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Konta bankowe</p>
+              <p className="text-xs text-gray-500">Wspólny numer konta PLN i EUR dla wszystkich wyjazdów</p>
+            </div>
+          </div>
+          <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 flex-shrink-0" />
+        </summary>
+        <div className="border-t border-gray-100 px-5 py-4">
+          <BankAccountsForm initial={bankAccounts} />
+        </div>
+      </details>
 
       {/* ── Konta rodziców ────────────────────────────────────────── */}
       <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">

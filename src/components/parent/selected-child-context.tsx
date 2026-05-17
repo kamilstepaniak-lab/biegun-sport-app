@@ -38,10 +38,14 @@ export function SelectedChildProvider({ children }: { children: ReactNode }) {
   const [selectedChildName, setSelectedChildName] = useState<string | null>(null);
 
   useEffect(() => {
+    // Odczyt z localStorage musi nastąpić po montażu (brak na serwerze),
+    // dlatego stan ustawiamy w efekcie — inaczej hydration mismatch.
     const stored = loadFromStorage();
     if (stored) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setSelectedChildId(stored.id);
       setSelectedChildName(stored.name);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, []);
 

@@ -208,6 +208,12 @@ CREATE TABLE payment_transactions (
 CREATE INDEX idx_transactions_payment ON payment_transactions(payment_id);
 CREATE INDEX idx_transactions_date ON payment_transactions(transaction_date);
 
+-- UWAGA: pełny, aktualny schemat bazy = ten plik + pliki w supabase/migrations/.
+-- Dodatkowe kolumny (participation_status, stop2, location, allow_own_transport,
+-- notes, amount_remaining) oraz tabele (trip_contracts, email/contract templates,
+-- messages, app_settings, activity/email/payment logs, registration_tokens)
+-- są definiowane w migracjach.
+
 -- ====================================
 -- SEED DATA: Grupy
 -- ====================================

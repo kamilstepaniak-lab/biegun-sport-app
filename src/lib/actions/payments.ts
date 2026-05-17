@@ -3,13 +3,15 @@
 import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 'next/cache';
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import type { Payment, PaymentWithDetails, PaymentTransaction } from '@/types';
+import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
-import { addDays, format } from 'date-fns';
+import { format } from 'date-fns';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
 
 import { getAuthUser } from './auth-helpers';
+import { getBankAccounts } from './settings';
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser();
@@ -89,6 +91,185 @@ export async function getAllPayments(): Promise<PaymentWithDetails[]> {
   const { user } = await requireAdmin(supabase);
   if (!user) return [];
   return _fetchAllPaymentsDB();
+}
+
+// ── Ekran /admin/payments — paginacja i filtrowanie po stronie bazy ─────────
+// Wymaga widoku admin_payments_view (migracja: supabase/migrations/admin-payments-view.sql).
+
+export type AdminPaymentsStatusFilter = 'all' | 'pending' | 'overdue' | 'paid';
+
+export interface AdminPaymentsPageParams {
+  page: number;
+  pageSize: number;
+  search: string;
+  tripId: string;
+  status: AdminPaymentsStatusFilter;
+  dateFrom: string;
+  dateTo: string;
+}
+
+export async function getAdminPaymentsPage(
+  params: AdminPaymentsPageParams
+): Promise<{ rows: AdminPaymentRow[]; total: number }> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return { rows: [], total: 0 };
+
+  const admin = createAdminClient();
+  let query = admin
+    .from('admin_payments_view')
+    .select('*', { count: 'exact' })
+    .neq('status', 'cancelled');
+
+  if (params.tripId && params.tripId !== 'all') {
+    query = query.eq('trip_id', params.tripId);
+  }
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  if (params.status === 'pending') {
+    query = query.in('status', ['pending', 'partially_paid']);
+  } else if (params.status === 'paid') {
+    query = query.eq('status', 'paid');
+  } else if (params.status === 'overdue') {
+    query = query.or(
+      `status.in.(overdue,partially_paid_overdue),and(due_date.lt.${today},status.not.in.(paid,cancelled))`
+    );
+  }
+
+  if (params.search.trim()) {
+    // Usuń znaki specjalne PostgREST (zapobiega rozbiciu składni .or)
+    const s = params.search.trim().replace(/[%,()*]/g, ' ');
+    query = query.or(`participant_name.ilike.%${s}%,trip_title.ilike.%${s}%`);
+  }
+
+  if (params.dateFrom) query = query.gte('created_at', params.dateFrom);
+  if (params.dateTo) query = query.lte('created_at', `${params.dateTo}T23:59:59.999Z`);
+
+  const fromIdx = (params.page - 1) * params.pageSize;
+  query = query
+    // id jako tiebreaker — płatności z jednej partii mają identyczny created_at;
+    // bez tego kolejność jest niestabilna i wiersze skaczą między stronami.
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(fromIdx, fromIdx + params.pageSize - 1);
+
+  const { data, error, count } = await query;
+  if (error) {
+    console.error('getAdminPaymentsPage error:', error);
+    return { rows: [], total: 0 };
+  }
+  return { rows: (data ?? []) as AdminPaymentRow[], total: count ?? 0 };
+}
+
+export async function getAdminPaymentsStats(): Promise<{
+  pending: number;
+  paid: number;
+  pendingPLN: number;
+  pendingEUR: number;
+}> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+
+  const admin = createAdminClient();
+  // Tylko 4 lekkie kolumny — nawet przy dziesiątkach tysięcy wierszy to ułamek
+  // payloadu pełnego pobrania z zagnieżdżonymi relacjami.
+  const { data, error } = await admin
+    .from('payments')
+    .select('status, amount, amount_paid, currency')
+    .neq('status', 'cancelled');
+
+  if (error || !data) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+
+  let pending = 0;
+  let paid = 0;
+  let pendingPLN = 0;
+  let pendingEUR = 0;
+  for (const p of data) {
+    if (p.status === 'paid') {
+      paid++;
+    } else {
+      pending++;
+      const remaining = (p.amount ?? 0) - (p.amount_paid ?? 0);
+      if (p.currency === 'PLN') pendingPLN += remaining;
+      else pendingEUR += remaining;
+    }
+  }
+  return { pending, paid, pendingPLN, pendingEUR };
+}
+
+export async function getAdminPaymentsTrips(): Promise<{ id: string; title: string }[]> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('trips')
+    .select('id, title, departure_datetime')
+    .order('departure_datetime', { ascending: true });
+
+  return (data ?? []).map((t) => ({ id: t.id, title: t.title }));
+}
+
+// ── Ekran /admin/finance — agregacja per wyjazd po stronie bazy ─────────────
+// Wymaga widoku admin_finance_summary (migracja: admin-finance-summary-view.sql).
+
+export interface TripFinanceSummary {
+  tripId: string;
+  tripTitle: string;
+  tripDeparture: string;
+  participantCount: number;
+  totalPLN: number;
+  paidPLN: number;
+  missingPLN: number;
+  totalEUR: number;
+  paidEUR: number;
+  missingEUR: number;
+  totalPayments: number;
+  paidPayments: number;
+  pct: number;
+}
+
+export async function getFinanceSummary(): Promise<TripFinanceSummary[]> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('admin_finance_summary')
+    .select('*')
+    .order('trip_departure', { ascending: true });
+
+  if (error) {
+    console.error('getFinanceSummary error:', error);
+    return [];
+  }
+
+  return (data ?? []).map((r) => {
+    const totalPLN = Number(r.total_pln) || 0;
+    const paidPLN = Number(r.paid_pln) || 0;
+    const totalEUR = Number(r.total_eur) || 0;
+    const paidEUR = Number(r.paid_eur) || 0;
+    const totalPayments = Number(r.total_payments) || 0;
+    const paidPayments = Number(r.paid_payments) || 0;
+    return {
+      tripId: r.trip_id,
+      tripTitle: r.trip_title,
+      tripDeparture: r.trip_departure,
+      participantCount: Number(r.participant_count) || 0,
+      totalPLN,
+      paidPLN,
+      missingPLN: totalPLN - paidPLN,
+      totalEUR,
+      paidEUR,
+      missingEUR: totalEUR - paidEUR,
+      totalPayments,
+      paidPayments,
+      pct: totalPayments > 0 ? Math.round((paidPayments / totalPayments) * 100) : 0,
+    };
+  });
 }
 
 export async function addPaymentTransaction(
@@ -404,13 +585,11 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       due_days_from_confirmation: number | null;
       payment_method: string | null;
     }) => {
-      let dueDate: string | null = template.due_date ?? null;
-      if (template.due_days_from_confirmation != null) {
-        dueDate = format(
-          addDays(new Date(confirmedAt), template.due_days_from_confirmation),
-          'yyyy-MM-dd'
-        );
-      }
+      const dueDate = resolveEffectiveDueDate({
+        templateDueDate: template.due_date,
+        dueDaysFromConfirmation: template.due_days_from_confirmation,
+        confirmedAt,
+      });
       return {
         registration_id: registrationId,
         template_id: template.id,
@@ -560,9 +739,11 @@ const _fetchParentPaymentsDB = unstable_cache(
       const childData = childDataMap.get(registration?.participant_id || '');
       const dueDays = payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null;
       const confirmedAt = registration?.confirmed_at ?? null;
-      const computedDueDate = (!payment.due_date && dueDays != null && confirmedAt)
-        ? format(addDays(new Date(confirmedAt), dueDays), 'yyyy-MM-dd')
-        : payment.due_date;
+      const computedDueDate = resolveEffectiveDueDate({
+        paymentDueDate: payment.due_date,
+        dueDaysFromConfirmation: dueDays,
+        confirmedAt,
+      });
       return {
         id: payment.id,
         participant_id: registration?.participant_id || '',
@@ -635,49 +816,28 @@ export async function getActualPaymentDueDatesForTrip(
   for (const p of payments) {
     if (!p.template_id) continue;
     const dueDays = (p.template as { due_days_from_confirmation?: number | null } | null)?.due_days_from_confirmation ?? null;
-    const dueDate = p.due_date ?? (
-      dueDays != null && registration.confirmed_at
-        ? format(addDays(new Date(registration.confirmed_at), dueDays), 'yyyy-MM-dd')
-        : null
-    );
+    const dueDate = resolveEffectiveDueDate({
+      paymentDueDate: p.due_date,
+      dueDaysFromConfirmation: dueDays,
+      confirmedAt: registration.confirmed_at,
+    });
     if (dueDate) result[p.template_id] = dueDate;
   }
   return result;
 }
 
-// ── Cache: konta bankowe rodzica ──────────────────────────────────────────
-const _fetchBankAccountsDB = unstable_cache(
-  async (userId: string): Promise<BankAccountInfo> => {
-    const supabaseAdmin = createAdminClient();
-
-    // Jedno zapytanie: participant (rodzica) → trip_registrations → trips
-    const { data: registration } = await supabaseAdmin
-      .from('trip_registrations')
-      .select('trip:trips(bank_account_pln, bank_account_eur), participant:participants!inner(parent_id)')
-      .eq('participant.parent_id', userId)
-      .eq('participation_status', 'confirmed')
-      .limit(1)
-      .maybeSingle();
-
-    const trip = registration?.trip as unknown as { bank_account_pln: string | null; bank_account_eur: string | null } | null;
-
-    return {
-      bank_account_pln: trip?.bank_account_pln || null,
-      bank_account_eur: trip?.bank_account_eur || null,
-    };
-  },
-  ['parent-bank-accounts'],
-  { revalidate: 120, tags: ['payments'] },
-);
-
-// Pobierz dane do przelewu (konta bankowe) — z wyjazdu na który dziecko jest zapisane
+// Pobierz dane do przelewu — wspólne konto bankowe z ustawień aplikacji
 export async function getBankAccountsForParent(): Promise<BankAccountInfo> {
   const { user } = await getAuthUser();
   if (!user) {
     return { bank_account_pln: null, bank_account_eur: null };
   }
 
-  return _fetchBankAccountsDB(user.id);
+  const accounts = await getBankAccounts();
+  return {
+    bank_account_pln: accounts.bank_account_pln || null,
+    bank_account_eur: accounts.bank_account_eur || null,
+  };
 }
 
 export async function updatePaymentStatus(

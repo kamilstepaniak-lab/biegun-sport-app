@@ -13,105 +13,21 @@ import {
   X,
 } from 'lucide-react';
 
-import type { PaymentWithDetails } from '@/types';
+import type { TripFinanceSummary } from '@/lib/actions/payments';
+
+type TripSummary = TripFinanceSummary;
 
 interface FinanceSummaryProps {
-  payments: PaymentWithDetails[];
+  summaries: TripFinanceSummary[];
 }
 
-interface TripSummary {
-  tripId: string;
-  tripTitle: string;
-  tripDeparture: string;
-  participantCount: number;
-  // PLN
-  totalPLN: number;
-  paidPLN: number;
-  missingPLN: number;
-  // EUR
-  totalEUR: number;
-  paidEUR: number;
-  missingEUR: number;
-  // Płatności
-  totalPayments: number;
-  paidPayments: number;
-  pct: number;
-}
-
-export function FinanceSummary({ payments }: FinanceSummaryProps) {
+export function FinanceSummary({ summaries }: FinanceSummaryProps) {
   const [sortField, setSortField] = useState<keyof TripSummary>('tripDeparture');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const tripSummaries = useMemo<TripSummary[]>(() => {
-    const tripMap = new Map<string, {
-      tripId: string;
-      tripTitle: string;
-      tripDeparture: string;
-      participants: Set<string>;
-      totalPLN: number;
-      paidPLN: number;
-      totalEUR: number;
-      paidEUR: number;
-      totalPayments: number;
-      paidPayments: number;
-    }>();
-
-    payments.forEach((p) => {
-      if (!p.registration) return;
-      const trip = p.registration.trip;
-      const participantId = p.registration.participant.id;
-
-      if (!tripMap.has(trip.id)) {
-        tripMap.set(trip.id, {
-          tripId: trip.id,
-          tripTitle: trip.title,
-          tripDeparture: trip.departure_datetime,
-          participants: new Set(),
-          totalPLN: 0,
-          paidPLN: 0,
-          totalEUR: 0,
-          paidEUR: 0,
-          totalPayments: 0,
-          paidPayments: 0,
-        });
-      }
-
-      const entry = tripMap.get(trip.id)!;
-      entry.participants.add(participantId);
-      entry.totalPayments++;
-
-      // Sumujemy zarówno pełne jak i częściowe wpłaty (amount_paid),
-      // a paidPayments liczy tylko płatności w pełni opłacone.
-      if (p.currency === 'PLN') {
-        entry.totalPLN += p.amount;
-        entry.paidPLN += p.amount_paid ?? 0;
-        if (p.status === 'paid') entry.paidPayments++;
-      } else if (p.currency === 'EUR') {
-        entry.totalEUR += p.amount;
-        entry.paidEUR += p.amount_paid ?? 0;
-        if (p.status === 'paid') entry.paidPayments++;
-      }
-    });
-
-    return Array.from(tripMap.values()).map((entry) => ({
-      tripId: entry.tripId,
-      tripTitle: entry.tripTitle,
-      tripDeparture: entry.tripDeparture,
-      participantCount: entry.participants.size,
-      totalPLN: entry.totalPLN,
-      paidPLN: entry.paidPLN,
-      missingPLN: entry.totalPLN - entry.paidPLN,
-      totalEUR: entry.totalEUR,
-      paidEUR: entry.paidEUR,
-      missingEUR: entry.totalEUR - entry.paidEUR,
-      totalPayments: entry.totalPayments,
-      paidPayments: entry.paidPayments,
-      pct: entry.totalPayments > 0
-        ? Math.round((entry.paidPayments / entry.totalPayments) * 100)
-        : 0,
-    }));
-  }, [payments]);
+  // Dane są już zagregowane per wyjazd po stronie bazy (widok admin_finance_summary).
+  const tripSummaries = summaries;
 
   // Totals
   const totals = useMemo(() => ({
@@ -155,7 +71,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
     }
   }
 
-  function SortIcon({ field }: { field: keyof TripSummary }) {
+  function sortIcon(field: keyof TripSummary) {
     if (sortField !== field) return <ChevronDown className="h-3 w-3 text-gray-300" />;
     return sortDir === 'asc'
       ? <ChevronUp className="h-3 w-3 text-gray-500" />
@@ -211,7 +127,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
               placeholder="Szukaj wyjazdu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+              className="w-full h-11 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
             />
             {searchQuery && (
               <button
@@ -233,7 +149,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('tripTitle')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600"
                   >
-                    Wyjazd <SortIcon field="tripTitle" />
+                    Wyjazd {sortIcon('tripTitle')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-center">
@@ -241,7 +157,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('tripDeparture')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 mx-auto"
                   >
-                    Data wyjazdu <SortIcon field="tripDeparture" />
+                    Data wyjazdu {sortIcon('tripDeparture')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-center">
@@ -249,7 +165,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('participantCount')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 mx-auto"
                   >
-                    Uczest. <SortIcon field="participantCount" />
+                    Uczest. {sortIcon('participantCount')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -257,7 +173,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('totalPLN')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 ml-auto"
                   >
-                    Do zapłaty PLN <SortIcon field="totalPLN" />
+                    Do zapłaty PLN {sortIcon('totalPLN')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -265,7 +181,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('paidPLN')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 ml-auto"
                   >
-                    Zebrano PLN <SortIcon field="paidPLN" />
+                    Zebrano PLN {sortIcon('paidPLN')}
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
@@ -273,7 +189,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('missingPLN')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 ml-auto"
                   >
-                    Brakuje PLN <SortIcon field="missingPLN" />
+                    Brakuje PLN {sortIcon('missingPLN')}
                   </button>
                 </th>
                 {totals.totalEUR > 0 && (
@@ -300,7 +216,7 @@ export function FinanceSummary({ payments }: FinanceSummaryProps) {
                     onClick={() => toggleSort('pct')}
                     className="flex items-center gap-1 text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-600 mx-auto"
                   >
-                    % opłac. <SortIcon field="pct" />
+                    % opłac. {sortIcon('pct')}
                   </button>
                 </th>
                 <th className="px-5 py-3 text-right">

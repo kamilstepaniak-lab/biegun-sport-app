@@ -238,7 +238,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
         {/* Dane do przelewu — specyficzne dla rodzica */}
         {eligibleChildren.length > 0 && (
           <div className="md:col-span-2">
-            <PaymentInfoCard trip={trip} children={eligibleChildren} />
+            <PaymentInfoCard trip={trip} participants={eligibleChildren} />
           </div>
         )}
 

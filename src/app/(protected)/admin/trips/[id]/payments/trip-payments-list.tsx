@@ -10,10 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PaymentWithDetails } from '@/types';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
+import { PaymentDue } from '@/components/shared/payment-due';
 
 interface TripPaymentsListProps {
   payments: PaymentWithDetails[];
   tripTitle: string;
+}
+
+// Efektywny termin płatności — jedno źródło prawdy (zob. resolveEffectiveDueDate).
+function effectiveDueDate(p: PaymentWithDetails): string | null {
+  const tmpl = p.template as { due_days_from_confirmation?: number | null } | null;
+  const reg = p.registration as { confirmed_at?: string | null } | null;
+  return resolveEffectiveDueDate({
+    paymentDueDate: p.due_date,
+    dueDaysFromConfirmation: tmpl?.due_days_from_confirmation,
+    confirmedAt: reg?.confirmed_at,
+  });
 }
 
 const statusLabels: Record<string, string> = {
@@ -44,6 +57,28 @@ const methodBadge = (method: string | null) => {
   return { label: '—', className: 'text-gray-400' };
 };
 
+// Sumuj kwoty osobno per waluta — wyjazd może mieć płatności w PLN i EUR naraz.
+function sumByCurrency(
+  payments: PaymentWithDetails[],
+  pick: (p: PaymentWithDetails) => number
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const p of payments) {
+    map.set(p.currency, (map.get(p.currency) ?? 0) + pick(p));
+  }
+  return map;
+}
+
+// "12000 PLN  +  450 EUR" — nie sumuje różnych walut do jednej liczby.
+function formatByCurrency(map: Map<string, number>): string {
+  const entries = [...map.entries()].filter(([, v]) => Math.round(v) !== 0);
+  if (entries.length === 0) return '0 PLN';
+  return entries
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([cur, v]) => `${v.toFixed(0)} ${cur}`)
+    .join('  +  ');
+}
+
 function exportToCSV(payments: PaymentWithDetails[], tripTitle: string) {
   const headers = [
     'Nazwisko',
@@ -72,7 +107,8 @@ function exportToCSV(payments: PaymentWithDetails[], tripTitle: string) {
     const amountPaid = (p.amount_paid ?? 0).toFixed(2);
     const amountRemaining = (p.amount - (p.amount_paid ?? 0)).toFixed(2);
     const status = statusLabels[p.status] ?? p.status;
-    const dueDate = p.due_date ? format(new Date(p.due_date), 'dd.MM.yyyy') : '—';
+    const resolvedDue = effectiveDueDate(p);
+    const dueDate = resolvedDue ? format(new Date(resolvedDue), 'dd.MM.yyyy') : '—';
     const method = methodBadge(p.payment_method_used ?? null).label;
     const paidAt = p.paid_at ? format(new Date(p.paid_at), 'dd.MM.yyyy') : '—';
     const notes = p.admin_notes ?? '—';
@@ -100,12 +136,17 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
   const [search, setSearch] = useState('');
 
   const stats = useMemo(() => {
-    const total = payments.reduce((s, p) => s + p.amount, 0);
-    const paid = payments.reduce((s, p) => s + (p.amount_paid ?? 0), 0);
-    const remaining = total - paid;
+    const totalByCur = sumByCurrency(payments, (p) => p.amount);
+    const paidByCur = sumByCurrency(payments, (p) => p.amount_paid ?? 0);
+    const remainingByCur = sumByCurrency(payments, (p) => p.amount - (p.amount_paid ?? 0));
     const countPaid = payments.filter((p) => p.status === 'paid').length;
-    const countOverdue = payments.filter((p) => p.status === 'overdue' || p.status === 'partially_paid_overdue').length;
-    return { total, paid, remaining, countPaid, countOverdue };
+    // Status 'overdue' w bazie bywa nieaktualny — liczymy po terminie z due_date.
+    const now = new Date();
+    const countOverdue = payments.filter((p) => {
+      if (p.status === 'paid' || !p.due_date) return false;
+      return new Date(p.due_date) < now;
+    }).length;
+    return { totalByCur, paidByCur, remainingByCur, countPaid, countOverdue };
   }, [payments]);
 
   const filtered = useMemo(() => {
@@ -142,7 +183,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                 <CreditCard className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-xl font-bold">{stats.total.toFixed(0)} PLN</p>
+                <p className="text-xl font-bold">{formatByCurrency(stats.totalByCur)}</p>
                 <p className="text-xs text-muted-foreground">Do zapłaty łącznie</p>
               </div>
             </div>
@@ -155,7 +196,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                 <CheckCircle className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-green-700">{stats.paid.toFixed(0)} PLN</p>
+                <p className="text-xl font-bold text-green-700">{formatByCurrency(stats.paidByCur)}</p>
                 <p className="text-xs text-muted-foreground">Wpłacono ({stats.countPaid} opłaconych)</p>
               </div>
             </div>
@@ -168,7 +209,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                 <Clock className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-amber-700">{stats.remaining.toFixed(0)} PLN</p>
+                <p className="text-xl font-bold text-amber-700">{formatByCurrency(stats.remainingByCur)}</p>
                 <p className="text-xs text-muted-foreground">Pozostało do zapłaty</p>
               </div>
             </div>
@@ -200,7 +241,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                 placeholder="Szukaj po nazwisku..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-48 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="h-11 w-48 rounded-md border border-input bg-background px-3 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
               <Button
                 size="sm"
@@ -258,28 +299,14 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                             {statusLabels[p.status] ?? p.status}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-gray-600 text-xs">
-                          {p.due_date ? (
-                            (() => {
-                              const dueDate = new Date(p.due_date);
-                              const overdue = dueDate < new Date();
-                              return (
-                                <div className="flex flex-col gap-0.5">
-                                  <span className={overdue && p.status !== 'paid' ? 'text-red-600 font-semibold' : ''}>
-                                    {format(dueDate, 'd MMM yyyy', { locale: pl })}
-                                  </span>
-                                  {overdue && p.status !== 'paid' && (
-                                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600">
-                                      <AlertTriangle className="h-3 w-3" />
-                                      PO TERMINIE
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            '—'
-                          )}
+                        <td className="py-2.5 px-3 text-xs">
+                          <PaymentDue
+                            paymentDueDate={p.due_date}
+                            dueDaysFromConfirmation={(p.template as { due_days_from_confirmation?: number | null } | null)?.due_days_from_confirmation}
+                            confirmedAt={(p.registration as { confirmed_at?: string | null } | null)?.confirmed_at}
+                            departureDate={(p.registration as { trip?: { departure_datetime?: string | null } | null } | null)?.trip?.departure_datetime}
+                            status={p.status}
+                          />
                         </td>
                         <td className="py-2.5 px-3 text-xs">
                           {(() => { const m = methodBadge(p.payment_method_used ?? null); return m.label === '—' ? <span className="text-gray-400">—</span> : <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md font-medium ${m.className}`}>{m.label}</span>; })()}

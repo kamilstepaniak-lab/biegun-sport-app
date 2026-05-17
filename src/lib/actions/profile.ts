@@ -181,3 +181,66 @@ export async function getProfileById(id: string): Promise<Profile | null> {
 
   return profile;
 }
+
+// ── RODO art. 15 i 20 — eksport danych osobowych rodzica i jego dzieci ──────
+// Zapytania idą przez klienta usera (RLS) — zwracają wyłącznie dane rodzica.
+export async function exportMyData(): Promise<{ data?: unknown; error?: string }> {
+  const { supabase, user } = await getAuthUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  const { data: children } = await supabase
+    .from('participants')
+    .select(`
+      *,
+      participant_groups ( group:groups ( name ) ),
+      participant_custom_fields ( field_name, field_value )
+    `)
+    .eq('parent_id', user.id);
+
+  const childIds = (children ?? []).map((c: { id: string }) => c.id);
+
+  const { data: registrations } = childIds.length
+    ? await supabase
+        .from('trip_registrations')
+        .select(`
+          *,
+          trip:trips ( title, departure_datetime, return_datetime ),
+          participant:participants ( first_name, last_name )
+        `)
+        .in('participant_id', childIds)
+    : { data: [] };
+
+  const regIds = (registrations ?? []).map((r: { id: string }) => r.id);
+
+  const { data: payments } = regIds.length
+    ? await supabase
+        .from('payments')
+        .select('*, transactions:payment_transactions ( * )')
+        .in('registration_id', regIds)
+    : { data: [] };
+
+  const { data: contracts } = childIds.length
+    ? await supabase.from('trip_contracts').select('*').in('participant_id', childIds)
+    : { data: [] };
+
+  return {
+    data: {
+      _informacja:
+        'Eksport danych osobowych z systemu BiegunSport, zgodnie z art. 15 i 20 RODO. ' +
+        'Plik zawiera dane konta oraz dane dzieci powiązanych z tym kontem.',
+      _administrator: 'BiegunSport – Stepaniak & Biegun Sp. J., ul. Grochowa 26C, 30-731 Kraków',
+      _wygenerowano: new Date().toISOString(),
+      konto: profile,
+      dzieci: children ?? [],
+      zapisy_na_wyjazdy: registrations ?? [],
+      platnosci: payments ?? [],
+      umowy: contracts ?? [],
+    },
+  };
+}

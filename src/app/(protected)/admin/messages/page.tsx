@@ -26,7 +26,7 @@ export default async function AdminMessagesPage() {
             Nowa wiadomość
           </CardTitle>
           <CardDescription>
-            Wiadomość będzie widoczna dla wszystkich zalogowanych rodziców w panelu „Moje dzieci".
+            Wiadomość będzie widoczna dla wszystkich zalogowanych rodziców w panelu „Moje dzieci&rdquo;.
           </CardDescription>
         </CardHeader>
         <CardContent>

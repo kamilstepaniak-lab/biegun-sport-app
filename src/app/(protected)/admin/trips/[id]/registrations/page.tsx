@@ -32,7 +32,7 @@ export default async function TripRegistrationsPage({ params }: TripRegistration
         homeHref="/admin/groups"
         items={[
           { label: 'Wyjazdy', href: '/admin/trips' },
-          { label: trip.title, href: `/admin/trips/${id}` },
+          { label: trip.title },
           { label: 'Zapisani' },
         ]}
       />
@@ -42,7 +42,7 @@ export default async function TripRegistrationsPage({ params }: TripRegistration
         description={`Jadą: ${confirmedCount} | Nie jadą: ${notGoingCount} | Niepotwierdzeni: ${unconfirmedCount}`}
       >
         <Button variant="outline" asChild>
-          <Link href={`/admin/trips/${id}`}>
+          <Link href="/admin/trips">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Powrót
           </Link>

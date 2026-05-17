@@ -6,6 +6,12 @@ import { sendPaymentReminderEmail } from '@/lib/email';
 // Wysyła przypomnienie do rodziców gdy do terminu płatności zostały 3 dni
 // a płatność nadal nie jest opłacona
 
+// Wydłużony limit czasu funkcji — wysyłka maili przez SMTP bywa wolna,
+// przy szczycie (wiele płatności z tym samym terminem) sekwencyjna pętla
+// mogłaby przekroczyć domyślny timeout.
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Weryfikacja sekretu — chroni endpoint przed nieautoryzowanym wywołaniem
   const authHeader = request.headers.get('authorization');
@@ -25,8 +31,8 @@ export async function GET(request: NextRequest) {
   const todayStr = today.toISOString().split('T')[0];
   const in3daysStr = in3days.toISOString().split('T')[0];
 
-  // Znajdź wszystkie nieopłacone płatności (zarówno ze stałą datą jak i terminem
-  // liczonym od potwierdzenia uczestnictwa) — filtrowanie do "za 3 dni" robimy w pamięci.
+  // Pobierz tylko nieopłacone płatności z terminem dokładnie za 3 dni —
+  // filtrowanie po due_date robi baza (zamiast ściągać wszystkie nieopłacone).
   const { data: payments, error } = await supabase
     .from('payments')
     .select(`
@@ -40,7 +46,8 @@ export async function GET(request: NextRequest) {
         trip:trips (title)
       )
     `)
-    .in('status', ['pending', 'partially_paid', 'overdue', 'partially_paid_overdue']);
+    .in('status', ['pending', 'partially_paid', 'overdue', 'partially_paid_overdue'])
+    .eq('due_date', in3daysStr);
 
   if (error) {
     console.error('Cron payment-reminders: DB error', error);

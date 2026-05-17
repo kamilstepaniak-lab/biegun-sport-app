@@ -158,7 +158,14 @@ export async function getParticipantFull(id: string): Promise<ParticipantFull | 
   return result as ParticipantFull;
 }
 
-export async function createParticipant(formData: ParticipantInput & { custom_fields?: Record<string, string> }) {
+export async function createParticipant(
+  formData: ParticipantInput & {
+    parent_notes_health?: string;
+    parent_notes_food?: string;
+    parent_notes_accommodation?: string;
+    parent_notes_additional?: string;
+  }
+) {
   const { supabase, user } = await getAuthUser();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
@@ -171,7 +178,7 @@ export async function createParticipant(formData: ParticipantInput & { custom_fi
   }
 
   const { first_name, last_name, birth_date, height_cm, group_id } = result.data;
-  const { custom_fields } = formData;
+  const { parent_notes_health, parent_notes_food, parent_notes_accommodation, parent_notes_additional } = formData;
 
   // Utwórz uczestnika
   const { data: participant, error: participantError } = await supabase
@@ -182,6 +189,10 @@ export async function createParticipant(formData: ParticipantInput & { custom_fi
       last_name,
       birth_date,
       height_cm: height_cm || null,
+      parent_notes_health: parent_notes_health || null,
+      parent_notes_food: parent_notes_food || null,
+      parent_notes_accommodation: parent_notes_accommodation || null,
+      parent_notes_additional: parent_notes_additional || null,
     })
     .select()
     .single();
@@ -207,23 +218,6 @@ export async function createParticipant(formData: ParticipantInput & { custom_fi
     }
   }
 
-  // Zapisz custom fields
-  if (custom_fields && Object.keys(custom_fields).length > 0) {
-    const customFieldsData = Object.entries(custom_fields).map(([field_name, field_value]) => ({
-      participant_id: participant.id,
-      field_name,
-      field_value,
-    }));
-
-    const { error: customFieldsError } = await supabase
-      .from('participant_custom_fields')
-      .insert(customFieldsData);
-
-    if (customFieldsError) {
-      console.error('Custom fields error:', customFieldsError);
-    }
-  }
-
   revalidatePath('/parent/children');
   revalidatePath('/admin/participants');
   return { success: true, data: participant };
@@ -232,7 +226,6 @@ export async function createParticipant(formData: ParticipantInput & { custom_fi
 export async function updateParticipant(
   id: string,
   formData: ParticipantInput & {
-    custom_fields?: Record<string, string>;
     parent_notes_health?: string;
     parent_notes_food?: string;
     parent_notes_accommodation?: string;
@@ -251,7 +244,7 @@ export async function updateParticipant(
   }
 
   const { first_name, last_name, birth_date, height_cm, group_id } = result.data;
-  const { custom_fields, parent_notes_health, parent_notes_food, parent_notes_accommodation, parent_notes_additional } = formData;
+  const { parent_notes_health, parent_notes_food, parent_notes_accommodation, parent_notes_additional } = formData;
 
   // Aktualizuj uczestnika
   let updateQuery = supabase
@@ -281,49 +274,38 @@ export async function updateParticipant(
     return { error: 'Nie udało się zaktualizować danych dziecka' };
   }
 
-  // Aktualizuj grupę
-  // Najpierw usuń istniejące przypisanie
-  const { error: deleteError } = await supabase
+  // Aktualizuj grupę tylko jeśli faktycznie się zmieniła —
+  // unika niepotrzebnego usuwania i utraty przypisania przy braku zmian
+  const { data: currentAssignment } = await supabase
     .from('participant_groups')
-    .delete()
-    .eq('participant_id', id);
+    .select('group_id')
+    .eq('participant_id', id)
+    .maybeSingle();
 
-  // Przypisz nową grupę jeśli wybrana
-  if (group_id) {
-    const { error: groupError } = await supabase
-      .from('participant_groups')
-      .insert({
-        participant_id: id,
-        group_id,
-        assigned_by: user.id,
-      })
-      .select();
+  const currentGroupId = currentAssignment?.group_id ?? null;
+  const newGroupId = group_id ?? null;
 
-    if (groupError) {
-      console.error('Group assignment error:', groupError);
-      return { error: 'Nie udało się przypisać do grupy: ' + groupError.message };
-    }
-  }
-
-  // Aktualizuj custom fields
-  if (custom_fields) {
-    // Usuń istniejące
-    await supabase
-      .from('participant_custom_fields')
-      .delete()
-      .eq('participant_id', id);
-
-    // Dodaj nowe
-    if (Object.keys(custom_fields).length > 0) {
-      const customFieldsData = Object.entries(custom_fields).map(([field_name, field_value]) => ({
-        participant_id: id,
-        field_name,
-        field_value,
-      }));
-
+  if (currentGroupId !== newGroupId) {
+    if (currentAssignment) {
       await supabase
-        .from('participant_custom_fields')
-        .insert(customFieldsData);
+        .from('participant_groups')
+        .delete()
+        .eq('participant_id', id);
+    }
+
+    if (newGroupId) {
+      const { error: groupError } = await supabase
+        .from('participant_groups')
+        .insert({
+          participant_id: id,
+          group_id: newGroupId,
+          assigned_by: user.id,
+        });
+
+      if (groupError) {
+        console.error('Group assignment error:', groupError);
+        return { error: 'Nie udało się przypisać do grupy: ' + groupError.message };
+      }
     }
   }
 

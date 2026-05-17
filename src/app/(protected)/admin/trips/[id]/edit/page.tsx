@@ -23,7 +23,7 @@ export default async function EditTripPage({ params }: EditTripPageProps) {
         homeHref="/admin/groups"
         items={[
           { label: 'Wyjazdy', href: '/admin/trips' },
-          { label: trip.title, href: `/admin/trips/${id}` },
+          { label: trip.title },
           { label: 'Edycja' },
         ]}
       />

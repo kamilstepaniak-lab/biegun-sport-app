@@ -34,7 +34,7 @@ export default async function TripContractsPage({ params }: PageProps) {
         homeHref="/admin/groups"
         items={[
           { label: 'Wyjazdy', href: '/admin/trips' },
-          { label: trip.title, href: `/admin/trips/${id}` },
+          { label: trip.title },
           { label: 'Umowy' },
         ]}
       />
@@ -44,7 +44,7 @@ export default async function TripContractsPage({ params }: PageProps) {
         description={`${trip.title} — ${contracts.length} umów`}
       >
         <Button variant="outline" asChild>
-          <Link href={`/admin/trips/${id}`}>
+          <Link href="/admin/trips">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Powrót
           </Link>

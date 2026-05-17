@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Clock,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,7 +40,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { EmptyState } from '@/components/shared';
 import { saveChildToStorage } from './child-url-sync';
 
 const STORAGE_KEY = 'biegun_selected_child';
@@ -49,9 +49,10 @@ import { getMessagesForParent, markMessageRead, type AppMessage } from '@/lib/ac
 import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
+import { PaymentDue } from '@/components/shared/payment-due';
 
 interface ChildrenListProps {
-  children: ParticipantWithGroup[];
+  participants: ParticipantWithGroup[];
 }
 
 interface DeleteDialogState {
@@ -68,9 +69,22 @@ interface DeleteDialogState {
 
 const avatarColors = [
   { bg: 'bg-blue-100', text: 'text-blue-700' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  { bg: 'bg-amber-100', text: 'text-amber-700' },
+  { bg: 'bg-violet-100', text: 'text-violet-700' },
+  { bg: 'bg-rose-100', text: 'text-rose-700' },
+  { bg: 'bg-cyan-100', text: 'text-cyan-700' },
 ];
 
-export function ChildrenList({ children }: ChildrenListProps) {
+function pluralizeTrips(n: number): string {
+  if (n === 1) return 'wyjazd';
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'wyjazdy';
+  return 'wyjazdów';
+}
+
+export function ChildrenList({ participants }: ChildrenListProps) {
   const router = useRouter();
   const [selectedChildId, setSelectedChildId] = useState<string>('all');
   const [messages, setMessages] = useState<AppMessage[]>([]);
@@ -78,6 +92,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [expandedMessage, setExpandedMessage] = useState<AppMessage | null>(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
 
   // useLayoutEffect — runs before browser paints, eliminates CLS from 'all' → child switch
   useLayoutEffect(() => {
@@ -122,16 +137,23 @@ export function ChildrenList({ children }: ChildrenListProps) {
 
   async function handleDeleteClick(e: React.MouseEvent, childId: string) {
     e.stopPropagation();
-    const child = children.find((c) => c.id === childId);
-    if (!child) return;
-    const registrations = await getParticipantRegistrations(childId);
-    setDeleteDialog({
-      isOpen: true,
-      childId,
-      childName: `${child.first_name} ${child.last_name}`,
-      registrations: registrations as DeleteDialogState['registrations'],
-      isLoading: false,
-    });
+    const child = participants.find((c) => c.id === childId);
+    if (!child || deleteLoadingId) return;
+    setDeleteLoadingId(childId);
+    try {
+      const registrations = await getParticipantRegistrations(childId);
+      setDeleteDialog({
+        isOpen: true,
+        childId,
+        childName: `${child.first_name} ${child.last_name}`,
+        registrations: registrations as DeleteDialogState['registrations'],
+        isLoading: false,
+      });
+    } catch {
+      toast.error('Nie udało się pobrać danych dziecka');
+    } finally {
+      setDeleteLoadingId(null);
+    }
   }
 
   async function handleDeleteConfirm() {
@@ -179,7 +201,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
     );
   }
 
-  if (children.length === 0) {
+  if (participants.length === 0) {
     return (
       <div className="max-w-lg mx-auto mt-12 text-center space-y-6">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white mx-auto">
@@ -216,7 +238,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
     r.payments.some((p) => p.status !== 'paid' && p.status !== 'cancelled')
   );
 
-  const selectedChild = children.find((c) => c.id === selectedChildId);
+  const selectedChild = participants.find((c) => c.id === selectedChildId);
   const unreadCount = messages.filter((m) => !m.is_read).length;
   const isAll = selectedChildId === 'all';
 
@@ -301,11 +323,11 @@ export function ChildrenList({ children }: ChildrenListProps) {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-gray-400 mt-0.5">Widok zbiorczy wszystkich dzieci</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Wybierz dziecko, aby zobaczyć jego wyjazdy i płatności</p>
               </div>
             </div>
 
-            {children.map((child, index) => {
+            {participants.map((child, index) => {
               const birthDate = new Date(child.birth_date);
               const age = differenceInYears(new Date(), birthDate);
               const isSelected = selectedChildId === child.id;
@@ -356,10 +378,15 @@ export function ChildrenList({ children }: ChildrenListProps) {
                           {child.height_cm} cm
                         </span>
                       )}
-                      {child.group && (
+                      {child.group ? (
                         <span className="flex items-center gap-1">
                           <Users className="h-2.5 w-2.5" />
                           {child.group.name}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-amber-600">
+                          <AlertCircle className="h-2.5 w-2.5" />
+                          Brak grupy
                         </span>
                       )}
                     </div>
@@ -374,9 +401,15 @@ export function ChildrenList({ children }: ChildrenListProps) {
                     </Link>
                     <button
                       onClick={(e) => handleDeleteClick(e, child.id)}
-                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors"
+                      disabled={deleteLoadingId === child.id}
+                      aria-label={`Usuń ${child.first_name} ${child.last_name}`}
+                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors disabled:opacity-60"
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                      {deleteLoadingId === child.id ? (
+                        <Loader2 className="h-3.5 w-3.5 text-gray-400 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -386,7 +419,7 @@ export function ChildrenList({ children }: ChildrenListProps) {
 
           {!isAll && (
             <div className="px-5 py-3 border-t border-gray-50">
-              <p className="text-xs text-gray-400 text-center">Kliknij ponownie aby wrócić do widoku zbiorczego</p>
+              <p className="text-xs text-gray-400 text-center">Kliknij ponownie, aby odznaczyć dziecko</p>
             </div>
           )}
         </div>
@@ -656,9 +689,12 @@ export function ChildrenList({ children }: ChildrenListProps) {
                               <p className="text-sm font-medium text-gray-800 truncate">
                                 {p.trip_title || 'Płatność'}
                               </p>
-                              <p className="text-[11px] text-red-500 mt-0.5">
-                                {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : ''}
-                                {p.daysOverdue > 0 && ` · ${p.daysOverdue}d po term.`}
+                              <p className="mt-0.5">
+                                <PaymentDue
+                                  paymentDueDate={p.effective_due_date || p.due_date}
+                                  status={p.status}
+                                  className="text-[11px]"
+                                />
                               </p>
                             </div>
                           </div>
@@ -694,13 +730,12 @@ export function ChildrenList({ children }: ChildrenListProps) {
                               <p className="text-sm font-medium text-gray-800 truncate">
                                 {p.trip_title || 'Płatność'}
                               </p>
-                              <p className="text-[11px] text-gray-400 mt-0.5">
-                                {(p.effective_due_date || p.due_date) ? format(new Date((p.effective_due_date || p.due_date)!), 'd MMM yyyy', { locale: pl }) : 'Brak terminu'}
-                                {p.daysUntilDue !== null && p.daysUntilDue >= 0 && (
-                                  <span className="text-blue-400">
-                                    {p.daysUntilDue === 0 ? ' · dziś!' : p.daysUntilDue === 1 ? ' · jutro' : ` · za ${p.daysUntilDue}d`}
-                                  </span>
-                                )}
+                              <p className="mt-0.5">
+                                <PaymentDue
+                                  paymentDueDate={p.effective_due_date || p.due_date}
+                                  status={p.status}
+                                  className="text-[11px]"
+                                />
                               </p>
                             </div>
                           </div>
@@ -764,7 +799,8 @@ export function ChildrenList({ children }: ChildrenListProps) {
                     <AlertTitle>UWAGA</AlertTitle>
                     <AlertDescription>
                       <p className="mb-2">
-                        Dziecko jest zapisane na {deleteDialog.registrations.length} wyjazdy:
+                        Dziecko jest zapisane na {deleteDialog.registrations.length}{' '}
+                        {pluralizeTrips(deleteDialog.registrations.length)}:
                       </p>
                       <ul className="list-disc list-inside space-y-1">
                         {deleteDialog.registrations.map((r) => (

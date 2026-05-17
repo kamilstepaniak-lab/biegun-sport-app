@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ChevronLeft,
@@ -104,7 +104,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const LogoBlock = ({ collapsed }: { collapsed?: boolean }) => (
+  const renderLogo = (collapsed?: boolean) => (
     collapsed ? (
       <div className="flex justify-center">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden flex-shrink-0">
@@ -133,10 +133,15 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
             <Menu className="h-5 w-5" />
           </button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-72 bg-white border-r border-gray-100">
+        <SheetContent
+          side="left"
+          className="p-0 w-72 bg-white border-r border-gray-100"
+          aria-describedby={undefined}
+        >
+          <SheetTitle className="sr-only">Menu nawigacyjne</SheetTitle>
           <div className="flex flex-col h-full">
             <div className="px-5 pt-6 pb-4 border-b border-gray-50">
-              <LogoBlock />
+              {renderLogo()}
             </div>
             <ScrollArea className="flex-1 px-3 py-3">
               <nav className="space-y-0.5">
@@ -162,7 +167,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
           'border-b border-gray-50 flex items-center',
           isCollapsed ? 'px-3 py-5 justify-center' : 'px-4 py-5'
         )}>
-          <LogoBlock collapsed={isCollapsed} />
+          {renderLogo(isCollapsed)}
         </div>
 
         {/* Nav items */}

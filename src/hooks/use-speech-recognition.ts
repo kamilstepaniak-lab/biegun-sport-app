@@ -26,8 +26,9 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // Check support after mount (client-side only)
+  // Wykrycie wsparcia API po montażu (tylko klient) — inaczej hydration mismatch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSupported(!!getSpeechRecognitionAPI());
   }, []);
 

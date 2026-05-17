@@ -1,10 +1,7 @@
 import { PageHeader, Breadcrumbs } from '@/components/shared';
-import { getTripsImportBuffer } from '@/lib/actions/trips-import';
 import { TripsImportClient } from './trips-import-client';
 
-export default async function TripsImportPage() {
-  const { data: records, error } = await getTripsImportBuffer();
-
+export default function TripsImportPage() {
   return (
     <div className="space-y-6">
       <Breadcrumbs
@@ -17,16 +14,10 @@ export default async function TripsImportPage() {
 
       <PageHeader
         title="Import wyjazdów"
-        description="Zaimportuj wyjazdy z tabeli trips_import_buffer w Supabase"
+        description="Wgraj plik CSV, aby dodać wiele wyjazdów naraz"
       />
 
-      {error ? (
-        <div className="p-4 bg-destructive/10 rounded-lg text-destructive">
-          Błąd: {error}
-        </div>
-      ) : (
-        <TripsImportClient records={records} />
-      )}
+      <TripsImportClient />
     </div>
   );
 }

@@ -75,7 +75,7 @@ export function ParentAccountsManager() {
           {/* Resetuj hasła */}
           <div className="flex-1 min-w-[220px] bg-amber-50 rounded-xl p-4 space-y-2">
             <p className="text-sm font-medium text-amber-900">Resetuj hasła</p>
-            <p className="text-xs text-amber-700">Ustawia hasło "biegunsport" dla wszystkich rodziców którzy już mają konto.</p>
+            <p className="text-xs text-amber-700">Ustawia hasło &quot;biegunsport&quot; dla wszystkich rodziców którzy już mają konto.</p>
             <button
               onClick={handleReset}
               disabled={isLoading}
