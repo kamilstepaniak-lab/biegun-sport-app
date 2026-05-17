@@ -3,9 +3,20 @@
 import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '@/lib/validations/auth';
 import { sendWelcomeEmail } from '@/lib/email';
+import { getLoginBlockMinutes, recordLoginFailure, clearLoginFailures } from '@/lib/rate-limit';
+
+async function getClientIp(): Promise<string> {
+  const hdrs = await headers();
+  return (
+    hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    hdrs.get('x-real-ip')?.trim() ||
+    'unknown'
+  );
+}
 
 export async function login(formData: LoginInput) {
   const supabase = await createClient();
@@ -18,18 +29,29 @@ export async function login(formData: LoginInput) {
 
   const { email, password } = result.data;
 
+  // Ochrona przed brute-force — blokada po zbyt wielu nieudanych próbach
+  const ip = await getClientIp();
+  const blockMinutes = getLoginBlockMinutes(ip);
+  if (blockMinutes > 0) {
+    return {
+      error: `Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za ${blockMinutes} min.`,
+    };
+  }
+
   const { data: signInData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
+    recordLoginFailure(ip);
     if (error.message === 'Invalid login credentials') {
       return { error: 'Nieprawidłowy email lub hasło' };
     }
     return { error: error.message };
   }
 
+  clearLoginFailures(ip);
   revalidatePath('/', 'layout');
 
   const role = signInData?.user?.app_metadata?.role as string | undefined;
@@ -200,6 +222,10 @@ export async function resetPassword(email: string) {
 }
 
 export async function updatePassword(newPassword: string) {
+  if (!newPassword || newPassword.length < 8) {
+    return { error: 'Hasło musi mieć minimum 8 znaków' };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.auth.updateUser({

@@ -19,7 +19,7 @@ export const registerSchema = z.object({
   password: z
     .string()
     .min(1, 'Hasło jest wymagane')
-    .min(6, 'Hasło musi mieć minimum 6 znaków')
+    .min(8, 'Hasło musi mieć minimum 8 znaków')
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       'Hasło musi zawierać małą literę, wielką literę i cyfrę'

@@ -27,8 +27,8 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
     setError(null);
 
-    if (password.length < 6) {
-      setError('Hasło musi mieć co najmniej 6 znaków');
+    if (password.length < 8) {
+      setError('Hasło musi mieć co najmniej 8 znaków');
       setIsLoading(false);
       return;
     }
