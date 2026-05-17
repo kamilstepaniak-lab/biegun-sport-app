@@ -308,7 +308,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
                       {/* Przycisk Szczegóły */}
                       <td className="px-4 py-3.5 text-right align-top">
                         <Link
-                          href={`/admin/trips/${trip.id}`}
+                          href="/admin/trips"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors"
                         >
                           Szczegóły
@@ -402,7 +402,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
                         <HoverCard key={trip.id} openDelay={100} closeDelay={100}>
                           <HoverCardTrigger asChild>
                             <Link
-                              href={`/admin/trips/${trip.id}`}
+                              href="/admin/trips"
                               className={cn(
                                 'block text-xs px-1 py-0.5 truncate cursor-pointer transition-opacity hover:opacity-80',
                                 groupColor?.bg || 'bg-gray-100',
@@ -521,7 +521,7 @@ function TripTooltipContent({ trip }: { trip: TripWithPaymentTemplates }) {
 
       <div className="pt-2 border-t border-gray-100">
         <Link
-          href={`/admin/trips/${trip.id}`}
+          href="/admin/trips"
           className="flex items-center justify-center gap-1.5 w-full py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
         >
           Szczegóły wyjazdu

@@ -13,18 +13,14 @@ import {
   Users,
   Edit,
   UserCheck,
-  MapPin,
   Banknote,
   Receipt,
   Copy,
   Trash2,
   CopyPlus,
   Loader2,
-  Mail,
-  FileText,
   Backpack,
   Info,
-  LayoutDashboard,
   ArrowRight,
   ArrowLeft,
 } from 'lucide-react';
@@ -50,6 +46,7 @@ import {
 import { deleteTrip, duplicateTrip } from '@/lib/actions/trips';
 import { TripMessageGenerator } from '@/components/admin/trip-message-generator';
 import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
+import { SanitizedHtml } from '@/components/shared';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
 import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
@@ -121,6 +118,371 @@ function groupTripsByMonth(trips: TripWithPaymentTemplates[]) {
 // Czas inicjalizacji modułu — używamy jako stałej referencji żeby useMemo nie re-kalkulował przy każdym render
 const MODULE_LOAD_TIME = new Date();
 
+interface TripBlockProps {
+  trip: TripWithPaymentTemplates;
+  isOpen: boolean;
+  isSelected: boolean;
+  onToggle: () => void;
+  onToggleSelect: (e: React.MouseEvent) => void;
+  contractTemplate: { is_active: boolean; template_text: string } | null;
+}
+
+// Komponent na poziomie modułu — NIE definiujemy go wewnątrz TripsList,
+// inaczej każdy render rodzica tworzy nowy typ komponentu i remountuje
+// wszystkie bloki wyjazdów (utrata animacji collapsible, zbędna praca).
+function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contractTemplate }: TripBlockProps) {
+  const departureDate = new Date(trip.departure_datetime);
+  const returnDate = new Date(trip.return_datetime);
+
+  return (
+    <Collapsible
+      open={isOpen}
+      onOpenChange={onToggle}
+    >
+      <div className={cn(
+        'bg-white rounded-2xl transition-all duration-200',
+        isOpen
+          ? 'shadow-lg ring-2 ring-blue-400'
+          : 'shadow-sm ring-1 ring-gray-100 hover:shadow-md',
+        isSelected && !isOpen && 'ring-2 ring-blue-400'
+      )}>
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between p-4 cursor-pointer">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div onClick={onToggleSelect}>
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={() => { }}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="font-semibold text-gray-900 text-base truncate">{trip.title}</h3>
+                  <span className={cn(
+                    'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium',
+                    statusStyles[trip.status]
+                  )}>
+                    {statusLabels[trip.status]}
+                  </span>
+                  {trip.attendance_type === 'mandatory' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700">
+                      Obowiązkowy
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                  {trip.groups.map((g) => {
+                    const colors = getGroupColor(g.name);
+                    return (
+                      <span key={g.id} className="flex items-center gap-1">
+                        <span className={cn('w-2 h-2 rounded-full', colors.dot)} />
+                        <span className="text-xs">{g.name}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <div className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                isOpen ? 'bg-gray-100' : 'bg-gray-50'
+              )}>
+                {isOpen ? (
+                  <ChevronUp className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                )}
+              </div>
+            </div>
+          </div>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="px-4 pb-4 space-y-4">
+            <div className="h-px bg-gray-100" />
+
+            {/* Wyjazd i powrót */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Calendar className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Wyjazd</h4>
+                </div>
+                <div className="bg-white rounded-xl p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                      </p>
+                    </div>
+                  </div>
+                  {trip.departure_stop2_location && (
+                    <div className="flex items-start gap-2">
+                      <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
+                        {trip.departure_stop2_datetime && (
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Calendar className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Powrót</h4>
+                </div>
+                <div className="bg-white rounded-xl p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                      </p>
+                    </div>
+                  </div>
+                  {trip.return_stop2_location && (
+                    <div className="flex items-start gap-2">
+                      <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
+                        {trip.return_stop2_datetime && (
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Opis */}
+            {trip.description && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <SanitizedHtml
+                  html={trip.description}
+                  className="rich-content text-sm text-gray-600 leading-relaxed"
+                />
+              </div>
+            )}
+
+            {/* Grupy */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100">
+                <Users className="h-3.5 w-3.5 text-gray-500" />
+              </div>
+              <span className="text-sm text-gray-500 mr-1">Grupy:</span>
+              {trip.groups.map((group) => {
+                const colors = getGroupColor(group.name);
+                return (
+                  <span
+                    key={group.id}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium border',
+                      colors.bg,
+                      colors.text,
+                      colors.border
+                    )}
+                  >
+                    <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
+                    {group.name}
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Cennik */}
+            {trip.payment_templates && trip.payment_templates.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Receipt className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
+                </div>
+                <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Typ</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Termin</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Forma</th>
+                        <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kwota</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {trip.payment_templates.map((template) => {
+                        const label = getTemplateLabel(template);
+                        const method = getMethodLabel(template.payment_method);
+
+                        return (
+                          <tr key={template.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <PaymentDue
+                                templateDueDate={template.due_date}
+                                dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                departureDate={trip.departure_datetime}
+                              />
+                            </td>
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>
+                                {method.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
+                              {template.amount.toFixed(0)} {template.currency}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Dane do przelewu */}
+            {(trip.bank_account_pln || trip.bank_account_eur) && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Banknote className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Dane do przelewu</h4>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {trip.bank_account_pln && (
+                    <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
+                        <p className="text-sm text-gray-900">{trip.bank_account_pln}</p>
+                      </div>
+                      <button
+                        className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(trip.bank_account_pln, 'Numer konta PLN');
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  {trip.bank_account_eur && (
+                    <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
+                        <p className="text-sm text-gray-900">{trip.bank_account_eur}</p>
+                      </div>
+                      <button
+                        className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(trip.bank_account_eur, 'Numer konta EUR');
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Co zabrać */}
+            {trip.packing_list && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Backpack className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
+                </div>
+                <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                  {trip.packing_list
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Dodatkowe informacje */}
+            {trip.additional_info && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Info className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
+                </div>
+                <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                  {trip.additional_info
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Przyciski akcji */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Link
+                href={`/admin/trips/${trip.id}/edit`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+              >
+                <Edit className="h-4 w-4" />
+                Edytuj
+              </Link>
+              <TripMessageGenerator trip={trip} compact />
+              <ContractTemplateEditor
+                tripId={trip.id}
+                initialTemplate={contractTemplate as TripContractTemplate | null}
+                defaultTemplateText={CONTRACT_TEMPLATE}
+                compact
+              />
+              <Link
+                href={`/admin/trips/${trip.id}/registrations`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
+              >
+                <UserCheck className="h-4 w-4" />
+                Zapisani
+              </Link>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
 export function TripsList({ trips, groups, contractTemplates }: TripsListProps) {
   const router = useRouter();
   const [groupFilter, setGroupFilter] = useState<string>('all');
@@ -129,7 +491,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [duplicatingTripId, setDuplicatingTripId] = useState<string | null>(null);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const now = MODULE_LOAD_TIME;
 
@@ -184,16 +546,20 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
     if (selectedTrips.size === 0) return;
 
     setIsDeleting(true);
+
+    // Równolegle — przy zaznaczeniu wielu wyjazdów nie czekamy sekwencyjnie
+    const results = await Promise.allSettled(
+      [...selectedTrips].map((tripId) => deleteTrip(tripId))
+    );
+
     let deletedCount = 0;
     let errorCount = 0;
-
-    for (const tripId of selectedTrips) {
-      const result = await deleteTrip(tripId);
-      if (result.error) {
-        errorCount++;
-        console.error('Delete trip error:', result.error);
-      } else {
+    for (const r of results) {
+      if (r.status === 'fulfilled' && !r.value.error) {
         deletedCount++;
+      } else {
+        errorCount++;
+        console.error('Delete trip error:', r.status === 'rejected' ? r.reason : r.value.error);
       }
     }
 
@@ -213,24 +579,25 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
   async function handleDuplicateSelected() {
     if (selectedTrips.size === 0) return;
 
+    setIsDuplicating(true);
+
+    // Równolegle — duplikowanie wielu wyjazdów naraz
+    const results = await Promise.allSettled(
+      [...selectedTrips].map((tripId) => duplicateTrip(tripId))
+    );
+
     let successCount = 0;
     let errorCount = 0;
-
-    for (const tripId of selectedTrips) {
-      setDuplicatingTripId(tripId);
-      try {
-        const result = await duplicateTrip(tripId);
-        if (result.error) {
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      } catch {
+    for (const r of results) {
+      if (r.status === 'fulfilled' && !r.value.error) {
+        successCount++;
+      } else {
         errorCount++;
+        console.error('Duplicate trip error:', r.status === 'rejected' ? r.reason : r.value.error);
       }
     }
 
-    setDuplicatingTripId(null);
+    setIsDuplicating(false);
     setSelectedTrips(new Set());
 
     if (successCount > 0) {
@@ -240,363 +607,6 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
     if (errorCount > 0) {
       toast.error(`Nie udało się zduplikować ${errorCount} wyjazdów`);
     }
-  }
-
-  function TripBlock({ trip }: { trip: TripWithPaymentTemplates }) {
-    const isOpen = openTrips.has(trip.id);
-    const isSelected = selectedTrips.has(trip.id);
-    const departureDate = new Date(trip.departure_datetime);
-    const returnDate = new Date(trip.return_datetime);
-
-    return (
-      <Collapsible
-        open={isOpen}
-        onOpenChange={() => toggleTrip(trip.id)}
-      >
-        <div className={cn(
-          'bg-white rounded-2xl transition-all duration-200',
-          isOpen
-            ? 'shadow-lg ring-2 ring-blue-400'
-            : 'shadow-sm ring-1 ring-gray-100 hover:shadow-md',
-          isSelected && !isOpen && 'ring-2 ring-blue-400'
-        )}>
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between p-4 cursor-pointer">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div onClick={(e) => toggleSelectTrip(trip.id, e)}>
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => { }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="font-semibold text-gray-900 text-base truncate">{trip.title}</h3>
-                    <span className={cn(
-                      'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium',
-                      statusStyles[trip.status]
-                    )}>
-                      {statusLabels[trip.status]}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
-                    {trip.groups.map((g) => {
-                      const colors = getGroupColor(g.name);
-                      return (
-                        <span key={g.id} className="flex items-center gap-1">
-                          <span className={cn('w-2 h-2 rounded-full', colors.dot)} />
-                          <span className="text-xs">{g.name}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 ml-4">
-                <div className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                  isOpen ? 'bg-gray-100' : 'bg-gray-50'
-                )}>
-                  {isOpen ? (
-                    <ChevronUp className="h-4 w-4 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </CollapsibleTrigger>
-
-          <CollapsibleContent>
-            <div className="px-4 pb-4 space-y-4">
-              <div className="h-px bg-gray-100" />
-
-              {/* Wyjazd i powrót */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                      <Calendar className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900">Wyjazd</h4>
-                  </div>
-                  <div className="bg-white rounded-xl p-3 space-y-2">
-                    <div className="flex items-start gap-2">
-                      <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
-                        <p className="text-xs text-gray-500">
-                          {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
-                        </p>
-                      </div>
-                    </div>
-                    {trip.departure_stop2_location && (
-                      <div className="flex items-start gap-2">
-                        <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
-                          {trip.departure_stop2_datetime && (
-                            <p className="text-xs text-gray-500">
-                              {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                      <Calendar className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900">Powrót</h4>
-                  </div>
-                  <div className="bg-white rounded-xl p-3 space-y-2">
-                    <div className="flex items-start gap-2">
-                      <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
-                        <p className="text-xs text-gray-500">
-                          {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
-                        </p>
-                      </div>
-                    </div>
-                    {trip.return_stop2_location && (
-                      <div className="flex items-start gap-2">
-                        <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
-                          {trip.return_stop2_datetime && (
-                            <p className="text-xs text-gray-500">
-                              {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Opis */}
-              {trip.description && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <div
-                    className="rich-content text-sm text-gray-600 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: trip.description }}
-                  />
-                </div>
-              )}
-
-              {/* Grupy */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100">
-                  <Users className="h-3.5 w-3.5 text-gray-500" />
-                </div>
-                <span className="text-sm text-gray-500 mr-1">Grupy:</span>
-                {trip.groups.map((group) => {
-                  const colors = getGroupColor(group.name);
-                  return (
-                    <span
-                      key={group.id}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium border',
-                        colors.bg,
-                        colors.text,
-                        colors.border
-                      )}
-                    >
-                      <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-                      {group.name}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {/* Cennik */}
-              {trip.payment_templates && trip.payment_templates.length > 0 && (
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                      <Receipt className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
-                  </div>
-                  <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Typ</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Termin</th>
-                          <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Forma</th>
-                          <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kwota</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {trip.payment_templates.map((template) => {
-                          const label = getTemplateLabel(template);
-                          const method = getMethodLabel(template.payment_method);
-
-                          return (
-                            <tr key={template.id} className="hover:bg-gray-50/50">
-                              <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
-                              <td className="px-4 py-2.5 whitespace-nowrap">
-                                <PaymentDue
-                                  templateDueDate={template.due_date}
-                                  dueDaysFromConfirmation={template.due_days_from_confirmation}
-                                  departureDate={trip.departure_datetime}
-                                />
-                              </td>
-                              <td className="px-4 py-2.5 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>
-                                  {method.label}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
-                                {template.amount.toFixed(0)} {template.currency}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Dane do przelewu */}
-              {(trip.bank_account_pln || trip.bank_account_eur) && (
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                      <Banknote className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900">Dane do przelewu</h4>
-                  </div>
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {trip.bank_account_pln && (
-                      <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <div>
-                          <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
-                          <p className="text-sm text-gray-900">{trip.bank_account_pln}</p>
-                        </div>
-                        <button
-                          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(trip.bank_account_pln, 'Numer konta PLN');
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                    {trip.bank_account_eur && (
-                      <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <div>
-                          <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
-                          <p className="text-sm text-gray-900">{trip.bank_account_eur}</p>
-                        </div>
-                        <button
-                          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(trip.bank_account_eur, 'Numer konta EUR');
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Co zabrać */}
-              {trip.packing_list && (
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                      <Backpack className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
-                  </div>
-                  <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                    {trip.packing_list
-                      .split('\n')
-                      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                      .filter(Boolean)
-                      .map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          {item}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Dodatkowe informacje */}
-              {trip.additional_info && (
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                      <Info className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
-                  </div>
-                  <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                    {trip.additional_info
-                      .split('\n')
-                      .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                      .filter(Boolean)
-                      .map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                          {item}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Przyciski akcji */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Link
-                  href={`/admin/trips/${trip.id}/edit`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edytuj
-                </Link>
-                <Link
-                  href={`/admin/trips/${trip.id}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Karta wyjazdu
-                </Link>
-                <TripMessageGenerator trip={trip} compact />
-                <ContractTemplateEditor
-                  tripId={trip.id}
-                  initialTemplate={contractTemplates[trip.id] as TripContractTemplate | null}
-                  defaultTemplateText={CONTRACT_TEMPLATE}
-                  compact
-                />
-                <Link
-                  href={`/admin/trips/${trip.id}/registrations`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
-                >
-                  <UserCheck className="h-4 w-4" />
-                  Zapisani
-                </Link>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
-    );
   }
 
   return (
@@ -647,9 +657,9 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
             <button
               className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors disabled:opacity-50"
               onClick={handleDuplicateSelected}
-              disabled={duplicatingTripId !== null}
+              disabled={isDuplicating}
             >
-              {duplicatingTripId !== null ? (
+              {isDuplicating ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Duplikowanie...
@@ -693,7 +703,15 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               </div>
               {/* Wyjazdy w miesiącu */}
               {monthTrips.map((trip) => (
-                <TripBlock key={trip.id} trip={trip} />
+                <TripBlock
+                  key={trip.id}
+                  trip={trip}
+                  isOpen={openTrips.has(trip.id)}
+                  isSelected={selectedTrips.has(trip.id)}
+                  onToggle={() => toggleTrip(trip.id)}
+                  onToggleSelect={(e) => toggleSelectTrip(trip.id, e)}
+                  contractTemplate={contractTemplates[trip.id] ?? null}
+                />
               ))}
             </div>
           ))}
@@ -737,7 +755,14 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
               <div className="px-4 pb-4 space-y-3">
                 {completedTrips.map((trip) => (
                   <div key={trip.id} className="opacity-60">
-                    <TripBlock trip={trip} />
+                    <TripBlock
+                      trip={trip}
+                      isOpen={openTrips.has(trip.id)}
+                      isSelected={selectedTrips.has(trip.id)}
+                      onToggle={() => toggleTrip(trip.id)}
+                      onToggleSelect={(e) => toggleSelectTrip(trip.id, e)}
+                      contractTemplate={contractTemplates[trip.id] ?? null}
+                    />
                   </div>
                 ))}
               </div>

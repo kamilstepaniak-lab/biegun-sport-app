@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/collapsible';
 
 import { createTrip, updateTrip } from '@/lib/actions/trips';
-import type { Group, Trip, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus } from '@/types';
+import type { Group, TripWithPaymentTemplates, CreatePaymentTemplateInput, TripStatus, AttendanceType } from '@/types';
 
 export interface TripFormData {
   title: string;
@@ -36,6 +36,7 @@ export interface TripFormData {
   declaration_deadline: string;
   location: string;
   status: TripStatus;
+  attendance_type: AttendanceType;
   departure_datetime: string;
   departure_time_known: boolean;
   departure_location: string;
@@ -212,6 +213,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     declaration_deadline: t?.declaration_deadline || '',
     location: t?.location || '',
     status: t?.status || 'draft',
+    attendance_type: t?.attendance_type ?? 'optional',
     departure_datetime: trip?.departure_datetime
       ? (() => {
           const full = formatDateTimeLocal(trip.departure_datetime);
@@ -421,6 +423,23 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="published" id="published" />
                   <Label htmlFor="published" className="font-normal cursor-pointer">Opublikowany</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label>Typ wyjazdu</Label>
+              <RadioGroup
+                value={formData.attendance_type}
+                onValueChange={(value) => updateFormData({ attendance_type: value as AttendanceType })}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="mandatory" id="mandatory" />
+                  <Label htmlFor="mandatory" className="font-normal cursor-pointer">Obowiązkowy</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="optional" id="optional" />
+                  <Label htmlFor="optional" className="font-normal cursor-pointer">Dla chętnych</Label>
                 </div>
               </RadioGroup>
             </div>

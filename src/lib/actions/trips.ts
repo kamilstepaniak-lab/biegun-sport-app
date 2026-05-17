@@ -171,6 +171,7 @@ export async function createTrip(input: CreateTripInput) {
     return_stop2_datetime,
     return_stop2_location,
     status,
+    attendance_type,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -207,6 +208,7 @@ export async function createTrip(input: CreateTripInput) {
       departure_time_known: departure_time_known ?? true,
       return_time_known: return_time_known ?? true,
       status,
+      attendance_type: attendance_type ?? 'optional',
       created_by: user.id,
     })
     .select()
@@ -294,6 +296,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     return_stop2_datetime,
     return_stop2_location,
     status,
+    attendance_type,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -321,6 +324,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (return_stop2_datetime !== undefined) updateData.return_stop2_datetime = return_stop2_datetime || null;
   if (return_stop2_location !== undefined) updateData.return_stop2_location = return_stop2_location || null;
   if (status !== undefined) updateData.status = status;
+  if (attendance_type !== undefined) updateData.attendance_type = attendance_type;
   if (allow_own_transport !== undefined) updateData.allow_own_transport = allow_own_transport;
   if (packing_list !== undefined) updateData.packing_list = packing_list || null;
   if (additional_info !== undefined) updateData.additional_info = additional_info || null;
@@ -477,7 +481,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 
       const { data: existingPayments } = await supabaseAdmin
         .from('payments')
-        .select('id, payment_type, installment_number, status')
+        .select('id, payment_type, installment_number, status, amount, original_amount, amount_paid, discount_percentage')
         .eq('registration_id', reg.id)
         .neq('status', 'cancelled');
 
@@ -486,6 +490,10 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         payment_type: string;
         installment_number: number | null;
         status: string;
+        amount: number;
+        original_amount: number;
+        amount_paid: number | null;
+        discount_percentage: number | null;
       }[];
 
       // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
@@ -497,8 +505,30 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
         );
 
         if (match) {
-          const isUpdatable = ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(match.status);
-          if (isUpdatable) {
+          // Płatność jest "zablokowana finansowo" gdy: ma jakąkolwiek wpłatę,
+          // jest w pełni opłacona, albo admin zmienił jej kwotę indywidualnie
+          // (zniżka przez applyDiscount lub ręczna korekta updatePaymentAmount —
+          // jedno i drugie daje amount != original_amount). Edycja cennika
+          // całego wyjazdu NIE może nadpisywać takiej indywidualnej kwoty.
+          const isAmountLocked =
+            (match.amount_paid ?? 0) > 0 ||
+            match.status === 'paid' ||
+            (match.discount_percentage ?? 0) > 0 ||
+            match.amount !== match.original_amount;
+
+          if (isAmountLocked) {
+            // Zachowaj kwotę i walutę; zsynchronizuj tylko powiązanie z szablonem
+            // oraz pola nie-finansowe (termin, oczekiwana forma płatności).
+            await supabaseAdmin
+              .from('payments')
+              .update({
+                template_id: template.id,
+                due_date: template.due_date,
+                payment_method: template.payment_method,
+              })
+              .eq('id', match.id);
+          } else {
+            // Płatność nietknięta — pełna synchronizacja z szablonem cennika
             await supabaseAdmin
               .from('payments')
               .update({
@@ -509,12 +539,6 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
                 template_id: template.id,
                 payment_method: template.payment_method,
               })
-              .eq('id', match.id);
-          } else {
-            // Opłacone — tylko zaktualizuj template_id
-            await supabaseAdmin
-              .from('payments')
-              .update({ template_id: template.id })
               .eq('id', match.id);
           }
         } else {
