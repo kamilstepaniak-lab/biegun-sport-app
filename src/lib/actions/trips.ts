@@ -171,6 +171,7 @@ export async function createTrip(input: CreateTripInput) {
     return_stop2_datetime,
     return_stop2_location,
     status,
+    attendance_type,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -207,6 +208,7 @@ export async function createTrip(input: CreateTripInput) {
       departure_time_known: departure_time_known ?? true,
       return_time_known: return_time_known ?? true,
       status,
+      attendance_type: attendance_type ?? 'optional',
       created_by: user.id,
     })
     .select()
@@ -294,6 +296,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     return_stop2_datetime,
     return_stop2_location,
     status,
+    attendance_type,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -321,6 +324,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (return_stop2_datetime !== undefined) updateData.return_stop2_datetime = return_stop2_datetime || null;
   if (return_stop2_location !== undefined) updateData.return_stop2_location = return_stop2_location || null;
   if (status !== undefined) updateData.status = status;
+  if (attendance_type !== undefined) updateData.attendance_type = attendance_type;
   if (allow_own_transport !== undefined) updateData.allow_own_transport = allow_own_transport;
   if (packing_list !== undefined) updateData.packing_list = packing_list || null;
   if (additional_info !== undefined) updateData.additional_info = additional_info || null;

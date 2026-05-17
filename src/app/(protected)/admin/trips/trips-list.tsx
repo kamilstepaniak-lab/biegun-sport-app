@@ -164,6 +164,11 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   )}>
                     {statusLabels[trip.status]}
                   </span>
+                  {trip.attendance_type === 'mandatory' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium bg-amber-100 text-amber-700">
+                      Obowiązkowy
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
                   {trip.groups.map((g) => {
