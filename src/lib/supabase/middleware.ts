@@ -40,7 +40,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Publiczne ścieżki - dostępne bez logowania
-  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/'];
+  const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/', '/polityka-prywatnosci'];
   const isPublicPath =
     publicPaths.some(path => pathname === path) ||
     pathname.startsWith('/api/auth') ||

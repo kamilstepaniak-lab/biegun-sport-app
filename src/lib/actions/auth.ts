@@ -3,7 +3,7 @@
 import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '@/lib/validations/auth';
 import { sendWelcomeEmail } from '@/lib/email';
 
@@ -90,6 +90,17 @@ export async function register(formData: RegisterInput) {
     if (!profileError.message.includes('duplicate')) {
       return { error: 'Nie udało się utworzyć profilu' };
     }
+  }
+
+  // Zapis zgody RODO — admin client, bo gdy włączone jest potwierdzanie e-mail
+  // konto nie ma jeszcze sesji i RLS zablokowałoby zapis przez klienta usera.
+  const adminClient = createAdminClient();
+  const { error: consentError } = await adminClient
+    .from('profiles')
+    .update({ rodo_accepted_at: new Date().toISOString() })
+    .eq('id', authData.user.id);
+  if (consentError) {
+    console.error('RODO consent save error:', consentError);
   }
 
   // Jeśli sesja jest null — Supabase czeka na potwierdzenie emaila (Confirm email: ON)
