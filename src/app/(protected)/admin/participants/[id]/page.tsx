@@ -10,13 +10,11 @@ import {
   Mail,
   Phone,
   MapPin,
-  CreditCard,
   FileText,
   HeartPulse,
   Utensils,
   BedDouble,
   Info,
-  UserRound,
   Users,
 } from 'lucide-react';
 
@@ -30,29 +28,10 @@ import { getGroups } from '@/lib/actions/groups';
 import { cn } from '@/lib/utils';
 import { ParticipantNotesCard } from './notes-card';
 import { ChangeGroupCard } from './change-group-card';
+import { RegistrationsCard } from './registrations-card';
 
 interface ParticipantDetailPageProps {
   params: Promise<{ id: string }>;
-}
-
-function formatAmount(amount: number, currency = 'PLN') {
-  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency }).format(amount);
-}
-
-function formatShortDate(date: string | Date | null | undefined) {
-  if (!date) return 'Brak daty';
-  return format(new Date(date), 'd MMM yyyy', { locale: pl });
-}
-
-function PaymentStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    paid:       { label: 'Zapłacono',   className: 'bg-green-100 text-green-700' },
-    partial:    { label: 'Częściowo',   className: 'bg-yellow-100 text-yellow-700' },
-    unpaid:     { label: 'Nieopłacone', className: 'bg-red-100 text-red-700' },
-    cancelled:  { label: 'Anulowano',   className: 'bg-gray-100 text-gray-500' },
-  };
-  const { label, className } = map[status] ?? { label: status, className: 'bg-gray-100 text-gray-600' };
-  return <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${className}`}>{label}</span>;
 }
 
 function InfoRow({
@@ -91,6 +70,10 @@ function InfoRow({
   );
 }
 
+function formatBirthDate(date: Date) {
+  return format(date, 'd.MM.yyyy', { locale: pl });
+}
+
 export default async function ParticipantDetailPage({ params }: ParticipantDetailPageProps) {
   const { id } = await params;
   const [participant, registrations, groups] = await Promise.all([
@@ -113,7 +96,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
     participant.parent_notes_additional
   );
   const hasAddress = Boolean(parent.address_street || parent.address_zip || parent.address_city);
-  const activePaymentCount = registrations.filter((reg) => {
+  const paymentIssueCount = registrations.filter((reg) => {
     const payment = Array.isArray(reg.payments) ? reg.payments[0] : null;
     return payment && payment.status !== 'paid' && payment.status !== 'cancelled';
   }).length;
@@ -143,20 +126,11 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
           <Card className="overflow-hidden border-gray-200">
-            <div className="border-b bg-gray-50/70 px-6 py-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200">
-                      <UserRound className="h-5 w-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Uczestnik</p>
-                      <h2 className="text-xl font-semibold text-gray-950">
-                        {participant.first_name} {participant.last_name}
-                      </h2>
-                    </div>
-                  </div>
+            <CardHeader className="border-b bg-gray-50/70">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle>Dane dziecka</CardTitle>
+                  <CardDescription>Podstawowe informacje organizacyjne</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {participant.group ? (
@@ -174,19 +148,19 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
                       Uwagi rodzica
                     </Badge>
                   )}
-                  {activePaymentCount > 0 && (
+                  {paymentIssueCount > 0 && (
                     <Badge className="rounded-md bg-red-100 px-2.5 py-1 text-red-700 hover:bg-red-100">
-                      {activePaymentCount} płatn. do kontroli
+                      {paymentIssueCount} płatn. do kontroli
                     </Badge>
                   )}
                 </div>
               </div>
-            </div>
+            </CardHeader>
             <CardContent className="grid gap-5 py-5 sm:grid-cols-3">
               <InfoRow
                 icon={<Calendar className="h-5 w-5" />}
                 label="Data urodzenia"
-                value={`${format(birthDate, 'd MMMM yyyy', { locale: pl })} (${age} lat)`}
+                value={`${formatBirthDate(birthDate)} (${age} lat)`}
               />
               <InfoRow
                 icon={<Ruler className="h-5 w-5" />}
@@ -195,12 +169,14 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
                 muted={!participant.height_cm}
               />
               <InfoRow
-                icon={<CreditCard className="h-5 w-5" />}
-                label="Aktywne zapisy"
-                value={`${registrations.length} ${registrations.length === 1 ? 'wyjazd' : 'wyjazdów'}`}
+                icon={<Users className="h-5 w-5" />}
+                label="Zapisy"
+                value={`${registrations.length} ${registrations.length === 1 ? 'wpis' : 'wpisów'}`}
               />
             </CardContent>
           </Card>
+
+          <RegistrationsCard registrations={registrations} />
 
           {hasParentNotes && (
             <Card className="border-amber-200 bg-amber-50/40">
@@ -252,79 +228,10 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Zapisy i płatności
-              </CardTitle>
-              <CardDescription>Aktywne zapisy uczestnika na wyjazdy</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {registrations.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Brak aktywnych zapisów na wyjazdy
-                </p>
-              ) : (
-                <div className="overflow-hidden rounded-lg border">
-                  <div className="grid grid-cols-[minmax(0,1fr)_140px_180px_86px] gap-3 border-b bg-gray-50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-lg:hidden">
-                    <span>Wyjazd</span>
-                    <span>Termin</span>
-                    <span>Płatność</span>
-                    <span></span>
-                  </div>
-                  <div className="divide-y">
-                    {registrations.map((reg) => {
-                      const trip = Array.isArray(reg.trip) ? reg.trip[0] : reg.trip;
-                      const payment = Array.isArray(reg.payments) ? reg.payments[0] : null;
-                      const currency = payment?.currency ?? 'PLN';
-                      return (
-                        <div
-                          key={reg.id}
-                          className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_140px_180px_86px] lg:items-center"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-gray-950">
-                              {trip?.title ?? 'Nieznany wyjazd'}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground lg:hidden">
-                              {formatShortDate(trip?.departure_datetime)}
-                            </p>
-                          </div>
-                          <p className="hidden text-sm text-gray-600 lg:block">
-                            {formatShortDate(trip?.departure_datetime)}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-2">
-                            {payment ? (
-                              <>
-                                <span className="text-sm text-gray-600">
-                                  {formatAmount(payment.amount_paid ?? 0, currency)} / {formatAmount(payment.amount, currency)}
-                                </span>
-                                <PaymentStatusBadge status={payment.status} />
-                              </>
-                            ) : (
-                              <span className="text-sm text-gray-400">Brak płatności</span>
-                            )}
-                          </div>
-                          {trip?.id ? (
-                            <Button variant="outline" size="sm" asChild>
-                              <Link href={`/admin/trips/${trip.id}/registrations`}>
-                                Wyjazd
-                              </Link>
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" disabled>
-                              Wyjazd
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ParticipantNotesCard
+            participantId={participant.id}
+            initialNotes={participant.notes || ''}
+          />
 
           {participant.custom_fields && participant.custom_fields.length > 0 && (
             <Card>
@@ -419,12 +326,6 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
             participantId={participant.id}
             currentGroupId={participant.group?.id ?? null}
             groups={groups}
-          />
-
-          <ParticipantNotesCard
-            participantId={participant.id}
-            initialNotes={participant.notes || ''}
-            compact
           />
         </aside>
       </div>

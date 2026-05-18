@@ -39,6 +39,10 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-05-18 (Uczestnicy)
 
+- Korekta układu karty uczestnika: bez powielania imienia i nazwiska,
+  data urodzenia w formacie `d.MM.yyyy`, blok uwag rodzica pod zapisami i
+  płatnościami, notatki admina poniżej płatności.
+- `Zapisy i płatności` dostały paginację po 10 rekordów.
 - `/admin/participants/[id]`: przełożony układ karty uczestnika na widok
   operacyjny z profilem dziecka, uwagami rodzica, zapisami/płatnościami oraz
   prawą kolumną kontaktu, grupy i notatek.
