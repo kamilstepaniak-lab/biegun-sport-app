@@ -22,7 +22,10 @@ SELECT
   COALESCE(SUM(p.amount)      FILTER (WHERE p.currency = 'PLN'), 0) AS total_pln,
   COALESCE(SUM(p.amount_paid) FILTER (WHERE p.currency = 'PLN'), 0) AS paid_pln,
   COALESCE(SUM(p.amount)      FILTER (WHERE p.currency = 'EUR'), 0) AS total_eur,
-  COALESCE(SUM(p.amount_paid) FILTER (WHERE p.currency = 'EUR'), 0) AS paid_eur
+  COALESCE(SUM(p.amount_paid) FILTER (WHERE p.currency = 'EUR'), 0) AS paid_eur,
+  -- Zniżka = obniżenie kwoty względem original_amount (closeAsDiscount / edycja kwoty).
+  COALESCE(SUM(GREATEST(p.original_amount - p.amount, 0)) FILTER (WHERE p.currency = 'PLN'), 0) AS discount_pln,
+  COALESCE(SUM(GREATEST(p.original_amount - p.amount, 0)) FILTER (WHERE p.currency = 'EUR'), 0) AS discount_eur
 FROM payments p
 JOIN trip_registrations r ON r.id = p.registration_id
 JOIN trips t              ON t.id = r.trip_id

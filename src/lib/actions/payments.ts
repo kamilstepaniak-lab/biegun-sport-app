@@ -232,6 +232,8 @@ export interface TripFinanceSummary {
   totalEUR: number;
   paidEUR: number;
   missingEUR: number;
+  discountPLN: number;
+  discountEUR: number;
   totalPayments: number;
   paidPayments: number;
   pct: number;
@@ -260,6 +262,10 @@ export async function getFinanceSummary(): Promise<TripFinanceSummary[]> {
     const paidEUR = Number(r.paid_eur) || 0;
     const totalPayments = Number(r.total_payments) || 0;
     const paidPayments = Number(r.paid_payments) || 0;
+    // % kwotowy: ile pieniędzy zebrano z należnej kwoty. Przy wyjazdach
+    // dwuwalutowych PLN i EUR sumują się nominalnie (przybliżony wskaźnik).
+    const totalAll = totalPLN + totalEUR;
+    const paidAll = paidPLN + paidEUR;
     return {
       tripId: r.trip_id,
       tripTitle: r.trip_title,
@@ -271,9 +277,11 @@ export async function getFinanceSummary(): Promise<TripFinanceSummary[]> {
       totalEUR,
       paidEUR,
       missingEUR: totalEUR - paidEUR,
+      discountPLN: Number(r.discount_pln) || 0,
+      discountEUR: Number(r.discount_eur) || 0,
       totalPayments,
       paidPayments,
-      pct: totalPayments > 0 ? Math.round((paidPayments / totalPayments) * 100) : 0,
+      pct: totalAll > 0 ? Math.min(100, Math.round((paidAll / totalAll) * 100)) : 0,
     };
   });
 }
