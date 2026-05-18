@@ -394,6 +394,54 @@ function TripCardInner({
               </div>
             )}
 
+            {/* Co zabrać */}
+            {trip.packing_list && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Backpack className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
+                </div>
+                <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                  {trip.packing_list
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Dodatkowe informacje */}
+            {trip.additional_info && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Info className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
+                </div>
+                <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                  {trip.additional_info
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
             {/* Terminy i lokalizacje */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
@@ -584,51 +632,6 @@ function TripCardInner({
               </div>
             )}
 
-            {trip.packing_list && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Backpack className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
-                </div>
-                <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                  {trip.packing_list
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
-
-            {trip.additional_info && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Info className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
-                </div>
-                <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                  {trip.additional_info
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
           </div>
         </CollapsibleContent>
       </div>
