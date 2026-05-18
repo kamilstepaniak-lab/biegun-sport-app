@@ -10,7 +10,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import type { TripStatus, AttendanceType } from '@/types';
 
-import { EmailContentFields } from './email-content-section';
 import type { SectionProps } from './types';
 
 export function BasicInfoSection({
@@ -47,7 +46,6 @@ export function BasicInfoSection({
               placeholder="Opcjonalny opis wyjazdu..."
             />
           </div>
-          <EmailContentFields formData={formData} updateFormData={updateFormData} />
           <div className="space-y-2">
             <Label htmlFor="location">Miejsce (hotel / miejscowość)</Label>
             <Input

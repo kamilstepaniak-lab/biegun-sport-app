@@ -202,42 +202,95 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
             <div className="h-px bg-gray-100" />
 
             {/* Podstawowe informacje */}
-            {(trip.description || trip.location || trip.declaration_deadline) && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Info className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Podstawowe informacje</h4>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                  <Info className="h-3.5 w-3.5 text-white" />
                 </div>
-                {trip.description && (
-                  <div className="bg-white rounded-xl p-3">
-                    <SanitizedHtml
-                      html={trip.description}
-                      className="rich-content text-sm text-gray-600 leading-relaxed"
-                    />
-                  </div>
-                )}
-                {(trip.location || trip.declaration_deadline) && (
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {trip.location && (
-                      <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <p className="text-xs text-gray-400 mb-0.5">Miejsce</p>
-                        <p className="text-sm text-gray-900">{trip.location}</p>
-                      </div>
-                    )}
-                    {trip.declaration_deadline && (
-                      <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <p className="text-xs text-gray-400 mb-0.5">Deklaracja do</p>
-                        <p className="text-sm text-gray-900">
-                          {format(new Date(trip.declaration_deadline), 'd MMMM yyyy', { locale: pl })}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <h4 className="text-sm font-semibold text-gray-900">Podstawowe informacje</h4>
               </div>
-            )}
+              {trip.description && (
+                <div className="bg-white rounded-xl p-3">
+                  <SanitizedHtml
+                    html={trip.description}
+                    className="rich-content text-sm text-gray-600 leading-relaxed"
+                  />
+                </div>
+              )}
+              {/* Terminy — zawsze pod opisem */}
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="bg-white rounded-xl p-3 space-y-2 ring-1 ring-gray-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <ArrowRight className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-xs font-semibold text-gray-700">Wyjazd</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                      </p>
+                    </div>
+                  </div>
+                  {trip.departure_stop2_location && (
+                    <div className="flex items-start gap-2 pt-1 border-t border-gray-100">
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
+                        {trip.departure_stop2_datetime && (
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="bg-white rounded-xl p-3 space-y-2 ring-1 ring-gray-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <ArrowLeft className="h-3.5 w-3.5 text-red-400" />
+                    <span className="text-xs font-semibold text-gray-700">Powrót</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                      </p>
+                    </div>
+                  </div>
+                  {trip.return_stop2_location && (
+                    <div className="flex items-start gap-2 pt-1 border-t border-gray-100">
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
+                        {trip.return_stop2_datetime && (
+                          <p className="text-xs text-gray-500">
+                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {(trip.location || trip.declaration_deadline) && (
+                <div className="grid gap-2 md:grid-cols-2">
+                  {trip.location && (
+                    <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                      <p className="text-xs text-gray-400 mb-0.5">Miejsce</p>
+                      <p className="text-sm text-gray-900">{trip.location}</p>
+                    </div>
+                  )}
+                  {trip.declaration_deadline && (
+                    <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                      <p className="text-xs text-gray-400 mb-0.5">Deklaracja do</p>
+                      <p className="text-sm text-gray-900">
+                        {format(new Date(trip.declaration_deadline), 'd MMMM yyyy', { locale: pl })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Co zabrać */}
             {trip.packing_list && (
@@ -286,74 +339,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                 </ul>
               </div>
             )}
-
-            {/* Terminy i lokalizacje */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Calendar className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Wyjazd</h4>
-                </div>
-                <div className="bg-white rounded-xl p-3 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
-                      <p className="text-xs text-gray-500">
-                        {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
-                      </p>
-                    </div>
-                  </div>
-                  {trip.departure_stop2_location && (
-                    <div className="flex items-start gap-2">
-                      <ArrowRight className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
-                        {trip.departure_stop2_datetime && (
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Calendar className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Powrót</h4>
-                </div>
-                <div className="bg-white rounded-xl p-3 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
-                      <p className="text-xs text-gray-500">
-                        {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
-                      </p>
-                    </div>
-                  </div>
-                  {trip.return_stop2_location && (
-                    <div className="flex items-start gap-2">
-                      <ArrowLeft className="h-4 w-4 text-red-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
-                        {trip.return_stop2_datetime && (
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {/* Cennik */}
             {trip.payment_templates && trip.payment_templates.length > 0 && (

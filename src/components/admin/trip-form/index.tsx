@@ -6,6 +6,7 @@ import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createTrip, updateTrip } from '@/lib/actions/trips';
 import type { Group, TripWithPaymentTemplates, TripStatus } from '@/types';
 
@@ -13,6 +14,7 @@ import { type TripFormData } from './types';
 import { localToISO, formatDateTimeLocal } from './utils';
 import { BasicInfoSection } from './basic-info-section';
 import { ScheduleSection } from './schedule-section';
+import { EmailContentFields } from './email-content-section';
 import { GroupsSection } from './groups-section';
 import { PaymentsSection } from './payments-section';
 
@@ -185,6 +187,15 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         updateFormData={updateFormData}
         hasErrors={hasDateErrors}
       />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Treść maila do rodziców</CardTitle>
+          <CardDescription>Zaznacz sekcje, które mają pojawić się w mailu wysyłanym do grupy.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmailContentFields formData={formData} updateFormData={updateFormData} />
+        </CardContent>
+      </Card>
       <PaymentsSection
         formData={formData}
         updateFormData={updateFormData}
