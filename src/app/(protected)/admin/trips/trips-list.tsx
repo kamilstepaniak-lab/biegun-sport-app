@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Users,
   Edit,
   UserCheck,
   Banknote,
@@ -306,31 +305,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Grupy */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100">
-                <Users className="h-3.5 w-3.5 text-gray-500" />
-              </div>
-              <span className="text-sm text-gray-500 mr-1">Grupy:</span>
-              {trip.groups.map((group) => {
-                const colors = getGroupColor(group.name);
-                return (
-                  <span
-                    key={group.id}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium border',
-                      colors.bg,
-                      colors.text,
-                      colors.border
-                    )}
-                  >
-                    <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-                    {group.name}
-                  </span>
-                );
-              })}
             </div>
 
             {/* Cennik */}
