@@ -236,7 +236,7 @@ export function PaymentsSection({
 
                     {/* Wspólne pola */}
                     <div className="space-y-4">
-                      <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="grid gap-4 grid-cols-3">
                         <div className="space-y-2">
                           <Label>Kwota *</Label>
                           <Input
@@ -288,7 +288,7 @@ export function PaymentsSection({
                       </div>
                       <div className="space-y-2">
                         <Label>Termin płatności</Label>
-                        <div className={mode === 'specific' ? 'grid gap-3 sm:grid-cols-2' : ''}>
+                        <div className={mode === 'specific' ? 'grid gap-3 grid-cols-2' : ''}>
                           <Select
                             value={mode}
                             onValueChange={(value) => changeDueMode(index, value as DueMode)}
