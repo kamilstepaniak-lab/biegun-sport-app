@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
@@ -135,7 +136,7 @@ function getPaymentForColumn(payments: ParticipantPayment[], columnKey: string):
 }
 
 // Eksport do Excel (CSV z BOM dla polskich znaków)
-// Eksportuje TYLKO dzieci które jadą (status: confirmed)
+// Eksportuje uczestników widocznych po aktualnych filtrach (tylko status: confirmed)
 function exportToExcel(
   participants: TripParticipant[],
   paymentColumns: { key: string; label: string }[],
@@ -143,7 +144,6 @@ function exportToExcel(
   stop1Name?: string | null,
   stop2Name?: string | null,
 ) {
-  // Tylko dzieci których rodzice potwierdzili "jedzie"
   const confirmed = participants.filter(p => p.participation_status === 'confirmed');
 
   const statusLabels: Record<string, string> = {
@@ -215,6 +215,7 @@ function exportToExcel(
 }
 
 export function RegistrationsList({ tripId, participants, groups, tripTitle = 'Wyjazd', stop1Name, stop2Name }: RegistrationsListProps) {
+  const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [groupFilter, setGroupFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -295,6 +296,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
         toast.success(`Zaktualizowano ${ids.length} uczestników → ${label}`);
       }
       setSelectedIds(new Set());
+      router.refresh();
     } catch {
       toast.error('Wystąpił błąd');
     } finally {
@@ -323,6 +325,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
       toast.error(result.error);
     } else {
       toast.success('Status zaktualizowany');
+      router.refresh();
     }
   }
 
@@ -348,6 +351,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
       } else {
         toast.success('Notatka zapisana');
         setNoteDialogOpen(false);
+        router.refresh();
       }
     } catch {
       toast.error('Wystąpił nieoczekiwany błąd');
@@ -437,7 +441,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
             </span>
             {/* Eksport do Excel */}
             <button
-              onClick={() => exportToExcel(participants, paymentColumns, tripTitle, stop1Name, stop2Name)}
+              onClick={() => exportToExcel(filteredParticipants, paymentColumns, tripTitle, stop1Name, stop2Name)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <Download className="h-4 w-4" />
