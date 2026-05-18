@@ -250,14 +250,14 @@ export function ContractTemplateEditor({
                 variant="outline"
                 size="sm"
                 onClick={handleSave}
-                disabled={isSaving || !hasUnsavedChanges}
+                disabled={isSaving}
               >
                 {isSaving ? (
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Save className="mr-2 h-3.5 w-3.5" />
                 )}
-                {hasUnsavedChanges ? 'Zapisz wzór' : 'Zapisano'}
+                Zapisz wzór
               </Button>
             )}
 
