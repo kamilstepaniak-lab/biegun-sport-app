@@ -37,6 +37,20 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-18
+
+- Płatności: rejestrowanie realnych wpłat w `/admin/payments` (dialog
+  `RecordPaymentDialog`) z checkboxem „zniżka" — zaznaczony zamyka płatność
+  jako opłaconą mimo niższej kwoty, niezaznaczony zostawia niedopłatę.
+- Nowa funkcja `recomputePaymentStatus` — jedno źródło prawdy dla statusu;
+  `updatePaymentAmount` i `updatePaymentStatus` przez nią przeliczają status.
+- Edycja cennika wyjazdu = twardy reset cen u wszystkich potwierdzonych
+  uczestników (synchronizacja rusza tylko przy realnej zmianie cennika,
+  trwale anulowane płatności nie są odtwarzane).
+- `/admin/payments`: badge „Nadpłata" / „Do dopłaty" przy statusie; usunięty
+  tryb procentowy edycji kwoty (akcja `applyDiscount` skasowana).
+- Bez migracji bazy. Spec + plan: `docs/superpowers/`.
+
 ### 2026-05-17
 
 - Poprawki płatności wyjazdu: statystyki liczone osobno per waluta (PLN/EUR),
