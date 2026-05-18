@@ -39,6 +39,16 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-05-18
 
+- Zapisani: `router.refresh()` po zmianie statusu (pojedynczo/masowo) i notatki
+  — uczestnik teraz natychmiast trafia do właściwej sekcji bez manualnego F5.
+- Zapisani: eksport Excel respektuje aktywne filtry (grupa/wyszukiwarka).
+- Wzór umowy: uzupełniona lista placeholderów w edytorze (brakowało 6 z 15).
+- Umowy: poprawiony mylący komunikat empty state.
+- Admin/Rodzic widok wyjazdu: kolejność boksów zgodna z formularzem tworzenia;
+  Co zabrać + Dodatkowe informacje bezpośrednio pod opisem; usunięta redundantna
+  sekcja „Grupy" z rozwinięcia (widoczne pod tytułem).
+- Formularz tworzenia wyjazdu: Co zabrać + Dodatkowe informacje pod opisem
+  (EmailContentFields w BasicInfoSection).
 - Płatności: rejestrowanie realnych wpłat w `/admin/payments` (dialog
   `RecordPaymentDialog`) z checkboxem „zniżka" — zaznaczony zamyka płatność
   jako opłaconą mimo niższej kwoty, niezaznaczony zostawia niedopłatę.

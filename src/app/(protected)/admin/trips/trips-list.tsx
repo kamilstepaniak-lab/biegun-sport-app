@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Users,
   Edit,
   UserCheck,
   Banknote,
@@ -202,7 +201,93 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
           <div className="px-4 pb-4 space-y-4">
             <div className="h-px bg-gray-100" />
 
-            {/* Wyjazd i powrót */}
+            {/* Podstawowe informacje */}
+            {(trip.description || trip.location || trip.declaration_deadline) && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Info className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Podstawowe informacje</h4>
+                </div>
+                {trip.description && (
+                  <div className="bg-white rounded-xl p-3">
+                    <SanitizedHtml
+                      html={trip.description}
+                      className="rich-content text-sm text-gray-600 leading-relaxed"
+                    />
+                  </div>
+                )}
+                {(trip.location || trip.declaration_deadline) && (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {trip.location && (
+                      <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">Miejsce</p>
+                        <p className="text-sm text-gray-900">{trip.location}</p>
+                      </div>
+                    )}
+                    {trip.declaration_deadline && (
+                      <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">Deklaracja do</p>
+                        <p className="text-sm text-gray-900">
+                          {format(new Date(trip.declaration_deadline), 'd MMMM yyyy', { locale: pl })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Co zabrać */}
+            {trip.packing_list && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Backpack className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
+                </div>
+                <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                  {trip.packing_list
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Dodatkowe informacje */}
+            {trip.additional_info && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Info className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
+                </div>
+                <ul className="bg-white rounded-xl p-3 space-y-1.5">
+                  {trip.additional_info
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Terminy i lokalizacje */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
@@ -268,41 +353,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Opis */}
-            {trip.description && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <SanitizedHtml
-                  html={trip.description}
-                  className="rich-content text-sm text-gray-600 leading-relaxed"
-                />
-              </div>
-            )}
-
-            {/* Grupy */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100">
-                <Users className="h-3.5 w-3.5 text-gray-500" />
-              </div>
-              <span className="text-sm text-gray-500 mr-1">Grupy:</span>
-              {trip.groups.map((group) => {
-                const colors = getGroupColor(group.name);
-                return (
-                  <span
-                    key={group.id}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-medium border',
-                      colors.bg,
-                      colors.text,
-                      colors.border
-                    )}
-                  >
-                    <span className={cn('w-1.5 h-1.5 rounded-full', colors.dot)} />
-                    {group.name}
-                  </span>
-                );
-              })}
             </div>
 
             {/* Cennik */}
@@ -401,54 +451,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {/* Co zabrać */}
-            {trip.packing_list && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Backpack className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
-                </div>
-                <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                  {trip.packing_list
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Dodatkowe informacje */}
-            {trip.additional_info && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Info className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
-                </div>
-                <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                  {trip.additional_info
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
               </div>
             )}
 
