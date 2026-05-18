@@ -479,52 +479,6 @@ export async function markPaymentAsPaid(
   return { success: true };
 }
 
-export async function applyDiscount(paymentId: string, discountPercentage: number) {
-  const supabase = await createClient();
-
-  const { user, error: authError } = await requireAdmin(supabase);
-  if (authError) return { error: authError };
-
-  if (discountPercentage < 0 || discountPercentage > 100) {
-    return { error: 'Zniżka musi być w zakresie 0-100%' };
-  }
-
-  const { data: payment, error: paymentError } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('id', paymentId)
-    .single();
-
-  if (paymentError || !payment) {
-    return { error: 'Nie znaleziono płatności' };
-  }
-
-  const newAmount = payment.original_amount * (1 - discountPercentage / 100);
-
-  const { error: updateError } = await supabase
-    .from('payments')
-    .update({
-      discount_percentage: discountPercentage,
-      amount: newAmount,
-      discount_applied_by: user.id,
-      discount_applied_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', paymentId);
-
-  if (updateError) {
-    console.error('Discount update error:', updateError);
-    return { error: 'Nie udało się zastosować zniżki' };
-  }
-
-  revalidateTag('payments');
-  revalidatePath('/admin/payments');
-  revalidatePath('/admin/trips');
-  revalidatePath('/parent/payments');
-
-  return { success: true };
-}
-
 export async function getPaymentTransactions(paymentId: string): Promise<PaymentTransaction[]> {
   const supabase = await createClient();
   const { user } = await requireAdmin(supabase);
