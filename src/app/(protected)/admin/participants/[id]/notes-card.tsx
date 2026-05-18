@@ -12,11 +12,11 @@ import { updateParticipantNote } from '@/lib/actions/participants';
 
 interface ParticipantNotesCardProps {
   participantId: string;
-  participantName: string;
   initialNotes: string;
+  compact?: boolean;
 }
 
-export function ParticipantNotesCard({ participantId, participantName, initialNotes }: ParticipantNotesCardProps) {
+export function ParticipantNotesCard({ participantId, initialNotes, compact = false }: ParticipantNotesCardProps) {
   const [notes, setNotes] = useState(initialNotes);
   const [isEditing, setIsEditing] = useState(false);
   const [editedNotes, setEditedNotes] = useState(initialNotes);
@@ -46,7 +46,7 @@ export function ParticipantNotesCard({ participantId, participantName, initialNo
   }
 
   return (
-    <Card className="md:col-span-2">
+    <Card className={compact ? undefined : 'md:col-span-2'}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -73,7 +73,7 @@ export function ParticipantNotesCard({ participantId, participantName, initialNo
               value={editedNotes}
               onChange={(e) => setEditedNotes(e.target.value)}
               placeholder="Wpisz notatki o uczestniku..."
-              rows={6}
+              rows={compact ? 5 : 6}
               className="resize-none"
             />
             <div className="flex justify-end gap-2">

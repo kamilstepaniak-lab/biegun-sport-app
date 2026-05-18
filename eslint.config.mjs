@@ -9,6 +9,10 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".claude/**",
+    ".obsidian/**",
+    ".playwright-mcp/**",
+    ".worktrees/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
