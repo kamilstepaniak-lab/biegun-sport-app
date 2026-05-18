@@ -44,3 +44,7 @@ next-env.d.ts
 # Git worktrees
 .worktrees/
 .claude/worktrees/
+
+# Lokalne narzędzia
+.obsidian/
+.playwright-mcp/
