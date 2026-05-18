@@ -138,28 +138,41 @@ anulowanych.
 opcjonalny parametr `closeAsDiscount: boolean` (domyślnie `false`):
 
 1. Wstawia rekord do `payment_transactions` (jak dziś).
-2. Liczy `newAmountPaid = amount_paid + kwota wpłaty`.
+2. Liczy `newAmountPaid = amount_paid + kwota wpłaty` (suma wszystkich
+   wpłat).
 3. Jeśli `closeAsDiscount === true` **i** `newAmountPaid < amount`:
-   ustawia `amount := newAmountPaid` (obniżenie kwoty należnej do sumy
-   wpłat). `original_amount` bez zmian.
+   ustawia `amount := newAmountPaid` (obniżenie kwoty należnej do
+   pełnej sumy wpłat). `original_amount` bez zmian.
 4. Status przeliczany przez `recomputePaymentStatus` na podstawie
-   finalnych `amount` i `newAmountPaid`. `paid_at` ustawiane gdy status
-   = `paid`, zerowane gdy nie.
+   finalnych `amount` i `newAmountPaid`. `paid_at`: gdy status =
+   `paid` — ustawiane na **datę wpłaty z formularza**; gdy nie —
+   zerowane.
 5. Walidacja: kwota wpłaty > 0; `closeAsDiscount` ignorowane gdy wpłata
-   pokrywa należność. Płatność `cancelled` — rejestrowanie wpłaty
-   niedozwolone (zwróć błąd).
+   pokrywa należność (`newAmountPaid >= amount`) lub gdy płatność jest
+   już `paid` (wtedy checkbox jest no-op). Płatność `cancelled` —
+   rejestrowanie wpłaty niedozwolone (zwróć błąd, komunikat w toaście).
 
 **UI.** W `/admin/payments` przy każdym wierszu wejście „Zarejestruj
 wpłatę" otwierające mały formularz: kwota, metoda (gotówka/przelew),
 data, oraz checkbox „zniżka — zamknij płatność mimo niższej kwoty"
 widoczny tylko gdy wpisana kwota < kwota pozostała do zapłaty.
 
-### 3. `updatePaymentAmount` (`payments.ts`)
+### 3. Pozostałe akcje statusu (`payments.ts`)
 
-Zmienia wyłącznie `amount` (`original_amount` nietknięty). Po zmianie
-przelicza `status` przez `recomputePaymentStatus` i aktualizuje
-`paid_at`. Płatność `cancelled` — zmiana tylko `amount`, bez
-przeliczania statusu.
+- **`updatePaymentAmount`** — zmienia wyłącznie `amount`
+  (`original_amount` nietknięty). Po zmianie przelicza `status` przez
+  `recomputePaymentStatus` i aktualizuje `paid_at`. Płatność
+  `cancelled` — zmiana tylko `amount`, bez przeliczania statusu.
+- **`updatePaymentStatus`** (przełącznik „opłacone/nieopłacone" w UI) —
+  zachowuje obecne działanie (`paid` → `amount_paid := amount`;
+  `pending` → `amount_paid := 0`; `cancelled` → bez zmian kwot), ale
+  wynikowy `status` wyprowadza przez `recomputePaymentStatus` zamiast
+  ustawiać go na sztywno. Dzięki temu `recomputePaymentStatus`
+  pozostaje jedynym źródłem prawdy dla statusu.
+- **`applyDiscount`** — akcja **usuwana** (po zdjęciu trybu `%` z UI nie
+  ma wywołującego; D3).
+- **`markPaymentAsPaid`** — poza zakresem; pozostaje nietknięta (już
+  dziś nieużywana przez żaden UI).
 
 ### 4. Synchronizacja cennika — `syncTripPaymentsAfterPricingChange` (`trips.ts`)
 
@@ -175,6 +188,9 @@ dla każdego pasującego (rocznikowo) szablonu:
   `payment_method` z szablonu; `amount_paid` bez zmian; `status`
   przeliczony przez `recomputePaymentStatus`; `paid_at` zerowane gdy
   status przestaje być `paid`, zachowane gdy pozostaje `paid`.
+  Uwaga: gdy szablon zmienił walutę, a płatność ma już wpłatę
+  (`amount_paid > 0`), zostaje stara waluta przy nowej kwocie — admin
+  poprawia walutę ręcznie. Świadomy kompromis.
 - **Brak płatności** → utwórz nową (`pending`), z poszanowaniem trwale
   anulowanych: jeśli dla `(payment_type, installment_number)` istnieje
   płatność `cancelled`, nowej nie tworzymy.
@@ -185,11 +201,13 @@ cennik nadpisuje wszystko. Płatności `cancelled` nietykane.
 
 ### 5. Panel admina `/admin/payments` (`payments-list.tsx`)
 
-- Wskaźnik salda przy statusie, z progiem `SALDO_EPSILON = 0.5`:
-  - `amount_remaining < −SALDO_EPSILON` → zielony badge (emerald)
-    „Nadpłata X waluta"
-  - `amount_remaining > SALDO_EPSILON` przy statusie częściowym →
-    badge amber „Do dopłaty X waluta"
+- Wskaźnik salda przy statusie, z progiem `SALDO_EPSILON = 0.5`,
+  pomijany dla płatności `cancelled`:
+  - `amount_remaining < −SALDO_EPSILON` i `status !== 'cancelled'` →
+    zielony badge (emerald) „Nadpłata X waluta"
+  - `amount_remaining > SALDO_EPSILON` przy statusie częściowym
+    (`partially_paid` / `partially_paid_overdue`) → badge amber
+    „Do dopłaty X waluta"
   - kwota X = `Math.abs(amount_remaining)`, jednostka = `row.currency`
 - Kolumna „Zniżka" zostaje — pokazuje `original_amount − amount`
   (różnica dodatnia = zniżka). Liczona jak dziś.
@@ -197,14 +215,20 @@ cennik nadpisuje wszystko. Płatności `cancelled` nietykane.
   kwoty (tryb `zł`).
 - Nowe wejście „Zarejestruj wpłatę" (Komponent 2).
 
-### 6. Panel rodzica
+### 6. Panel rodzica — bez zmian (zweryfikowane)
 
-Bez zmian w kodzie — weryfikacja. Niedopłata jako `partially_paid` jest
-już renderowana jako aktywna pozycja do uregulowania (filtr:
-`status !== 'paid' && status !== 'cancelled'`). Nadpłata pozostaje
-`paid`. Weryfikacja: panel nie pokazuje kwoty ujemnej przy nadpłacie;
-przy niedopłacie pokazuje poprawną resztę. Jeśli założenie nie jest
-spełnione — zakres rozszerza się o drobną poprawkę renderowania.
+Kod panelu rodzica (`parent/payments/payments-list.tsx`) został
+sprawdzony — żadna zmiana nie jest potrzebna:
+
+- Płatność `paid` pokazuje `payment.amount` (kwota dodatnia). Nadpłata
+  (`paid`, `amount_remaining` ujemne) renderuje się więc po prostu jako
+  opłacona — bez kwoty ujemnej.
+- Płatność niezapłacona pokazuje `remaining = amount − amount_paid`
+  (dodatnie). Niedopłata jako `partially_paid` /
+  `partially_paid_overdue` wyświetla poprawną resztę „do dopłaty" i
+  trafia do podsumowań „Do zapłaty" / „Zaległość".
+
+Komponent jest zatem czysto weryfikacyjny, bez pracy implementacyjnej.
 
 ## Przypadki brzegowe
 
@@ -225,7 +249,7 @@ spełnione — zakres rozszerza się o drobną poprawkę renderowania.
 ## Poza zakresem (YAGNI)
 
 - Nowy status `overpaid` w enumie bazy.
-- Tryb procentowy zniżki (`applyDiscount`) — usuwany z UI.
+- Tryb procentowy zniżki — akcja `applyDiscount` usuwana w całości.
 - Automatyczne przywracanie zniżek po zmianie cennika.
 - Podsumowanie nadpłat/niedopłat w statystykach.
 - Saldo na karcie uczestnika.
