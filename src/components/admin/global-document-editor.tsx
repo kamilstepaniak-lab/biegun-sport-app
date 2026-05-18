@@ -3,9 +3,11 @@
 import { useState, useTransition } from 'react';
 import { FileText, ChevronDown, ChevronUp, Eye, Edit3, RotateCcw, Save, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { SanitizedHtml } from '@/components/shared/sanitized-html';
 import { Badge } from '@/components/ui/badge';
 import { saveGlobalDocument, resetGlobalDocument } from '@/lib/actions/documents';
+import { toHtml } from '@/lib/rich-text';
 
 interface GlobalDocumentEditorProps {
   id: string;
@@ -20,16 +22,18 @@ export function GlobalDocumentEditor({
   initialContent,
   defaultContent,
 }: GlobalDocumentEditorProps) {
+  const defaultHtml = toHtml(defaultContent);
   const [isOpen, setIsOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(true);
-  const [content, setContent] = useState(initialContent);
-  const [savedContent, setSavedContent] = useState(initialContent);
+  const [content, setContent] = useState(() => toHtml(initialContent));
+  const [savedContent, setSavedContent] = useState(() => toHtml(initialContent));
+  const [editorKey, setEditorKey] = useState(0);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const isDirty = content !== savedContent;
-  const isCustomized = savedContent !== defaultContent;
+  const isCustomized = savedContent !== defaultHtml;
 
   function handleSave() {
     setError(null);
@@ -53,8 +57,9 @@ export function GlobalDocumentEditor({
       if (result.error) {
         setError(result.error);
       } else {
-        setContent(defaultContent);
-        setSavedContent(defaultContent);
+        setContent(defaultHtml);
+        setSavedContent(defaultHtml);
+        setEditorKey((k) => k + 1);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
@@ -178,16 +183,18 @@ export function GlobalDocumentEditor({
           {/* Podgląd lub edytor */}
           {isPreview ? (
             <div className="bg-gray-50 rounded-xl p-5 max-h-[600px] overflow-y-auto">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">
-                {content}
-              </pre>
+              <SanitizedHtml
+                html={content}
+                className="rich-content text-sm text-gray-800 leading-relaxed"
+              />
             </div>
           ) : (
             <div className="space-y-2">
-              <Textarea
+              <RichTextEditor
+                key={editorKey}
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="font-mono text-xs leading-relaxed min-h-[600px] resize-y"
+                onChange={setContent}
+                minHeight={500}
                 placeholder="Treść dokumentu..."
               />
               {isDirty && (

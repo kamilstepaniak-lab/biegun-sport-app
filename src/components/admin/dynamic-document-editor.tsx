@@ -4,9 +4,11 @@ import { useState, useTransition } from 'react';
 import { FileText, ChevronDown, ChevronUp, Eye, Edit3, Trash2, Save, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { SanitizedHtml } from '@/components/shared/sanitized-html';
 import { updateDynamicDocument, deleteDynamicDocument } from '@/lib/actions/documents';
+import { toHtml } from '@/lib/rich-text';
 
 interface DynamicDocumentEditorProps {
   id: string;
@@ -22,9 +24,9 @@ export function DynamicDocumentEditor({
   const [isOpen, setIsOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(true);
   const [title, setTitle] = useState(initialTitle);
-  const [content, setContent] = useState(initialContent);
+  const [content, setContent] = useState(() => toHtml(initialContent));
   const [savedTitle, setSavedTitle] = useState(initialTitle);
-  const [savedContent, setSavedContent] = useState(initialContent);
+  const [savedContent, setSavedContent] = useState(() => toHtml(initialContent));
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -163,18 +165,19 @@ export function DynamicDocumentEditor({
           {/* Podgląd lub edytor treści */}
           {isPreview ? (
             <div className="bg-gray-50 rounded-xl p-5 max-h-[600px] overflow-y-auto">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">
-                {content}
-              </pre>
+              <SanitizedHtml
+                html={content}
+                className="rich-content text-sm text-gray-800 leading-relaxed"
+              />
             </div>
           ) : (
             <div className="space-y-2">
               <Label htmlFor={`content_${id}`}>Treść</Label>
-              <Textarea
-                id={`content_${id}`}
+              <RichTextEditor
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="font-mono text-xs leading-relaxed min-h-[400px] resize-y"
+                onChange={setContent}
+                minHeight={400}
+                placeholder="Treść dokumentu..."
               />
               {isDirty && (
                 <p className="text-xs text-amber-600">

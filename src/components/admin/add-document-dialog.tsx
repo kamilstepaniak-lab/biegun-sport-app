@@ -4,8 +4,8 @@ import { useState, useTransition } from 'react';
 import { Plus, X, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { createDynamicDocument } from '@/lib/actions/documents';
 
 export function AddDocumentDialog() {
@@ -75,12 +75,11 @@ export function AddDocumentDialog() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="new_doc_content">Treść</Label>
-          <Textarea
-            id="new_doc_content"
+          <RichTextEditor
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
+            minHeight={300}
             placeholder="Wpisz treść dokumentu..."
-            className="font-mono text-xs leading-relaxed min-h-[300px] resize-y"
           />
         </div>
       </div>

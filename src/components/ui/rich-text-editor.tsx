@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { List } from 'lucide-react';
+import { List, ListOrdered } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
@@ -11,9 +11,17 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   placeholder?: string;
   className?: string;
+  /** Minimalna wysokość pola edycji w px (domyślnie 96). */
+  minHeight?: number;
 }
 
-export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
+export function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  className,
+  minHeight = 96,
+}: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -29,7 +37,8 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     },
     editorProps: {
       attributes: {
-        class: 'rich-editor-content focus:outline-none min-h-[96px] p-3 text-sm text-gray-700 leading-relaxed',
+        class: 'rich-editor-content focus:outline-none p-3 text-sm text-gray-700 leading-relaxed',
+        style: `min-height:${minHeight}px`,
       },
     },
     immediatelyRender: false,
@@ -60,6 +69,17 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           title="Lista punktowana"
         >
           <List className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+          className={cn(
+            'flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors',
+            editor?.isActive('orderedList') && 'bg-gray-200 text-gray-900'
+          )}
+          title="Lista numerowana"
+        >
+          <ListOrdered className="h-3.5 w-3.5" />
         </button>
       </div>
 

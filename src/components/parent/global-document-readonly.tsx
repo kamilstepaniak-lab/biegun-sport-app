@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { SanitizedHtml } from '@/components/shared/sanitized-html';
+import { isHtmlContent } from '@/lib/rich-text';
 
 interface GlobalDocumentReadonlyProps {
   title: string;
@@ -46,9 +48,16 @@ export function GlobalDocumentReadonly({ title, content }: GlobalDocumentReadonl
         <div className="px-4 pb-4">
           <div className="h-px bg-gray-100 mb-4" />
           <div className="bg-gray-50 rounded-xl p-5 max-h-[600px] overflow-y-auto">
-            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">
-              {content}
-            </pre>
+            {isHtmlContent(content) ? (
+              <SanitizedHtml
+                html={content}
+                className="rich-content text-sm text-gray-800 leading-relaxed"
+              />
+            ) : (
+              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">
+                {content}
+              </pre>
+            )}
           </div>
         </div>
       )}
