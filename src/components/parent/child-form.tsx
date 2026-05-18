@@ -13,7 +13,6 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,9 +45,6 @@ interface ChildFormProps {
 export function ChildForm({ groups, child, mode }: ChildFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(
-    child?.group || null
-  );
 
   // Notatki rodzica — poza schematem Zod, osobny state
   const [notesHealth, setNotesHealth] = useState(child?.parent_notes_health ?? '');
@@ -101,8 +97,6 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
   }
 
   function handleGroupChange(groupId: string) {
-    const group = groups.find((g) => g.id === groupId) || null;
-    setSelectedGroup(group);
     form.setValue('group_id', groupId || undefined);
   }
 
@@ -134,7 +128,7 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="min-h-5" />
                   </FormItem>
                 )}
               />
@@ -152,13 +146,11 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="min-h-5" />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="birth_date"
@@ -172,7 +164,7 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
                         {...field}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="min-h-5" />
                   </FormItem>
                 )}
               />
@@ -197,49 +189,43 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
                         }
                       />
                     </FormControl>
-                    <FormDescription>
-                      Opcjonalne - przydatne przy doborze sprzętu
-                    </FormDescription>
-                    <FormMessage />
+                    <FormMessage className="min-h-5" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="group_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      Grupa
+                    </FormLabel>
+                    <Select
+                      onValueChange={handleGroupChange}
+                      defaultValue={field.value || undefined}
+                      disabled={isLoading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wybierz grupę (opcjonalnie)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="min-h-5" />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="group_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-gray-400" />
-                    Grupa
-                  </FormLabel>
-                  <Select
-                    onValueChange={handleGroupChange}
-                    defaultValue={field.value || undefined}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Wybierz grupę (opcjonalnie)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {selectedGroup?.description || 'Wybierz grupę, aby zobaczyć opis'}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 

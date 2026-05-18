@@ -54,7 +54,7 @@ export function ParticipantNotesCard({ participantId, initialNotes, compact = fa
             <div>
               <CardTitle className="text-base font-semibold">Notatki</CardTitle>
               <CardDescription>
-                Informacje o uczestniku (np. zdrowie, alergie, uwagi)
+                Wewnętrzne uwagi biura widoczne tylko dla administratorów
               </CardDescription>
             </div>
           </div>
