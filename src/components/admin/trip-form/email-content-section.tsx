@@ -14,8 +14,6 @@ export function EmailContentFields({ formData, updateFormData }: SectionProps) {
 
   return (
     <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
-      <p className="text-sm font-medium text-muted-foreground">Treść maila do rodziców</p>
-
       {/* Co zabrać */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
