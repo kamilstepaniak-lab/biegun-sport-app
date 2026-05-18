@@ -22,6 +22,7 @@ import {
   Info,
   ArrowRight,
   ArrowLeft,
+  Home,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -224,24 +225,24 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     <ArrowRight className="h-3.5 w-3.5 text-emerald-500" />
                     <span className="text-xs font-semibold text-gray-700">Wyjazd</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
-                      <p className="text-xs text-gray-500">
-                        {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
-                      </p>
-                    </div>
+                  <div className="space-y-0.5">
+                    <p className="text-sm text-gray-900">{trip.departure_location}</p>
+                    <p className="text-sm text-gray-900">{format(departureDate, 'd MMMM yyyy', { locale: pl })}</p>
+                    <p className="text-sm text-gray-900">{format(departureDate, 'HH:mm', { locale: pl })}</p>
                   </div>
                   {trip.departure_stop2_location && (
-                    <div className="flex items-start gap-2 pt-1 border-t border-gray-100">
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
-                        {trip.departure_stop2_datetime && (
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
+                      <p className="text-sm text-gray-900">{trip.departure_stop2_location}</p>
+                      {trip.departure_stop2_datetime && (
+                        <>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
                           </p>
-                        )}
-                      </div>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -250,24 +251,24 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     <ArrowLeft className="h-3.5 w-3.5 text-red-400" />
                     <span className="text-xs font-semibold text-gray-700">Powrót</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
-                      <p className="text-xs text-gray-500">
-                        {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
-                      </p>
-                    </div>
+                  <div className="space-y-0.5">
+                    <p className="text-sm text-gray-900">{trip.return_location}</p>
+                    <p className="text-sm text-gray-900">{format(returnDate, 'd MMMM yyyy', { locale: pl })}</p>
+                    <p className="text-sm text-gray-900">{format(returnDate, 'HH:mm', { locale: pl })}</p>
                   </div>
                   {trip.return_stop2_location && (
-                    <div className="flex items-start gap-2 pt-1 border-t border-gray-100">
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
-                        {trip.return_stop2_datetime && (
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
+                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
+                      <p className="text-sm text-gray-900">{trip.return_stop2_location}</p>
+                      {trip.return_stop2_datetime && (
+                        <>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
                           </p>
-                        )}
-                      </div>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}
+                          </p>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -276,7 +277,10 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                 <div className="grid gap-2 md:grid-cols-2">
                   {trip.location && (
                     <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Miejsce</p>
+                      <p className="text-xs font-semibold text-gray-500 mb-0.5 flex items-center gap-1">
+                        <Home className="h-3 w-3" />
+                        Miejsce
+                      </p>
                       <p className="text-sm text-gray-900">{trip.location}</p>
                     </div>
                   )}

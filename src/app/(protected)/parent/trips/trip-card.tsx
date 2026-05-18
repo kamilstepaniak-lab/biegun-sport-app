@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Backpack,
   Info,
+  Home,
 } from 'lucide-react';
 
 import {
@@ -30,7 +31,6 @@ import { Textarea } from '@/components/ui/textarea';
 import type { TripForParent, ChildTripStatus } from '@/lib/actions/trips';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
-import { formatTripDatetime } from '@/lib/trip-datetime';
 import { PaymentDue } from '@/components/shared/payment-due';
 
 export type ParticipationStatus = ChildTripStatus['participation_status'];
@@ -378,19 +378,29 @@ function TripCardInner({
                     <ArrowRight className="h-3.5 w-3.5 text-emerald-500" />
                     <span className="text-xs font-semibold text-gray-700">Wyjazd</span>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{trip.departure_location}</p>
-                    <p className="text-xs text-gray-500">
-                      {formatTripDatetime(trip.departure_datetime, trip.departure_time_known ?? true)}
+                  <div className="space-y-0.5">
+                    <p className="text-sm text-gray-900">{trip.departure_location}</p>
+                    <p className="text-sm text-gray-900">
+                      {format(new Date(trip.departure_datetime), 'd MMMM yyyy', { locale: pl })}
                     </p>
+                    {(trip.departure_time_known ?? true) && (
+                      <p className="text-sm text-gray-900">
+                        {format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}
+                      </p>
+                    )}
                   </div>
                   {trip.departure_stop2_location && (
-                    <div className="pt-1 border-t border-gray-100">
-                      <p className="font-medium text-gray-900 text-sm">{trip.departure_stop2_location}</p>
+                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
+                      <p className="text-sm text-gray-900">{trip.departure_stop2_location}</p>
                       {trip.departure_stop2_datetime && (
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
-                        </p>
+                        <>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
+                          </p>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}
+                          </p>
+                        </>
                       )}
                     </div>
                   )}
@@ -400,19 +410,29 @@ function TripCardInner({
                     <ArrowLeft className="h-3.5 w-3.5 text-red-400" />
                     <span className="text-xs font-semibold text-gray-700">Powrót</span>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{trip.return_location}</p>
-                    <p className="text-xs text-gray-500">
-                      {formatTripDatetime(trip.return_datetime, trip.return_time_known ?? true)}
+                  <div className="space-y-0.5">
+                    <p className="text-sm text-gray-900">{trip.return_location}</p>
+                    <p className="text-sm text-gray-900">
+                      {format(new Date(trip.return_datetime), 'd MMMM yyyy', { locale: pl })}
                     </p>
+                    {(trip.return_time_known ?? true) && (
+                      <p className="text-sm text-gray-900">
+                        {format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}
+                      </p>
+                    )}
                   </div>
                   {trip.return_stop2_location && (
-                    <div className="pt-1 border-t border-gray-100">
-                      <p className="font-medium text-gray-900 text-sm">{trip.return_stop2_location}</p>
+                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
+                      <p className="text-sm text-gray-900">{trip.return_stop2_location}</p>
                       {trip.return_stop2_datetime && (
-                        <p className="text-xs text-gray-500">
-                          {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy, HH:mm', { locale: pl })}
-                        </p>
+                        <>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
+                          </p>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}
+                          </p>
+                        </>
                       )}
                     </div>
                   )}
@@ -422,7 +442,10 @@ function TripCardInner({
                 <div className="grid gap-2 md:grid-cols-2">
                   {trip.location && (
                     <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Miejsce</p>
+                      <p className="text-xs font-semibold text-gray-500 mb-0.5 flex items-center gap-1">
+                        <Home className="h-3 w-3" />
+                        Miejsce
+                      </p>
                       <p className="text-sm text-gray-900">{trip.location}</p>
                     </div>
                   )}
