@@ -861,7 +861,7 @@ export async function updatePaymentStatus(
   // Pobierz płatność (wraz ze starym statusem do audit logu)
   const { data: payment } = await supabase
     .from('payments')
-    .select('amount, status, amount_paid')
+    .select('amount, status, amount_paid, due_date')
     .eq('id', paymentId)
     .single();
 
@@ -873,17 +873,21 @@ export async function updatePaymentStatus(
   const oldAmountPaid = payment.amount_paid || 0;
 
   const updateData: Record<string, unknown> = {
-    status,
     updated_at: new Date().toISOString(),
   };
 
-  if (status === 'paid') {
-    updateData.amount_paid = payment.amount;
-    updateData.paid_at = new Date().toISOString();
-    updateData.marked_by = user.id;
-  } else if (status === 'pending') {
-    updateData.amount_paid = 0;
-    updateData.paid_at = null;
+  if (status === 'cancelled') {
+    // Anulowanie — status ustawiany wprost, kwot nie ruszamy.
+    updateData.status = 'cancelled';
+  } else {
+    // 'paid' → traktujemy jak pełną wpłatę; 'pending' → zerujemy wpłatę.
+    // Wynikowy status zawsze przez recomputePaymentStatus (jedno źródło prawdy).
+    const newAmountPaid = status === 'paid' ? payment.amount : 0;
+    const computed = recomputePaymentStatus(payment.amount, newAmountPaid, payment.due_date);
+    updateData.amount_paid = newAmountPaid;
+    updateData.status = computed;
+    updateData.paid_at = computed === 'paid' ? new Date().toISOString() : null;
+    if (status === 'paid') updateData.marked_by = user.id;
   }
 
   const { error } = await supabase
@@ -967,12 +971,31 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
     return { error: 'Kwota nie może być ujemna' };
   }
 
+  const { data: payment } = await supabase
+    .from('payments')
+    .select('amount_paid, due_date, status')
+    .eq('id', paymentId)
+    .single();
+
+  if (!payment) {
+    return { error: 'Nie znaleziono płatności' };
+  }
+
+  const updateData: Record<string, unknown> = {
+    amount: newAmount,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Płatność anulowana — zmieniamy tylko kwotę, statusu nie ruszamy.
+  if (payment.status !== 'cancelled') {
+    const newStatus = recomputePaymentStatus(newAmount, payment.amount_paid || 0, payment.due_date);
+    updateData.status = newStatus;
+    updateData.paid_at = newStatus === 'paid' ? new Date().toISOString() : null;
+  }
+
   const { error } = await supabase
     .from('payments')
-    .update({
-      amount: newAmount,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', paymentId);
 
   if (error) {
