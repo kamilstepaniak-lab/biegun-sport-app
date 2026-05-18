@@ -29,6 +29,14 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-18
+
+- Zapisani: `router.refresh()` po zmianie statusu (pojedynczo/masowo) i notatki
+  — uczestnik teraz natychmiast trafia do właściwej sekcji bez manualnego F5.
+- Zapisani: eksport Excel respektuje aktywne filtry (grupa/wyszukiwarka).
+- Wzór umowy: uzupełniona lista placeholderów w edytorze (brakowało 6 z 15).
+- Umowy: poprawiony mylący komunikat empty state.
+
 ### 2026-05-17
 
 - Poprawki płatności wyjazdu: statystyki liczone osobno per waluta (PLN/EUR),
