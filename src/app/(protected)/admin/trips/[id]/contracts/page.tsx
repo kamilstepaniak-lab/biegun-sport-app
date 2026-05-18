@@ -107,7 +107,7 @@ export default async function TripContractsPage({ params }: PageProps) {
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">Brak wygenerowanych umów</p>
-              <p className="text-sm">Wróć do wyjazdu i kliknij &quot;Generuj umowy&quot;</p>
+              <p className="text-sm">Umowy tworzą się automatycznie gdy rodzic potwierdzi wyjazd — pod warunkiem że wzór umowy jest aktywny (przycisk &quot;Wzór umowy&quot; na liście wyjazdów).</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

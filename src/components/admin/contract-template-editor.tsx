@@ -193,7 +193,13 @@ export function ContractTemplateEditor({
                 />
                 <p className="text-xs text-muted-foreground">
                   Placeholdery:{' '}
-                  {['{{trip_title}}', '{{child_name}}', '{{parent_name}}', '{{parent_email}}', '{{trip_departure}}', '{{trip_return}}', '{{trip_location}}', '{{child_birth_date}}', '{{today_date}}'].map((p) => (
+                  {[
+                    '{{trip_title}}', '{{trip_location}}', '{{trip_departure}}', '{{trip_return}}',
+                    '{{trip_bank_pln}}', '{{trip_bank_eur}}',
+                    '{{child_name}}', '{{child_birth_date}}',
+                    '{{parent_name}}', '{{parent_email}}', '{{parent_address}}', '{{parent_pesel}}', '{{parent_phone}}',
+                    '{{payment_schedule}}', '{{today_date}}',
+                  ].map((p) => (
                     <code key={p} className="bg-gray-100 px-1 rounded mr-1">{p}</code>
                   ))}
                 </p>
