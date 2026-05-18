@@ -137,6 +137,9 @@ export async function saveTripContractTemplate(
     return { error: 'Nie udało się zapisać wzoru' };
   }
 
+  // Niepodpisane umowy odświeżamy nową treścią wzoru
+  await regenerateUnsignedContractsForTrip(tripId);
+
   revalidatePath(`/admin/trips/${tripId}`);
   return { success: true };
 }
@@ -175,6 +178,8 @@ export async function activateTripContractTemplate(
     console.error('activateTripContractTemplate error:', error);
     return { error: 'Nie udało się aktywować wzoru' };
   }
+
+  await regenerateUnsignedContractsForTrip(tripId);
 
   revalidatePath(`/admin/trips/${tripId}`);
   return { success: true };
@@ -310,6 +315,55 @@ export async function createContractForParticipantIfNeeded(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper wewnętrzny: Regeneruj treść niepodpisanych umów wyjazdu
+// Wywoływany po zmianie wzoru umowy, cennika lub danych wyjazdu —
+// umowy zaakceptowane (accepted_at) i zarchiwizowane pozostają nietknięte.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function regenerateUnsignedContractsForTrip(tripId: string): Promise<void> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data: template } = await supabaseAdmin
+    .from('trip_contract_templates')
+    .select('template_text')
+    .eq('trip_id', tripId)
+    .maybeSingle();
+
+  if (!template?.template_text) return; // wyjazd nie ma wzoru umowy
+
+  const { data: contracts } = await supabaseAdmin
+    .from('trip_contracts')
+    .select('id, participant_id')
+    .eq('trip_id', tripId)
+    .is('accepted_at', null)
+    .is('archived_at', null);
+
+  if (!contracts || contracts.length === 0) return;
+
+  for (const contract of contracts) {
+    const contractText = await buildContractText(
+      tripId,
+      contract.participant_id,
+      template.template_text
+    );
+    if (!contractText) continue;
+
+    const { error } = await supabaseAdmin
+      .from('trip_contracts')
+      .update({ contract_text: contractText })
+      .eq('id', contract.id);
+
+    if (error) {
+      console.error('regenerateUnsignedContractsForTrip error:', error);
+    }
+  }
+
+  revalidatePath('/parent/contracts');
+  revalidatePath('/admin/contracts');
+  revalidatePath(`/admin/trips/${tripId}/contracts`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Admin: Pobierz umowy dla konkretnego wyjazdu
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -344,6 +398,7 @@ export async function getContractsForTrip(tripId: string) {
       )
     `)
     .eq('trip_id', tripId)
+    .is('archived_at', null)
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -386,6 +441,7 @@ export async function getContractsForAdmin() {
         return_datetime
       )
     `)
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -437,6 +493,7 @@ export async function getContractsForParent(participantId?: string) {
       )
     `)
     .in('participant_id', childIds)
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -525,30 +582,62 @@ export async function acceptContract(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Admin: Usuń umowy (bulk)
+// Admin: Usuń / zarchiwizuj umowy (bulk)
+// Podpisane (accepted_at) umowy są dowodem zgody — nie kasujemy ich,
+// tylko archiwizujemy. Oczekujące umowy usuwamy fizycznie.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function deleteContractsAdmin(
   contractIds: string[]
-): Promise<{ success?: boolean; error?: string }> {
+): Promise<{ success?: boolean; error?: string; deleted?: number; archived?: number }> {
   const user = await requireAdmin();
   if (!user) return { error: 'Brak uprawnień' };
-  if (contractIds.length === 0) return { success: true };
+  if (contractIds.length === 0) return { success: true, deleted: 0, archived: 0 };
 
   const supabaseAdmin = createAdminClient();
 
-  const { error } = await supabaseAdmin
+  const { data: rows, error: fetchError } = await supabaseAdmin
     .from('trip_contracts')
-    .delete()
+    .select('id, accepted_at')
     .in('id', contractIds);
 
-  if (error) {
-    console.error('deleteContractsAdmin error:', error);
-    return { error: 'Nie udało się usunąć umów' };
+  if (fetchError) {
+    console.error('deleteContractsAdmin fetch error:', fetchError);
+    return { error: 'Nie udało się pobrać umów' };
   }
 
+  const toArchive = (rows ?? []).filter((r) => r.accepted_at).map((r) => r.id);
+  const toDelete = (rows ?? []).filter((r) => !r.accepted_at).map((r) => r.id);
+
+  if (toArchive.length > 0) {
+    const { error } = await supabaseAdmin
+      .from('trip_contracts')
+      .update({ archived_at: new Date().toISOString() })
+      .in('id', toArchive);
+    if (error) {
+      console.error('deleteContractsAdmin archive error:', error);
+      return { error: 'Nie udało się zarchiwizować umów' };
+    }
+  }
+
+  if (toDelete.length > 0) {
+    const { error } = await supabaseAdmin
+      .from('trip_contracts')
+      .delete()
+      .in('id', toDelete);
+    if (error) {
+      console.error('deleteContractsAdmin delete error:', error);
+      return { error: 'Nie udało się usunąć umów' };
+    }
+  }
+
+  logActivity(user.id, user.email, 'contracts_removed', {
+    archivedCount: toArchive.length,
+    deletedCount: toDelete.length,
+  }).catch(console.error);
+
   revalidatePath('/admin/contracts');
-  return { success: true };
+  return { success: true, deleted: toDelete.length, archived: toArchive.length };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

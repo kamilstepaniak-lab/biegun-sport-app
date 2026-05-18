@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
+import { regenerateUnsignedContractsForTrip } from './contracts';
 import { getBankAccounts } from './settings';
 import { resolveEffectiveDueDate } from '@/lib/payment-due';
 import {
@@ -686,6 +687,9 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (pricingChanged) {
     await syncTripPaymentsAfterPricingChange(supabaseAdmin, id);
   }
+
+  // Odśwież treść niepodpisanych umów — dane wyjazdu / cennik mogły się zmienić
+  await regenerateUnsignedContractsForTrip(id);
 
   revalidatePath('/admin/trips');
   revalidatePath(`/admin/trips/${id}`);

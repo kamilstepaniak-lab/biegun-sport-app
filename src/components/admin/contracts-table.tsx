@@ -46,6 +46,10 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
   const allSelected = contracts.length > 0 && selected.size === contracts.length;
   const someSelected = selected.size > 0 && !allSelected;
 
+  const selectedRows = contracts.filter((c) => selected.has(c.id));
+  const acceptedCount = selectedRows.filter((c) => c.accepted_at).length;
+  const pendingCount = selectedRows.length - acceptedCount;
+
   function toggleAll() {
     if (allSelected) {
       setSelected(new Set());
@@ -64,26 +68,25 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
   }
 
   function handleDownloadSingle(contract: ContractRow) {
-    const blob = new Blob([contract.contract_text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `Umowa_${contract.contract_number ?? contract.id}_${contract.childName.replace(/\s+/g, '_')}.txt`;
+    a.href = `/api/contracts/${contract.id}/pdf`;
+    a.download = '';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
   }
 
   function handleDownloadSelected() {
     if (selected.size === 0) return;
-    setIsDownloading(true);
     const selectedContracts = contracts.filter((c) => selected.has(c.id));
-    selectedContracts.forEach((contract) => {
+    setIsDownloading(true);
+    toast.success(`Pobieranie ${selectedContracts.length} umów (PDF)...`);
+    selectedContracts.forEach((contract, i) => {
       setTimeout(() => {
         handleDownloadSingle(contract);
-      }, 100);
+        if (i === selectedContracts.length - 1) setIsDownloading(false);
+      }, i * 600);
     });
-    toast.success(`Pobieranie ${selectedContracts.length} umów...`);
-    setIsDownloading(false);
   }
 
   async function handleDeleteSelected() {
@@ -96,7 +99,10 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
     if (result.error) {
       toast.error(result.error);
     } else {
-      toast.success(`Usunięto ${ids.length} umów`);
+      const parts: string[] = [];
+      if (result.deleted) parts.push(`usunięto ${result.deleted}`);
+      if (result.archived) parts.push(`zarchiwizowano ${result.archived}`);
+      toast.success(parts.length ? `Umowy — ${parts.join(', ')}` : 'Gotowe');
       setSelected(new Set());
       router.refresh();
     }
@@ -156,8 +162,7 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
               <th className="text-left py-2 pr-4 font-medium">Rodzic</th>
               <th className="text-left py-2 pr-4 font-medium">Status</th>
               <th className="text-left py-2 pr-4 font-medium">Data akceptacji</th>
-              <th className="text-left py-2 pr-4 font-medium">Podgląd</th>
-              <th className="text-left py-2 font-medium">Pobierz</th>
+              <th className="text-left py-2 font-medium">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -206,26 +211,26 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
                       ? format(new Date(contract.accepted_at), 'd MMM yyyy, HH:mm', { locale: pl })
                       : '—'}
                   </td>
-                  <td className="py-2.5 pr-4">
-                    <ContractViewDialog
-                      contractId={contract.id}
-                      contractNumber={contract.contract_number}
-                      contractText={contract.contract_text}
-                      childName={contract.childName}
-                      parentName={contract.parentName}
-                      acceptedAt={contract.accepted_at}
-                      acceptedByName={contract.parentName}
-                    />
-                  </td>
                   <td className="py-2.5">
-                    <button
-                      onClick={() => handleDownloadSingle(contract)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg ring-1 ring-gray-200 transition-colors"
-                      title="Pobierz umowę jako .txt"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Pobierz
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <ContractViewDialog
+                        contractId={contract.id}
+                        contractNumber={contract.contract_number}
+                        contractText={contract.contract_text}
+                        childName={contract.childName}
+                        parentName={contract.parentName}
+                        acceptedAt={contract.accepted_at}
+                        acceptedByName={contract.parentName}
+                      />
+                      <button
+                        onClick={() => handleDownloadSingle(contract)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg ring-1 ring-gray-200 transition-colors"
+                        title="Pobierz umowę jako PDF"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Pobierz PDF
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -240,8 +245,14 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Usuń zaznaczone umowy</AlertDialogTitle>
             <AlertDialogDescription>
-              Czy na pewno chcesz usunąć {selected.size} zaznaczonych umów?
-              Tej operacji nie można cofnąć.
+              Zaznaczono {selected.size} umów.
+              {pendingCount > 0 && (
+                <> {pendingCount} oczekujących zostanie trwale usuniętych.</>
+              )}
+              {acceptedCount > 0 && (
+                <> {acceptedCount} podpisanych zostanie zarchiwizowanych
+                  (zachowane jako dowód zgody, ukryte z listy).</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

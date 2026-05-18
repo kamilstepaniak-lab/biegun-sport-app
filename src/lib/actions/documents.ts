@@ -39,13 +39,12 @@ export async function getGlobalDocument(id: string): Promise<string> {
 export async function getDynamicDocuments(): Promise<{ id: string; title: string; content: string }[]> {
   try {
     const supabase = await createClient();
-    const staticIds = GLOBAL_DOCUMENTS.map((d) => d.id);
+    const staticIds = new Set(GLOBAL_DOCUMENTS.map((d) => d.id));
     const { data } = await supabase
       .from('global_documents')
       .select('id, title, content')
-      .not('id', 'in', `(${staticIds.join(',')})`)
       .order('updated_at', { ascending: false });
-    return data ?? [];
+    return (data ?? []).filter((d) => !staticIds.has(d.id));
   } catch {
     return [];
   }

@@ -37,6 +37,35 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-18 (Umowy / PDF)
+
+- `/admin/contracts`: generowanie umów do PDF serwerowo (`@react-pdf/renderer`,
+  font DejaVu Sans w `public/fonts/`). Nowy endpoint `/api/contracts/[id]/pdf`
+  — PDF powstaje na żądanie, nic nie jest zapisywane. Usunięty martwy print-CSS.
+- Kolumny „Podgląd" + „Pobierz" połączone w jedną „Akcje".
+- Archiwizacja umów: `deleteContractsAdmin` archiwizuje podpisane
+  (`archived_at`), usuwa tylko oczekujące. Listy filtrują `archived_at IS NULL`.
+  Migracja `contract-archived-at.sql` (do ręcznego uruchomienia na Supabase).
+- Auto-aktualizacja: niepodpisane umowy regenerują `contract_text` po zmianie
+  wzoru / cennika / danych wyjazdu (`regenerateUnsignedContractsForTrip`).
+- Naprawa masowego pobierania (stagger) i filtra dokumentów dynamicznych.
+
+### 2026-05-18 (Logowanie)
+
+- Strona `/login`: obsługa parametru `?error=auth_failed`. Callback OAuth/magic
+  link redirectował z tym parametrem, ale strona go ignorowała — użytkownik po
+  nieudanym logowaniu Google widział pusty formularz bez komunikatu.
+  `page.tsx` odczytuje `searchParams` i przekazuje `initialError` do `LoginForm`.
+
+### 2026-05-18 (Finanse)
+
+- Ekran `/admin/finance`: widok `admin_finance_summary` rozszerzony o kolumny
+  `discount_pln` / `discount_eur` (zniżka = `original_amount - amount`) —
+  migracja `admin-finance-summary-view.sql` do ręcznego uruchomienia.
+- `% opłacenia` liczone kwotowo (`zebrano / do zapłaty`) zamiast z liczby rat.
+- Karty podsumowania EUR (Zebrano / Brakuje) + karta „Udzielone zniżki".
+- Kolumna „Zniżki" w tabeli (PLN i EUR) oraz eksport zestawienia do CSV.
+
 ### 2026-05-18
 
 - Zapisani: `router.refresh()` po zmianie statusu (pojedynczo/masowo) i notatki

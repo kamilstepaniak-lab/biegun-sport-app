@@ -17,6 +17,8 @@ const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   registration_created: { label: 'Zapis na wyjazd',     color: 'bg-purple-100 text-purple-800' },
   registration_cancelled: { label: 'Anulowanie zapisu', color: 'bg-red-100 text-red-800' },
   trip_email_sent:      { label: 'Wysłanie maili',      color: 'bg-amber-100 text-amber-800' },
+  payment_deleted:      { label: 'Usunięcie płatności', color: 'bg-red-100 text-red-800' },
+  contracts_removed:    { label: 'Usunięcie umów',      color: 'bg-red-100 text-red-800' },
 };
 
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -84,6 +86,15 @@ function renderDetails(details: Record<string, unknown> | null, actionType: stri
         {d.sent !== undefined ? (
           <p className="text-gray-500">Wysłano: {str(d.sent)} · Błędy: {str(d.skipped ?? 0)}</p>
         ) : null}
+      </div>
+    );
+  }
+
+  if (actionType === 'contracts_removed') {
+    return (
+      <div className="text-xs text-gray-600">
+        {d.deletedCount ? <p>Usunięto: {str(d.deletedCount)}</p> : null}
+        {d.archivedCount ? <p>Zarchiwizowano: {str(d.archivedCount)}</p> : null}
       </div>
     );
   }
