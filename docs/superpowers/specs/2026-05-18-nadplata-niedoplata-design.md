@@ -1,235 +1,239 @@
-# Nadpłata, niedopłata i nadrzędność cennika — projekt
+# Wpłaty, zniżka, nadpłata i niedopłata — projekt
 
 Data: 2026-05-18
 Status: zatwierdzony do implementacji
 
 ## Problem
 
-Po potwierdzeniu udziału przez rodzica uczestnik dostaje rekordy
-płatności wynikające z cennika wyjazdu. Później cena może się zmienić —
-i system musi to czytelnie odzwierciedlić:
+Po potwierdzeniu udziału uczestnik dostaje rekordy płatności wynikające
+z cennika wyjazdu. W praktyce wpłata rodzica często nie zgadza się z
+ceną cennikową (np. wpłata 322 zł przy cenie 400 zł). Dziś panel
+`/admin/payments` pozwala tylko przełączyć płatność „opłacona /
+nieopłacona" — nie ma rejestrowania faktycznej kwoty wpłaty, więc admin
+nie ma jak poprawnie odzwierciedlić wpłaty częściowej ani zniżki.
 
-- **Opcja 1 — zmiana cennika wyjazdu.** Admin edytuje ceny w formularzu
-  wyjazdu. Nowe ceny muszą zaktualizować się u wszystkich uczestników:
-  potwierdzonych (mają rekordy płatności) i niepotwierdzonych (jeszcze
-  ich nie mają — patrz niżej).
-- **Opcja 2 — zmiana indywidualna.** Admin edytuje cenę pojedynczej
-  płatności albo nadaje zniżkę. To musi być widoczne dla rodzica.
+Cel: admin rejestruje realną kwotę wpłaty; przy wpłacie mniejszej niż
+należna jednym kliknięciem decyduje, czy to **zniżka** (płatność
+zamknięta), czy **niedopłata** (brakująca kwota dalej do uregulowania).
+Nadpłata i niedopłata mają być wyliczane i widoczne.
 
-W obu przypadkach, gdy nowa cena rozjedzie się z tym, co uczestnik już
-wpłacił, powstaje **nadpłata** lub **niedopłata** — dziś niewidoczna.
+## Stan obecny (z eksploracji kodu)
+
+- `/admin/payments` (`payments-list.tsx`): admin może przełączać status
+  (`updatePaymentStatus` → `paid` ustawia `amount_paid = amount`,
+  `pending` zeruje), edytować kwotę należną (tryb `zł` →
+  `updatePaymentAmount`; tryb `%` → `applyDiscount`), edytować notatkę,
+  usuwać płatności. **Brak rejestrowania wpłat częściowych.**
+- `addPaymentTransaction` i `markPaymentAsPaid` istnieją w
+  `payments.ts`, ale **żaden UI ich nie wywołuje**.
+- Tabela `payment_transactions` przechowuje historię wpłat; strona
+  `/admin/payments/history` ją pokazuje.
+- Kolumna generowana `amount_remaining = amount − COALESCE(amount_paid,0)`
+  już istnieje i może być ujemna.
 
 ## Decyzje (ustalone z właścicielem)
 
-### D1. Cennik jest nadrzędny — twardy reset
+### D1. Rejestrowanie wpłaty z checkboxem „zniżka"
+
+Admin w `/admin/payments` rejestruje wpłatę: podaje kwotę z banku,
+metodę i datę. Wpłata trafia do `payment_transactions` (historia
+zachowana) i powiększa `amount_paid`.
+
+Gdy suma wpłat jest **mniejsza** niż kwota należna (`amount`), w
+formularzu wpłaty dostępny jest checkbox **„zniżka"**:
+
+- **zaznaczony** → kwota należna `amount` zostaje obniżona do sumy
+  wpłat (`amount := amount_paid`); płatność staje się `paid`. Cena
+  cennikowa zostaje w `original_amount`, więc różnica
+  (`original_amount − amount`) pokazuje się jako zniżka.
+- **niezaznaczony** → `amount` bez zmian; płatność = `partially_paid`
+  (lub `partially_paid_overdue`); widoczna niedopłata „brak X zł".
+
+Checkbox jest nieaktywny/ukryty, gdy wpłata pokrywa lub przekracza
+kwotę należną (nie ma czego „rabatować").
+
+### D2. Edycja kwoty należnej
+
+Admin może wprost edytować kwotę należną (`updatePaymentAmount`) — gdy z
+góry ustala inną cenę. Po edycji status jest przeliczany.
+
+### D3. Usunięcie trybu procentowego
+
+Tryb `%` w edytorze kwoty (`applyDiscount`) zostaje usunięty z UI —
+zastępuje go checkbox „zniżka" przy wpłacie. Mechanizm procentowy nie
+jest już potrzebny.
+
+### D4. Cennik nadrzędny
 
 Zmiana cennika w edycji wyjazdu ustawia nową cenę u **każdego**
-potwierdzonego uczestnika — **bez wyjątków**, także u osób z
-indywidualną zniżką lub ręczną korektą, także u tych, którzy już
-zapłacili.
+potwierdzonego uczestnika (`amount` i `original_amount` = kwota z
+szablonu). Dotychczasowa wpłata (`amount_paid`) zostaje. Indywidualne
+zniżki przepadają — admin w razie potrzeby nadaje je ponownie. To
+świadoma decyzja.
 
-Konkretnie dla każdej pasującej płatności: `amount` i `original_amount`
-ustawiane na kwotę z szablonu cennika, `discount_percentage` zerowane.
-Dotychczasowa wpłata (`amount_paid`) zostaje nietknięta.
+### D5. Niepotwierdzeni nie mają rekordów płatności
 
-Przykład: karnet z ceną bazową 400 zł, uczestnik miał 40 zł zniżki
-(do zapłaty 360 zł) i zapłacił 360 zł. Admin zmienia cennik na 500 zł →
-płatność uczestnika: `amount = 500`, `amount_paid = 360` →
-**niedopłata 140 zł**. Rodzic widzi „500 zł, zapłacone 360 zł".
-Następnie admin **ręcznie** koryguje cenę tej osobie pod zniżkę
-(opcja 2). Przywracanie zniżek po zmianie cennika to świadomy, ręczny
-krok — system go nie automatyzuje.
+Rekordy `payments` powstają przy potwierdzeniu udziału. Niepotwierdzony
+uczestnik widzi cennik wyjazdu — zmiana cennika działa u niego
+automatycznie, bez logiki per-uczestnik.
 
-### D2. Niepotwierdzeni nie mają rekordów płatności
+### D6. Niedopłata aktywna „do dopłaty"
 
-Rekordy w tabeli `payments` powstają dopiero przy potwierdzeniu udziału
-(`createPaymentsForRegistration`). Uczestnik niepotwierdzony widzi
-bezpośrednio cennik wyjazdu (`trip_payment_templates`). Zmiana cennika
-aktualizuje go automatycznie — nie wymaga żadnej logiki per-uczestnik.
+Niedopłata to status `partially_paid` / `partially_paid_overdue` —
+rodzic widzi ją jako aktywną pozycję do uregulowania.
 
-### D3. Zmiana indywidualna jest widoczna dla rodzica
+### D7. Brak nowego statusu i brak migracji
 
-Ręczna korekta kwoty (`updatePaymentAmount`) i nadanie zniżki
-(`applyDiscount`) przeliczają status płatności, więc rodzic od razu
-widzi efekt — w tym niedopłatę jako aktywną pozycję „do dopłaty".
-
-### D4. Niedopłata jest aktywna „do dopłaty"
-
-Niedopłata u uczestnika, który „zapłacił", staje się aktywną pozycją —
-płatność wraca do statusu częściowo opłaconej, rodzic widzi kwotę do
-uregulowania.
-
-### D5. Brak nowego statusu i brak migracji
-
-Saldo jest wyliczane z istniejących kolumn. Enum `PaymentStatus` bez
-zmian, schemat bazy bez zmian.
+Saldo wyliczane z istniejących kolumn. Enum `PaymentStatus` i schemat
+bazy bez zmian.
 
 ## Model
 
 `saldo = amount_paid − amount`
 
-- `saldo > 0` → **nadpłata** (uczestnik wpłacił za dużo)
+- `saldo > 0` → **nadpłata**
 - `saldo < 0` → **niedopłata** / „do dopłaty"
 - `saldo = 0` → rozliczone
 
-Kolumna generowana `amount_remaining = amount − COALESCE(amount_paid, 0)`
-już istnieje (migracja `missing-columns-and-contracts.sql`) i może być
-ujemna. Saldo to `−amount_remaining`. Nie dodajemy nic do schematu bazy.
+Saldo = `−amount_remaining` (kolumna generowana). Bez zmian w schemacie.
 
-**Tolerancja groszowa `SALDO_EPSILON = 0.5`** — jedna stała używana
-spójnie: saldo uznajemy za niezerowe gdy `|amount_remaining| > 0.5`.
-Poniżej progu (np. reszta 0,30 zł) płatność jest rozliczona i nie
-pokazujemy badge'a. `recomputePaymentStatus` porównuje kwoty wprost
-(`amountPaid >= amount`) bez tolerancji — spójne: reszta 0,30 zł daje
-status `paid` i brak badge'a.
+**Tolerancja groszowa `SALDO_EPSILON = 0.5`** — saldo uznajemy za
+niezerowe gdy `|amount_remaining| > 0.5`. `recomputePaymentStatus`
+porównuje kwoty wprost, bez tolerancji (reszta 0,30 zł → `paid`, brak
+badge'a — spójne).
 
 Enum `PaymentStatus` bez zmian: `pending | partially_paid | paid |
 overdue | partially_paid_overdue | cancelled`.
 
-- niedopłata = istniejący `partially_paid` / `partially_paid_overdue`
+- niedopłata = `partially_paid` / `partially_paid_overdue`
 - nadpłata = `paid` z ujemnym `amount_remaining`
 
 ## Komponenty
 
 ### 1. `recomputePaymentStatus(amount, amountPaid, dueDate)`
 
-Nowa, czysta funkcja w `src/lib/actions/payments.ts` — jedno źródło
-prawdy dla statusu płatności.
+Czysta funkcja w `src/lib/actions/payments.ts` — jedno źródło prawdy
+dla statusu.
 
 Sygnatura:
 `recomputePaymentStatus(amount: number, amountPaid: number, dueDate: string | null): PaymentStatus`
 
-Logika **kaskadowa** (`if / else if / else` — warunki zależne):
+Logika kaskadowa (`if / else if / else`):
 
-- `amountPaid >= amount` → `paid` (obejmuje też nadpłatę)
-- w przeciwnym razie, jeśli `amountPaid > 0` (czyli
-  `0 < amountPaid < amount`) → `partially_paid_overdue` jeśli po
+- `amountPaid >= amount` → `paid` (obejmuje nadpłatę)
+- inaczej, jeśli `amountPaid > 0` → `partially_paid_overdue` jeśli po
   terminie, inaczej `partially_paid`
-- w przeciwnym razie (`amountPaid <= 0`) → `overdue` jeśli po terminie,
-  inaczej `pending`
+- inaczej (`amountPaid <= 0`) → `overdue` jeśli po terminie, inaczej
+  `pending`
 
-„Po terminie" = `dueDate !== null` i data `dueDate` wcześniejsza niż
-dziś. `dueDate === null` → płatność nigdy nie jest „po terminie".
+„Po terminie" = `dueDate !== null` i data wcześniejsza niż dziś.
+`dueDate === null` → nigdy „po terminie".
 
-Funkcja nie zwraca `cancelled` — wywołujący NIE woła jej dla płatności
+Funkcja nie zwraca `cancelled` — nie jest wołana dla płatności
 anulowanych.
 
-### 2. Synchronizacja cennika — `syncTripPaymentsAfterPricingChange` (`trips.ts`)
+### 2. Rejestrowanie wpłaty + checkbox „zniżka" (`payments.ts` + `payments-list.tsx`)
 
-Uruchamiana wyłącznie gdy cennik faktycznie się zmienił (flaga
-`pricingChanged` z `paymentTemplatesEqual` — już zaimplementowana).
+**Server action.** Rozszerzenie istniejącej `addPaymentTransaction` o
+opcjonalny parametr `closeAsDiscount: boolean` (domyślnie `false`):
+
+1. Wstawia rekord do `payment_transactions` (jak dziś).
+2. Liczy `newAmountPaid = amount_paid + kwota wpłaty`.
+3. Jeśli `closeAsDiscount === true` **i** `newAmountPaid < amount`:
+   ustawia `amount := newAmountPaid` (obniżenie kwoty należnej do sumy
+   wpłat). `original_amount` bez zmian.
+4. Status przeliczany przez `recomputePaymentStatus` na podstawie
+   finalnych `amount` i `newAmountPaid`. `paid_at` ustawiane gdy status
+   = `paid`, zerowane gdy nie.
+5. Walidacja: kwota wpłaty > 0; `closeAsDiscount` ignorowane gdy wpłata
+   pokrywa należność. Płatność `cancelled` — rejestrowanie wpłaty
+   niedozwolone (zwróć błąd).
+
+**UI.** W `/admin/payments` przy każdym wierszu wejście „Zarejestruj
+wpłatę" otwierające mały formularz: kwota, metoda (gotówka/przelew),
+data, oraz checkbox „zniżka — zamknij płatność mimo niższej kwoty"
+widoczny tylko gdy wpisana kwota < kwota pozostała do zapłaty.
+
+### 3. `updatePaymentAmount` (`payments.ts`)
+
+Zmienia wyłącznie `amount` (`original_amount` nietknięty). Po zmianie
+przelicza `status` przez `recomputePaymentStatus` i aktualizuje
+`paid_at`. Płatność `cancelled` — zmiana tylko `amount`, bez
+przeliczania statusu.
+
+### 4. Synchronizacja cennika — `syncTripPaymentsAfterPricingChange` (`trips.ts`)
+
+Uruchamiana tylko gdy cennik faktycznie się zmienił (flaga
+`pricingChanged` — już zaimplementowana).
 
 Dla każdego uczestnika `active` + `participation_status = 'confirmed'`,
 dla każdego pasującego (rocznikowo) szablonu:
 
-- **Płatność pasująca istnieje** → twardy reset zgodnie z D1:
-  - `amount` = `template.amount`
-  - `original_amount` = `template.amount`
-  - `discount_percentage` = `0`
-  - `currency` = `template.currency` — **tylko gdy `amount_paid === 0`**;
-    przy istniejącej wpłacie walutę zostawiamy (zmiana zafałszowałaby
-    wpłaconą kwotę)
-  - `due_date` = `template.due_date`, `template_id` = `template.id`,
-    `payment_method` = `template.payment_method`
-  - `amount_paid` — **bez zmian**
-  - `status` — przeliczony przez `recomputePaymentStatus(amount,
-    amount_paid, due_date)`
-  - `paid_at` — zerowany na `null` gdy status przestaje być `paid`;
-    gdy płatność pozostaje `paid` (przecena w dół) `paid_at` zostaje
-    bez zmian
-- **Brak pasującej płatności** → utwórz nową (`pending`), z
-  poszanowaniem trwale anulowanych: jeśli dla danego
-  `(payment_type, installment_number)` istnieje już płatność
-  `cancelled`, nowej NIE tworzymy.
-- **Płatność bez pasującego szablonu** → anuluj, jeśli ma status
-  oczekujący (`pending`, `overdue`, `partially_paid`,
-  `partially_paid_overdue`).
+- **Płatność istnieje** → `amount` i `original_amount` = kwota z
+  szablonu; `currency` = waluta szablonu tylko gdy `amount_paid === 0`
+  (inaczej walutę zostawiamy); `due_date`, `template_id`,
+  `payment_method` z szablonu; `amount_paid` bez zmian; `status`
+  przeliczony przez `recomputePaymentStatus`; `paid_at` zerowane gdy
+  status przestaje być `paid`, zachowane gdy pozostaje `paid`.
+- **Brak płatności** → utwórz nową (`pending`), z poszanowaniem trwale
+  anulowanych: jeśli dla `(payment_type, installment_number)` istnieje
+  płatność `cancelled`, nowej nie tworzymy.
+- **Płatność bez szablonu** → anuluj, jeśli ma status oczekujący.
 
-**Brak wyjątku „indywidualnie zmieniona".** To świadoma zmiana wobec
-dotychczasowego `isAmountLocked` (który chronił płatności opłacone i ze
-zniżką). Zgodnie z D1 cennik nadpisuje wszystko; przywracanie zniżek to
-osobny ręczny krok admina przez Komponent 3.
+Brak wyjątku dla płatności indywidualnie zmienionych — zgodnie z D4
+cennik nadpisuje wszystko. Płatności `cancelled` nietykane.
 
-Płatności `cancelled` nie są dotykane (nie trafiają do
-`recomputePaymentStatus`).
+### 5. Panel admina `/admin/payments` (`payments-list.tsx`)
 
-### 3. Zmiana indywidualna — `updatePaymentAmount` i `applyDiscount` (`payments.ts`)
+- Wskaźnik salda przy statusie, z progiem `SALDO_EPSILON = 0.5`:
+  - `amount_remaining < −SALDO_EPSILON` → zielony badge (emerald)
+    „Nadpłata X waluta"
+  - `amount_remaining > SALDO_EPSILON` przy statusie częściowym →
+    badge amber „Do dopłaty X waluta"
+  - kwota X = `Math.abs(amount_remaining)`, jednostka = `row.currency`
+- Kolumna „Zniżka" zostaje — pokazuje `original_amount − amount`
+  (różnica dodatnia = zniżka). Liczona jak dziś.
+- Edytor kwoty: usunięty przełącznik `zł / %` — zostaje samo pole
+  kwoty (tryb `zł`).
+- Nowe wejście „Zarejestruj wpłatę" (Komponent 2).
 
-Obie funkcje po zmianie kwoty przeliczają `status` przez
-`recomputePaymentStatus` (na podstawie `amount_paid` i `due_date`
-płatności) i aktualizują `paid_at` (`null` gdy status przestaje być
-`paid`).
+### 6. Panel rodzica
 
-- `updatePaymentAmount` — zmienia **wyłącznie** `amount`;
-  `original_amount` pozostaje nietknięty (kolumna „Zniżka" w panelu
-  admina liczy się jako `original_amount − amount`).
-- `applyDiscount` — bez zmian w obliczaniu (`amount =
-  original_amount × (1 − %/100)`), dochodzi tylko przeliczenie statusu.
-
-Dzięki temu ręczna korekta opłaconej płatności tworzy nadpłatę (status
-zostaje `paid`) lub niedopłatę (status wraca do `partially_paid` → „do
-dopłaty").
-
-**Płatność `cancelled`:** obie funkcje, jeśli płatność ma status
-`cancelled`, zmieniają tylko kwotę i **pomijają** przeliczanie statusu —
-anulowana płatność pozostaje anulowana.
-
-### 4. Panel admina `/admin/payments` (`payments-list.tsx`)
-
-Przy komórce statusu mały wskaźnik salda, liczony z `amount_remaining`
-wiersza, z progiem `SALDO_EPSILON = 0.5`:
-
-- `amount_remaining < −SALDO_EPSILON` → zielony badge (wariant emerald,
-  spójny z badge'em statusu `paid`) „Nadpłata X waluta"
-- `amount_remaining > SALDO_EPSILON` przy statusie częściowym
-  (`partially_paid` / `partially_paid_overdue`) → badge ostrzegawczy
-  (wariant amber) „Do dopłaty X waluta"
-
-Kwota X = `Math.abs(amount_remaining)`. Jednostka = `row.currency`
-(PLN/EUR) — nie zaszywać „zł". Bez nowych kolumn tabeli — wskaźnik
-mieści się w istniejącej kolumnie statusu.
-
-### 5. Panel rodzica
-
-Bez zmian w kodzie. Niedopłata jako `partially_paid` jest już
-renderowana jako aktywna płatność do uregulowania (filtr parent
-payments: `status !== 'paid' && status !== 'cancelled'`). Nadpłata
-pozostaje `paid` — rodzic widzi płatność jako opłaconą.
-
-Krok = weryfikacja zachowania panelu rodzica:
-- jeśli panel pokazuje kwotę do zapłaty z `amount_remaining` —
-  niedopłata wyświetli poprawną resztę (wartość dodatnia);
-- przy nadpłacie (`paid`, `amount_remaining` ujemne) panel nie może
-  pokazać kwoty ujemnej — potwierdzić, że nadpłacona płatność renderuje
-  się po prostu jako opłacona.
-Jeśli weryfikacja wykryje, że założenie nie jest spełnione, zakres się
-rozszerza o drobną poprawkę renderowania w panelu rodzica.
+Bez zmian w kodzie — weryfikacja. Niedopłata jako `partially_paid` jest
+już renderowana jako aktywna pozycja do uregulowania (filtr:
+`status !== 'paid' && status !== 'cancelled'`). Nadpłata pozostaje
+`paid`. Weryfikacja: panel nie pokazuje kwoty ujemnej przy nadpłacie;
+przy niedopłacie pokazuje poprawną resztę. Jeśli założenie nie jest
+spełnione — zakres rozszerza się o drobną poprawkę renderowania.
 
 ## Przypadki brzegowe
 
-- Przecena opłaconego karnetu **w górę** (lub reset zniżki) →
-  `partially_paid` / `partially_paid_overdue`, `paid_at` wyczyszczone,
-  rodzic widzi „do dopłaty".
-- Przecena **w dół** → status zostaje `paid`, `amount_remaining`
-  ujemne → nadpłata, badge u admina.
-- Po przecenie `amount_paid === amount` → `paid`, saldo zero.
-- Uczestnik ze zniżką, który zapłacił → po zmianie cennika dostaje
-  niedopłatę równą zniżce; admin koryguje ręcznie (Komponent 3).
-- Historia wpłat (`payment_transactions`) nietknięta — saldo to
-  pochodna `amount`/`amount_paid`, transakcji nie modyfikujemy.
-- Płatność `cancelled` — nie dotykana przez synchronizację ani przez
-  przeliczanie statusu.
+- Wpłata 322 przy należnych 400, „zniżka" zaznaczona → `amount = 322`,
+  `paid`, kolumna „Zniżka" pokazuje 78.
+- Wpłata 322 przy należnych 400, „zniżka" niezaznaczona →
+  `partially_paid`, „brak 78 zł".
+- Wpłata większa niż należność → `paid`, `amount_remaining` ujemne →
+  badge „Nadpłata".
+- Kolejna wpłata po częściowej → `amount_paid` się sumuje, status
+  przeliczany.
+- Zmiana cennika po wpłacie → `amount`/`original_amount` reset do nowej
+  ceny, status przeliczony; ewentualną zniżkę admin nadaje ponownie.
+- Płatność `cancelled` — nie przyjmuje wpłat, nie jest synchronizowana,
+  nie trafia do `recomputePaymentStatus`.
+- Historia `payment_transactions` nigdy nie jest modyfikowana wstecz.
 
 ## Poza zakresem (YAGNI)
 
 - Nowy status `overpaid` w enumie bazy.
+- Tryb procentowy zniżki (`applyDiscount`) — usuwany z UI.
 - Automatyczne przywracanie zniżek po zmianie cennika.
-- Podsumowanie nadpłat/niedopłat w statystykach `/admin/payments`.
-- Saldo na karcie uczestnika `/admin/participants`.
-- Rejestr zwrotów / kredytów jako osobna tabela.
+- Podsumowanie nadpłat/niedopłat w statystykach.
+- Saldo na karcie uczestnika.
+- Rejestr zwrotów / kredytów.
 - Pokazywanie nadpłaty w panelu rodzica.
 
 ## Brak migracji bazy
 
-Cała zmiana mieści się w logice serwera i UI. Nie wymaga uruchamiania
-żadnej migracji SQL.
+Cała zmiana mieści się w logice serwera i UI. Żadna migracja SQL nie
+jest wymagana. Kolumna `discount_percentage` pozostaje w bazie (bez
+migracji), ale przestaje być używana po usunięciu trybu `%`.
