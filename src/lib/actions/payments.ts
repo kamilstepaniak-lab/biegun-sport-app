@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 'next/cache';
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow } from '@/types';
+import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow, PaymentStatus } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
@@ -278,7 +278,8 @@ export async function addPaymentTransaction(
   currency: 'PLN' | 'EUR',
   transactionDate: string,
   paymentMethod: 'cash' | 'transfer',
-  notes?: string
+  notes?: string,
+  closeAsDiscount: boolean = false
 ) {
   const supabase = await createClient();
 
@@ -294,6 +295,13 @@ export async function addPaymentTransaction(
 
   if (paymentError || !payment) {
     return { error: 'Nie znaleziono płatności' };
+  }
+
+  if (amount <= 0) {
+    return { error: 'Kwota wpłaty musi być większa od zera' };
+  }
+  if (payment.status === 'cancelled') {
+    return { error: 'Nie można rejestrować wpłaty dla anulowanej płatności' };
   }
 
   // Utwórz transakcję
@@ -316,21 +324,22 @@ export async function addPaymentTransaction(
 
   // Zaktualizuj amount_paid
   const newAmountPaid = (payment.amount_paid || 0) + amount;
-  let newStatus = payment.status;
 
-  if (newAmountPaid >= payment.amount) {
-    newStatus = 'paid';
-  } else if (newAmountPaid > 0) {
-    const isOverdue = payment.due_date && new Date(payment.due_date) < new Date();
-    newStatus = isOverdue ? 'partially_paid_overdue' : 'partially_paid';
-  }
+  // Checkbox „zniżka": gdy wpłata nie pokrywa należności, obniżamy kwotę
+  // należną do sumy wpłat — płatność zostaje zamknięta jako opłacona.
+  // original_amount (cena cennikowa) zostaje, więc widać wielkość zniżki.
+  const newAmount =
+    closeAsDiscount && newAmountPaid < payment.amount ? newAmountPaid : payment.amount;
+
+  const newStatus = recomputePaymentStatus(newAmount, newAmountPaid, payment.due_date);
 
   const { error: updateError } = await supabase
     .from('payments')
     .update({
+      amount: newAmount,
       amount_paid: newAmountPaid,
       status: newStatus,
-      paid_at: newStatus === 'paid' ? new Date().toISOString() : null,
+      paid_at: newStatus === 'paid' ? new Date(transactionDate).toISOString() : null,
       payment_method_used: paymentMethod,
       updated_at: new Date().toISOString(),
     })
@@ -1121,4 +1130,18 @@ export async function bulkUpdatePaymentStatus(
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   return { success: true };
+}
+
+// Jedyne źródło prawdy dla statusu płatności. Wyliczany ze stosunku
+// kwoty wpłaconej do należnej oraz terminu. NIE zwraca 'cancelled' —
+// nie wolno jej wołać dla płatności anulowanych.
+function recomputePaymentStatus(
+  amount: number,
+  amountPaid: number,
+  dueDate: string | null,
+): PaymentStatus {
+  const isOverdue = dueDate !== null && new Date(dueDate) < new Date();
+  if (amountPaid >= amount) return 'paid';
+  if (amountPaid > 0) return isOverdue ? 'partially_paid_overdue' : 'partially_paid';
+  return isOverdue ? 'overdue' : 'pending';
 }
