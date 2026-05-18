@@ -93,8 +93,10 @@ Obecna flaga `isAmountLocked` zostaje rozdzielona na dwie kategorie:
 - **Pozostałe** (w tym opłacone bez indywidualnej zmiany): ustawiamy
   `amount` i `original_amount` na kwotę z szablonu, `amount_paid`
   zachowujemy, `status` przeliczamy przez `recomputePaymentStatus`,
-  `paid_at` ustawiamy zgodnie z nowym statusem (`null` gdy status
-  przestaje być `paid`). `currency` zmieniamy tylko gdy
+  `paid_at` aktualizujemy tylko przy zmianie stanu: zerujemy na `null`
+  gdy status przestaje być `paid`; gdy płatność pozostaje `paid` (np.
+  przecena w dół) `paid_at` zostaje bez zmian. `currency` zmieniamy
+  tylko gdy
   `amount_paid === 0` — przy istniejącej wpłacie zmiana waluty
   zafałszowałaby wpłaconą kwotę.
 
