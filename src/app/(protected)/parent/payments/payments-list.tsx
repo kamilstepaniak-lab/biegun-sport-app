@@ -46,7 +46,11 @@ function copyToClipboard(text: string, label: string) {
 
 function isOverduePayment(p: ParentPayment) {
   if (p.status === 'paid' || p.status === 'cancelled') return false;
-  return !!(p.due_date && new Date(p.due_date) < new Date());
+  if (!p.due_date) return false;
+  // Porównanie do północy — spójne z komponentem PaymentDue (admin).
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(p.due_date) < today;
 }
 
 function getPaymentTypeLabel(p: ParentPayment): string {
@@ -428,7 +432,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
                 )}
               >
-                <option value="all">Sortuj wg. wyjazdu</option>
+                <option value="all">Filtruj wg. wyjazdu</option>
                 {availableTrips.map((t) => (
                   <option key={t.id} value={t.id}>{t.title}</option>
                 ))}

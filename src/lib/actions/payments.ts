@@ -131,8 +131,10 @@ export async function getAdminPaymentsPage(
   } else if (params.status === 'paid') {
     query = query.eq('status', 'paid');
   } else if (params.status === 'overdue') {
+    // effective_due_date uwzględnia regułę „X dni od potwierdzenia",
+    // dla której payments.due_date jest puste.
     query = query.or(
-      `status.in.(overdue,partially_paid_overdue),and(due_date.lt.${today},status.not.in.(paid,cancelled))`
+      `status.in.(overdue,partially_paid_overdue),and(effective_due_date.lt.${today},status.not.in.(paid,cancelled))`
     );
   }
 
@@ -164,25 +166,28 @@ export async function getAdminPaymentsPage(
 export async function getAdminPaymentsStats(): Promise<{
   pending: number;
   paid: number;
+  overdue: number;
   pendingPLN: number;
   pendingEUR: number;
 }> {
   const supabase = await createClient();
   const { user } = await requireAdmin(supabase);
-  if (!user) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+  if (!user) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
 
   const admin = createAdminClient();
-  // Tylko 4 lekkie kolumny — nawet przy dziesiątkach tysięcy wierszy to ułamek
-  // payloadu pełnego pobrania z zagnieżdżonymi relacjami.
+  // Czytamy z widoku — effective_due_date uwzględnia regułę „X dni od
+  // potwierdzenia", więc „po terminie" liczy się tak samo jak w tabeli.
   const { data, error } = await admin
-    .from('payments')
-    .select('status, amount, amount_paid, currency')
+    .from('admin_payments_view')
+    .select('status, amount, amount_paid, currency, effective_due_date')
     .neq('status', 'cancelled');
 
-  if (error || !data) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+  if (error || !data) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
 
+  const today = format(new Date(), 'yyyy-MM-dd');
   let pending = 0;
   let paid = 0;
+  let overdue = 0;
   let pendingPLN = 0;
   let pendingEUR = 0;
   for (const p of data) {
@@ -193,9 +198,10 @@ export async function getAdminPaymentsStats(): Promise<{
       const remaining = (p.amount ?? 0) - (p.amount_paid ?? 0);
       if (p.currency === 'PLN') pendingPLN += remaining;
       else pendingEUR += remaining;
+      if (p.effective_due_date && p.effective_due_date < today) overdue++;
     }
   }
-  return { pending, paid, pendingPLN, pendingEUR };
+  return { pending, paid, overdue, pendingPLN, pendingEUR };
 }
 
 export async function getAdminPaymentsTrips(): Promise<{ id: string; title: string }[]> {

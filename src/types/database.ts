@@ -244,6 +244,9 @@ export interface AdminPaymentRow extends Payment {
   trip_id: string;
   trip_title: string;
   trip_departure_datetime: string;
+  confirmed_at: string | null;
+  due_days_from_confirmation: number | null;
+  effective_due_date: string | null;
 }
 
 export interface TripContractTemplate {

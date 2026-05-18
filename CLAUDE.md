@@ -49,7 +49,16 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
   trwale anulowane płatności nie są odtwarzane).
 - `/admin/payments`: badge „Nadpłata" / „Do dopłaty" przy statusie; usunięty
   tryb procentowy edycji kwoty (akcja `applyDiscount` skasowana).
-- Bez migracji bazy. Spec + plan: `docs/superpowers/`.
+- Naprawa terminu płatności dla reguły „X dni od potwierdzenia": `updateTrip`
+  liczy teraz `due_date` przez `resolveEffectiveDueDate` z `confirmed_at`
+  (wcześniej nadpisywał nullem). Ekran `/admin/payments` pokazuje termin też
+  dla starych płatności z pustym `due_date`.
+- Widok `admin_payments_view` rozszerzony o `confirmed_at`,
+  `due_days_from_confirmation`, `effective_due_date` — migracja
+  `admin-payments-view-due-date.sql` (do ręcznego uruchomienia na Supabase).
+- Nowy kafelek „Po terminie" w panelu admina; filtr „Po terminie" używa
+  `effective_due_date`. Rodzic: porównanie terminu do północy, etykieta
+  filtra „Filtruj wg. wyjazdu".
 
 ### 2026-05-17
 

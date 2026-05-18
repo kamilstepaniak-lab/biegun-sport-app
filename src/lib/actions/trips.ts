@@ -5,6 +5,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
 import { getBankAccounts } from './settings';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
 import {
   sendRegistrationConfirmationEmail,
   type TripEmailData,
@@ -352,14 +353,14 @@ async function syncTripPaymentsAfterPricingChange(
 
   const { data: activeRegs } = await supabaseAdmin
     .from('trip_registrations')
-    .select('id, participant_id, participation_status')
+    .select('id, participant_id, participation_status, confirmed_at')
     .eq('trip_id', id)
     .eq('status', 'active')
     .eq('participation_status', 'confirmed');
 
   if (!activeRegs || activeRegs.length === 0) return;
 
-  for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string }[]) {
+  for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string; confirmed_at: string | null }[]) {
     const { data: participant } = await supabaseAdmin
       .from('participants')
       .select('birth_date')
@@ -431,6 +432,13 @@ async function syncTripPaymentsAfterPricingChange(
 
     // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
     for (const template of applicableTemplates) {
+      // Termin: dla reguły „X dni od potwierdzenia" wyliczamy konkretną datę
+      // z confirmed_at — inaczej due_date zostałby pusty (template.due_date = null).
+      const effectiveDueDate = resolveEffectiveDueDate({
+        templateDueDate: template.due_date,
+        dueDaysFromConfirmation: template.due_days_from_confirmation,
+        confirmedAt: reg.confirmed_at,
+      });
       const match = existing.find(
         (p) =>
           p.payment_type === template.payment_type &&
@@ -444,13 +452,13 @@ async function syncTripPaymentsAfterPricingChange(
         const newStatus = computePaymentStatus(
           template.amount,
           match.amount_paid ?? 0,
-          template.due_date,
+          effectiveDueDate,
         );
         const update: Record<string, unknown> = {
           amount: template.amount,
           original_amount: template.amount,
           discount_percentage: 0,
-          due_date: template.due_date,
+          due_date: effectiveDueDate,
           template_id: template.id,
           payment_method: template.payment_method,
           status: newStatus,
@@ -486,7 +494,7 @@ async function syncTripPaymentsAfterPricingChange(
             discount_percentage: 0,
             amount: template.amount,
             currency: template.currency,
-            due_date: template.due_date,
+            due_date: effectiveDueDate,
             status: 'pending',
             amount_paid: 0,
             payment_method: template.payment_method,
