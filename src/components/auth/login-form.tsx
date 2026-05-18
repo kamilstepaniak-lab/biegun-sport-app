@@ -21,10 +21,10 @@ import { loginSchema, type LoginInput } from '@/lib/validations/auth';
 
 type View = 'login' | 'magic-link' | 'magic-link-sent';
 
-export function LoginForm() {
+export function LoginForm({ initialError = null }: { initialError?: string | null }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [showPassword, setShowPassword] = useState(false);
   const [view, setView] = useState<View>('login');
   const [magicEmail, setMagicEmail] = useState('');
