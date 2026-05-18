@@ -26,26 +26,33 @@ export function formatPaymentDueDate(
   return `do ${format(new Date(template.due_date), 'd.MM.yyyy', { locale: pl })}`;
 }
 
-/**
- * Calculate the actual due date for a "days from confirmation" payment.
- * Returns null if confirmed_at is missing (parent hasn't confirmed yet).
- */
-export function calcConfirmationDueDate(
-  dueDaysFromConfirmation: number,
-  confirmedAt: string | null | undefined
-): Date | null {
-  if (!confirmedAt) return null;
-  return addDays(new Date(confirmedAt), dueDaysFromConfirmation);
+interface ResolveDueDateInput {
+  /** Concrete date already stored on the payment row (highest priority). */
+  paymentDueDate?: string | null;
+  /** Fixed date set on the payment template. */
+  templateDueDate?: string | null;
+  /** "X days from confirmation" rule from the template. */
+  dueDaysFromConfirmation?: number | null;
+  /** When the parent confirmed participation (ISO string). */
+  confirmedAt?: string | null;
 }
 
 /**
- * Check if a "days from confirmation" payment deadline has passed.
+ * Single source of truth for the effective payment deadline.
+ * Returns a concrete `yyyy-MM-dd` date, or null when the deadline cannot
+ * yet be determined (e.g. "days from confirmation" but parent hasn't confirmed).
+ *
+ * Every place that needs a concrete due date — admin, parent, server actions —
+ * MUST go through this function so the value is identical everywhere.
  */
-export function isConfirmationDeadlineOverdue(
-  dueDaysFromConfirmation: number,
-  confirmedAt: string | null | undefined
-): boolean {
-  const dueDate = calcConfirmationDueDate(dueDaysFromConfirmation, confirmedAt);
-  if (!dueDate) return false;
-  return new Date() > dueDate;
+export function resolveEffectiveDueDate(input: ResolveDueDateInput): string | null {
+  if (input.paymentDueDate) return input.paymentDueDate;
+  if (input.templateDueDate) return input.templateDueDate;
+  if (input.dueDaysFromConfirmation && input.confirmedAt) {
+    return format(
+      addDays(new Date(input.confirmedAt), input.dueDaysFromConfirmation),
+      'yyyy-MM-dd'
+    );
+  }
+  return null;
 }

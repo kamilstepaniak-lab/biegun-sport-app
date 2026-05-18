@@ -3,11 +3,12 @@
 import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 'next/cache';
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow } from '@/types';
+import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow, PaymentStatus } from '@/types';
 import { sendPaymentConfirmedEmail } from '@/lib/email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
-import { addDays, format } from 'date-fns';
+import { format } from 'date-fns';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
 
 import { getAuthUser } from './auth-helpers';
 import { getBankAccounts } from './settings';
@@ -130,8 +131,10 @@ export async function getAdminPaymentsPage(
   } else if (params.status === 'paid') {
     query = query.eq('status', 'paid');
   } else if (params.status === 'overdue') {
+    // effective_due_date uwzględnia regułę „X dni od potwierdzenia",
+    // dla której payments.due_date jest puste.
     query = query.or(
-      `status.in.(overdue,partially_paid_overdue),and(due_date.lt.${today},status.not.in.(paid,cancelled))`
+      `status.in.(overdue,partially_paid_overdue),and(effective_due_date.lt.${today},status.not.in.(paid,cancelled))`
     );
   }
 
@@ -163,25 +166,28 @@ export async function getAdminPaymentsPage(
 export async function getAdminPaymentsStats(): Promise<{
   pending: number;
   paid: number;
+  overdue: number;
   pendingPLN: number;
   pendingEUR: number;
 }> {
   const supabase = await createClient();
   const { user } = await requireAdmin(supabase);
-  if (!user) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+  if (!user) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
 
   const admin = createAdminClient();
-  // Tylko 4 lekkie kolumny — nawet przy dziesiątkach tysięcy wierszy to ułamek
-  // payloadu pełnego pobrania z zagnieżdżonymi relacjami.
+  // Czytamy z widoku — effective_due_date uwzględnia regułę „X dni od
+  // potwierdzenia", więc „po terminie" liczy się tak samo jak w tabeli.
   const { data, error } = await admin
-    .from('payments')
-    .select('status, amount, amount_paid, currency')
+    .from('admin_payments_view')
+    .select('status, amount, amount_paid, currency, effective_due_date')
     .neq('status', 'cancelled');
 
-  if (error || !data) return { pending: 0, paid: 0, pendingPLN: 0, pendingEUR: 0 };
+  if (error || !data) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
 
+  const today = format(new Date(), 'yyyy-MM-dd');
   let pending = 0;
   let paid = 0;
+  let overdue = 0;
   let pendingPLN = 0;
   let pendingEUR = 0;
   for (const p of data) {
@@ -192,9 +198,10 @@ export async function getAdminPaymentsStats(): Promise<{
       const remaining = (p.amount ?? 0) - (p.amount_paid ?? 0);
       if (p.currency === 'PLN') pendingPLN += remaining;
       else pendingEUR += remaining;
+      if (p.effective_due_date && p.effective_due_date < today) overdue++;
     }
   }
-  return { pending, paid, pendingPLN, pendingEUR };
+  return { pending, paid, overdue, pendingPLN, pendingEUR };
 }
 
 export async function getAdminPaymentsTrips(): Promise<{ id: string; title: string }[]> {
@@ -225,6 +232,8 @@ export interface TripFinanceSummary {
   totalEUR: number;
   paidEUR: number;
   missingEUR: number;
+  discountPLN: number;
+  discountEUR: number;
   totalPayments: number;
   paidPayments: number;
   pct: number;
@@ -253,6 +262,10 @@ export async function getFinanceSummary(): Promise<TripFinanceSummary[]> {
     const paidEUR = Number(r.paid_eur) || 0;
     const totalPayments = Number(r.total_payments) || 0;
     const paidPayments = Number(r.paid_payments) || 0;
+    // % kwotowy: ile pieniędzy zebrano z należnej kwoty. Przy wyjazdach
+    // dwuwalutowych PLN i EUR sumują się nominalnie (przybliżony wskaźnik).
+    const totalAll = totalPLN + totalEUR;
+    const paidAll = paidPLN + paidEUR;
     return {
       tripId: r.trip_id,
       tripTitle: r.trip_title,
@@ -264,9 +277,11 @@ export async function getFinanceSummary(): Promise<TripFinanceSummary[]> {
       totalEUR,
       paidEUR,
       missingEUR: totalEUR - paidEUR,
+      discountPLN: Number(r.discount_pln) || 0,
+      discountEUR: Number(r.discount_eur) || 0,
       totalPayments,
       paidPayments,
-      pct: totalPayments > 0 ? Math.round((paidPayments / totalPayments) * 100) : 0,
+      pct: totalAll > 0 ? Math.min(100, Math.round((paidAll / totalAll) * 100)) : 0,
     };
   });
 }
@@ -277,7 +292,8 @@ export async function addPaymentTransaction(
   currency: 'PLN' | 'EUR',
   transactionDate: string,
   paymentMethod: 'cash' | 'transfer',
-  notes?: string
+  notes?: string,
+  closeAsDiscount: boolean = false
 ) {
   const supabase = await createClient();
 
@@ -293,6 +309,13 @@ export async function addPaymentTransaction(
 
   if (paymentError || !payment) {
     return { error: 'Nie znaleziono płatności' };
+  }
+
+  if (amount <= 0) {
+    return { error: 'Kwota wpłaty musi być większa od zera' };
+  }
+  if (payment.status === 'cancelled') {
+    return { error: 'Nie można rejestrować wpłaty dla anulowanej płatności' };
   }
 
   // Utwórz transakcję
@@ -315,21 +338,22 @@ export async function addPaymentTransaction(
 
   // Zaktualizuj amount_paid
   const newAmountPaid = (payment.amount_paid || 0) + amount;
-  let newStatus = payment.status;
 
-  if (newAmountPaid >= payment.amount) {
-    newStatus = 'paid';
-  } else if (newAmountPaid > 0) {
-    const isOverdue = payment.due_date && new Date(payment.due_date) < new Date();
-    newStatus = isOverdue ? 'partially_paid_overdue' : 'partially_paid';
-  }
+  // Checkbox „zniżka": gdy wpłata nie pokrywa należności, obniżamy kwotę
+  // należną do sumy wpłat — płatność zostaje zamknięta jako opłacona.
+  // original_amount (cena cennikowa) zostaje, więc widać wielkość zniżki.
+  const newAmount =
+    closeAsDiscount && newAmountPaid < payment.amount ? newAmountPaid : payment.amount;
+
+  const newStatus = recomputePaymentStatus(newAmount, newAmountPaid, payment.due_date);
 
   const { error: updateError } = await supabase
     .from('payments')
     .update({
+      amount: newAmount,
       amount_paid: newAmountPaid,
       status: newStatus,
-      paid_at: newStatus === 'paid' ? new Date().toISOString() : null,
+      paid_at: newStatus === 'paid' ? new Date(transactionDate).toISOString() : null,
       payment_method_used: paymentMethod,
       updated_at: new Date().toISOString(),
     })
@@ -469,52 +493,6 @@ export async function markPaymentAsPaid(
   return { success: true };
 }
 
-export async function applyDiscount(paymentId: string, discountPercentage: number) {
-  const supabase = await createClient();
-
-  const { user, error: authError } = await requireAdmin(supabase);
-  if (authError) return { error: authError };
-
-  if (discountPercentage < 0 || discountPercentage > 100) {
-    return { error: 'Zniżka musi być w zakresie 0-100%' };
-  }
-
-  const { data: payment, error: paymentError } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('id', paymentId)
-    .single();
-
-  if (paymentError || !payment) {
-    return { error: 'Nie znaleziono płatności' };
-  }
-
-  const newAmount = payment.original_amount * (1 - discountPercentage / 100);
-
-  const { error: updateError } = await supabase
-    .from('payments')
-    .update({
-      discount_percentage: discountPercentage,
-      amount: newAmount,
-      discount_applied_by: user.id,
-      discount_applied_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', paymentId);
-
-  if (updateError) {
-    console.error('Discount update error:', updateError);
-    return { error: 'Nie udało się zastosować zniżki' };
-  }
-
-  revalidateTag('payments');
-  revalidatePath('/admin/payments');
-  revalidatePath('/admin/trips');
-  revalidatePath('/parent/payments');
-
-  return { success: true };
-}
-
 export async function getPaymentTransactions(paymentId: string): Promise<PaymentTransaction[]> {
   const supabase = await createClient();
   const { user } = await requireAdmin(supabase);
@@ -584,13 +562,11 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       due_days_from_confirmation: number | null;
       payment_method: string | null;
     }) => {
-      let dueDate: string | null = template.due_date ?? null;
-      if (template.due_days_from_confirmation != null) {
-        dueDate = format(
-          addDays(new Date(confirmedAt), template.due_days_from_confirmation),
-          'yyyy-MM-dd'
-        );
-      }
+      const dueDate = resolveEffectiveDueDate({
+        templateDueDate: template.due_date,
+        dueDaysFromConfirmation: template.due_days_from_confirmation,
+        confirmedAt,
+      });
       return {
         registration_id: registrationId,
         template_id: template.id,
@@ -740,9 +716,11 @@ const _fetchParentPaymentsDB = unstable_cache(
       const childData = childDataMap.get(registration?.participant_id || '');
       const dueDays = payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null;
       const confirmedAt = registration?.confirmed_at ?? null;
-      const computedDueDate = (!payment.due_date && dueDays != null && confirmedAt)
-        ? format(addDays(new Date(confirmedAt), dueDays), 'yyyy-MM-dd')
-        : payment.due_date;
+      const computedDueDate = resolveEffectiveDueDate({
+        paymentDueDate: payment.due_date,
+        dueDaysFromConfirmation: dueDays,
+        confirmedAt,
+      });
       return {
         id: payment.id,
         participant_id: registration?.participant_id || '',
@@ -815,11 +793,11 @@ export async function getActualPaymentDueDatesForTrip(
   for (const p of payments) {
     if (!p.template_id) continue;
     const dueDays = (p.template as { due_days_from_confirmation?: number | null } | null)?.due_days_from_confirmation ?? null;
-    const dueDate = p.due_date ?? (
-      dueDays != null && registration.confirmed_at
-        ? format(addDays(new Date(registration.confirmed_at), dueDays), 'yyyy-MM-dd')
-        : null
-    );
+    const dueDate = resolveEffectiveDueDate({
+      paymentDueDate: p.due_date,
+      dueDaysFromConfirmation: dueDays,
+      confirmedAt: registration.confirmed_at,
+    });
     if (dueDate) result[p.template_id] = dueDate;
   }
   return result;
@@ -851,7 +829,7 @@ export async function updatePaymentStatus(
   // Pobierz płatność (wraz ze starym statusem do audit logu)
   const { data: payment } = await supabase
     .from('payments')
-    .select('amount, status, amount_paid')
+    .select('amount, status, amount_paid, due_date')
     .eq('id', paymentId)
     .single();
 
@@ -863,17 +841,21 @@ export async function updatePaymentStatus(
   const oldAmountPaid = payment.amount_paid || 0;
 
   const updateData: Record<string, unknown> = {
-    status,
     updated_at: new Date().toISOString(),
   };
 
-  if (status === 'paid') {
-    updateData.amount_paid = payment.amount;
-    updateData.paid_at = new Date().toISOString();
-    updateData.marked_by = user.id;
-  } else if (status === 'pending') {
-    updateData.amount_paid = 0;
-    updateData.paid_at = null;
+  if (status === 'cancelled') {
+    // Anulowanie — status ustawiany wprost, kwot nie ruszamy.
+    updateData.status = 'cancelled';
+  } else {
+    // 'paid' → traktujemy jak pełną wpłatę; 'pending' → zerujemy wpłatę.
+    // Wynikowy status zawsze przez recomputePaymentStatus (jedno źródło prawdy).
+    const newAmountPaid = status === 'paid' ? payment.amount : 0;
+    const computed = recomputePaymentStatus(payment.amount, newAmountPaid, payment.due_date);
+    updateData.amount_paid = newAmountPaid;
+    updateData.status = computed;
+    updateData.paid_at = computed === 'paid' ? new Date().toISOString() : null;
+    if (status === 'paid') updateData.marked_by = user.id;
   }
 
   const { error } = await supabase
@@ -957,12 +939,31 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
     return { error: 'Kwota nie może być ujemna' };
   }
 
+  const { data: payment } = await supabase
+    .from('payments')
+    .select('amount_paid, due_date, status')
+    .eq('id', paymentId)
+    .single();
+
+  if (!payment) {
+    return { error: 'Nie znaleziono płatności' };
+  }
+
+  const updateData: Record<string, unknown> = {
+    amount: newAmount,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Płatność anulowana — zmieniamy tylko kwotę, statusu nie ruszamy.
+  if (payment.status !== 'cancelled') {
+    const newStatus = recomputePaymentStatus(newAmount, payment.amount_paid || 0, payment.due_date);
+    updateData.status = newStatus;
+    updateData.paid_at = newStatus === 'paid' ? new Date().toISOString() : null;
+  }
+
   const { error } = await supabase
     .from('payments')
-    .update({
-      amount: newAmount,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', paymentId);
 
   if (error) {
@@ -1120,4 +1121,18 @@ export async function bulkUpdatePaymentStatus(
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
   return { success: true };
+}
+
+// Jedyne źródło prawdy dla statusu płatności. Wyliczany ze stosunku
+// kwoty wpłaconej do należnej oraz terminu. NIE zwraca 'cancelled' —
+// nie wolno jej wołać dla płatności anulowanych.
+function recomputePaymentStatus(
+  amount: number,
+  amountPaid: number,
+  dueDate: string | null,
+): PaymentStatus {
+  const isOverdue = dueDate !== null && new Date(dueDate) < new Date();
+  if (amountPaid >= amount) return 'paid';
+  if (amountPaid > 0) return isOverdue ? 'partially_paid_overdue' : 'partially_paid';
+  return isOverdue ? 'overdue' : 'pending';
 }

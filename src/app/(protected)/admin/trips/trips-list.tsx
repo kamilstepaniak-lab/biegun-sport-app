@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { formatPaymentDueDate } from '@/lib/payment-due';
+import { PaymentDue } from '@/components/shared/payment-due';
 import {
   ChevronDown,
   ChevronUp,
@@ -382,8 +382,12 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         return (
                           <tr key={template.id} className="hover:bg-gray-50/50">
                             <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
-                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                              {formatPaymentDueDate(template, trip.departure_datetime)}
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <PaymentDue
+                                templateDueDate={template.due_date}
+                                dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                departureDate={trip.departure_datetime}
+                              />
                             </td>
                             <td className="px-4 py-2.5 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>

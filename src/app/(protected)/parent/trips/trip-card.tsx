@@ -32,7 +32,7 @@ import type { TripForParent, ChildTripStatus } from '@/lib/actions/trips';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
 import { formatTripDatetime } from '@/lib/trip-datetime';
-import { formatPaymentDueDate } from '@/lib/payment-due';
+import { PaymentDue } from '@/components/shared/payment-due';
 
 export type ParticipationStatus = ChildTripStatus['participation_status'];
 export type ConfirmType = 'stop1' | 'stop2' | 'own' | 'not_going' | 'other';
@@ -533,9 +533,9 @@ function TripCardInner({
                         // Po potwierdzeniu udziału płatność ma już konkretną datę —
                         // pokazujemy ją zamiast "X dni od potwierdzenia".
                         const confirmedChild = trip.children.find((c) => c.participation_status === 'confirmed');
-                        const actualDueByTemplate = new Map<string, string>();
+                        const paymentDueByTemplate = new Map<string, string | null>();
                         (confirmedChild?.payments ?? []).forEach((p) => {
-                          if (p.template_id && p.due_date) actualDueByTemplate.set(p.template_id, p.due_date);
+                          if (p.template_id) paymentDueByTemplate.set(p.template_id, p.due_date);
                         });
                         return trip.payment_templates.map((template) => {
                         const label = getTemplateLabel(template);
@@ -545,14 +545,17 @@ function TripCardInner({
                           : template.payment_method === 'both'
                             ? 'bg-violet-100 text-violet-700'
                             : 'bg-blue-100 text-blue-700';
-                        const actualDue = actualDueByTemplate.get(template.id);
                         return (
                           <tr key={template.id} className="hover:bg-gray-50/50">
                             <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
-                            <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
-                              {actualDue
-                                ? `do ${format(new Date(actualDue), 'd.MM.yyyy', { locale: pl })}`
-                                : formatPaymentDueDate(template, trip.departure_datetime)}
+                            <td className="px-4 py-2.5 whitespace-nowrap">
+                              <PaymentDue
+                                paymentDueDate={paymentDueByTemplate.get(template.id)}
+                                templateDueDate={template.due_date}
+                                dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                confirmedAt={confirmedChild?.confirmed_at}
+                                departureDate={trip.departure_datetime}
+                              />
                             </td>
                             <td className="px-4 py-2.5 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodCls}`}>

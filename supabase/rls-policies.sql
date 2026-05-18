@@ -16,9 +16,6 @@ ALTER TABLE trip_payment_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE custom_field_definitions ENABLE ROW LEVEL SECURITY;
 
 -- ====================================
 -- FUNKCJA POMOCNICZA: is_admin
@@ -225,28 +222,3 @@ CREATE POLICY "Admins can manage transactions"
   ON payment_transactions FOR ALL
   USING (is_admin());
 
--- ====================================
--- POLITYKI: notifications
--- ====================================
-CREATE POLICY "Admins can manage notifications"
-  ON notifications FOR ALL
-  USING (is_admin());
-
--- ====================================
--- POLITYKI: notification_logs
--- ====================================
-CREATE POLICY "Admins can manage notification logs"
-  ON notification_logs FOR ALL
-  USING (is_admin());
-
--- ====================================
--- POLITYKI: custom_field_definitions
--- ====================================
-CREATE POLICY "Users can view custom field definitions"
-  ON custom_field_definitions FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Admins can manage custom field definitions"
-  ON custom_field_definitions FOR ALL
-  USING (is_admin());

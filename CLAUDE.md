@@ -3,6 +3,14 @@
 Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 (Next.js App Router + Supabase + Vercel).
 
+## Sposób pracy
+
+- Pracuj **bezpośrednio na gałęzi `main`** — nie twórz nowych branchy.
+  Nowy branch utwórz tylko gdy użytkownik wyraźnie o to poprosi na początku
+  danego czatu.
+- Na końcu każdego zadania w czacie **zapytaj użytkownika, czy zrobić push
+  na `main` / wdrożenie na Vercel** — nie pushuj bez potwierdzenia.
+
 ## Baza danych i migracje
 
 - Migracje to zwykłe pliki `.sql` w `supabase/migrations/`.
@@ -18,8 +26,8 @@ Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 - Push dowolnej gałęzi → automatyczny **deployment preview** (nie trzeba
   niczego deployować ręcznie).
 - **Produkcja wdrażana jest wyłącznie z gałęzi `main`.**
-- Aby zmiany trafiły na produkcję: scal gałąź do `main` przez pull request —
-  Vercel sam zbuduje produkcję.
+- Pracujemy bezpośrednio na `main` — push na `main` = automatyczny build
+  produkcji. Pushuj dopiero po potwierdzeniu przez użytkownika.
 - Jeśli zmiany wymagają migracji bazy — migracja musi być uruchomiona, zanim
   produkcja zostanie zbudowana.
 
@@ -36,6 +44,31 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 - Zapisani: eksport Excel respektuje aktywne filtry (grupa/wyszukiwarka).
 - Wzór umowy: uzupełniona lista placeholderów w edytorze (brakowało 6 z 15).
 - Umowy: poprawiony mylący komunikat empty state.
+- Admin/Rodzic widok wyjazdu: kolejność boksów zgodna z formularzem tworzenia;
+  Co zabrać + Dodatkowe informacje bezpośrednio pod opisem; usunięta redundantna
+  sekcja „Grupy" z rozwinięcia (widoczne pod tytułem).
+- Formularz tworzenia wyjazdu: Co zabrać + Dodatkowe informacje pod opisem
+  (EmailContentFields w BasicInfoSection).
+- Płatności: rejestrowanie realnych wpłat w `/admin/payments` (dialog
+  `RecordPaymentDialog`) z checkboxem „zniżka" — zaznaczony zamyka płatność
+  jako opłaconą mimo niższej kwoty, niezaznaczony zostawia niedopłatę.
+- Nowa funkcja `recomputePaymentStatus` — jedno źródło prawdy dla statusu;
+  `updatePaymentAmount` i `updatePaymentStatus` przez nią przeliczają status.
+- Edycja cennika wyjazdu = twardy reset cen u wszystkich potwierdzonych
+  uczestników (synchronizacja rusza tylko przy realnej zmianie cennika,
+  trwale anulowane płatności nie są odtwarzane).
+- `/admin/payments`: badge „Nadpłata" / „Do dopłaty" przy statusie; usunięty
+  tryb procentowy edycji kwoty (akcja `applyDiscount` skasowana).
+- Naprawa terminu płatności dla reguły „X dni od potwierdzenia": `updateTrip`
+  liczy teraz `due_date` przez `resolveEffectiveDueDate` z `confirmed_at`
+  (wcześniej nadpisywał nullem). Ekran `/admin/payments` pokazuje termin też
+  dla starych płatności z pustym `due_date`.
+- Widok `admin_payments_view` rozszerzony o `confirmed_at`,
+  `due_days_from_confirmation`, `effective_due_date` — migracja
+  `admin-payments-view-due-date.sql` (do ręcznego uruchomienia na Supabase).
+- Nowy kafelek „Po terminie" w panelu admina; filtr „Po terminie" używa
+  `effective_due_date`. Rodzic: porównanie terminu do północy, etykieta
+  filtra „Filtruj wg. wyjazdu".
 
 ### 2026-05-17
 

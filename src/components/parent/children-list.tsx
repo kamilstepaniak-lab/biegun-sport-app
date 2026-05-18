@@ -49,6 +49,7 @@ import { getMessagesForParent, markMessageRead, type AppMessage } from '@/lib/ac
 import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
+import { PaymentDue } from '@/components/shared/payment-due';
 
 interface ChildrenListProps {
   participants: ParticipantWithGroup[];
@@ -688,9 +689,12 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                               <p className="text-sm font-medium text-gray-800 truncate">
                                 {p.trip_title || 'Płatność'}
                               </p>
-                              <p className="text-[11px] text-red-500 mt-0.5">
-                                {p.due_date ? format(new Date(p.due_date), 'd MMM yyyy', { locale: pl }) : ''}
-                                {p.daysOverdue > 0 && ` · ${p.daysOverdue}d po term.`}
+                              <p className="mt-0.5">
+                                <PaymentDue
+                                  paymentDueDate={p.effective_due_date || p.due_date}
+                                  status={p.status}
+                                  className="text-[11px]"
+                                />
                               </p>
                             </div>
                           </div>
@@ -726,13 +730,12 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                               <p className="text-sm font-medium text-gray-800 truncate">
                                 {p.trip_title || 'Płatność'}
                               </p>
-                              <p className="text-[11px] text-gray-400 mt-0.5">
-                                {(p.effective_due_date || p.due_date) ? format(new Date((p.effective_due_date || p.due_date)!), 'd MMM yyyy', { locale: pl }) : 'Brak terminu'}
-                                {p.daysUntilDue !== null && p.daysUntilDue >= 0 && (
-                                  <span className="text-blue-400">
-                                    {p.daysUntilDue === 0 ? ' · dziś!' : p.daysUntilDue === 1 ? ' · jutro' : ` · za ${p.daysUntilDue}d`}
-                                  </span>
-                                )}
+                              <p className="mt-0.5">
+                                <PaymentDue
+                                  paymentDueDate={p.effective_due_date || p.due_date}
+                                  status={p.status}
+                                  className="text-[11px]"
+                                />
                               </p>
                             </div>
                           </div>

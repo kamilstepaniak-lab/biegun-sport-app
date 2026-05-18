@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Loader2,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -36,21 +37,25 @@ import {
   updatePaymentStatus,
   updatePaymentAmount,
   updatePaymentNote,
-  applyDiscount,
   bulkUpdatePaymentStatus,
   deletePayment,
   bulkDeletePayments,
   type AdminPaymentsStatusFilter,
 } from '@/lib/actions/payments';
+import { RecordPaymentDialog } from '@/components/admin/record-payment-dialog';
 import type { AdminPaymentRow, PaymentStatus } from '@/types';
+import { formatPaymentDueDate } from '@/lib/payment-due';
 import { cn } from '@/lib/utils';
+
+// Próg tolerancji groszowej — saldo poniżej uznajemy za rozliczone.
+const SALDO_EPSILON = 0.5;
 
 type PageSize = 25 | 50 | 100;
 
 interface PaymentsListProps {
   rows: AdminPaymentRow[];
   total: number;
-  stats: { pending: number; paid: number; pendingPLN: number; pendingEUR: number };
+  stats: { pending: number; paid: number; overdue: number; pendingPLN: number; pendingEUR: number };
   trips: { id: string; title: string }[];
   page: number;
   pageSize: number;
@@ -80,8 +85,6 @@ export function PaymentsList({
 
   const [editingPayment, setEditingPayment] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
-  // Tryb edycji kwoty: 'amount' = wpisz docelową kwotę, 'percent' = wpisz % zniżki
-  const [editMode, setEditMode] = useState<'amount' | 'percent'>('amount');
   const [editingNote, setEditingNote] = useState<string | null>(null);
   const [editNote, setEditNote] = useState('');
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -177,23 +180,15 @@ export function PaymentsList({
   async function saveAmount(paymentId: string) {
     const value = parseFloat(editAmount);
     if (isNaN(value) || value < 0) {
-      toast.error(editMode === 'percent' ? 'Podaj poprawny procent' : 'Podaj poprawną kwotę');
-      return;
-    }
-    if (editMode === 'percent' && value > 100) {
-      toast.error('Zniżka nie może przekraczać 100%');
+      toast.error('Podaj poprawną kwotę');
       return;
     }
     setIsUpdating(paymentId);
     try {
-      // 'percent' → applyDiscount liczy kwotę z ceny bazowej; 'amount' → wpisana kwota wprost.
-      const result =
-        editMode === 'percent'
-          ? await applyDiscount(paymentId, value)
-          : await updatePaymentAmount(paymentId, value);
+      const result = await updatePaymentAmount(paymentId, value);
       if (result.error) toast.error(result.error);
       else {
-        toast.success(editMode === 'percent' ? 'Zniżka zastosowana' : 'Kwota zaktualizowana');
+        toast.success('Kwota zaktualizowana');
         setEditingPayment(null);
         router.refresh();
       }
@@ -369,7 +364,10 @@ export function PaymentsList({
     const isPaid = row.status === 'paid';
     const isCancelled = row.status === 'cancelled';
     const isOverdue = row.status === 'overdue' || row.status === 'partially_paid_overdue';
-    const dueDate = row.due_date ? new Date(row.due_date) : null;
+    // effective_due_date z widoku uwzględnia regułę „X dni od potwierdzenia"
+    // (confirmed_at + X dni), więc termin pokazuje się też gdy payments.due_date
+    // jest puste.
+    const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
     const isDueDateOverdue = dueDate ? dueDate < today : false;
     const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
     const isSelected = selectedIds.has(row.id);
@@ -414,28 +412,6 @@ export function PaymentsList({
         <td className="py-3 px-3">
           {editingPayment === row.id ? (
             <div className="flex items-center gap-1">
-              <div className="flex rounded-lg ring-1 ring-gray-200 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setEditMode('amount')}
-                  className={cn(
-                    'h-9 px-2 text-xs font-semibold transition-colors',
-                    editMode === 'amount' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
-                  )}
-                >
-                  zł
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditMode('percent')}
-                  className={cn(
-                    'h-9 px-2 text-xs font-semibold transition-colors',
-                    editMode === 'percent' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
-                  )}
-                >
-                  %
-                </button>
-              </div>
               <Input
                 type="number"
                 value={editAmount}
@@ -446,12 +422,11 @@ export function PaymentsList({
                 }}
                 className="h-9 w-20 text-xs rounded-lg"
                 min="0"
-                max={editMode === 'percent' ? '100' : undefined}
                 step="0.01"
-                placeholder={editMode === 'percent' ? '% zniżki' : 'kwota'}
+                placeholder="kwota"
                 autoFocus
               />
-              <span className="text-xs text-gray-400">{editMode === 'percent' ? '%' : row.currency}</span>
+              <span className="text-xs text-gray-400">{row.currency}</span>
               <button
                 className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
                 onClick={() => saveAmount(row.id)}
@@ -472,7 +447,6 @@ export function PaymentsList({
                 <button
                   onClick={() => {
                     setEditingPayment(row.id);
-                    setEditMode('amount');
                     setEditAmount(row.amount.toString());
                   }}
                   className="flex items-center gap-1 group"
@@ -517,14 +491,35 @@ export function PaymentsList({
 
         {/* Status */}
         <td className="py-3 px-3">
-          <span
-            className={cn(
-              'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
-              statusCls
-            )}
-          >
-            {statusLabel}
-          </span>
+          <div className="flex flex-col items-start gap-1">
+            <span
+              className={cn(
+                'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
+                statusCls
+              )}
+            >
+              {statusLabel}
+            </span>
+            {(() => {
+              if (row.status === 'cancelled') return null;
+              const rem = row.amount_remaining ?? (row.amount - (row.amount_paid ?? 0));
+              if (rem < -SALDO_EPSILON) {
+                return (
+                  <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                    Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
+                  </span>
+                );
+              }
+              if (rem > SALDO_EPSILON && (row.status === 'partially_paid' || row.status === 'partially_paid_overdue')) {
+                return (
+                  <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                    Do dopłaty {rem.toFixed(0)} {row.currency}
+                  </span>
+                );
+              }
+              return null;
+            })()}
+          </div>
         </td>
 
         {/* Termin */}
@@ -544,7 +539,15 @@ export function PaymentsList({
               )}
             </div>
           ) : (
-            <span className="text-gray-300 text-sm">—</span>
+            <span className="text-gray-500 text-sm">
+              {formatPaymentDueDate(
+                {
+                  due_date: row.due_date,
+                  due_days_from_confirmation: row.due_days_from_confirmation,
+                },
+                row.trip_departure_datetime,
+              )}
+            </span>
           )}
         </td>
 
@@ -607,6 +610,19 @@ export function PaymentsList({
           <div className="flex gap-1.5 items-center">
             {!isCancelled && (
               <>
+                <RecordPaymentDialog
+                  paymentId={row.id}
+                  currency={row.currency as 'PLN' | 'EUR'}
+                  amountRemaining={row.amount_remaining ?? (row.amount - (row.amount_paid ?? 0))}
+                  onDone={() => router.refresh()}
+                >
+                  <button
+                    className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
+                  >
+                    <CircleDollarSign className="h-3 w-3" />
+                    Wpłata
+                  </button>
+                </RecordPaymentDialog>
                 <button
                   className={cn(
                     'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
@@ -685,26 +701,35 @@ export function PaymentsList({
     <TooltipProvider>
       <div className="space-y-6">
         {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
-              <CircleDollarSign className="h-5 w-5 text-red-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 flex-shrink-0">
+              <CircleDollarSign className="h-5 w-5 text-orange-600" />
             </div>
             <div className="min-w-0">
               <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
               <p className="text-xs text-gray-500">Nieopłacone</p>
               <div className="flex flex-wrap gap-x-2 mt-0.5">
                 {stats.pendingPLN > 0 && (
-                  <span className="text-xs font-semibold text-red-600">
+                  <span className="text-xs font-semibold text-orange-600">
                     {stats.pendingPLN.toFixed(0)} PLN
                   </span>
                 )}
                 {stats.pendingEUR > 0 && (
-                  <span className="text-xs font-semibold text-red-600">
+                  <span className="text-xs font-semibold text-orange-600">
                     {stats.pendingEUR.toFixed(0)} EUR
                   </span>
                 )}
               </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.overdue}</p>
+              <p className="text-xs text-gray-500">Po terminie</p>
             </div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">

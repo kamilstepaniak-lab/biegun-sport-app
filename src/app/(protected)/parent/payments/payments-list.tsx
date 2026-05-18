@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { format, differenceInCalendarDays } from 'date-fns';
+import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { PaymentDue } from '@/components/shared/payment-due';
 import {
   Check,
   Clock,
@@ -45,7 +46,11 @@ function copyToClipboard(text: string, label: string) {
 
 function isOverduePayment(p: ParentPayment) {
   if (p.status === 'paid' || p.status === 'cancelled') return false;
-  return !!(p.due_date && new Date(p.due_date) < new Date());
+  if (!p.due_date) return false;
+  // Porównanie do północy — spójne z komponentem PaymentDue (admin).
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(p.due_date) < today;
 }
 
 function getPaymentTypeLabel(p: ParentPayment): string {
@@ -189,24 +194,16 @@ function usePaymentData(payment: ParentPayment) {
   const isOverdue = isOverduePayment(payment);
   const remaining = payment.amount - payment.amount_paid;
 
-  const dueDate = payment.due_date ? new Date(payment.due_date) : null;
-  const daysOverdue = isOverdue && dueDate
-    ? differenceInCalendarDays(new Date(), dueDate)
-    : 0;
-  const isDepartureDay =
-    payment.trip_departure_date &&
-    payment.due_date === new Date(payment.trip_departure_date).toISOString().split('T')[0];
-
   const tripDate = payment.trip_departure_date
     ? format(new Date(payment.trip_departure_date), 'dd.MM.yyyy', { locale: pl })
     : '';
   const transferTitle = `${payment.child_last_name} ${payment.child_first_name} ${payment.trip_title} ${tripDate}`;
-  return { cfg, StatusIcon, isOverdue, daysOverdue, remaining, dueDate, isDepartureDay, transferTitle };
+  return { cfg, StatusIcon, isOverdue, remaining, transferTitle };
 }
 
 // ── Wiersz tabeli ─────────────────────────────────────────────────────────
 function PaymentRow({ payment }: { payment: ParentPayment }) {
-  const { cfg, StatusIcon, isOverdue, daysOverdue, remaining, dueDate, isDepartureDay, transferTitle } = usePaymentData(payment);
+  const { cfg, StatusIcon, isOverdue, remaining, transferTitle } = usePaymentData(payment);
 
   return (
     <tr
@@ -276,19 +273,12 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
       </td>
 
       {/* Termin */}
-      <td className="py-3 px-3 whitespace-nowrap">
-        {dueDate ? (
-          <div>
-            <span className={cn('text-sm tabular-nums', isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500')}>
-              {isDepartureDay ? 'w dniu wyjazdu' : format(dueDate, 'd.MM.yyyy', { locale: pl })}
-            </span>
-            {isOverdue && daysOverdue > 0 && (
-              <p className="text-[11px] text-red-400 mt-0.5">{daysOverdue} dni po terminie</p>
-            )}
-          </div>
-        ) : (
-          <span className="text-gray-300 text-sm">—</span>
-        )}
+      <td className="py-3 px-3 whitespace-nowrap text-sm">
+        <PaymentDue
+          paymentDueDate={payment.due_date}
+          departureDate={payment.trip_departure_date}
+          status={payment.status}
+        />
       </td>
 
     </tr>
@@ -442,7 +432,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
                 )}
               >
-                <option value="all">Sortuj wg. wyjazdu</option>
+                <option value="all">Filtruj wg. wyjazdu</option>
                 {availableTrips.map((t) => (
                   <option key={t.id} value={t.id}>{t.title}</option>
                 ))}

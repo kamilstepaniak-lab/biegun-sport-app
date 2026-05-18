@@ -42,22 +42,6 @@ CREATE INDEX idx_participants_parent ON participants(parent_id);
 CREATE INDEX idx_participants_birth_date ON participants(birth_date);
 
 -- ====================================
--- TABELA: custom_field_definitions
--- ====================================
-CREATE TABLE custom_field_definitions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  field_name TEXT UNIQUE NOT NULL,
-  field_label TEXT NOT NULL,
-  field_type TEXT NOT NULL CHECK (field_type IN ('text', 'number', 'date', 'boolean', 'select')),
-  options JSONB,
-  is_required BOOLEAN DEFAULT FALSE,
-  display_order INTEGER,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_field_definitions_order ON custom_field_definitions(display_order);
-
--- ====================================
 -- TABELA: participant_custom_fields
 -- ====================================
 CREATE TABLE participant_custom_fields (

@@ -1,10 +1,8 @@
 'use client';
 
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { CreditCard, Clock } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { EmptyState } from './empty-state';
-import { formatPaymentDueDate } from '@/lib/payment-due';
+import { PaymentDue } from './payment-due';
 import type { TripPaymentTemplate } from '@/types';
 
 function getMethodLabel(method: string | null): { label: string; className: string } {
@@ -60,11 +58,6 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                     {sortedTemplates.map((template) => {
                         const methodStyle = getMethodLabel(template.payment_method);
                         const label = getPaymentTypeLabel(template);
-                        const actualDueDate = actualDueDatesByTemplateId?.[template.id];
-                        const dueDateLabel = actualDueDate
-                            ? `do ${format(new Date(actualDueDate), 'd.MM.yyyy', { locale: pl })}`
-                            : formatPaymentDueDate(template, departureDate);
-                        const hasDueDate = !!(template.due_date || template.due_days_from_confirmation || actualDueDate);
 
                         return (
                             <tr key={template.id} className="hover:bg-muted/30 transition-colors">
@@ -78,15 +71,13 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                                         </p>
                                     )}
                                 </td>
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                    {hasDueDate ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 border border-amber-300">
-                                            <Clock className="h-3 w-3" />
-                                            {dueDateLabel}
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground italic">wg ustaleń</span>
-                                    )}
+                                <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                    <PaymentDue
+                                        paymentDueDate={actualDueDatesByTemplateId?.[template.id]}
+                                        templateDueDate={template.due_date}
+                                        dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                        departureDate={departureDate}
+                                    />
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodStyle.className}`}>

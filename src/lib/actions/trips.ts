@@ -5,6 +5,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
 import { getBankAccounts } from './settings';
+import { resolveEffectiveDueDate } from '@/lib/payment-due';
 import {
   sendRegistrationConfirmationEmail,
   type TripEmailData,
@@ -271,6 +272,256 @@ export async function createTrip(input: CreateTripInput) {
   return { success: true, data: trip };
 }
 
+// Porównuje cennik zapisany w bazie z cennikiem przesłanym z formularza —
+// ignoruje kolejność i pole id. Zwraca true gdy cenniki są identyczne, dzięki
+// czemu edycja niezwiązana z płatnościami nie uruchamia synchronizacji.
+function paymentTemplatesEqual(
+  dbTemplates: {
+    payment_type: string;
+    installment_number: number | null;
+    is_first_installment: boolean | null;
+    includes_season_pass: boolean | null;
+    category_name: string | null;
+    birth_year_from: number | null;
+    birth_year_to: number | null;
+    amount: number | string;
+    currency: string;
+    due_date: string | null;
+    due_days_from_confirmation: number | null;
+    payment_method: string | null;
+  }[],
+  formTemplates: CreatePaymentTemplateInput[]
+): boolean {
+  if (dbTemplates.length !== formTemplates.length) return false;
+  const norm = (t: {
+    payment_type: string;
+    installment_number?: number | null;
+    is_first_installment?: boolean | null;
+    includes_season_pass?: boolean | null;
+    category_name?: string | null;
+    birth_year_from?: number | null;
+    birth_year_to?: number | null;
+    amount: number | string;
+    currency: string;
+    due_date?: string | null;
+    due_days_from_confirmation?: number | null;
+    payment_method?: string | null;
+  }) =>
+    JSON.stringify({
+      payment_type: t.payment_type,
+      installment_number: t.installment_number || null,
+      is_first_installment: t.is_first_installment || false,
+      includes_season_pass: t.includes_season_pass || false,
+      category_name: t.category_name || null,
+      birth_year_from: t.birth_year_from || null,
+      birth_year_to: t.birth_year_to || null,
+      amount: Number(t.amount),
+      currency: t.currency,
+      due_date: t.due_date ? String(t.due_date).split('T')[0] : null,
+      due_days_from_confirmation: t.due_days_from_confirmation ?? null,
+      payment_method: t.payment_method || null,
+    });
+  const a = dbTemplates.map(norm).sort();
+  const b = formTemplates.map(norm).sort();
+  return a.every((v, i) => v === b[i]);
+}
+
+// Lokalna kopia logiki statusu (recomputePaymentStatus z payments.ts).
+// Powielona świadomie: pliki 'use server' nie powinny eksportować
+// synchronicznych helperów. Obie kopie muszą pozostać identyczne.
+function computePaymentStatus(
+  amount: number,
+  amountPaid: number,
+  dueDate: string | null,
+): 'pending' | 'partially_paid' | 'paid' | 'overdue' | 'partially_paid_overdue' {
+  const isOverdue = dueDate !== null && new Date(dueDate) < new Date();
+  if (amountPaid >= amount) return 'paid';
+  if (amountPaid > 0) return isOverdue ? 'partially_paid_overdue' : 'partially_paid';
+  return isOverdue ? 'overdue' : 'pending';
+}
+
+// Synchronizuje płatności potwierdzonych uczestników z aktualnym cennikiem
+// wyjazdu. Uruchamiana wyłącznie gdy cennik faktycznie się zmienił.
+async function syncTripPaymentsAfterPricingChange(
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  id: string
+) {
+  const { data: newTemplates } = await supabaseAdmin
+    .from('trip_payment_templates')
+    .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
+    .eq('trip_id', id);
+
+  const { data: activeRegs } = await supabaseAdmin
+    .from('trip_registrations')
+    .select('id, participant_id, participation_status, confirmed_at')
+    .eq('trip_id', id)
+    .eq('status', 'active')
+    .eq('participation_status', 'confirmed');
+
+  if (!activeRegs || activeRegs.length === 0) return;
+
+  for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string; confirmed_at: string | null }[]) {
+    const { data: participant } = await supabaseAdmin
+      .from('participants')
+      .select('birth_date')
+      .eq('id', reg.participant_id)
+      .single();
+
+    const birthYear = participant?.birth_date
+      ? new Date(participant.birth_date).getFullYear()
+      : null;
+
+    const templates = (newTemplates || []) as {
+      id: string;
+      payment_type: string;
+      installment_number: number | null;
+      birth_year_from: number | null;
+      birth_year_to: number | null;
+      amount: number;
+      currency: string;
+      due_date: string | null;
+      due_days_from_confirmation: number | null;
+      payment_method: string | null;
+    }[];
+
+    const applicableTemplates = templates.filter((t) => {
+      if (t.payment_type === 'season_pass') {
+        // Jeśli szablon ma ograniczenia rocznikowe — sprawdź rocznik dziecka
+        if (t.birth_year_from || t.birth_year_to) {
+          if (!birthYear) return false;
+          const matchesFrom = !t.birth_year_from || birthYear >= t.birth_year_from;
+          const matchesTo = !t.birth_year_to || birthYear <= t.birth_year_to;
+          return matchesFrom && matchesTo;
+        }
+        // Brak ograniczeń rocznikowych — karnet dotyczy wszystkich
+        return true;
+      }
+      return true;
+    });
+
+    const { data: existingPayments } = await supabaseAdmin
+      .from('payments')
+      .select('id, payment_type, installment_number, status, amount, original_amount, amount_paid, discount_percentage')
+      .eq('registration_id', reg.id)
+      .neq('status', 'cancelled');
+
+    const existing = (existingPayments || []) as {
+      id: string;
+      payment_type: string;
+      installment_number: number | null;
+      status: string;
+      amount: number;
+      original_amount: number;
+      amount_paid: number | null;
+      discount_percentage: number | null;
+    }[];
+
+    // Płatności trwale anulowane (rezygnacja uczestnika lub usunięcie pozycji
+    // z cennika) NIE są odtwarzane — uszanuj decyzję admina.
+    const { data: cancelledPayments } = await supabaseAdmin
+      .from('payments')
+      .select('payment_type, installment_number')
+      .eq('registration_id', reg.id)
+      .eq('status', 'cancelled');
+
+    const cancelledKeys = new Set(
+      ((cancelledPayments || []) as { payment_type: string; installment_number: number | null }[]).map(
+        (p) => `${p.payment_type}::${p.installment_number ?? ''}`
+      )
+    );
+
+    // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
+    for (const template of applicableTemplates) {
+      // Termin: dla reguły „X dni od potwierdzenia" wyliczamy konkretną datę
+      // z confirmed_at — inaczej due_date zostałby pusty (template.due_date = null).
+      const effectiveDueDate = resolveEffectiveDueDate({
+        templateDueDate: template.due_date,
+        dueDaysFromConfirmation: template.due_days_from_confirmation,
+        confirmedAt: reg.confirmed_at,
+      });
+      const match = existing.find(
+        (p) =>
+          p.payment_type === template.payment_type &&
+          p.installment_number === template.installment_number
+      );
+
+      if (match) {
+        // D4: cennik jest nadrzędny — twardy reset ceny u każdego
+        // potwierdzonego uczestnika, bez wyjątków. Wpłata (amount_paid)
+        // zostaje. Walutę zmieniamy tylko gdy nie ma jeszcze wpłaty.
+        const newStatus = computePaymentStatus(
+          template.amount,
+          match.amount_paid ?? 0,
+          effectiveDueDate,
+        );
+        const update: Record<string, unknown> = {
+          amount: template.amount,
+          original_amount: template.amount,
+          discount_percentage: 0,
+          due_date: effectiveDueDate,
+          template_id: template.id,
+          payment_method: template.payment_method,
+          status: newStatus,
+        };
+        // paid_at: zerujemy gdy status przestaje być 'paid'; gdy pozostaje
+        // 'paid' — zostawiamy bez zmian (nie dodajemy klucza do update).
+        if (newStatus !== 'paid') {
+          update.paid_at = null;
+        } else if (match.status !== 'paid') {
+          update.paid_at = new Date().toISOString();
+        }
+        if ((match.amount_paid ?? 0) === 0) {
+          update.currency = template.currency;
+        }
+
+        await supabaseAdmin
+          .from('payments')
+          .update(update)
+          .eq('id', match.id);
+      } else {
+        // Nie odtwarzaj płatności, która została wcześniej trwale anulowana
+        if (cancelledKeys.has(`${template.payment_type}::${template.installment_number ?? ''}`)) {
+          continue;
+        }
+        await supabaseAdmin
+          .from('payments')
+          .insert({
+            registration_id: reg.id,
+            template_id: template.id,
+            payment_type: template.payment_type,
+            installment_number: template.installment_number,
+            original_amount: template.amount,
+            discount_percentage: 0,
+            amount: template.amount,
+            currency: template.currency,
+            due_date: effectiveDueDate,
+            status: 'pending',
+            amount_paid: 0,
+            payment_method: template.payment_method,
+          });
+      }
+    }
+
+    // Anuluj oczekujące płatności, które nie mają już pasującego szablonu
+    for (const existingPayment of existing) {
+      const hasTemplate = applicableTemplates.find(
+        (t) =>
+          t.payment_type === existingPayment.payment_type &&
+          t.installment_number === existingPayment.installment_number
+      );
+      if (
+        !hasTemplate &&
+        ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(existingPayment.status)
+      ) {
+        await supabaseAdmin
+          .from('payments')
+          .update({ status: 'cancelled' })
+          .eq('id', existingPayment.id);
+      }
+    }
+  }
+}
+
 export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   const { supabase, user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
@@ -368,217 +619,72 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     }
   }
 
-  // 3. Aktualizuj szablony płatności jeśli podane (używamy admin client)
+  // 3. Aktualizuj szablony płatności — tylko gdy cennik faktycznie się zmienił.
+  // Edycja tytułu, dat, godzin czy miejsc nie rusza wtedy płatności uczestników.
+  let pricingChanged = false;
   if (payment_templates !== undefined) {
-    // Odepnij istniejące płatności od szablonów przed ich usunięciem
-    // (FK bez ON DELETE SET NULL — musimy ręcznie wyzerować template_id)
     const { data: existingTemplates } = await supabaseAdmin
       .from('trip_payment_templates')
-      .select('id')
+      .select('id, payment_type, installment_number, is_first_installment, includes_season_pass, category_name, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
       .eq('trip_id', id);
 
-    if (existingTemplates && existingTemplates.length > 0) {
-      const templateIds = existingTemplates.map((t) => t.id);
-      await supabaseAdmin
-        .from('payments')
-        .update({ template_id: null })
-        .in('template_id', templateIds);
-    }
+    pricingChanged = !paymentTemplatesEqual(existingTemplates ?? [], payment_templates);
 
-    // Usuń wszystkie stare szablony
-    const { error: deleteTemplatesError } = await supabaseAdmin
-      .from('trip_payment_templates')
-      .delete()
-      .eq('trip_id', id);
+    if (pricingChanged) {
+      // Odepnij istniejące płatności od szablonów przed ich usunięciem
+      // (FK bez ON DELETE SET NULL — musimy ręcznie wyzerować template_id)
+      if (existingTemplates && existingTemplates.length > 0) {
+        const templateIds = existingTemplates.map((t) => t.id);
+        await supabaseAdmin
+          .from('payments')
+          .update({ template_id: null })
+          .in('template_id', templateIds);
+      }
 
-    if (deleteTemplatesError) {
-      console.error('Delete payment templates error:', deleteTemplatesError);
-      return { error: 'Nie udało się usunąć starych szablonów płatności' };
-    }
-
-    // Dodaj nowe szablony (bez pola id - niech baza je wygeneruje)
-    if (payment_templates.length > 0) {
-      const templatesData = payment_templates.map((template: CreatePaymentTemplateInput) => ({
-        trip_id: id,
-        payment_type: template.payment_type,
-        installment_number: template.installment_number || null,
-        is_first_installment: template.is_first_installment || false,
-        includes_season_pass: template.includes_season_pass || false,
-        category_name: template.category_name || null,
-        birth_year_from: template.birth_year_from || null,
-        birth_year_to: template.birth_year_to || null,
-        amount: template.amount,
-        currency: template.currency,
-        due_date: template.due_date || null,
-        due_days_from_confirmation: template.due_days_from_confirmation ?? null,
-        payment_method: template.payment_method || null,
-      }));
-
-      const { error: insertTemplatesError } = await supabaseAdmin
+      // Usuń wszystkie stare szablony
+      const { error: deleteTemplatesError } = await supabaseAdmin
         .from('trip_payment_templates')
-        .insert(templatesData);
+        .delete()
+        .eq('trip_id', id);
 
-      if (insertTemplatesError) {
-        console.error('Insert payment templates error:', insertTemplatesError);
-        return { error: 'Nie udało się dodać nowych szablonów płatności' };
+      if (deleteTemplatesError) {
+        console.error('Delete payment templates error:', deleteTemplatesError);
+        return { error: 'Nie udało się usunąć starych szablonów płatności' };
+      }
+
+      // Dodaj nowe szablony (bez pola id - niech baza je wygeneruje)
+      if (payment_templates.length > 0) {
+        const templatesData = payment_templates.map((template: CreatePaymentTemplateInput) => ({
+          trip_id: id,
+          payment_type: template.payment_type,
+          installment_number: template.installment_number || null,
+          is_first_installment: template.is_first_installment || false,
+          includes_season_pass: template.includes_season_pass || false,
+          category_name: template.category_name || null,
+          birth_year_from: template.birth_year_from || null,
+          birth_year_to: template.birth_year_to || null,
+          amount: template.amount,
+          currency: template.currency,
+          due_date: template.due_date || null,
+          due_days_from_confirmation: template.due_days_from_confirmation ?? null,
+          payment_method: template.payment_method || null,
+        }));
+
+        const { error: insertTemplatesError } = await supabaseAdmin
+          .from('trip_payment_templates')
+          .insert(templatesData);
+
+        if (insertTemplatesError) {
+          console.error('Insert payment templates error:', insertTemplatesError);
+          return { error: 'Nie udało się dodać nowych szablonów płatności' };
+        }
       }
     }
-
   }
 
-  // Synchronizuj płatności dla wszystkich zapisanych uczestników (zawsze przy edycji)
-  const { data: newTemplates } = await supabaseAdmin
-    .from('trip_payment_templates')
-    .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
-    .eq('trip_id', id);
-
-  const { data: activeRegs } = await supabaseAdmin
-    .from('trip_registrations')
-    .select('id, participant_id, participation_status')
-    .eq('trip_id', id)
-    .eq('status', 'active')
-    .eq('participation_status', 'confirmed');
-
-  if (activeRegs && activeRegs.length > 0) {
-    for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string }[]) {
-      const { data: participant } = await supabaseAdmin
-        .from('participants')
-        .select('birth_date')
-        .eq('id', reg.participant_id)
-        .single();
-
-      const birthYear = participant?.birth_date
-        ? new Date(participant.birth_date).getFullYear()
-        : null;
-
-      const templates = (newTemplates || []) as {
-        id: string;
-        payment_type: string;
-        installment_number: number | null;
-        birth_year_from: number | null;
-        birth_year_to: number | null;
-        amount: number;
-        currency: string;
-        due_date: string | null;
-        due_days_from_confirmation: number | null;
-        payment_method: string | null;
-      }[];
-
-      const applicableTemplates = templates.filter((t) => {
-        if (t.payment_type === 'season_pass') {
-          // Jeśli szablon ma ograniczenia rocznikowe — sprawdź rocznik dziecka
-          if (t.birth_year_from || t.birth_year_to) {
-            if (!birthYear) return false;
-            const matchesFrom = !t.birth_year_from || birthYear >= t.birth_year_from;
-            const matchesTo = !t.birth_year_to || birthYear <= t.birth_year_to;
-            return matchesFrom && matchesTo;
-          }
-          // Brak ograniczeń rocznikowych — karnet dotyczy wszystkich
-          return true;
-        }
-        return true;
-      });
-
-      const { data: existingPayments } = await supabaseAdmin
-        .from('payments')
-        .select('id, payment_type, installment_number, status, amount, original_amount, amount_paid, discount_percentage')
-        .eq('registration_id', reg.id)
-        .neq('status', 'cancelled');
-
-      const existing = (existingPayments || []) as {
-        id: string;
-        payment_type: string;
-        installment_number: number | null;
-        status: string;
-        amount: number;
-        original_amount: number;
-        amount_paid: number | null;
-        discount_percentage: number | null;
-      }[];
-
-      // Dla każdego szablonu: zaktualizuj istniejącą płatność lub utwórz nową
-      for (const template of applicableTemplates) {
-        const match = existing.find(
-          (p) =>
-            p.payment_type === template.payment_type &&
-            p.installment_number === template.installment_number
-        );
-
-        if (match) {
-          // Płatność jest "zablokowana finansowo" gdy: ma jakąkolwiek wpłatę,
-          // jest w pełni opłacona, albo admin zmienił jej kwotę indywidualnie
-          // (zniżka przez applyDiscount lub ręczna korekta updatePaymentAmount —
-          // jedno i drugie daje amount != original_amount). Edycja cennika
-          // całego wyjazdu NIE może nadpisywać takiej indywidualnej kwoty.
-          const isAmountLocked =
-            (match.amount_paid ?? 0) > 0 ||
-            match.status === 'paid' ||
-            (match.discount_percentage ?? 0) > 0 ||
-            match.amount !== match.original_amount;
-
-          if (isAmountLocked) {
-            // Zachowaj kwotę i walutę; zsynchronizuj tylko powiązanie z szablonem
-            // oraz pola nie-finansowe (termin, oczekiwana forma płatności).
-            await supabaseAdmin
-              .from('payments')
-              .update({
-                template_id: template.id,
-                due_date: template.due_date,
-                payment_method: template.payment_method,
-              })
-              .eq('id', match.id);
-          } else {
-            // Płatność nietknięta — pełna synchronizacja z szablonem cennika
-            await supabaseAdmin
-              .from('payments')
-              .update({
-                amount: template.amount,
-                original_amount: template.amount,
-                currency: template.currency,
-                due_date: template.due_date,
-                template_id: template.id,
-                payment_method: template.payment_method,
-              })
-              .eq('id', match.id);
-          }
-        } else {
-          await supabaseAdmin
-            .from('payments')
-            .insert({
-              registration_id: reg.id,
-              template_id: template.id,
-              payment_type: template.payment_type,
-              installment_number: template.installment_number,
-              original_amount: template.amount,
-              discount_percentage: 0,
-              amount: template.amount,
-              currency: template.currency,
-              due_date: template.due_date,
-              status: 'pending',
-              amount_paid: 0,
-              payment_method: template.payment_method,
-            });
-        }
-      }
-
-      // Anuluj oczekujące płatności, które nie mają już pasującego szablonu
-      for (const existingPayment of existing) {
-        const hasTemplate = applicableTemplates.find(
-          (t) =>
-            t.payment_type === existingPayment.payment_type &&
-            t.installment_number === existingPayment.installment_number
-        );
-        if (
-          !hasTemplate &&
-          ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(existingPayment.status)
-        ) {
-          await supabaseAdmin
-            .from('payments')
-            .update({ status: 'cancelled' })
-            .eq('id', existingPayment.id);
-        }
-      }
-    }
+  // Synchronizuj płatności uczestników wyłącznie gdy zmienił się cennik
+  if (pricingChanged) {
+    await syncTripPaymentsAfterPricingChange(supabaseAdmin, id);
   }
 
   revalidatePath('/admin/trips');
@@ -1002,6 +1108,7 @@ export interface ChildTripStatus {
   participation_status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other';
   participation_note: string | null;
   registration_id: string | null;
+  confirmed_at: string | null;
   payments: ChildPaymentSummary[];
 }
 
@@ -1100,7 +1207,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
       .order('departure_datetime', { ascending: true }),
     supabase
       .from('trip_registrations')
-      .select('id, trip_id, participant_id, participation_status, participation_note')
+      .select('id, trip_id, participant_id, participation_status, participation_note, confirmed_at')
       .in('participant_id', childIds)
       .in('trip_id', tripIds),
   ]);
@@ -1110,12 +1217,13 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
 
   if (!trips) return [];
 
-  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null }>();
-  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null }) => {
+  const registrationMap = new Map<string, { id: string; participation_status: string; participation_note: string | null; confirmed_at: string | null }>();
+  (registrations || []).forEach((r: { id: string; trip_id: string; participant_id: string; participation_status: string; participation_note: string | null; confirmed_at: string | null }) => {
     registrationMap.set(`${r.trip_id}-${r.participant_id}`, {
       id: r.id,
       participation_status: r.participation_status,
       participation_note: r.participation_note,
+      confirmed_at: r.confirmed_at,
     });
   });
 
@@ -1152,6 +1260,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
         participation_status: (reg?.participation_status as 'unconfirmed' | 'confirmed' | 'not_going' | 'other') || 'unconfirmed',
         participation_note: reg?.participation_note || null,
         registration_id: reg?.id ?? null,
+        confirmed_at: reg?.confirmed_at ?? null,
         payments: [],
       };
     });
