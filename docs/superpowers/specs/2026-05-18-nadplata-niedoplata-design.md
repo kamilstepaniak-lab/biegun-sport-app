@@ -44,6 +44,13 @@ już istnieje (migracja `missing-columns-and-contracts.sql`) i może być
 ujemna. Saldo to po prostu `−amount_remaining`. Nie dodajemy nic do
 schematu bazy.
 
+**Tolerancja groszowa `SALDO_EPSILON = 0.5`** — jedna stała używana
+spójnie: saldo uznajemy za niezerowe gdy `|amount_remaining| > 0.5`.
+Poniżej progu (np. reszta 0,30 zł) płatność jest rozliczona i nie
+pokazujemy badge'a. `recomputePaymentStatus` porównuje kwoty wprost
+(`amountPaid >= amount`) bez tolerancji — jest to spójne: reszta 0,30 zł
+daje status `paid` i brak badge'a.
+
 Enum `PaymentStatus` bez zmian: `pending | partially_paid | paid |
 overdue | partially_paid_overdue | cancelled`.
 
@@ -55,15 +62,26 @@ overdue | partially_paid_overdue | cancelled`.
 ### 1. `recomputePaymentStatus(amount, amountPaid, dueDate)`
 
 Nowa, czysta funkcja w `src/lib/actions/payments.ts` — jedno źródło
-prawdy dla statusu płatności:
+prawdy dla statusu płatności.
+
+Sygnatura:
+`recomputePaymentStatus(amount: number, amountPaid: number, dueDate: string | null): PaymentStatus`
+
+Logika **kaskadowa** (`if / else if / else` — warunki zależne, nie
+niezależne):
 
 - `amountPaid >= amount` → `paid` (obejmuje też nadpłatę)
-- `amountPaid > 0` → `partially_paid_overdue` jeśli po terminie, inaczej
-  `partially_paid`
-- `amountPaid <= 0` → `overdue` jeśli po terminie, inaczej `pending`
+- w przeciwnym razie, jeśli `amountPaid > 0` (czyli
+  `0 < amountPaid < amount`) → `partially_paid_overdue` jeśli po
+  terminie, inaczej `partially_paid`
+- w przeciwnym razie (`amountPaid <= 0`) → `overdue` jeśli po terminie,
+  inaczej `pending`
 
-„Po terminie" = `dueDate` istnieje i `dueDate < dziś`. Funkcja nie
-dotyka statusu `cancelled` — wywołujący nie woła jej dla anulowanych.
+„Po terminie" = `dueDate !== null` i data `dueDate` jest wcześniejsza
+niż dziś. `dueDate === null` → płatność nigdy nie jest „po terminie".
+
+Funkcja nie zwraca `cancelled` — wywołujący NIE woła jej dla płatności
+anulowanych (patrz Komponent 2 i 3).
 
 ### 2. Synchronizacja cennika — `syncTripPaymentsAfterPricingChange` (`trips.ts`)
 
@@ -80,31 +98,50 @@ Obecna flaga `isAmountLocked` zostaje rozdzielona na dwie kategorie:
   `amount_paid === 0` — przy istniejącej wpłacie zmiana waluty
   zafałszowałaby wpłaconą kwotę.
 
+**Świadoma zmiana semantyki:** dotychczasowa flaga `isAmountLocked`
+blokowała przed przeliczeniem także zwykłe płatności opłacone (`paid`,
+bez zniżki). Nowa logika je przelicza — to celowa zmiana, nie regresja.
+Lockowane pozostają wyłącznie płatności indywidualnie zmienione
+(zniżka procentowa lub ręczna korekta kwoty).
+
 Pozostała logika bez zmian: dopinanie szablonów, tworzenie brakujących
 płatności (z poszanowaniem trwale anulowanych), anulowanie płatności bez
-pasującego szablonu.
+pasującego szablonu. Płatności `cancelled` nie są dotykane.
 
 ### 3. `updatePaymentAmount` (`payments.ts`)
 
-Po zapisaniu nowej kwoty funkcja pobiera `amount_paid` i `due_date`
-płatności i przelicza `status` przez `recomputePaymentStatus`
-(aktualizuje też `paid_at`). Dzięki temu ręczna korekta opłaconej
-płatności tworzy nadpłatę (status zostaje `paid`) lub niedopłatę
-(status wraca do `partially_paid` → „do dopłaty"). Płatność po ręcznej
-korekcie ma `amount !== original_amount`, więc jest dalej chroniona
-przed edycją cennika.
+Funkcja zmienia **wyłącznie** kolumnę `amount` — `original_amount`
+pozostaje **nietknięty**. To kluczowe: dzięki `amount !== original_amount`
+płatność jest dalej rozpoznawana jako „indywidualnie zmieniona" i
+chroniona przed edycją cennika (Komponent 2).
+
+Po zapisaniu nowej kwoty funkcja pobiera `amount_paid`, `due_date` i
+`status` płatności i przelicza `status` przez `recomputePaymentStatus`
+(aktualizuje też `paid_at` — `null` gdy status przestaje być `paid`).
+Dzięki temu ręczna korekta opłaconej płatności tworzy nadpłatę (status
+zostaje `paid`) lub niedopłatę (status wraca do `partially_paid` → „do
+dopłaty").
+
+**Płatność `cancelled`:** jeśli korygowana płatność ma status
+`cancelled`, funkcja zmienia tylko `amount` i **pomija** przeliczanie
+statusu (nie wywołuje `recomputePaymentStatus`) — anulowana płatność
+pozostaje anulowana.
 
 ### 4. Panel admina `/admin/payments` (`payments-list.tsx`)
 
 Przy komórce statusu dodajemy mały wskaźnik salda, liczony z
-`amount_remaining` wiersza:
+`amount_remaining` wiersza, z progiem `SALDO_EPSILON = 0.5`:
 
-- `amount_remaining < −0.5` → zielony badge „Nadpłata X zł"
-- `amount_remaining > 0.5` przy statusie częściowym → „Do dopłaty X zł"
-  (jawna kwota pod statusem)
+- `amount_remaining < −SALDO_EPSILON` → zielony badge (wariant
+  emerald, spójny z badge'em statusu `paid`) „Nadpłata X waluta"
+- `amount_remaining > SALDO_EPSILON` przy statusie częściowym
+  (`partially_paid` / `partially_paid_overdue`) → badge ostrzegawczy
+  (wariant amber) „Do dopłaty X waluta", jawna kwota pod statusem
 
-Kwota X to `Math.abs(amount_remaining)`. Bez nowych kolumn tabeli —
-wskaźnik mieści się w istniejącej kolumnie statusu.
+Kwota X to `Math.abs(amount_remaining)`. Jednostka to `row.currency`
+(PLN/EUR) — nie zaszywać „zł" na sztywno, bo płatności mogą być w EUR.
+Bez nowych kolumn tabeli — wskaźnik mieści się w istniejącej kolumnie
+statusu.
 
 ### 5. Panel rodzica
 
@@ -112,7 +149,16 @@ Bez zmian w kodzie. Niedopłata jako `partially_paid` jest już
 renderowana jako aktywna płatność do uregulowania (filtr parent
 payments: `status !== 'paid' && status !== 'cancelled'`). Nadpłata
 pozostaje `paid` — rodzic widzi płatność jako opłaconą, bez salda
-ujemnego. Krok: tylko weryfikacja zachowania.
+ujemnego.
+
+Krok = weryfikacja zachowania panelu rodzica:
+- jeśli panel pokazuje kwotę do zapłaty z `amount_remaining` —
+  niedopłata wyświetli poprawną resztę (wartość dodatnia);
+- przy nadpłacie (`paid`, `amount_remaining` ujemne) panel nie może
+  pokazać kwoty ujemnej — należy potwierdzić, że nadpłacona płatność
+  renderuje się po prostu jako opłacona.
+Jeśli weryfikacja wykryje, że któreś z tych założeń nie jest spełnione,
+zakres się rozszerza o drobną poprawkę renderowania w panelu rodzica.
 
 ## Przypadki brzegowe
 
