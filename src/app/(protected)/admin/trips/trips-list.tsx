@@ -170,6 +170,9 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     </span>
                   )}
                 </div>
+                <p className="text-xs font-semibold text-gray-600 mb-1">
+                  {format(departureDate, 'd MMM yyyy', { locale: pl })} – {format(returnDate, 'd MMM yyyy', { locale: pl })}
+                </p>
                 <div className="flex items-center gap-3 text-sm text-gray-500 flex-wrap">
                   {trip.groups.map((g) => {
                     const colors = getGroupColor(g.name);

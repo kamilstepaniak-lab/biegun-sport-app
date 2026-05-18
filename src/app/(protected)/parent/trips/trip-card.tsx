@@ -133,6 +133,9 @@ function TripCardInner({
               <div className="flex-1 min-w-0">
                 <div className="mb-1.5">
                   <h3 className="font-semibold text-lg text-gray-900 leading-tight">{trip.title}</h3>
+                  <p className="text-xs font-semibold text-gray-600 mt-0.5">
+                    {format(departureDate, 'd MMM yyyy', { locale: pl })} – {format(new Date(trip.return_datetime), 'd MMM yyyy', { locale: pl })}
+                  </p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     {trip.groups.map((g) => {
                       const colors = getGroupColor(g.name);
