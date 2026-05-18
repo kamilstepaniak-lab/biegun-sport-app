@@ -52,7 +52,7 @@ export function ParticipantNotesCard({ participantId, initialNotes, compact = fa
           <div className="flex items-center gap-2">
             <StickyNote className={`h-5 w-5 ${notes ? 'text-amber-500' : 'text-muted-foreground'}`} />
             <div>
-              <CardTitle>Notatki</CardTitle>
+              <CardTitle className="text-base font-semibold">Notatki</CardTitle>
               <CardDescription>
                 Informacje o uczestniku (np. zdrowie, alergie, uwagi)
               </CardDescription>

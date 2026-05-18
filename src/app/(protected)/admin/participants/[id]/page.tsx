@@ -15,6 +15,7 @@ import {
   Utensils,
   BedDouble,
   Info,
+  UserRound,
   Users,
 } from 'lucide-react';
 
@@ -96,10 +97,6 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
     participant.parent_notes_additional
   );
   const hasAddress = Boolean(parent.address_street || parent.address_zip || parent.address_city);
-  const paymentIssueCount = registrations.filter((reg) => {
-    const payment = Array.isArray(reg.payments) ? reg.payments[0] : null;
-    return payment && payment.status !== 'paid' && payment.status !== 'cancelled';
-  }).length;
 
   return (
     <div className="space-y-6">
@@ -112,8 +109,8 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
       />
 
       <PageHeader
-        title={`${participant.first_name} ${participant.last_name}`}
-        description="Karta uczestnika"
+        title="Karta uczestnika"
+        description="Szczegóły dziecka, rodzica i zapisów"
       >
         <Button variant="outline" asChild>
           <Link href="/admin/participants">
@@ -129,7 +126,10 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
             <CardHeader className="border-b bg-gray-50/70">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle>Dane dziecka</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                    <UserRound className="h-5 w-5" />
+                    Dane dziecka
+                  </CardTitle>
                   <CardDescription>Podstawowe informacje organizacyjne</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -148,15 +148,15 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
                       Uwagi rodzica
                     </Badge>
                   )}
-                  {paymentIssueCount > 0 && (
-                    <Badge className="rounded-md bg-red-100 px-2.5 py-1 text-red-700 hover:bg-red-100">
-                      {paymentIssueCount} płatn. do kontroli
-                    </Badge>
-                  )}
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-5 py-5 sm:grid-cols-3">
+            <CardContent className="grid gap-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
+              <InfoRow
+                icon={<UserRound className="h-5 w-5" />}
+                label="Imię i nazwisko"
+                value={`${participant.first_name} ${participant.last_name}`}
+              />
               <InfoRow
                 icon={<Calendar className="h-5 w-5" />}
                 label="Data urodzenia"
@@ -181,7 +181,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
           {hasParentNotes && (
             <Card className="border-amber-200 bg-amber-50/40">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-900">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-amber-900">
                   <Info className="h-5 w-5" />
                   Uwagi od rodzica
                 </CardTitle>
@@ -236,7 +236,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
           {participant.custom_fields && participant.custom_fields.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-base font-semibold">
                   <FileText className="h-5 w-5" />
                   Dodatkowe informacje
                 </CardTitle>
@@ -258,7 +258,10 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
         <aside className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Dane rodzica</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <Users className="h-5 w-5" />
+                Dane rodzica
+              </CardTitle>
               <CardDescription>Kontakt i dane do umowy</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">

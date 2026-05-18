@@ -73,7 +73,7 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <CreditCard className="h-5 w-5" />
           Zapisy i płatności
         </CardTitle>
