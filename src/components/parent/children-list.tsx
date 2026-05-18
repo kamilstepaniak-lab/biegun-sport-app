@@ -280,10 +280,10 @@ export function ChildrenList({ participants }: ChildrenListProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Users className="h-4 w-4 text-white" />
+              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
               </div>
-              <p className="text-sm font-semibold text-gray-800">Moje dzieci</p>
+              <p className="text-base font-semibold text-gray-800">Moje dzieci</p>
             </div>
             <Link
               href="/parent/children/add"
@@ -428,11 +428,11 @@ export function ChildrenList({ participants }: ChildrenListProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '300px' }}>
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <MessageSquare className="h-4 w-4 text-white" />
+              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                <MessageSquare className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-800">Wiadomości od organizatora</p>
+                <p className="text-base font-semibold text-gray-800">Wiadomości od organizatora</p>
                 {!messagesLoading && (
                   <p className="text-[11px] text-gray-400">{messages.length} komunikatów</p>
                 )}
@@ -522,10 +522,10 @@ export function ChildrenList({ participants }: ChildrenListProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <MapPin className="h-4 w-4 text-white" />
+                <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-white" />
                 </div>
-                <p className="text-sm font-semibold text-gray-800">Najbliższe wyjazdy</p>
+                <p className="text-base font-semibold text-gray-800">Najbliższe wyjazdy</p>
               </div>
               <Link href={`/parent/trips${childSlug}`} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
                 Wszystkie →
@@ -630,10 +630,10 @@ export function ChildrenList({ participants }: ChildrenListProps) {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <CreditCard className="h-4 w-4 text-white" />
+                <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <CreditCard className="h-5 w-5 text-white" />
                 </div>
-                <p className="text-sm font-semibold text-gray-800">Płatności</p>
+                <p className="text-base font-semibold text-gray-800">Płatności</p>
               </div>
               <div className="flex items-center gap-2">
                 {overdueCount > 0 && (

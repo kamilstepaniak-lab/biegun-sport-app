@@ -31,8 +31,8 @@ export default async function EditChildPage({ params }: EditChildPageProps) {
       />
 
       <PageHeader
-        title={`Edytuj: ${child.first_name} ${child.last_name}`}
-        description="Zaktualizuj dane uczestnika"
+        title="Edytuj dane dziecka"
+        description="Zaktualizuj dane uczestnika i informacje dla organizatora"
       />
 
       <ChildForm

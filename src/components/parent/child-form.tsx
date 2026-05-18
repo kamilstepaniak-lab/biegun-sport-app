@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { BedDouble, HeartPulse, Info, Loader2, Utensils, UserRound, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -110,13 +110,16 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Dane dziecka</CardTitle>
+          <CardHeader className="border-b bg-gray-50/70">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <UserRound className="h-5 w-5" />
+              Dane dziecka
+            </CardTitle>
             <CardDescription>
               Podstawowe informacje o dziecku
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5 py-5">
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -208,7 +211,10 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
               name="group_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Grupa</FormLabel>
+                  <FormLabel className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-gray-400" />
+                    Grupa
+                  </FormLabel>
                   <Select
                     onValueChange={handleGroupChange}
                     defaultValue={field.value || undefined}
@@ -237,17 +243,22 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
           </CardContent>
         </Card>
 
-        {/* Notatki dla organizatora */}
         <Card>
-          <CardHeader>
-            <CardTitle>Notatki dla organizatora</CardTitle>
+          <CardHeader className="border-b bg-gray-50/70">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Info className="h-5 w-5" />
+              Informacje dla organizatora
+            </CardTitle>
             <CardDescription>
               Te informacje będą widoczne wyłącznie dla organizatora — nie są publiczne.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid gap-4 py-5 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium block">🏥 Zdrowie i leki</label>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <HeartPulse className="h-4 w-4 text-red-500" />
+                Zdrowie i leki
+              </label>
               <Textarea
                 placeholder="Alergie, przyjmowane leki, choroby przewlekłe, ograniczenia fizyczne..."
                 value={notesHealth}
@@ -257,7 +268,10 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium block">🍽️ Jedzenie i dieta</label>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Utensils className="h-4 w-4 text-orange-500" />
+                Jedzenie i dieta
+              </label>
               <Textarea
                 placeholder="Alergie pokarmowe, nietolerancje, preferencje żywieniowe..."
                 value={notesFood}
@@ -267,7 +281,10 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium block">🛏️ Zakwaterowanie</label>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <BedDouble className="h-4 w-4 text-blue-500" />
+                Zakwaterowanie
+              </label>
               <Textarea
                 placeholder="Z kim dziecko chce mieszkać, preferencje dotyczące pokoju..."
                 value={notesAccommodation}
@@ -277,7 +294,10 @@ export function ChildForm({ groups, child, mode }: ChildFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium block">ℹ️ Dodatkowe informacje</label>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Info className="h-4 w-4 text-gray-500" />
+                Dodatkowe informacje
+              </label>
               <Textarea
                 placeholder="Inne ważne informacje dla organizatora..."
                 value={notesAdditional}

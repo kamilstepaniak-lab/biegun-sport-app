@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
@@ -87,11 +86,10 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
         ) : (
           <div className="space-y-4">
             <div className="overflow-hidden rounded-lg border">
-              <div className="grid grid-cols-[minmax(0,1fr)_120px_190px_86px] gap-3 border-b bg-gray-50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-lg:hidden">
+              <div className="grid grid-cols-[minmax(0,1fr)_120px_190px] gap-3 border-b bg-gray-50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-gray-400 max-lg:hidden">
                 <span>Wyjazd</span>
                 <span>Termin</span>
                 <span>Płatność</span>
-                <span></span>
               </div>
               <div className="divide-y">
                 {paginated.map((reg) => {
@@ -102,7 +100,7 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
                   return (
                     <div
                       key={reg.id}
-                      className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_120px_190px_86px] lg:items-center"
+                      className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_120px_190px] lg:items-center"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-gray-950">
@@ -127,17 +125,6 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
                           <span className="text-sm text-gray-400">Brak płatności</span>
                         )}
                       </div>
-                      {trip?.id ? (
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/admin/trips/${trip.id}/registrations`}>
-                            Wyjazd
-                          </Link>
-                        </Button>
-                      ) : (
-                        <Button variant="outline" size="sm" disabled>
-                          Wyjazd
-                        </Button>
-                      )}
                     </div>
                   );
                 })}

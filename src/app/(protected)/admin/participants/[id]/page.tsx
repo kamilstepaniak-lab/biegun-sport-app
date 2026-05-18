@@ -151,7 +151,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
+            <CardContent className="grid gap-5 py-5 sm:grid-cols-3">
               <InfoRow
                 icon={<UserRound className="h-5 w-5" />}
                 label="Imię i nazwisko"
@@ -167,11 +167,6 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
                 label="Wzrost"
                 value={participant.height_cm ? `${participant.height_cm} cm` : 'Brak danych'}
                 muted={!participant.height_cm}
-              />
-              <InfoRow
-                icon={<Users className="h-5 w-5" />}
-                label="Zapisy"
-                value={`${registrations.length} ${registrations.length === 1 ? 'wpis' : 'wpisów'}`}
               />
             </CardContent>
           </Card>
