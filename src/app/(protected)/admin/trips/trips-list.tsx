@@ -202,7 +202,45 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
           <div className="px-4 pb-4 space-y-4">
             <div className="h-px bg-gray-100" />
 
-            {/* Wyjazd i powrót */}
+            {/* Podstawowe informacje */}
+            {(trip.description || trip.location || trip.declaration_deadline) && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Info className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-900">Podstawowe informacje</h4>
+                </div>
+                {trip.description && (
+                  <div className="bg-white rounded-xl p-3">
+                    <SanitizedHtml
+                      html={trip.description}
+                      className="rich-content text-sm text-gray-600 leading-relaxed"
+                    />
+                  </div>
+                )}
+                {(trip.location || trip.declaration_deadline) && (
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {trip.location && (
+                      <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">Miejsce</p>
+                        <p className="text-sm text-gray-900">{trip.location}</p>
+                      </div>
+                    )}
+                    {trip.declaration_deadline && (
+                      <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
+                        <p className="text-xs text-gray-400 mb-0.5">Deklaracja do</p>
+                        <p className="text-sm text-gray-900">
+                          {format(new Date(trip.declaration_deadline), 'd MMMM yyyy', { locale: pl })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Terminy i lokalizacje */}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
@@ -269,16 +307,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                 </div>
               </div>
             </div>
-
-            {/* Opis */}
-            {trip.description && (
-              <div className="bg-gray-50 rounded-xl p-4">
-                <SanitizedHtml
-                  html={trip.description}
-                  className="rich-content text-sm text-gray-600 leading-relaxed"
-                />
-              </div>
-            )}
 
             {/* Grupy */}
             <div className="flex items-center gap-2 flex-wrap">
