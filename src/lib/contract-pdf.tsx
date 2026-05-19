@@ -23,88 +23,88 @@ Font.register({
 });
 Font.registerHyphenationCallback((word) => [word]);
 
-const PURPLE = '#6d28d9';
-const PURPLE_DARK = '#5b21b6';
+const HEADER_BG = '#000000';
+const HEADING = '#000000';
 
 const styles = StyleSheet.create({
   page: {
     fontFamily: 'DejaVu',
-    fontSize: 9,
+    fontSize: 8,
     color: '#111827',
-    lineHeight: 1.5,
-    paddingTop: 28,
-    paddingBottom: 44,
+    lineHeight: 1.3,
+    paddingTop: 0,
+    paddingBottom: 30,
     paddingHorizontal: 0,
   },
   header: {
-    backgroundColor: PURPLE,
+    backgroundColor: HEADER_BG,
     color: '#ffffff',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   headerBrand: {
-    fontSize: 7,
+    fontSize: 6,
     letterSpacing: 1,
-    color: '#ddd6fe',
-    marginBottom: 2,
+    color: '#d1d5db',
+    marginBottom: 1,
   },
-  headerTitle: { fontSize: 16, fontWeight: 'bold', color: '#ffffff' },
-  headerNumLabel: { fontSize: 7, color: '#c4b5fd', textAlign: 'right' },
-  headerNum: { fontSize: 12, fontWeight: 'bold', color: '#ffffff', textAlign: 'right' },
+  headerTitle: { fontSize: 12, fontWeight: 'bold', color: '#ffffff' },
+  headerNumLabel: { fontSize: 6, color: '#d1d5db', textAlign: 'right' },
+  headerNum: { fontSize: 10, fontWeight: 'bold', color: '#ffffff', textAlign: 'right' },
   section: {
-    paddingVertical: 10,
-    paddingHorizontal: 32,
+    paddingVertical: 5,
+    paddingHorizontal: 24,
     borderBottomWidth: 0.5,
     borderBottomColor: '#e5e7eb',
   },
   sectionTitle: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: PURPLE_DARK,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  line: { marginBottom: 2 },
-  kvRow: { flexDirection: 'row', marginBottom: 2 },
-  kvKey: { color: '#6b7280', width: 160 },
-  kvVal: { fontWeight: 'bold', flex: 1 },
-  numRow: { flexDirection: 'row', marginBottom: 2 },
-  numMark: { color: '#6b7280', width: 26 },
-  numText: { flex: 1 },
-  signBlock: {
-    marginTop: 4,
-    backgroundColor: '#f0fdf4',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderTopWidth: 1.5,
-    borderTopColor: '#86efac',
-  },
-  signTitle: {
     fontSize: 8,
     fontWeight: 'bold',
-    color: '#15803d',
+    color: HEADING,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
+    letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+  line: { marginBottom: 0.5 },
+  kvRow: { flexDirection: 'row', marginBottom: 0.5 },
+  kvKey: { color: '#6b7280', width: 130 },
+  kvVal: { fontWeight: 'bold', flex: 1 },
+  numRow: { flexDirection: 'row', marginBottom: 0.5 },
+  numMark: { color: '#6b7280', width: 20 },
+  numText: { flex: 1 },
+  signBlock: {
+    marginTop: 2,
+    backgroundColor: '#f3f4f6',
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    borderTopWidth: 1.5,
+    borderTopColor: '#000000',
+  },
+  signTitle: {
+    fontSize: 7.5,
+    fontWeight: 'bold',
+    color: '#000000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 3,
   },
   footer: {
     position: 'absolute',
-    bottom: 16,
-    left: 32,
-    right: 32,
+    bottom: 10,
+    left: 24,
+    right: 24,
     textAlign: 'center',
-    fontSize: 7,
+    fontSize: 6,
     color: '#9ca3af',
   },
 });
 
 function parseLine(line: string, idx: number): React.ReactNode {
   const t = line.trim();
-  if (!t) return <View key={idx} style={{ height: 4 }} />;
+  if (!t) return <View key={idx} style={{ height: 5 }} />;
 
   // Numerowane / literowe / podpunkty / myślniki
   const numMatch = t.match(/^(\d+\.\d+\.?|\d+\.|[a-z]\.)\s+(.*)$/);
