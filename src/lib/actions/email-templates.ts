@@ -81,6 +81,7 @@ export async function previewEmailTemplate(subject: string, body_html: string) {
   if (!user || role !== 'admin') return { error: 'Brak uprawnień' };
 
   const { subject: renderedSubject, html } = renderSampleEmail(subject, body_html);
+  console.log('[previewEmailTemplate] wygenerowano podgląd, długość HTML:', html.length);
   return { success: true as const, subject: renderedSubject, html };
 }
 
@@ -95,9 +96,14 @@ export async function sendTestEmail(subject: string, body_html: string) {
 
   try {
     await sendTestTemplateEmail(user.email, subject, body_html);
+    console.log('[sendTestEmail] wysłano testowy mail na', user.email);
   } catch (err) {
-    console.error('Send test email error:', err);
-    return { error: 'Nie udało się wysłać wiadomości testowej' };
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[sendTestEmail] błąd wysyłki:', msg);
+    if (msg === 'EMAIL_NOT_CONFIGURED') {
+      return { error: 'Wysyłka e-mail nie jest skonfigurowana na serwerze (brak EMAIL_FROM / EMAIL_APP_PASSWORD).' };
+    }
+    return { error: `Nie udało się wysłać wiadomości testowej: ${msg}` };
   }
 
   return { success: true, email: user.email };

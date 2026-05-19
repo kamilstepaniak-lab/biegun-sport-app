@@ -373,6 +373,11 @@ export function renderSampleEmail(subject: string, bodyHtml: string): { subject:
 
 /** Wysyłka testowa — renderuje podany temat/treść z przykładowymi danymi */
 export async function sendTestTemplateEmail(to: string, subject: string, bodyHtml: string) {
+  // W odróżnieniu od zwykłej wysyłki — przy braku konfiguracji rzucamy błąd,
+  // żeby panel nie pokazywał fałszywego „sukcesu".
+  if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
+    throw new Error('EMAIL_NOT_CONFIGURED');
+  }
   const vars = buildSampleVars();
   await sendEmail(to, `[TEST] ${interpolate(subject, vars)}`, interpolate(bodyHtml, vars));
 }

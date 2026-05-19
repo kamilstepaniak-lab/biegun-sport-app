@@ -297,11 +297,14 @@ function TemplateEditor({
         <div className="ml-auto flex items-center gap-1">
           <button
             type="button"
-            onClick={() => setShowPreview(v => !v)}
+            onClick={() => {
+              if (showPreview) setShowPreview(false);
+              else loadSamplePreview();
+            }}
             className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-200 text-xs text-gray-500 transition-colors"
           >
             {showPreview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-            {showPreview ? 'Edytor' : 'Podgląd'}
+            {showPreview ? 'Edytor' : 'Podgląd maila'}
           </button>
         </div>
       </div>
@@ -347,7 +350,7 @@ function TemplateEditor({
           <div className="p-12 text-center text-sm text-gray-400">Generowanie podglądu...</div>
         ) : sampleHtml ? (
           <iframe
-            srcDoc={DOMPurify.sanitize(sampleHtml, { WHOLE_DOCUMENT: true })}
+            srcDoc={sampleHtml}
             title="Podgląd maila z przykładowymi danymi"
             sandbox=""
             className="w-full h-[560px] border-0 bg-white"
