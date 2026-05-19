@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -26,6 +26,9 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
   const [sortField, setSortField] = useState<keyof TripSummary>('tripDeparture');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 25;
 
   // Dane są już zagregowane per wyjazd po stronie bazy (widok admin_finance_summary).
   const tripSummaries = summaries;
@@ -64,6 +67,16 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
       return sortDir === 'asc' ? numA - numB : numB - numA;
     });
   }, [tripSummaries, sortField, sortDir, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = useMemo(
+    () => sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [sorted, currentPage],
+  );
+
+  // Reset paginacji przy zmianie filtra / sortowania.
+  useEffect(() => { setPage(1); }, [searchQuery, sortField, sortDir]);
 
   function toggleSort(field: keyof TripSummary) {
     if (sortField === field) {
@@ -128,17 +141,10 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
     <div className="space-y-6">
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
           <p className="text-xs text-gray-400 font-medium mb-1">Wyjazdy</p>
           <p className="text-3xl font-bold text-gray-900">{tripSummaries.length}</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-          <p className="text-xs text-gray-400 font-medium mb-1">Uczestnicy</p>
-          <p className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Users className="h-5 w-5 text-gray-400" />
-            {totals.participants}
-          </p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
           <p className="text-xs text-gray-400 font-medium mb-1">Zebrano (PLN)</p>
@@ -316,7 +322,7 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
             </thead>
 
             <tbody className="divide-y divide-gray-50">
-              {sorted.map((trip) => {
+              {paged.map((trip) => {
                 const pct = trip.pct;
                 const pctColor = pct === 100
                   ? 'text-emerald-600'
@@ -500,6 +506,33 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
             </tfoot>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-4">
+            <p className="text-xs text-gray-400">
+              {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sorted.length)} z {sorted.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 h-9 rounded-lg text-sm font-medium text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Poprzednia
+              </button>
+              <span className="px-3 text-sm text-gray-500">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 h-9 rounded-lg text-sm font-medium text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Następna
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
