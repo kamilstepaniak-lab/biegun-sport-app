@@ -104,6 +104,15 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Aktywny jest tylko najbardziej szczegółowy pasujący element —
+  // dzięki temu /admin/settings/email-templates nie podświetla też /admin/settings.
+  const activeHref = items
+    .filter((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+    .reduce<string | null>(
+      (best, item) => (best === null || item.href.length > best.length ? item.href : best),
+      null,
+    );
+
   const renderLogo = (collapsed?: boolean) => (
     collapsed ? (
       <div className="flex justify-center">
@@ -146,7 +155,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
             <ScrollArea className="flex-1 px-3 py-3">
               <nav className="space-y-0.5">
                 {items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                  const isActive = item.href === activeHref;
                   return <NavItem key={item.href} item={item} isActive={isActive} onClick={() => setSheetOpen(false)} />;
                 })}
               </nav>
