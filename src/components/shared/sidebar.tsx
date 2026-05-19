@@ -183,7 +183,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
         <ScrollArea className="flex-1 px-3 py-3">
           <nav className="space-y-0.5">
             {items.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive = item.href === activeHref;
               return <NavItem key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} />;
             })}
           </nav>
