@@ -3,15 +3,20 @@
 import { useState } from 'react';
 import { Loader2, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
+import type { Group } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { createMessage } from '@/lib/actions/messages';
+import { MessageGroupPicker } from './message-group-picker';
 
-export function NewMessageForm() {
+export function NewMessageForm({ groups }: { groups: Group[] }) {
+  const router = useRouter();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [groupIds, setGroupIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -23,13 +28,15 @@ export function NewMessageForm() {
 
     setIsLoading(true);
     try {
-      const result = await createMessage(title, body);
+      const result = await createMessage(title, body, groupIds);
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success('Wiadomość została wysłana do wszystkich rodziców');
+        toast.success('Wiadomość została wysłana do rodziców');
         setTitle('');
         setBody('');
+        setGroupIds([]);
+        router.refresh();
       }
     } catch {
       toast.error('Wystąpił nieoczekiwany błąd');
@@ -58,8 +65,15 @@ export function NewMessageForm() {
           onChange={(e) => setBody(e.target.value)}
           disabled={isLoading}
           rows={5}
+          maxLength={5000}
         />
       </div>
+      <MessageGroupPicker
+        groups={groups}
+        selected={groupIds}
+        onChange={setGroupIds}
+        disabled={isLoading}
+      />
       <div className="flex justify-end">
         <Button type="submit" disabled={isLoading || !title.trim() || !body.trim()}>
           {isLoading ? (

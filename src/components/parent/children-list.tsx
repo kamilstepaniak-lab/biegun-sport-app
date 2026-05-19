@@ -439,7 +439,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
               </div>
             </div>
             {unreadCount > 0 && (
-              <span className="text-xs font-bold text-white bg-blue-500 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-bold text-white bg-red-500 px-2.5 py-1 rounded-full">
                 {unreadCount} nowych
               </span>
             )}
@@ -490,10 +490,13 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between gap-3">
                         <p className={cn(
-                          'text-sm truncate',
+                          'text-sm truncate flex items-center gap-1.5',
                           msg.is_read ? 'text-gray-600' : 'font-semibold text-gray-900'
                         )}>
-                          {msg.title}
+                          {!msg.is_read && (
+                            <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
+                          )}
+                          <span className="truncate">{msg.title}</span>
                         </p>
                         <span className="text-[11px] text-gray-400 flex-shrink-0">
                           {format(new Date(msg.created_at), 'd MMM', { locale: pl })}

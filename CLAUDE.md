@@ -10,6 +10,8 @@ Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
   danego czatu.
 - Na końcu każdego zadania w czacie **zapytaj użytkownika, czy zrobić push
   na `main` / wdrożenie na Vercel** — nie pushuj bez potwierdzenia.
+- **Pytania zawsze zadawaj przez klikanie** (narzędzie AskUserQuestion) —
+  nie zadawaj pytań w zwykłym tekście. Użytkownik ma wybierać z opcji.
 
 ## Baza danych i migracje
 
@@ -36,6 +38,19 @@ Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
+
+### 2026-05-19 (Wiadomości)
+
+- `/admin/messages`: targetowanie wiadomości do grup treningowych (wybór wielu
+  grup lub „wszyscy rodzice") — kolumna `messages.target_group_ids UUID[]`.
+- Edycja wiadomości (dialog) z zachowaniem historii odczytań — akcja
+  `updateMessage`, kolumna `messages.updated_at` + RLS UPDATE.
+- Statystyki odczytów: licznik `X / N` + dialog z listą kto przeczytał /
+  nie przeczytał — akcja `getMessageReadDetails`.
+- Migracja `messages-groups-and-edit.sql` (do ręcznego uruchomienia na Supabase).
+- Poprawiona odmiana „odczytanie/odczytania/odczytań".
+- Panel rodzica: czerwona kropka przy nieprzeczytanej wiadomości, czerwony
+  badge „X nowych".
 
 ### 2026-05-19 (Szablony e-maili)
 
