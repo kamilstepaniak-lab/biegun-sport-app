@@ -155,7 +155,7 @@ function exportToExcel(
 
   const paymentStatusLabels: Record<string, string> = {
     paid: 'Opłacona',
-    partially_paid: 'Częściowo',
+    partially_paid: 'Do dopłaty',
     pending: 'Nieopłacona',
     overdue: 'Zaległa',
   };

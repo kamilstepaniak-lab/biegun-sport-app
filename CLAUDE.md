@@ -39,6 +39,15 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-19 (Płatności — dialog wpłaty i etykiety)
+
+- Dialog „Zarejestruj wpłatę": dodana lista wcześniejszych wpłat
+  (`getPaymentTransactions`) z sumą „Razem". Checkbox „Zniżka" widoczny zawsze
+  (wyszarzony / disabled gdy wpłata pokrywa należność).
+- Etykieta `partially_paid` zmieniona z „Częściowo" na „Do dopłaty" w 6 miejscach
+  (admin/payments, parent/payments, history, trip-payments, registrations,
+  participant card). `partially_paid_overdue` ujednolicone do „Po terminie".
+
 ### 2026-05-19 (Wiadomości)
 
 - `/admin/messages`: targetowanie wiadomości do grup treningowych (wybór wielu

@@ -31,10 +31,10 @@ function effectiveDueDate(p: PaymentWithDetails): string | null {
 
 const statusLabels: Record<string, string> = {
   pending: 'Nieopłacona',
-  partially_paid: 'Częściowo',
+  partially_paid: 'Do dopłaty',
   paid: 'Opłacona',
   overdue: 'Po terminie',
-  partially_paid_overdue: 'Częściowo / Po term.',
+  partially_paid_overdue: 'Po terminie',
 };
 
 const statusColors: Record<string, string> = {

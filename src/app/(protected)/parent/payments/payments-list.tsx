@@ -32,7 +32,7 @@ interface ParentPaymentsListProps {
 
 const statusConfig: Record<string, { label: string; bgClass: string; icon: typeof Check }> = {
   pending: { label: 'Do zapłaty', bgClass: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200', icon: Clock },
-  partially_paid: { label: 'Częściowo', bgClass: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200', icon: Clock },
+  partially_paid: { label: 'Do dopłaty', bgClass: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200', icon: Clock },
   partially_paid_overdue: { label: 'Zaległość', bgClass: 'bg-red-50 text-red-700 ring-1 ring-red-200', icon: AlertCircle },
   overdue: { label: 'Zaległość', bgClass: 'bg-red-50 text-red-700 ring-1 ring-red-200', icon: AlertCircle },
   paid: { label: 'Opłacone', bgClass: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon: Check },

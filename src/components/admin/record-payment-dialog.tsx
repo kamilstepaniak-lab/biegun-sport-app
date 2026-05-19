@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 import {
@@ -21,7 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { addPaymentTransaction } from '@/lib/actions/payments';
+import { addPaymentTransaction, getPaymentTransactions } from '@/lib/actions/payments';
+import type { PaymentTransaction } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface RecordPaymentDialogProps {
   paymentId: string;
@@ -44,11 +48,33 @@ export function RecordPaymentDialog({
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [closeAsDiscount, setCloseAsDiscount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
+  const [loadingTx, setLoadingTx] = useState(false);
 
   const parsed = parseFloat(amount);
   const amountValid = !isNaN(parsed) && parsed > 0;
-  // Checkbox „zniżka" ma sens tylko gdy wpłata nie pokrywa należności.
-  const showDiscount = amountValid && parsed < amountRemaining;
+  // Checkbox „zniżka" działa tylko gdy wpłata nie pokrywa należności,
+  // ale wyświetlamy go zawsze (server-side i tak ignoruje gdy nie ma sensu).
+  const discountApplicable = amountValid && parsed < amountRemaining;
+
+  // Pobierz listę wcześniejszych wpłat dla tej płatności po otwarciu dialogu.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoadingTx(true);
+    getPaymentTransactions(paymentId)
+      .then((rows) => {
+        if (!cancelled) setTransactions(rows);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTx(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, paymentId]);
+
+  const totalPaid = transactions.reduce((s, t) => s + (t.amount ?? 0), 0);
 
   async function handleSubmit() {
     if (!amountValid) {
@@ -64,7 +90,7 @@ export function RecordPaymentDialog({
         date,
         method,
         undefined,
-        showDiscount ? closeAsDiscount : false,
+        discountApplicable ? closeAsDiscount : false,
       );
       if (result.error) {
         toast.error(result.error);
@@ -90,6 +116,44 @@ export function RecordPaymentDialog({
           <DialogTitle>Zarejestruj wpłatę</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {/* Lista wcześniejszych wpłat — żeby admin widział co już zostało zarejestrowane */}
+          <div className="rounded-lg border bg-muted/20 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Wpłaty zarejestrowane
+              </span>
+              {transactions.length > 0 && (
+                <span className="text-xs font-semibold text-gray-700 tabular-nums">
+                  Razem: {totalPaid.toFixed(0)} {currency}
+                </span>
+              )}
+            </div>
+            {loadingTx ? (
+              <p className="text-xs text-gray-400">Ładowanie…</p>
+            ) : transactions.length === 0 ? (
+              <p className="text-xs text-gray-400">Brak wpłat — to będzie pierwsza.</p>
+            ) : (
+              <ul className="space-y-1.5 max-h-40 overflow-y-auto">
+                {transactions.map((tx) => (
+                  <li
+                    key={tx.id}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <span className="text-gray-500 whitespace-nowrap">
+                      {format(new Date(tx.transaction_date), 'd.MM.yyyy', { locale: pl })}
+                    </span>
+                    <span className="text-gray-500 text-[11px]">
+                      {tx.payment_method === 'cash' ? 'Gotówka' : 'Przelew'}
+                    </span>
+                    <span className="font-semibold text-gray-900 tabular-nums ml-auto">
+                      {tx.amount.toFixed(0)} {tx.currency}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="rp-amount">Kwota wpłaty ({currency})</Label>
             <Input
@@ -126,19 +190,28 @@ export function RecordPaymentDialog({
               />
             </div>
           </div>
-          {showDiscount && (
-            <div className="flex items-start gap-2 rounded-lg border bg-muted/30 p-3">
-              <Checkbox
-                id="rp-discount"
-                checked={closeAsDiscount}
-                onCheckedChange={(c) => setCloseAsDiscount(!!c)}
-              />
-              <Label htmlFor="rp-discount" className="font-normal cursor-pointer text-sm">
-                Zniżka — zamknij płatność jako opłaconą mimo niższej kwoty
-                (kwota należna spadnie do {parsed.toFixed(0)} {currency})
-              </Label>
-            </div>
-          )}
+
+          {/* Checkbox „zniżka" — zawsze widoczny. Aktywny tylko gdy wpłata < należność. */}
+          <div
+            className={cn(
+              'flex items-start gap-2 rounded-lg border bg-muted/30 p-3',
+              !discountApplicable && 'opacity-60',
+            )}
+          >
+            <Checkbox
+              id="rp-discount"
+              checked={closeAsDiscount}
+              disabled={!discountApplicable}
+              onCheckedChange={(c) => setCloseAsDiscount(!!c)}
+            />
+            <Label htmlFor="rp-discount" className="font-normal cursor-pointer text-sm">
+              Zniżka — zamknij płatność jako opłaconą mimo niższej kwoty
+              {discountApplicable
+                ? ` (kwota należna spadnie do ${parsed.toFixed(0)} ${currency})`
+                : ' (dostępne gdy wpłata jest mniejsza od należności)'}
+            </Label>
+          </div>
+
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)} disabled={submitting}>
               Anuluj

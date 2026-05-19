@@ -340,9 +340,9 @@ export function PaymentsList({
       case 'overdue':
         return { label: 'Po terminie', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' };
       case 'partially_paid_overdue':
-        return { label: 'Po term. (częśc.)', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' };
+        return { label: 'Po terminie', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200' };
       case 'partially_paid':
-        return { label: 'Częściowo', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
+        return { label: 'Do dopłaty', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
       case 'cancelled':
         return { label: 'Anulowane', cls: 'bg-gray-100 text-gray-400' };
       default:
