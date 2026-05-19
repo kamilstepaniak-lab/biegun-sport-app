@@ -37,6 +37,23 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-19 (Szablony e-maili)
+
+- `/admin/settings/email-templates`: naprawiony krytyczny błąd escapowania
+  `{{szczegoly_wyjazdu}}` w `email.ts` (`RAW_HTML_KEYS`) — maile registration /
+  trip_info renderowały surowy HTML zamiast tabel.
+- Edytor TipTap rozbudowany o `TextStyleKit` (kolor tekstu, rozmiar),
+  podkreślenie, link — zapis nie gubi już formatowania. Nowa zależność
+  `@tiptap/extension-text-style`.
+- Migracja `email-templates-span-styles.sql` — przepisuje szablony płatności
+  na style `<span>` (do ręcznego uruchomienia na Supabase).
+- Walidacja pustego tematu/treści, data ostatniej zmiany, poprawiony
+  „Przywróć zapisaną", przycisk „Wyślij test do siebie".
+- Podgląd z dwoma trybami: „Szablon roboczy" i „Z przykładowymi danymi"
+  (renderowany jak prawdziwy mail w sandboxowanym iframe) — akcja
+  `previewEmailTemplate` + `renderSampleEmail`.
+- Pod każdym szablonem opis „kiedy wychodzi" (trigger wysyłki).
+
 ### 2026-05-18 (Umowy / PDF)
 
 - `/admin/contracts`: generowanie umów do PDF serwerowo (`@react-pdf/renderer`,

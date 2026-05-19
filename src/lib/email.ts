@@ -49,9 +49,18 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+// Klucze, których wartość jest gotowym blokiem HTML generowanym przez aplikację
+// (nie pochodzi od użytkownika) — nie wolno ich escapować, bo HTML zamieni się
+// w widoczny tekst w mailu.
+const RAW_HTML_KEYS = new Set(['{{szczegoly_wyjazdu}}']);
+
 function interpolate(text: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
-    (result, [key, value]) => result.replaceAll(key, escapeHtml(value ?? '')),
+    (result, [key, value]) =>
+      result.replaceAll(
+        key,
+        RAW_HTML_KEYS.has(key) ? (value ?? '') : escapeHtml(value ?? ''),
+      ),
     text
   );
 }
@@ -319,6 +328,54 @@ const DEFAULTS = {
 };
 
 // ─── Publiczne funkcje wysyłki ────────────────────────────────────────────────
+
+// Przykładowe dane używane w podglądzie i wysyłce testowej
+function buildSampleVars(): Record<string, string> {
+  const sampleTrip: TripEmailData = {
+    title: 'Obóz narciarski Białka Tatrzańska',
+    description: 'Przykładowy opis wyjazdu — to jest wiadomość testowa.',
+    departure_datetime: '2026-02-14T07:00:00',
+    departure_location: 'Kraków, ul. Przykładowa 1',
+    return_datetime: '2026-02-21T18:00:00',
+    return_location: 'Kraków, ul. Przykładowa 1',
+    bank_account_pln: '12 3456 7890 0000 0000 0000 0000',
+    declaration_deadline: '2026-01-15',
+    packing_list: 'Kask\nGogle narciarskie\nCiepłe rękawiczki',
+    additional_info: 'Dodatkowe informacje testowe.',
+  };
+  const samplePayments: PaymentLineItem[] = [
+    { payment_type: 'installment', installment_number: 1, amount: 1200, currency: 'PLN', due_date: '2026-06-15', payment_method: 'transfer' },
+  ];
+  return {
+    '{{imie}}': 'Anna',
+    '{{dziecko}}': 'Jan Kowalski',
+    '{{wyjazd}}': sampleTrip.title,
+    '{{miejsce}}': 'Białka Tatrzańska',
+    '{{data_wyjazdu}}': new Date(sampleTrip.departure_datetime).toLocaleDateString('pl-PL', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    }),
+    '{{rodzaj_platnosci}}': 'Rata 1',
+    '{{kwota}}': '1200',
+    '{{waluta}}': 'PLN',
+    '{{termin}}': '15 czerwca 2026',
+    '{{szczegoly_wyjazdu}}': buildTripDetailsHtml(sampleTrip, samplePayments),
+  };
+}
+
+/** Renderuje temat + pełny HTML maila (z wrapperem BiegunSport) z przykładowymi danymi */
+export function renderSampleEmail(subject: string, bodyHtml: string): { subject: string; html: string } {
+  const vars = buildSampleVars();
+  return {
+    subject: interpolate(subject, vars),
+    html: wrapInTemplate(interpolate(bodyHtml, vars)),
+  };
+}
+
+/** Wysyłka testowa — renderuje podany temat/treść z przykładowymi danymi */
+export async function sendTestTemplateEmail(to: string, subject: string, bodyHtml: string) {
+  const vars = buildSampleVars();
+  await sendEmail(to, `[TEST] ${interpolate(subject, vars)}`, interpolate(bodyHtml, vars));
+}
 
 export async function sendWelcomeEmail(to: string, firstName: string) {
   const tpl = await getTemplate('welcome') ?? DEFAULTS.welcome;

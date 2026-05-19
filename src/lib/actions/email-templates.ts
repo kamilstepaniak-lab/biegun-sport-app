@@ -2,7 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
+import { sendTestTemplateEmail, renderSampleEmail } from '@/lib/email';
 import { getAuthUser } from './auth-helpers';
+
+function isBlankHtml(html: string): boolean {
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim().length === 0;
+}
 
 export interface EmailTemplate {
   id: string;
@@ -54,6 +59,9 @@ export async function updateEmailTemplate(
   if (!user) return { error: 'Nie jesteś zalogowany' };
   if (role !== 'admin') return { error: 'Brak uprawnień' };
 
+  if (!subject.trim()) return { error: 'Temat wiadomości nie może być pusty' };
+  if (isBlankHtml(body_html)) return { error: 'Treść wiadomości nie może być pusta' };
+
   const { error } = await supabase
     .from('email_templates')
     .update({ subject, body_html, updated_at: new Date().toISOString() })
@@ -66,4 +74,31 @@ export async function updateEmailTemplate(
 
   revalidatePath('/admin/settings/email-templates');
   return { success: true };
+}
+
+export async function previewEmailTemplate(subject: string, body_html: string) {
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return { error: 'Brak uprawnień' };
+
+  const { subject: renderedSubject, html } = renderSampleEmail(subject, body_html);
+  return { success: true as const, subject: renderedSubject, html };
+}
+
+export async function sendTestEmail(subject: string, body_html: string) {
+  const { user, role } = await getAuthUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
+  if (!user.email) return { error: 'Brak adresu e-mail przypisanego do konta' };
+
+  if (!subject.trim()) return { error: 'Temat wiadomości nie może być pusty' };
+  if (isBlankHtml(body_html)) return { error: 'Treść wiadomości nie może być pusta' };
+
+  try {
+    await sendTestTemplateEmail(user.email, subject, body_html);
+  } catch (err) {
+    console.error('Send test email error:', err);
+    return { error: 'Nie udało się wysłać wiadomości testowej' };
+  }
+
+  return { success: true, email: user.email };
 }
