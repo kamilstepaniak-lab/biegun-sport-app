@@ -492,32 +492,41 @@ export function PaymentsList({
         {/* Status */}
         <td className="py-3 px-3">
           <div className="flex flex-col items-start gap-1">
-            <span
-              className={cn(
-                'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
-                statusCls
-              )}
-            >
-              {statusLabel}
-            </span>
             {(() => {
-              if (row.status === 'cancelled') return null;
               const rem = row.amount_remaining ?? (row.amount - (row.amount_paid ?? 0));
-              if (rem < -SALDO_EPSILON) {
-                return (
-                  <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-                    Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
-                  </span>
-                );
-              }
-              if (rem > SALDO_EPSILON && (row.status === 'partially_paid' || row.status === 'partially_paid_overdue')) {
-                return (
-                  <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-                    Do dopłaty {rem.toFixed(0)} {row.currency}
-                  </span>
-                );
-              }
-              return null;
+              const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
+              const showDoplata =
+                row.status !== 'cancelled' &&
+                rem > SALDO_EPSILON &&
+                (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
+              // „Do dopłaty X zł" zastępuje pill „Do dopłaty" przy partially_paid
+              // (nie chcemy dwóch identycznych etykiet). Dla partially_paid_overdue
+              // zostawiamy pill „Po terminie" + kwotę „Do dopłaty X" — uzupełniają się.
+              const hideStatusPill = showDoplata && row.status === 'partially_paid';
+              return (
+                <>
+                  {!hideStatusPill && (
+                    <span
+                      className={cn(
+                        'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
+                        statusCls
+                      )}
+                    >
+                      {statusLabel}
+                    </span>
+                  )}
+                  {showNadplata && (
+                    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                      Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
+                    </span>
+                  )}
+                  {showDoplata && (
+                    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                      Do dopłaty {rem.toFixed(0)} {row.currency}
+                    </span>
+                  )}
+                </>
+              );
             })()}
           </div>
         </td>
