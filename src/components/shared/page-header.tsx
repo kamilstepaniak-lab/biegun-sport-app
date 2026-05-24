@@ -9,14 +9,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, children, className }: PageHeaderProps) {
   return (
-    <div className={cn('flex flex-col gap-4 md:flex-row md:items-center md:justify-between', className)}>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h1>
+    <div className={cn('page-header flex flex-col gap-4 md:flex-row md:items-center md:justify-between', className)}>
+      <div className="page-header-copy">
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         {description && (
           <p className="text-sm text-gray-500 mt-0.5">{description}</p>
         )}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="page-header-actions flex items-center gap-2">{children}</div>}
     </div>
   );
 }

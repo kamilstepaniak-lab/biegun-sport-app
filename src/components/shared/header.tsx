@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Bell, LogOut, User, Settings, ChevronDown } from 'lucide-react';
 
 import {
   DropdownMenu,
@@ -46,17 +46,32 @@ export function Header({ user }: HeaderProps) {
   const profileHref = user.role === 'admin' ? '/admin/settings' : '/parent/profile';
 
   return (
-    <header className="h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 flex items-center justify-between px-4 md:px-6">
+    <header className="app-header h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 flex items-center justify-between px-4 md:px-6">
       <div className="flex items-center gap-4 md:hidden">
         {/* Space for mobile menu button */}
         <div className="w-10" />
       </div>
 
-      {/* Left side spacer */}
-      <div className="hidden md:flex items-center flex-1" />
+      <div className="hidden md:flex items-center flex-1">
+        {user.role === 'admin' && (
+          <div className="admin-breadcrumbs flex items-center gap-2 text-sm">
+            <span>Panel administratora</span>
+          </div>
+        )}
+      </div>
 
       {/* Right side - User menu */}
       <div className="flex items-center gap-3">
+        {user.role === 'admin' && (
+          <button
+            type="button"
+            className="admin-bell relative hidden h-9 w-9 items-center justify-center rounded-[10px] border border-slate-200 bg-white text-slate-600 transition-colors hover:border-blue-200 hover:text-blue-600 md:flex"
+            aria-label="Powiadomienia"
+          >
+            <Bell className="h-4 w-4" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-white bg-red-500" />
+          </button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-gray-100/80 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-200">

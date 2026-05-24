@@ -39,6 +39,11 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-05-24
 
+- `/admin/*`: wdrożono redesign Alpine z paczki BSAPP — nowy shell admina,
+  górski hero w nagłówkach, odświeżony sidebar/topbar oraz wspólny styl kart,
+  tabel i filtrów.
+- `/admin/trips`: rozwijany wiersz wyjazdu działa jako single-expand accordion
+  i dostał niebieski detail hero zgodny z handoffem.
 - `/parent/payments`: w tabeli płatności rodzica dodano przycisk `Przelew`,
   który otwiera aplę z danymi do przelewu i kopiowaniem odbiorcy, numeru konta,
   tytułu oraz kwoty.

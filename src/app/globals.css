@@ -140,6 +140,212 @@
   }
 }
 
+/* ── Admin Alpine redesign ───────────────────────────────── */
+.admin-shell {
+  --admin-ink: #0f172a;
+  --admin-body: #475569;
+  --admin-muted: #94a3b8;
+  --admin-line: #e2e8f0;
+  --admin-bg: #f8fafc;
+  --admin-blue: #2563eb;
+  --admin-blue-light: #eff6ff;
+}
+
+.admin-shell .admin-main {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(191, 219, 254, 0.34), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.admin-shell .admin-main > div {
+  padding: 0 0 36px;
+}
+
+.admin-shell .admin-main > div > *:not(.page-header) {
+  margin-left: clamp(16px, 3vw, 36px);
+  margin-right: clamp(16px, 3vw, 36px);
+}
+
+.admin-shell .app-sidebar[data-admin="true"] {
+  width: 230px;
+  border-color: var(--admin-line);
+  box-shadow: 1px 0 0 rgba(15, 23, 42, 0.02);
+}
+
+.admin-shell .app-sidebar[data-admin="true"] h2 {
+  color: var(--admin-ink);
+  font-size: 15px;
+}
+
+.admin-shell .app-sidebar[data-admin="true"] p {
+  color: var(--admin-muted);
+}
+
+.admin-shell .app-sidebar[data-admin="true"] nav a {
+  border-radius: 10px;
+  color: var(--admin-body);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-shell .app-sidebar[data-admin="true"] nav a.bg-blue-600 {
+  background: var(--admin-blue-light);
+  color: var(--admin-blue);
+  box-shadow: none;
+}
+
+.admin-shell .app-sidebar[data-admin="true"] nav a.bg-blue-600 svg {
+  color: var(--admin-blue);
+}
+
+.admin-shell .app-sidebar[data-admin="true"] nav a:not(.bg-blue-600):hover {
+  background: #f8fafc;
+  color: var(--admin-ink);
+}
+
+.admin-shell .app-header {
+  height: 54px;
+  background: rgba(255, 255, 255, 0.94);
+  border-color: var(--admin-line);
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.admin-shell .admin-breadcrumbs {
+  color: var(--admin-body);
+  font-weight: 600;
+}
+
+.admin-shell .page-header {
+  position: relative;
+  min-height: 150px;
+  overflow: hidden;
+  padding: 28px clamp(18px, 3vw, 36px) 22px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  background:
+    linear-gradient(155deg, transparent 0 46%, rgba(255, 255, 255, 0.68) 46% 49%, transparent 49%),
+    linear-gradient(145deg, transparent 0 52%, rgba(96, 165, 250, 0.48) 52% 54%, transparent 54%),
+    linear-gradient(135deg, rgba(186, 230, 253, 0.8) 0%, rgba(224, 242, 254, 0.88) 42%, #f8fafc 100%);
+}
+
+.admin-shell .page-header::before,
+.admin-shell .page-header::after {
+  content: "";
+  position: absolute;
+  inset: auto -4% 0 auto;
+  width: 62%;
+  height: 86%;
+  pointer-events: none;
+  opacity: 0.9;
+  clip-path: polygon(0 100%, 18% 58%, 28% 73%, 43% 30%, 54% 50%, 68% 16%, 100% 100%);
+}
+
+.admin-shell .page-header::before {
+  background: linear-gradient(180deg, rgba(147, 197, 253, 0.4), rgba(37, 99, 235, 0.18));
+}
+
+.admin-shell .page-header::after {
+  inset: auto -10% 0 auto;
+  width: 48%;
+  height: 58%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(96, 165, 250, 0.25));
+  opacity: 0.65;
+}
+
+.admin-shell .page-header-copy,
+.admin-shell .page-header-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-shell .page-header h1 {
+  color: var(--admin-ink);
+  font-size: clamp(30px, 3.2vw, 34px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.admin-shell .page-header p {
+  margin-top: 6px;
+  color: var(--admin-body);
+  font-size: 14px;
+}
+
+.admin-shell .page-header a,
+.admin-shell .page-header button {
+  border-radius: 10px;
+}
+
+.admin-shell .page-header a.bg-blue-600,
+.admin-shell .page-header button.bg-blue-600 {
+  background: var(--admin-blue);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+}
+
+.admin-shell .page-header a.bg-white,
+.admin-shell .page-header button.bg-white {
+  border: 1px solid var(--admin-line);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.admin-shell .rounded-2xl {
+  border-radius: 14px;
+}
+
+.admin-shell .rounded-xl {
+  border-radius: 10px;
+}
+
+.admin-shell .shadow-sm {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.admin-shell .ring-gray-100 {
+  --tw-ring-color: var(--admin-line);
+}
+
+.admin-shell .ring-blue-400 {
+  --tw-ring-color: var(--admin-blue);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.18);
+}
+
+.admin-shell table thead tr {
+  border-color: var(--admin-line);
+}
+
+.admin-shell table th {
+  color: var(--admin-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.admin-shell table td {
+  color: var(--admin-body);
+}
+
+.admin-shell input,
+.admin-shell select,
+.admin-shell textarea {
+  border-radius: 10px;
+}
+
+@media (max-width: 767px) {
+  .admin-shell .app-header {
+    padding-left: 64px;
+    padding-right: 16px;
+  }
+
+  .admin-shell .admin-main > div > *:not(.page-header) {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  .admin-shell .page-header {
+    min-height: 132px;
+  }
+}
+
 /* ── Tiptap editor — placeholder ─────────────────────────── */
 .tiptap p.is-editor-empty:first-child::before {
   color: #9ca3af;

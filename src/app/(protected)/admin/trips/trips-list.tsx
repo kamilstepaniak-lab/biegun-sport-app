@@ -203,7 +203,37 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
         <CollapsibleContent>
           <div className="px-4 pb-4 space-y-4">
-            <div className="h-px bg-gray-100" />
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 p-5 text-white shadow-sm">
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-35">
+                <div className="absolute bottom-0 right-0 h-28 w-full bg-blue-900/70 [clip-path:polygon(0_100%,20%_55%,34%_74%,52%_28%,66%_56%,82%_18%,100%_100%)]" />
+                <div className="absolute bottom-0 right-10 h-20 w-3/4 bg-white/30 [clip-path:polygon(0_100%,24%_58%,38%_76%,58%_34%,72%_58%,88%_24%,100%_100%)]" />
+              </div>
+              <div className="relative grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+                <div>
+                  <div className="mb-3 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                    {statusLabels[trip.status]}
+                  </div>
+                  <h3 className="text-xl font-bold leading-tight">{trip.title}</h3>
+                  <p className="mt-2 max-w-2xl text-sm text-blue-50">
+                    {trip.location || trip.departure_location || 'Szczegóły wyjazdu'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                  <div className="rounded-xl bg-white/12 px-3 py-2 backdrop-blur">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">Wyjazd</p>
+                    <p className="mt-1 font-semibold">{format(departureDate, 'd MMM', { locale: pl })}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/12 px-3 py-2 backdrop-blur">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">Powrót</p>
+                    <p className="mt-1 font-semibold">{format(returnDate, 'd MMM', { locale: pl })}</p>
+                  </div>
+                  <div className="rounded-xl bg-white/12 px-3 py-2 backdrop-blur">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">Grupy</p>
+                    <p className="mt-1 font-semibold">{trip.groups.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Podstawowe informacje */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-3">
@@ -480,7 +510,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 export function TripsList({ trips, groups, contractTemplates }: TripsListProps) {
   const router = useRouter();
   const [groupFilter, setGroupFilter] = useState<string>('all');
-  const [openTrips, setOpenTrips] = useState<Set<string>>(new Set());
+  const [openTripId, setOpenTripId] = useState<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   const [selectedTrips, setSelectedTrips] = useState<Set<string>>(new Set());
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -516,13 +546,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
   const activeByMonth = useMemo(() => groupTripsByMonth(activeTrips), [activeTrips]);
 
   function toggleTrip(tripId: string) {
-    const newOpen = new Set(openTrips);
-    if (newOpen.has(tripId)) {
-      newOpen.delete(tripId);
-    } else {
-      newOpen.add(tripId);
-    }
-    setOpenTrips(newOpen);
+    setOpenTripId((current) => (current === tripId ? null : tripId));
   }
 
   function toggleSelectTrip(tripId: string, e: React.MouseEvent) {
@@ -700,7 +724,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                 <TripBlock
                   key={trip.id}
                   trip={trip}
-                  isOpen={openTrips.has(trip.id)}
+                  isOpen={openTripId === trip.id}
                   isSelected={selectedTrips.has(trip.id)}
                   onToggle={() => toggleTrip(trip.id)}
                   onToggleSelect={(e) => toggleSelectTrip(trip.id, e)}
@@ -751,7 +775,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                   <div key={trip.id} className="opacity-60">
                     <TripBlock
                       trip={trip}
-                      isOpen={openTrips.has(trip.id)}
+                      isOpen={openTripId === trip.id}
                       isSelected={selectedTrips.has(trip.id)}
                       onToggle={() => toggleTrip(trip.id)}
                       onToggleSelect={(e) => toggleSelectTrip(trip.id, e)}

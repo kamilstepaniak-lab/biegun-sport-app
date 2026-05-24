@@ -103,6 +103,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const isAdmin = subtitle?.toLowerCase().includes('admin') ?? false;
 
   // Aktywny jest tylko najbardziej szczegółowy pasujący element —
   // dzięki temu /admin/settings/email-templates nie podświetla też /admin/settings.
@@ -166,8 +167,9 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
 
       {/* Desktop Sidebar */}
       <aside
+        data-admin={isAdmin ? 'true' : undefined}
         className={cn(
-          'hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 relative',
+          'app-sidebar hidden md:flex flex-col bg-white border-r border-gray-100 transition-all duration-300 relative',
           isCollapsed ? 'w-[68px]' : 'w-60'
         )}
       >

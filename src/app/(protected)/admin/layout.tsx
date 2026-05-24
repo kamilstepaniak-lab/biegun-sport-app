@@ -73,7 +73,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f8f9fb]">
+    <div className="admin-shell flex h-screen overflow-hidden bg-[#f8fafc]">
       <Sidebar
         items={adminNavItems}
         title="BiegunSport"
@@ -81,7 +81,7 @@ export default async function AdminLayout({
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header user={profile} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 safe-bottom">
+        <main className="admin-main flex-1 overflow-y-auto overflow-x-hidden safe-bottom">
           <Suspense fallback={<div className="h-32" />}>
             {children}
           </Suspense>
