@@ -1,0 +1,60 @@
+name: Backup bazy Supabase
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Zainstaluj postgresql-client-16
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Uruchom pg_dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date -u +'%Y-%m-%dT%H-%M-%SZ')
+          FILENAME="biegunsport-backup-${TIMESTAMP}.sql.gz"
+          echo "BACKUP_FILE=${FILENAME}" >> "$GITHUB_ENV"
+
+          pg_dump \
+            --clean \
+            --if-exists \
+            --no-owner \
+            --no-privileges \
+            --quote-all-identifiers \
+            --schema=public \
+            --schema=auth \
+            --schema=storage \
+            "$SUPABASE_DB_URL" \
+            | gzip -9 > "${FILENAME}"
+
+          ls -lh "${FILENAME}"
+
+      - name: Setup Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Zainstaluj zależności Google API
+        run: pip install --quiet google-api-python-client google-auth
+
+      - name: Upload do Google Drive + rotacja
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          BACKUP_FILE: ${{ env.BACKUP_FILE }}
+          KEEP_LAST: '12'
+        run: python scripts/upload-backup-to-drive.py
