@@ -44,6 +44,11 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
   tabel i filtrów.
 - `/admin/trips`: rozwijany wiersz wyjazdu działa jako single-expand accordion
   i dostał niebieski detail hero zgodny z handoffem.
+- `/admin/trips`: widok wyjazdów dopasowano bliżej do referencji —
+  timeline miesięcy, kompaktowe wiersze z chipami grup, toolbar z filtrami i
+  wyszukiwarką oraz pełne rozwinięcie z kartami szczegółów.
+- `/admin/participants` i `/admin/groups`: mocniejszy wariant kartowy list,
+  żeby ekrany admina były spójniejsze z redesignem Alpine.
 - `/parent/payments`: w tabeli płatności rodzica dodano przycisk `Przelew`,
   który otwiera aplę z danymi do przelewu i kopiowaniem odbiorcy, numeru konta,
   tytułu oraz kwoty.

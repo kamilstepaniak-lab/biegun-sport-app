@@ -76,7 +76,7 @@ interface GroupsListProps {
 
 export function GroupsList({ groups, importStats }: GroupsListProps) {
   const router = useRouter();
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -179,13 +179,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
   }, [filteredGroups, searchQuery]);
 
   function toggleGroup(groupId: string) {
-    const newOpen = new Set(openGroups);
-    if (newOpen.has(groupId)) {
-      newOpen.delete(groupId);
-    } else {
-      newOpen.add(groupId);
-    }
-    setOpenGroups(newOpen);
+    setOpenGroupId((current) => (current === groupId ? null : groupId));
   }
 
   function toggleParticipant(participantId: string) {
@@ -487,10 +481,31 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           </p>
         )}
 
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <p className="text-2xl font-bold text-slate-900">{groups.length}</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Grupy</p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <p className="text-2xl font-bold text-slate-900">
+              {groups.reduce((sum, group) => sum + group.participantCount, 0)}
+            </p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Uczestnicy</p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <p className="text-2xl font-bold text-amber-600">{importStats.oczekuje}</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Do importu</p>
+          </div>
+          <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <p className="text-2xl font-bold text-red-600">{importStats.blad}</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Błędy importu</p>
+          </div>
+        </div>
+
         {/* Lista grup */}
         {groupsToShow.map((group) => {
           const colors = getGroupColor(group.name);
-          const isOpen = openGroups.has(group.id) || (!!searchQuery && group.participants.length > 0);
+          const isOpen = openGroupId === group.id || (!!searchQuery && group.participants.length > 0);
           return (
           <Collapsible
             key={group.id}
@@ -498,27 +513,49 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
             onOpenChange={() => toggleGroup(group.id)}
           >
             <div className={cn(
-              'bg-white rounded-2xl transition-all duration-200',
+              'overflow-hidden rounded-2xl border-2 bg-white transition-all duration-200',
               isOpen
-                ? 'shadow-lg ring-1 ring-gray-200'
-                : 'shadow-sm ring-1 ring-gray-100 hover:shadow-md'
+                ? 'border-blue-600 shadow-lg shadow-blue-600/15'
+                : 'border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md'
             )}>
               <CollapsibleTrigger asChild>
-                <div className="flex items-center justify-between p-4 cursor-pointer">
+                <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
                   <div className="flex items-center gap-3">
                     {/* Kolorowa ikona grupy */}
-                    <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', colors.bg)}>
+                    <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', colors.bg)}>
                       <Users className={cn('h-4 w-4', colors.text)} />
                     </div>
-                    <h3 className="font-semibold text-gray-900">{group.name}</h3>
+                    <div>
+                      <h3 className="text-base font-semibold text-slate-900">{group.name}</h3>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                        <span className={cn('h-2 w-2 rounded-full', colors.dot)} />
+                        <span>Aktywna grupa treningowa</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 rounded-lg px-2.5 py-1">
-                      {searchQuery && group.participants.length !== group.originalCount
-                        ? `${group.participants.length} / ${group.originalCount}`
-                        : `${group.participantCount}`
-                      } uczestników
-                    </span>
+
+                  <div className="grid gap-2 sm:grid-cols-3 lg:w-[360px]">
+                    <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Uczestnicy</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-900">
+                        {searchQuery && group.participants.length !== group.originalCount
+                          ? `${group.participants.length}/${group.originalCount}`
+                          : group.participantCount}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Zaznacz.</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-900">
+                        {group.participants.filter((p) => selectedParticipants.has(p.id)).length}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Kontakt</p>
+                      <p className="mt-0.5 text-sm font-bold text-slate-900">Email</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 lg:justify-end">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -543,10 +580,10 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                     </Tooltip>
                     <div className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                      isOpen ? 'bg-gray-100' : 'bg-gray-50'
+                      isOpen ? 'bg-blue-600' : 'bg-gray-50'
                     )}>
                       {isOpen ? (
-                        <ChevronUp className="h-4 w-4 text-gray-500" />
+                        <ChevronUp className="h-4 w-4 text-white" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-gray-500" />
                       )}
