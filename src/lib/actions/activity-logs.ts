@@ -10,7 +10,13 @@ export type ActivityActionType =
   | 'registration_cancelled'
   | 'trip_email_sent'
   | 'payment_deleted'
-  | 'contracts_removed';
+  | 'payment_recorded'
+  | 'payment_amount_changed'
+  | 'payment_status_changed'
+  | 'contracts_removed'
+  | 'message_created'
+  | 'message_updated'
+  | 'message_deleted';
 
 /**
  * Loguje zdarzenie aplikacyjne. Wywoływany z server actions.

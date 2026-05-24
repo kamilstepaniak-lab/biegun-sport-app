@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
+import { logActivity } from './activity-logs';
 
 export interface AppMessage {
   id: string;
@@ -144,17 +145,23 @@ export async function createMessage(
   if (!title.trim() || !body.trim()) return { error: 'Tytuł i treść są wymagane' };
 
   const supabaseAdmin = createAdminClient();
+  const normalized = normalizeGroupIds(targetGroupIds);
   const { error } = await supabaseAdmin.from('messages').insert({
     title: title.trim(),
     body: body.trim(),
     sender_id: user.id,
-    target_group_ids: normalizeGroupIds(targetGroupIds),
+    target_group_ids: normalized,
   });
 
   if (error) {
     console.error('createMessage error:', error);
     return { error: error.message };
   }
+
+  logActivity(user.id, user.email, 'message_created', {
+    title: title.trim(),
+    targetGroupIds: normalized,
+  }).catch(console.error);
 
   revalidatePath('/admin/messages');
   return { success: true };
@@ -173,12 +180,13 @@ export async function updateMessage(
   if (!title.trim() || !body.trim()) return { error: 'Tytuł i treść są wymagane' };
 
   const supabaseAdmin = createAdminClient();
+  const normalized = normalizeGroupIds(targetGroupIds);
   const { error } = await supabaseAdmin
     .from('messages')
     .update({
       title: title.trim(),
       body: body.trim(),
-      target_group_ids: normalizeGroupIds(targetGroupIds),
+      target_group_ids: normalized,
       updated_at: new Date().toISOString(),
     })
     .eq('id', messageId);
@@ -187,6 +195,12 @@ export async function updateMessage(
     console.error('updateMessage error:', error);
     return { error: error.message };
   }
+
+  logActivity(user.id, user.email, 'message_updated', {
+    messageId,
+    title: title.trim(),
+    targetGroupIds: normalized,
+  }).catch(console.error);
 
   revalidatePath('/admin/messages');
   return { success: true };
@@ -198,12 +212,23 @@ export async function deleteMessage(messageId: string): Promise<{ success?: bool
   if (role !== 'admin') return { error: 'Brak uprawnień' };
 
   const supabaseAdmin = createAdminClient();
+  const { data: snapshot } = await supabaseAdmin
+    .from('messages')
+    .select('title, target_group_ids')
+    .eq('id', messageId)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin.from('messages').delete().eq('id', messageId);
 
   if (error) {
     console.error('deleteMessage error:', error);
     return { error: error.message };
   }
+
+  logActivity(user.id, user.email, 'message_deleted', {
+    messageId,
+    title: snapshot?.title,
+  }).catch(console.error);
 
   revalidatePath('/admin/messages');
   return { success: true };

@@ -155,6 +155,13 @@ export async function cancelRegistration(registrationId: string) {
     return { error: 'Brak uprawnień' };
   }
 
+  // Pobierz dane do audit logu PRZED anulowaniem
+  const { data: regInfo } = await supabase
+    .from('trip_registrations')
+    .select('trip_id, participant:participants(first_name, last_name), trip:trips(title)')
+    .eq('id', registrationId)
+    .single();
+
   const { error } = await supabase
     .from('trip_registrations')
     .update({ status: 'cancelled' })
@@ -162,6 +169,19 @@ export async function cancelRegistration(registrationId: string) {
 
   if (error) {
     return { error: 'Nie udało się anulować zapisu' };
+  }
+
+  try {
+    const p = (regInfo?.participant ?? null) as { first_name?: string; last_name?: string } | null;
+    const t = (regInfo?.trip ?? null) as { title?: string } | null;
+    logActivity(user.id, user.email, 'registration_cancelled', {
+      participantName: p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : undefined,
+      tripTitle: t?.title,
+      tripId: regInfo?.trip_id,
+      registrationId,
+    }).catch(console.error);
+  } catch {
+    // log nie blokuje głównego flow
   }
 
   // Pobierz płatności do audit logu, zanim je anulujesz

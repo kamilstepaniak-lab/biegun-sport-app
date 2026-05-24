@@ -21,6 +21,39 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
   return { user, error: null };
 }
 
+/**
+ * Pobiera meta dane płatności (uczestnik, wyjazd) do audit logu — best-effort.
+ */
+async function getPaymentMeta(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  paymentId: string,
+): Promise<{ participantName?: string; tripTitle?: string }> {
+  try {
+    const { data } = await supabase
+      .from('payments')
+      .select(`
+        registration:trip_registrations (
+          participant:participants (first_name, last_name),
+          trip:trips (title)
+        )
+      `)
+      .eq('id', paymentId)
+      .single();
+    const reg = (data?.registration ?? null) as {
+      participant?: { first_name?: string; last_name?: string } | null;
+      trip?: { title?: string } | null;
+    } | null;
+    return {
+      participantName: reg?.participant
+        ? `${reg.participant.first_name ?? ''} ${reg.participant.last_name ?? ''}`.trim()
+        : undefined,
+      tripTitle: reg?.trip?.title,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export async function getPaymentsForTrip(tripId: string): Promise<PaymentWithDetails[]> {
   const supabase = await createClient();
 
@@ -373,6 +406,18 @@ export async function addPaymentTransaction(
     newAmountPaid: newAmountPaid,
     action: 'payment_added',
     note: notes,
+  }).catch(console.error);
+
+  // Globalny log aktywności
+  getPaymentMeta(supabase, paymentId).then((meta) => {
+    logActivity(user.id, user.email ?? null, 'payment_recorded', {
+      paymentId,
+      amount,
+      currency,
+      paymentMethod,
+      closeAsDiscount,
+      ...meta,
+    }).catch(console.error);
   }).catch(console.error);
 
   revalidateTag('payments');
@@ -879,6 +924,16 @@ export async function updatePaymentStatus(
     action: 'status_changed',
   }).catch(console.error);
 
+  // Globalny log aktywności
+  getPaymentMeta(supabase, paymentId).then((meta) => {
+    logActivity(user.id, user.email ?? null, 'payment_status_changed', {
+      paymentId,
+      oldStatus,
+      newStatus: status,
+      ...meta,
+    }).catch(console.error);
+  }).catch(console.error);
+
   // E-mail potwierdzenia — nie blokuje odpowiedzi (fire & forget)
   if (status === 'paid') {
     (async () => {
@@ -932,7 +987,7 @@ export async function updatePaymentStatus(
 export async function updatePaymentAmount(paymentId: string, newAmount: number) {
   const supabase = await createClient();
 
-  const { error: authError } = await requireAdmin(supabase);
+  const { user, error: authError } = await requireAdmin(supabase);
   if (authError) return { error: authError };
 
   if (newAmount < 0) {
@@ -941,13 +996,15 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
 
   const { data: payment } = await supabase
     .from('payments')
-    .select('amount_paid, due_date, status')
+    .select('amount, amount_paid, due_date, status, currency')
     .eq('id', paymentId)
     .single();
 
   if (!payment) {
     return { error: 'Nie znaleziono płatności' };
   }
+
+  const oldAmount = payment.amount;
 
   const updateData: Record<string, unknown> = {
     amount: newAmount,
@@ -969,6 +1026,19 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
   if (error) {
     console.error('Update payment amount error:', error);
     return { error: `Nie udało się zaktualizować kwoty: ${error.message}` };
+  }
+
+  // Globalny log aktywności
+  if (oldAmount !== newAmount) {
+    getPaymentMeta(supabase, paymentId).then((meta) => {
+      logActivity(user.id, user.email ?? null, 'payment_amount_changed', {
+        paymentId,
+        oldAmount,
+        amount: newAmount,
+        currency: payment.currency,
+        ...meta,
+      }).catch(console.error);
+    }).catch(console.error);
   }
 
   revalidateTag('payments');
