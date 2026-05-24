@@ -37,6 +37,12 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-24
+
+- `/parent/contracts`: ekran dokumentów dostał tę samą aplę wyboru dziecka
+  (`ChildGuard`) co wyjazdy, płatności i kalendarz; rodzic może przełączać
+  konkretne dziecko albo widok wszystkich dzieci.
+
 ### 2026-05-18 (Uczestnicy)
 
 - Korekta układu karty uczestnika: bez powielania imienia i nazwiska,
