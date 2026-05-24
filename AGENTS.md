@@ -42,6 +42,8 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 - `/parent/payments`: w tabeli płatności rodzica dodano przycisk `Przelew`,
   który otwiera aplę z danymi do przelewu i kopiowaniem odbiorcy, numeru konta,
   tytułu oraz kwoty.
+- `/parent/payments`: apla `Przelew` pokazuje teraz wszystkie nieopłacone
+  pozycje tej samej raty, np. osobno PLN i EUR z właściwymi kontami.
 - `/parent/contracts`: ekran dokumentów dostał tę samą aplę wyboru dziecka
   (`ChildGuard`) co wyjazdy, płatności i kalendarz; rodzic może przełączać
   konkretne dziecko albo widok wszystkich dzieci.

@@ -198,7 +198,7 @@ export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccoun
 }
 
 // ── Wspólna logika płatności ───────────────────────────────────────────────
-function usePaymentData(payment: ParentPayment) {
+function getPaymentData(payment: ParentPayment) {
   const cfg = statusConfig[payment.status] ?? statusConfig.pending;
   const StatusIcon = cfg.icon;
   const isOverdue = isOverduePayment(payment);
@@ -250,13 +250,13 @@ function TransferCopyRow({
 function PaymentDialog({
   payment,
   bankAccounts,
+  relatedPayments,
 }: {
   payment: ParentPayment;
   bankAccounts: BankAccountInfo;
+  relatedPayments: ParentPayment[];
 }) {
-  const { remaining, transferTitle } = usePaymentData(payment);
-  const account = getBankAccountForCurrency(bankAccounts, payment.currency);
-  const amount = `${remaining.toFixed(0)} ${payment.currency}`;
+  const transferPayments = relatedPayments.length > 0 ? relatedPayments : [payment];
 
   return (
     <Dialog>
@@ -282,28 +282,68 @@ function PaymentDialog({
 
         <div className="space-y-3">
           <TransferCopyRow label="Odbiorca" value={COMPANY_NAME} copyLabel="Dane firmy" />
-          {account ? (
-            <TransferCopyRow
-              label={`Numer konta ${payment.currency}`}
-              value={account}
-              copyLabel={`Numer konta ${payment.currency}`}
-            />
-          ) : (
-            <div className="rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-700 ring-1 ring-amber-200">
-              Brak zapisanego numeru konta dla waluty {payment.currency}.
-            </div>
-          )}
-          <TransferCopyRow label="Tytuł przelewu" value={transferTitle} copyLabel="Tytuł przelewu" />
-          <TransferCopyRow label="Kwota" value={amount} copyLabel="Kwota" strong />
+          {transferPayments.map((item) => {
+            const { remaining, transferTitle } = getPaymentData(item);
+            const account = getBankAccountForCurrency(bankAccounts, item.currency);
+            const amount = `${remaining.toFixed(0)} ${item.currency}`;
+
+            return (
+              <div key={item.id} className="space-y-3 rounded-2xl border border-gray-100 p-3">
+                {transferPayments.length > 1 && (
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    {getPaymentTypeLabel(item)} — {item.currency}
+                  </p>
+                )}
+                {account ? (
+                  <TransferCopyRow
+                    label={`Numer konta ${item.currency}`}
+                    value={account}
+                    copyLabel={`Numer konta ${item.currency}`}
+                  />
+                ) : (
+                  <div className="rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-700 ring-1 ring-amber-200">
+                    Brak zapisanego numeru konta dla waluty {item.currency}.
+                  </div>
+                )}
+                <TransferCopyRow label="Tytuł przelewu" value={transferTitle} copyLabel="Tytuł przelewu" />
+                <TransferCopyRow label="Kwota" value={amount} copyLabel="Kwota" strong />
+              </div>
+            );
+          })}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
+function getRelatedTransferPayments(payment: ParentPayment, allPayments: ParentPayment[]) {
+  return allPayments.filter((item) => (
+    item.id === payment.id ||
+    (
+      item.participant_id === payment.participant_id &&
+      item.trip_id === payment.trip_id &&
+      item.payment_type === payment.payment_type &&
+      item.installment_number === payment.installment_number
+    )
+  )).filter((item) => (
+    item.status !== 'paid' &&
+    item.status !== 'cancelled' &&
+    item.amount - item.amount_paid > 0
+  ));
+}
+
 // ── Wiersz tabeli ─────────────────────────────────────────────────────────
-function PaymentRow({ payment, bankAccounts }: { payment: ParentPayment; bankAccounts: BankAccountInfo }) {
-  const { cfg, StatusIcon, isOverdue, remaining, transferTitle } = usePaymentData(payment);
+function PaymentRow({
+  payment,
+  bankAccounts,
+  allPayments,
+}: {
+  payment: ParentPayment;
+  bankAccounts: BankAccountInfo;
+  allPayments: ParentPayment[];
+}) {
+  const { cfg, StatusIcon, isOverdue, remaining, transferTitle } = getPaymentData(payment);
+  const relatedTransferPayments = getRelatedTransferPayments(payment, allPayments);
 
   return (
     <tr
@@ -386,7 +426,11 @@ function PaymentRow({ payment, bankAccounts }: { payment: ParentPayment; bankAcc
         {payment.status === 'paid' ? (
           <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
         ) : (
-          <PaymentDialog payment={payment} bankAccounts={bankAccounts} />
+          <PaymentDialog
+            payment={payment}
+            bankAccounts={bankAccounts}
+            relatedPayments={relatedTransferPayments}
+          />
         )}
       </td>
 
@@ -398,10 +442,12 @@ function PaymentRow({ payment, bankAccounts }: { payment: ParentPayment; bankAcc
 function PaymentsTable({
   payments,
   bankAccounts,
+  allPayments,
   label,
 }: {
   payments: ParentPayment[];
   bankAccounts: BankAccountInfo;
+  allPayments: ParentPayment[];
   label?: string;
 }) {
   if (payments.length === 0) return null;
@@ -429,7 +475,7 @@ function PaymentsTable({
           </thead>
           <tbody>
             {payments.map((p) => (
-              <PaymentRow key={p.id} payment={p} bankAccounts={bankAccounts} />
+              <PaymentRow key={p.id} payment={p} bankAccounts={bankAccounts} allPayments={allPayments} />
             ))}
           </tbody>
         </table>
@@ -594,7 +640,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
           />
         ) : (
           <>
-            <PaymentsTable payments={paginatedPayments} bankAccounts={bankAccounts} />
+            <PaymentsTable payments={paginatedPayments} bankAccounts={bankAccounts} allPayments={allPayments} />
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs text-gray-400">
@@ -663,7 +709,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
             </button>
             {archivedOpen && (
               <div className="mt-2">
-                <PaymentsTable payments={archivedFiltered} bankAccounts={bankAccounts} />
+                <PaymentsTable payments={archivedFiltered} bankAccounts={bankAccounts} allPayments={allPayments} />
               </div>
             )}
           </div>
