@@ -391,7 +391,9 @@ function PaymentRow({
               {remaining.toFixed(0)} {payment.currency}
             </span>
             {payment.amount_paid > 0 && (
-              <span className="text-xs text-gray-400 ml-1">(wpł. {payment.amount_paid.toFixed(0)})</span>
+              <span className="mt-0.5 block text-xs text-gray-400">
+                {payment.amount_paid.toFixed(0)} {payment.currency} wpłacono
+              </span>
             )}
           </div>
         )}

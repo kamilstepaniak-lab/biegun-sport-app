@@ -44,6 +44,8 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
   tytułu oraz kwoty.
 - `/parent/payments`: apla `Przelew` pokazuje teraz wszystkie nieopłacone
   pozycje tej samej raty, np. osobno PLN i EUR z właściwymi kontami.
+- `/parent/payments`: przy częściowo opłaconej płatności wpłacona kwota w
+  kolumnie `Kwota` jest pokazana pod spodem jako „123 PLN wpłacono".
 - `/parent/contracts`: ekran dokumentów dostał tę samą aplę wyboru dziecka
   (`ChildGuard`) co wyjazdy, płatności i kalendarz; rodzic może przełączać
   konkretne dziecko albo widok wszystkich dzieci.
