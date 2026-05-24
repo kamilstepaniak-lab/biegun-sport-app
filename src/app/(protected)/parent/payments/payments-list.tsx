@@ -4,6 +4,15 @@ import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { PaymentDue } from '@/components/shared/payment-due';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   Check,
   Clock,
@@ -16,6 +25,7 @@ import {
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  Landmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -201,8 +211,98 @@ function usePaymentData(payment: ParentPayment) {
   return { cfg, StatusIcon, isOverdue, remaining, transferTitle };
 }
 
+const COMPANY_NAME = 'BiegunSport Stepaniak & Biegun Sp.j';
+
+function getBankAccountForCurrency(bankAccounts: BankAccountInfo, currency: string) {
+  return currency === 'EUR' ? bankAccounts.bank_account_eur : bankAccounts.bank_account_pln;
+}
+
+function TransferCopyRow({
+  label,
+  value,
+  copyLabel,
+  strong = false,
+}: {
+  label: string;
+  value: string;
+  copyLabel: string;
+  strong?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 p-3">
+      <div className="min-w-0">
+        <p className="mb-0.5 text-xs font-medium text-gray-400">{label}</p>
+        <p className={cn('break-words text-sm text-gray-900', strong && 'text-base font-bold tabular-nums')}>
+          {value}
+        </p>
+      </div>
+      <button
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-gray-400 ring-1 ring-gray-200 transition-colors hover:text-blue-600"
+        onClick={() => copyToClipboard(value, copyLabel)}
+        title={`Kopiuj: ${label}`}
+      >
+        <Copy className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function PaymentDialog({
+  payment,
+  bankAccounts,
+}: {
+  payment: ParentPayment;
+  bankAccounts: BankAccountInfo;
+}) {
+  const { remaining, transferTitle } = usePaymentData(payment);
+  const account = getBankAccountForCurrency(bankAccounts, payment.currency);
+  const amount = `${remaining.toFixed(0)} ${payment.currency}`;
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          size="sm"
+          className="h-9 rounded-xl bg-blue-600 px-3 text-white hover:bg-blue-700"
+        >
+          <CreditCard className="h-4 w-4" />
+          Przelew
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-2xl sm:max-w-lg">
+        <DialogHeader>
+          <div className="mb-1 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
+            <Landmark className="h-5 w-5 text-white" />
+          </div>
+          <DialogTitle>Dane do przelewu</DialogTitle>
+          <DialogDescription>
+            {payment.child_name} — {getPaymentTypeLabel(payment)}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <TransferCopyRow label="Odbiorca" value={COMPANY_NAME} copyLabel="Dane firmy" />
+          {account ? (
+            <TransferCopyRow
+              label={`Numer konta ${payment.currency}`}
+              value={account}
+              copyLabel={`Numer konta ${payment.currency}`}
+            />
+          ) : (
+            <div className="rounded-xl bg-amber-50 p-3 text-sm font-medium text-amber-700 ring-1 ring-amber-200">
+              Brak zapisanego numeru konta dla waluty {payment.currency}.
+            </div>
+          )}
+          <TransferCopyRow label="Tytuł przelewu" value={transferTitle} copyLabel="Tytuł przelewu" />
+          <TransferCopyRow label="Kwota" value={amount} copyLabel="Kwota" strong />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Wiersz tabeli ─────────────────────────────────────────────────────────
-function PaymentRow({ payment }: { payment: ParentPayment }) {
+function PaymentRow({ payment, bankAccounts }: { payment: ParentPayment; bankAccounts: BankAccountInfo }) {
   const { cfg, StatusIcon, isOverdue, remaining, transferTitle } = usePaymentData(payment);
 
   return (
@@ -281,12 +381,29 @@ function PaymentRow({ payment }: { payment: ParentPayment }) {
         />
       </td>
 
+      {/* Akcja */}
+      <td className="py-3 pl-3 pr-4 text-right whitespace-nowrap">
+        {payment.status === 'paid' ? (
+          <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
+        ) : (
+          <PaymentDialog payment={payment} bankAccounts={bankAccounts} />
+        )}
+      </td>
+
     </tr>
   );
 }
 
 // ── Tabela / karty płatności ──────────────────────────────────────────────
-function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?: string }) {
+function PaymentsTable({
+  payments,
+  bankAccounts,
+  label,
+}: {
+  payments: ParentPayment[];
+  bankAccounts: BankAccountInfo;
+  label?: string;
+}) {
   if (payments.length === 0) return null;
 
   return (
@@ -298,7 +415,7 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
       )}
       <p className="text-xs text-gray-400 px-4 pt-2 pb-0.5">Żeby zobaczyć całą tabelkę przesuń palcem w bok</p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px]">
+        <table className="w-full min-w-[680px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/60">
               <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
@@ -307,11 +424,12 @@ function PaymentsTable({ payments, label }: { payments: ParentPayment[]; label?:
               <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Status</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
+              <th className="text-right py-2.5 pl-3 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Akcja</th>
             </tr>
           </thead>
           <tbody>
             {payments.map((p) => (
-              <PaymentRow key={p.id} payment={p} />
+              <PaymentRow key={p.id} payment={p} bankAccounts={bankAccounts} />
             ))}
           </tbody>
         </table>
@@ -476,7 +594,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
           />
         ) : (
           <>
-            <PaymentsTable payments={paginatedPayments} />
+            <PaymentsTable payments={paginatedPayments} bankAccounts={bankAccounts} />
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs text-gray-400">
@@ -545,7 +663,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
             </button>
             {archivedOpen && (
               <div className="mt-2">
-                <PaymentsTable payments={archivedFiltered} />
+                <PaymentsTable payments={archivedFiltered} bankAccounts={bankAccounts} />
               </div>
             )}
           </div>

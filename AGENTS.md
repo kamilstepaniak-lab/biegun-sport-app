@@ -39,6 +39,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-05-24
 
+- `/parent/payments`: w tabeli płatności rodzica dodano przycisk `Przelew`,
+  który otwiera aplę z danymi do przelewu i kopiowaniem odbiorcy, numeru konta,
+  tytułu oraz kwoty.
 - `/parent/contracts`: ekran dokumentów dostał tę samą aplę wyboru dziecka
   (`ChildGuard`) co wyjazdy, płatności i kalendarz; rodzic może przełączać
   konkretne dziecko albo widok wszystkich dzieci.
