@@ -783,21 +783,53 @@ export async function deleteTrip(id: string) {
       if (regError) console.error('Delete registrations error:', regError);
     }
 
-    // 2. Usuń szablony płatności
+    // 2a. Pobierz dane wyjazdu do snapshot na umowach
+    const { data: tripSnapshot } = await supabaseAdmin
+      .from('trips')
+      .select('title, departure_datetime')
+      .eq('id', id)
+      .single();
+
+    // 2b. Zarchiwizuj podpisane umowy (dowód prawny — nie wolno kasować).
+    // FK trip_id ma ON DELETE SET NULL, więc po DELETE wyjazdu poniżej
+    // trip_id stanie się NULL — snapshot zachowa nazwę i datę wyjazdu.
+    const archivedAt = new Date().toISOString();
+    const { error: archiveError } = await supabaseAdmin
+      .from('trip_contracts')
+      .update({
+        archived_at: archivedAt,
+        trip_title_snapshot: tripSnapshot?.title ?? null,
+        trip_departure_snapshot: tripSnapshot?.departure_datetime ?? null,
+      })
+      .eq('trip_id', id)
+      .not('accepted_at', 'is', null)
+      .is('archived_at', null);
+    if (archiveError) console.error('Archive signed contracts error:', archiveError);
+
+    // 2c. Usuń niepodpisane umowy (nie mają wartości prawnej)
+    const { error: pendingError } = await supabaseAdmin
+      .from('trip_contracts')
+      .delete()
+      .eq('trip_id', id)
+      .is('accepted_at', null);
+    if (pendingError) console.error('Delete pending contracts error:', pendingError);
+
+    // 3. Usuń szablony płatności
     const { error: templError } = await supabaseAdmin
       .from('trip_payment_templates')
       .delete()
       .eq('trip_id', id);
     if (templError) console.error('Delete templates error:', templError);
 
-    // 3. Usuń przypisania grup
+    // 4. Usuń przypisania grup
     const { error: grpError } = await supabaseAdmin
       .from('trip_groups')
       .delete()
       .eq('trip_id', id);
     if (grpError) console.error('Delete trip_groups error:', grpError);
 
-    // 4. Usuń wyjazd
+    // 5. Usuń wyjazd (CASCADE skasuje pozostałe powiązania;
+    //    podpisane umowy mają trip_id = NULL przez SET NULL)
     const { error } = await supabaseAdmin
       .from('trips')
       .delete()

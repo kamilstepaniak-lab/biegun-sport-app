@@ -23,7 +23,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
     getMyChildren(),
   ]);
 
-  if (!trip) {
+  if (!trip || trip.status !== 'published') {
     notFound();
   }
 

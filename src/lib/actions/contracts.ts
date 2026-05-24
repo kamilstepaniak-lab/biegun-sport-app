@@ -96,15 +96,23 @@ async function buildContractText(
   });
 }
 
+// Numer umowy jest generowany atomowo przez Postgres RPC z advisory lockiem,
+// żeby równoległe potwierdzenia nie wyprodukowały duplikatu numeru.
 async function nextContractNumber(): Promise<string> {
   const supabaseAdmin = createAdminClient();
-  const year = new Date().getFullYear();
-  const { count } = await supabaseAdmin
-    .from('trip_contracts')
-    .select('id', { count: 'exact', head: true })
-    .not('contract_number', 'is', null)
-    .like('contract_number', `%/${year}`);
-  return `${(count ?? 0) + 1}/${year}`;
+  const { data, error } = await supabaseAdmin.rpc('next_contract_number');
+  if (error || !data) {
+    console.error('next_contract_number RPC error:', error);
+    // Fallback: stara metoda (ryzyko duplikatu) — lepsze niż brak numeru
+    const year = new Date().getFullYear();
+    const { count } = await supabaseAdmin
+      .from('trip_contracts')
+      .select('id', { count: 'exact', head: true })
+      .not('contract_number', 'is', null)
+      .like('contract_number', `%/${year}`);
+    return `${(count ?? 0) + 1}/${year}`;
+  }
+  return data as string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -312,6 +320,7 @@ export async function createContractForParticipantIfNeeded(
 
   revalidatePath('/parent/contracts');
   revalidatePath(`/admin/trips/${tripId}/contracts`);
+  revalidatePath('/admin/contracts');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -446,6 +455,50 @@ export async function getContractsForAdmin() {
 
   if (error) {
     console.error('getContractsForAdmin error:', error);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin: Pobierz zarchiwizowane umowy (głównie po usunięciu wyjazdu).
+// Po SET NULL trip_id może być NULL — wtedy używamy trip_title_snapshot.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function getArchivedContractsForAdmin() {
+  const user = await requireAdmin();
+  if (!user) return [];
+
+  const supabaseAdmin = createAdminClient();
+
+  const { data, error } = await supabaseAdmin
+    .from('trip_contracts')
+    .select(`
+      *,
+      participants!participant_id (
+        id,
+        first_name,
+        last_name,
+        profiles:parent_id (
+          id,
+          email,
+          first_name,
+          last_name
+        )
+      ),
+      trips!trip_id (
+        id,
+        title,
+        departure_datetime,
+        return_datetime
+      )
+    `)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false });
+
+  if (error) {
+    console.error('getArchivedContractsForAdmin error:', error);
     return [];
   }
 

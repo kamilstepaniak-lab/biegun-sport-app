@@ -75,9 +75,20 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
     attendance: { completed: 0, total: 0 },
   };
 
-  const { supabase, user } = await getAuthUser();
+  const { supabase, user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
   if (!user) return empty;
+
+  // Rodzic może oglądać tylko swoje dziecko. Admin — dowolne.
+  if (role !== 'admin') {
+    const { data: owned } = await supabase
+      .from('participants')
+      .select('id')
+      .eq('id', participantId)
+      .eq('parent_id', user.id)
+      .maybeSingle();
+    if (!owned) return empty;
+  }
 
   const now = new Date();
   const nowIso = now.toISOString();

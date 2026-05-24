@@ -109,10 +109,28 @@ export async function getMessagesForParent(): Promise<AppMessage[]> {
 }
 
 export async function markMessageRead(messageId: string): Promise<{ success?: boolean; error?: string }> {
-  const { user } = await getAuthUser();
+  const { user, role } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };
 
   const supabaseAdmin = createAdminClient();
+
+  // Admini mogą oznaczać dowolną wiadomość. Rodzic — tylko te, które są
+  // skierowane do jego grup (lub wiadomości globalne bez target_group_ids).
+  if (role !== 'admin') {
+    const { data: msg } = await supabaseAdmin
+      .from('messages')
+      .select('id, target_group_ids')
+      .eq('id', messageId)
+      .maybeSingle();
+
+    if (!msg) return { error: 'Wiadomość nie istnieje' };
+
+    const parentGroupIds = await getParentGroupIds(supabaseAdmin, user.id);
+    if (!messageMatchesGroups(msg.target_group_ids, parentGroupIds)) {
+      return { error: 'Brak dostępu do tej wiadomości' };
+    }
+  }
+
   const { error } = await supabaseAdmin
     .from('message_reads')
     .upsert(

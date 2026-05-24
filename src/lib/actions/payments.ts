@@ -795,9 +795,7 @@ const _fetchParentPaymentsDB = unstable_cache(
 );
 
 export async function getPaymentsForParent(selectedChildId?: string): Promise<ParentPayment[]> {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+  const { user } = await getAuthUser();
   if (!user) return [];
 
   const allPayments = await _fetchParentPaymentsDB(user.id);
@@ -1160,6 +1158,16 @@ export async function bulkUpdatePaymentStatus(
 
   const now = new Date().toISOString();
 
+  // Pobierz aktualny stan płatności do audit logu i wyliczenia transakcji
+  const { data: rows } = await supabase
+    .from('payments')
+    .select('id, amount, amount_paid, currency, status')
+    .in('id', paymentIds);
+
+  if (!rows || rows.length === 0) return { success: true };
+
+  type Row = { id: string; amount: number; amount_paid: number | null; currency: string; status: PaymentStatus };
+
   if (status === 'pending') {
     const { error } = await supabase
       .from('payments')
@@ -1167,29 +1175,73 @@ export async function bulkUpdatePaymentStatus(
       .in('id', paymentIds);
 
     if (error) return { error: `Błąd: ${error.message}` };
-  } else {
-    // Pobierz kwoty — każda płatność ma inną wartość
-    const { data: rows } = await supabase
-      .from('payments')
-      .select('id, amount')
-      .in('id', paymentIds)
-      .neq('status', 'paid');
 
-    if (rows && rows.length > 0) {
+    (rows as Row[]).forEach((r) => {
+      logPaymentChange({
+        paymentId: r.id,
+        userId: user.id,
+        oldStatus: r.status,
+        newStatus: 'pending',
+        oldAmountPaid: r.amount_paid || 0,
+        newAmountPaid: 0,
+        action: 'status_changed',
+        note: 'Masowa zmiana statusu na "oczekuje"',
+      }).catch(console.error);
+    });
+  } else {
+    // Tylko nieopłacone — dla każdej dodaj transakcję na pozostałą kwotę
+    const unpaid = (rows as Row[]).filter((r) => r.status !== 'paid');
+    if (unpaid.length > 0) {
+      const txnDate = now.split('T')[0];
+      await supabase.from('payment_transactions').insert(
+        unpaid
+          .filter((r) => r.amount - (r.amount_paid || 0) > 0)
+          .map((r) => ({
+            payment_id: r.id,
+            amount: r.amount - (r.amount_paid || 0),
+            currency: r.currency,
+            transaction_date: txnDate,
+            payment_method: 'transfer' as const,
+            notes: 'Masowe oznaczenie jako opłacone przez admina',
+            recorded_by: user.id,
+          }))
+      );
+
       await Promise.all(
-        (rows as { id: string; amount: number }[]).map(row =>
+        unpaid.map((r) =>
           supabase
             .from('payments')
-            .update({ status: 'paid', amount_paid: row.amount, paid_at: now, marked_by: user.id, updated_at: now })
-            .eq('id', row.id)
+            .update({
+              status: 'paid',
+              amount_paid: r.amount,
+              paid_at: now,
+              payment_method_used: 'transfer',
+              marked_by: user.id,
+              updated_at: now,
+            })
+            .eq('id', r.id)
         )
       );
+
+      unpaid.forEach((r) => {
+        logPaymentChange({
+          paymentId: r.id,
+          userId: user.id,
+          oldStatus: r.status,
+          newStatus: 'paid',
+          oldAmountPaid: r.amount_paid || 0,
+          newAmountPaid: r.amount,
+          action: 'marked_paid',
+          note: 'Masowe oznaczenie jako opłacone (przelew)',
+        }).catch(console.error);
+      });
     }
   }
 
   revalidateTag('payments');
   revalidatePath('/admin/payments');
   revalidatePath('/admin/trips');
+  revalidatePath('/parent/payments');
   return { success: true };
 }
 

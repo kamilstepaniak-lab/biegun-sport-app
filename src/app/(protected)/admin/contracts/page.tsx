@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { FileText, CheckCircle, Clock, ExternalLink, Library, BookOpen } from 'lucide-react';
+import { FileText, CheckCircle, Clock, ExternalLink, Library, BookOpen, Archive } from 'lucide-react';
 import Link from 'next/link';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { ContractsTable } from '@/components/admin/contracts-table';
 import { GlobalDocumentEditor } from '@/components/admin/global-document-editor';
 import { DynamicDocumentEditor } from '@/components/admin/dynamic-document-editor';
 import { AddDocumentDialog } from '@/components/admin/add-document-dialog';
-import { getContractsForAdmin } from '@/lib/actions/contracts';
+import { getContractsForAdmin, getArchivedContractsForAdmin } from '@/lib/actions/contracts';
 import { getGlobalDocument, getDynamicDocuments } from '@/lib/actions/documents';
 import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
 import { GLOBAL_DOCUMENTS } from '@/lib/global-documents';
@@ -26,8 +26,9 @@ const GLOBAL_TEMPLATES = [
 ];
 
 export default async function AdminContractsPage() {
-  const [contracts, dynamicDocs, ...docContents] = await Promise.all([
+  const [contracts, archivedContracts, dynamicDocs, ...docContents] = await Promise.all([
     getContractsForAdmin(),
+    getArchivedContractsForAdmin(),
     getDynamicDocuments(),
     ...GLOBAL_DOCUMENTS.map((doc) => getGlobalDocument(doc.id)),
   ]);
@@ -218,6 +219,59 @@ export default async function AdminContractsPage() {
             </Card>
           );
         })
+      )}
+
+      {/* ── SEKCJA: Archiwum (umowy po usunięciu wyjazdu) ── */}
+      {archivedContracts.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-600">
+              <Archive className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Archiwum</h2>
+              <p className="text-xs text-gray-500">
+                Podpisane umowy z usuniętych wyjazdów — dowód prawny zachowany
+              </p>
+            </div>
+          </div>
+          <Card>
+            <CardContent className="pt-6">
+              <ContractsTable
+                contracts={archivedContracts.map((contract) => {
+                  const participant = contract.participants as {
+                    first_name: string;
+                    last_name: string;
+                    profiles: { email: string; first_name: string | null; last_name: string | null } | null;
+                  } | null;
+                  const trip = contract.trips as { title: string; departure_datetime: string } | null;
+                  const c = contract as Record<string, unknown>;
+                  const tripTitle = trip?.title
+                    ?? (c.trip_title_snapshot as string | null)
+                    ?? 'Usunięty wyjazd';
+                  const tripDate = trip?.departure_datetime
+                    ?? (c.trip_departure_snapshot as string | null);
+                  const childName = participant
+                    ? `${participant.first_name} ${participant.last_name}`
+                    : '—';
+                  const parentEmail = participant?.profiles?.email ?? '—';
+                  const parentName = participant?.profiles
+                    ? [participant.profiles.first_name, participant.profiles.last_name].filter(Boolean).join(' ') || parentEmail
+                    : '—';
+                  return {
+                    id: contract.id,
+                    contract_number: c.contract_number as string | null ?? null,
+                    contract_text: contract.contract_text,
+                    accepted_at: contract.accepted_at,
+                    childName: `${childName} — ${tripTitle}${tripDate ? ` (${format(new Date(tripDate), 'd MMM yyyy', { locale: pl })})` : ''}`,
+                    parentName,
+                    parentEmail,
+                  };
+                })}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

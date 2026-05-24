@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
 import type { Participant, ParticipantWithGroup, ParticipantFull, Group, ParticipationStatus } from '@/types';
@@ -51,13 +50,27 @@ export async function getChildParticipationStatuses(
   participantIds: string[]
 ): Promise<Record<string, ParticipationStatus>> {
   if (participantIds.length === 0) return {};
-  const supabase = await createClient();
+  const { supabase, user, role } = await getAuthUser();
+  if (!user) return {};
+
+  // Admin może pobrać statusy dla dowolnych uczestników.
+  // Rodzic — tylko dla swoich dzieci (filtr po parent_id).
+  let allowedIds = participantIds;
+  if (role !== 'admin') {
+    const { data: owned } = await supabase
+      .from('participants')
+      .select('id')
+      .eq('parent_id', user.id)
+      .in('id', participantIds);
+    allowedIds = (owned || []).map((p: { id: string }) => p.id);
+    if (allowedIds.length === 0) return {};
+  }
 
   const { data, error } = await supabase
     .from('trip_registrations')
     .select('participant_id, participation_status')
     .eq('trip_id', tripId)
-    .in('participant_id', participantIds)
+    .in('participant_id', allowedIds)
     .neq('status', 'cancelled');
 
   if (error || !data) return {};
@@ -343,10 +356,25 @@ export async function deleteParticipant(id: string) {
     .from('trip_registrations')
     .select(`
       id,
+      status,
       trip:trips (id, title),
       payments (id, status, amount, amount_paid, currency)
     `)
     .eq('participant_id', id);
+
+  // Admin: blokada gdy są aktywne rejestracje — zgodnie z deleteParticipants
+  // w groups.ts. Rodzic ma osobny dialog z ostrzeżeniem i świadomie potwierdza,
+  // więc dla rodzica blokady nie stosujemy.
+  if (role === 'admin') {
+    const activeRegs = (registrations || []).filter(
+      (r: { status: string | null }) => r.status === 'active'
+    );
+    if (activeRegs.length > 0) {
+      return {
+        error: `Dziecko ma ${activeRegs.length} aktywne(ych) rejestracje na wyjazdy. Najpierw je anuluj.`,
+      };
+    }
+  }
 
   // Usuń uczestnika
   let deleteQuery = supabase
