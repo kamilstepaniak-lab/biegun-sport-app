@@ -1,36 +1,27 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { format } from 'date-fns';
+import { useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronUp,
-  Users,
-  Copy,
-  Check,
-  Edit,
-  Trash2,
-  Search,
-  X,
-  Upload,
   CheckCircle2,
-  XCircle,
   Clock,
-  RotateCcw,
-  Plus,
-  Pencil,
+  Copy,
   Loader2,
-  Eye,
-  StickyNote,
-  PencilLine,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+  XCircle,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
   Collapsible,
@@ -53,9 +44,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Tooltip,
   TooltipContent,
@@ -63,77 +52,76 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import { deleteParticipants, createGroup, deleteGroup, renameGroup, type GroupWithParticipants, type ParticipantInGroup } from '@/lib/actions/groups';
-import { updateParticipantNote } from '@/lib/actions/participants';
-import { runImport, resetImportStatus, fixContactData, getImportBufferData, type ImportStats } from '@/lib/actions/import';
+import {
+  ParticipantsTable,
+  type ParticipantRow,
+} from '@/components/admin/participants-table';
+import {
+  createGroup,
+  deleteGroup,
+  deleteParticipants,
+  renameGroup,
+  type GroupWithParticipants,
+  type ParticipantInGroup,
+} from '@/lib/actions/groups';
+import {
+  fixContactData,
+  getImportBufferData,
+  resetImportStatus,
+  runImport,
+  type ImportStats,
+} from '@/lib/actions/import';
 import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
+import type { Group } from '@/types';
 
 interface GroupsListProps {
   groups: GroupWithParticipants[];
   importStats: { total: number; oczekuje: number; zaimportowano: number; blad: number };
 }
 
+function toRow(group: GroupWithParticipants, p: ParticipantInGroup): ParticipantRow {
+  return {
+    id: p.id,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    birth_date: p.birth_date,
+    notes: p.notes,
+    group: { id: group.id, name: group.name },
+    parent: {
+      email: p.parent.email,
+      phone: p.parent.phone,
+      secondary_email: p.parent.secondary_email,
+      secondary_phone: p.parent.secondary_phone,
+    },
+  };
+}
+
 export function GroupsList({ groups, importStats }: GroupsListProps) {
-  const router = useRouter();
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Import state
+  // Import
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [importResult, setImportResult] = useState<ImportStats | null>(null);
   const [importData, setImportData] = useState<Array<{
-    id: number; nazwisko_dziecka: string | null; imie_dziecka: string | null;
-    data_urodzenia: string | null; mail_1: string | null; telefon_1: string | null;
-    sekcja: string | null; status_importu: string | null; blad_opis: string | null;
+    id: number;
+    nazwisko_dziecka: string | null;
+    imie_dziecka: string | null;
+    data_urodzenia: string | null;
+    mail_1: string | null;
+    telefon_1: string | null;
+    sekcja: string | null;
+    status_importu: string | null;
+    blad_opis: string | null;
   }>>([]);
 
-  // Note editing state
-  const [noteDialog, setNoteDialog] = useState<{
-    isOpen: boolean;
-    participantId: string;
-    participantName: string;
-    currentNote: string;
-  } | null>(null);
-  const [noteText, setNoteText] = useState('');
-  const [isSavingNote, setIsSavingNote] = useState(false);
-
-  async function handleSaveNote() {
-    if (!noteDialog) return;
-    setIsSavingNote(true);
-    try {
-      const result = await updateParticipantNote(noteDialog.participantId, noteText);
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success('Notatka zapisana');
-        setNoteDialog(null);
-        router.refresh();
-      }
-    } catch {
-      toast.error('Wystąpił nieoczekiwany błąd');
-    } finally {
-      setIsSavingNote(false);
-    }
-  }
-
-  function openNoteDialog(participant: ParticipantInGroup) {
-    setNoteText(participant.notes ?? '');
-    setNoteDialog({
-      isOpen: true,
-      participantId: participant.id,
-      participantName: `${participant.first_name} ${participant.last_name}`,
-      currentNote: participant.notes ?? '',
-    });
-  }
-
-  // Groups management state
+  // Group CRUD
   const [showAddGroupDialog, setShowAddGroupDialog] = useState(false);
   const [showDeleteGroupDialog, setShowDeleteGroupDialog] = useState(false);
   const [showRenameGroupDialog, setShowRenameGroupDialog] = useState(false);
@@ -143,37 +131,41 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
   const [isDeletingGroup, setIsDeletingGroup] = useState(false);
   const [isRenamingGroup, setIsRenamingGroup] = useState(false);
 
-  // Filtruj i sortuj uczestników po nazwisku
-  const filteredGroups = useMemo(() => {
-    return groups.map(group => {
-      let participants = [...group.participants];
+  // Flat list of groups for ParticipantsTable (used for inline group dropdown)
+  const flatGroups: Group[] = useMemo(
+    () =>
+      groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        description: g.description,
+        display_order: g.display_order,
+        is_selectable_by_parent: g.is_selectable_by_parent,
+        created_at: g.created_at,
+      })),
+    [groups],
+  );
 
-      // Filtruj po wyszukiwarce
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        participants = participants.filter(p =>
-          p.last_name.toLowerCase().includes(query) ||
-          p.first_name.toLowerCase().includes(query) ||
-          `${p.last_name} ${p.first_name}`.toLowerCase().includes(query) ||
-          `${p.first_name} ${p.last_name}`.toLowerCase().includes(query)
+  // Filtruj uczestników po wyszukiwarce
+  const filteredGroups = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return groups.map((group) => {
+      let participants = group.participants;
+      if (q) {
+        participants = participants.filter(
+          (p) =>
+            p.last_name.toLowerCase().includes(q) ||
+            p.first_name.toLowerCase().includes(q) ||
+            `${p.last_name} ${p.first_name}`.toLowerCase().includes(q) ||
+            `${p.first_name} ${p.last_name}`.toLowerCase().includes(q),
         );
       }
-
-      // Sortuj po nazwisku
-      participants.sort((a, b) => a.last_name.localeCompare(b.last_name, 'pl'));
-
-      return {
-        ...group,
-        participants,
-        originalCount: group.participantCount,
-      };
+      return { ...group, participants, originalCount: group.participantCount };
     });
   }, [groups, searchQuery]);
 
-  // Automatycznie otwórz grupy które mają pasujących uczestników przy wyszukiwaniu
   const groupsToShow = useMemo(() => {
     if (searchQuery.trim()) {
-      return filteredGroups.filter(g => g.participants.length > 0);
+      return filteredGroups.filter((g) => g.participants.length > 0);
     }
     return filteredGroups;
   }, [filteredGroups, searchQuery]);
@@ -182,50 +174,16 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
     setOpenGroupId((current) => (current === groupId ? null : groupId));
   }
 
-  function toggleParticipant(participantId: string) {
-    const newSelected = new Set(selectedParticipants);
-    if (newSelected.has(participantId)) {
-      newSelected.delete(participantId);
-    } else {
-      newSelected.add(participantId);
-    }
-    setSelectedParticipants(newSelected);
-  }
-
-  function toggleAllInGroup(groupId: string, participants: ParticipantInGroup[]) {
-    const newSelected = new Set(selectedParticipants);
-    const allSelected = participants.every(p => newSelected.has(p.id));
-
-    if (allSelected) {
-      participants.forEach(p => newSelected.delete(p.id));
-    } else {
-      participants.forEach(p => newSelected.add(p.id));
-    }
-    setSelectedParticipants(newSelected);
-  }
-
-  async function copyToClipboard(text: string, field: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      toast.success('Skopiowano');
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch {
-      toast.error('Nie udało się skopiować');
-    }
-  }
-
   async function handleDeleteSelected() {
-    if (selectedParticipants.size === 0) return;
-
+    if (selectedIds.size === 0) return;
     setIsDeleting(true);
     try {
-      const result = await deleteParticipants(Array.from(selectedParticipants));
+      const result = await deleteParticipants(Array.from(selectedIds));
       if (result.error) {
         toast.error(result.error);
       } else {
         toast.success(`Usunięto ${result.deleted} uczestników`);
-        setSelectedParticipants(new Set());
+        setSelectedIds(new Set());
         window.location.reload();
       }
     } catch {
@@ -248,16 +206,9 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
     try {
       const result = await runImport();
       setImportResult(result);
-      if (result.imported > 0) {
-        toast.success(`Zaimportowano ${result.imported} z ${result.total} rekordów`);
-      }
-      if (result.errors > 0) {
-        toast.error(`${result.errors} rekordów z błędami`);
-      }
-      if (result.total === 0) {
-        toast.info('Brak rekordów do importu');
-      }
-      // Odśwież stronę po imporcie
+      if (result.imported > 0) toast.success(`Zaimportowano ${result.imported} z ${result.total} rekordów`);
+      if (result.errors > 0) toast.error(`${result.errors} rekordów z błędami`);
+      if (result.total === 0) toast.info('Brak rekordów do importu');
       setTimeout(() => window.location.reload(), 1500);
     } catch {
       toast.error('Wystąpił błąd podczas importu');
@@ -270,12 +221,8 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
     setIsImporting(true);
     try {
       const result = await fixContactData();
-      if (result.fixed > 0) {
-        toast.success(`Zaktualizowano dane kontaktowe ${result.fixed} rodziców`);
-      }
-      if (result.errors > 0) {
-        toast.error(`${result.errors} błędów przy aktualizacji`);
-      }
+      if (result.fixed > 0) toast.success(`Zaktualizowano dane kontaktowe ${result.fixed} rodziców`);
+      if (result.errors > 0) toast.error(`${result.errors} błędów przy aktualizacji`);
       setTimeout(() => window.location.reload(), 1500);
     } catch {
       toast.error('Wystąpił błąd');
@@ -306,7 +253,6 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
       toast.error('Podaj nazwę grupy');
       return;
     }
-
     setIsCreatingGroup(true);
     try {
       const result = await createGroup(newGroupName);
@@ -327,7 +273,6 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
 
   async function handleDeleteGroup() {
     if (!selectedGroup) return;
-
     setIsDeletingGroup(true);
     try {
       const result = await deleteGroup(selectedGroup.id);
@@ -351,7 +296,6 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
       toast.error('Podaj nową nazwę grupy');
       return;
     }
-
     setIsRenamingGroup(true);
     try {
       const result = await renameGroup(selectedGroup.id, newGroupName);
@@ -384,19 +328,35 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
     setShowDeleteGroupDialog(true);
   }
 
+  function copySelectedEmails() {
+    const emails = new Set<string>();
+    groups.forEach((group) => {
+      group.participants.forEach((p) => {
+        if (selectedIds.has(p.id)) {
+          if (p.parent.email) emails.add(p.parent.email);
+          if (p.parent.secondary_email) emails.add(p.parent.secondary_email);
+        }
+      });
+    });
+    const list = Array.from(emails).join(', ');
+    navigator.clipboard.writeText(list).then(() => {
+      toast.success(`Skopiowano ${emails.size} adresów email`);
+    });
+  }
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {/* Wyszukiwarka i akcje */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        {/* Pasek akcji */}
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 placeholder="Szukaj po nazwisku..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+                className="h-11 w-full rounded-xl border-0 bg-white pl-10 pr-10 text-base text-gray-700 ring-1 ring-gray-200 transition-all placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 md:text-sm"
               />
               {searchQuery && (
                 <button
@@ -411,10 +371,10 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
             <button
               onClick={handleOpenImport}
               className={cn(
-                'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors shrink-0',
+                'inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors',
                 importStats.oczekuje > 0
                   ? 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
-                  : 'text-gray-500 hover:bg-gray-100'
+                  : 'text-gray-500 hover:bg-gray-100',
               )}
             >
               <Upload className="h-4 w-4" />
@@ -423,50 +383,35 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
 
             <button
               onClick={() => setShowAddGroupDialog(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shrink-0"
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
               Dodaj grupę
             </button>
           </div>
 
-          {selectedParticipants.size > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-500 bg-white rounded-xl px-3 py-1.5 ring-1 ring-gray-100">
-                Zaznaczono: {selectedParticipants.size}
+          {selectedIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-xl bg-white px-3 py-1.5 text-sm text-gray-500 ring-1 ring-gray-100">
+                Zaznaczono: {selectedIds.size}
               </span>
               <button
-                onClick={() => {
-                  // Zbierz unikalne emaile zaznaczonych uczestników
-                  const emails = new Set<string>();
-                  groups.forEach(group => {
-                    group.participants.forEach(p => {
-                      if (selectedParticipants.has(p.id)) {
-                        if (p.parent.email) emails.add(p.parent.email);
-                        if (p.parent.secondary_email) emails.add(p.parent.secondary_email);
-                      }
-                    });
-                  });
-                  const emailList = Array.from(emails).join(', ');
-                  navigator.clipboard.writeText(emailList).then(() => {
-                    toast.success(`Skopiowano ${emails.size} adresów email`);
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
+                onClick={copySelectedEmails}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 <Copy className="h-4 w-4" />
                 Kopiuj emaile
               </button>
               <button
                 onClick={() => setShowDeleteDialog(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
               >
                 <Trash2 className="h-4 w-4" />
                 Usuń zaznaczone
               </button>
               <button
-                onClick={() => setSelectedParticipants(new Set())}
-                className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
+                onClick={() => setSelectedIds(new Set())}
+                className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-gray-600 ring-1 ring-gray-200 transition-colors hover:bg-gray-50"
               >
                 Odznacz wszystko
               </button>
@@ -474,13 +419,13 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           )}
         </div>
 
-        {/* Wyniki wyszukiwania */}
         {searchQuery && (
           <p className="text-sm text-gray-500">
             Znaleziono {groupsToShow.reduce((acc, g) => acc + g.participants.length, 0)} uczestników
           </p>
         )}
 
+        {/* Statystyki */}
         <div className="grid gap-3 md:grid-cols-4">
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-2xl font-bold text-slate-900">{groups.length}</p>
@@ -506,299 +451,131 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
         {groupsToShow.map((group) => {
           const colors = getGroupColor(group.name);
           const isOpen = openGroupId === group.id || (!!searchQuery && group.participants.length > 0);
+          const rows = group.participants.map((p) => toRow(group, p));
+          const selectedInGroup = group.participants.filter((p) => selectedIds.has(p.id)).length;
+
           return (
-          <Collapsible
-            key={group.id}
-            open={isOpen}
-            onOpenChange={() => toggleGroup(group.id)}
-          >
-            <div className={cn(
-              'overflow-hidden rounded-2xl border-2 bg-white transition-all duration-200',
-              isOpen
-                ? 'border-blue-600 shadow-lg shadow-blue-600/15'
-                : 'border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md'
-            )}>
-              <CollapsibleTrigger asChild>
-                <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
-                  <div className="flex items-center gap-3">
-                    {/* Kolorowa ikona grupy */}
-                    <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', colors.bg)}>
-                      <Users className={cn('h-4 w-4', colors.text)} />
+            <Collapsible key={group.id} open={isOpen} onOpenChange={() => toggleGroup(group.id)}>
+              <div
+                className={cn(
+                  'overflow-hidden rounded-2xl border-2 bg-white transition-all duration-200',
+                  isOpen
+                    ? 'border-blue-600 shadow-lg shadow-blue-600/15'
+                    : 'border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-md',
+                )}
+              >
+                <CollapsibleTrigger asChild>
+                  <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
+                    <div className="flex items-center gap-3">
+                      <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', colors.bg)}>
+                        <Users className={cn('h-4 w-4', colors.text)} />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900">{group.name}</h3>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                          <span className={cn('h-2 w-2 rounded-full', colors.dot)} />
+                          <span>Grupa</span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-slate-900">{group.name}</h3>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                        <span className={cn('h-2 w-2 rounded-full', colors.dot)} />
-                        <span>Aktywna grupa treningowa</span>
+
+                    <div className="grid gap-2 sm:grid-cols-2 lg:w-[260px]">
+                      <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Uczestnicy</p>
+                        <p className="mt-0.5 text-sm font-bold text-slate-900">
+                          {searchQuery && group.participants.length !== group.originalCount
+                            ? `${group.participants.length}/${group.originalCount}`
+                            : group.participantCount}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Zaznacz.</p>
+                        <p className="mt-0.5 text-sm font-bold text-slate-900">{selectedInGroup}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 lg:justify-end">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                            onClick={(e) => openRenameDialog(group, e)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="rounded-lg">Zmień nazwę</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                            onClick={(e) => openDeleteDialog(group, e)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="rounded-lg">Usuń grupę</TooltipContent>
+                      </Tooltip>
+                      <div
+                        className={cn(
+                          'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+                          isOpen ? 'bg-blue-600' : 'bg-gray-50',
+                        )}
+                      >
+                        {isOpen ? (
+                          <ChevronUp className="h-4 w-4 text-white" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                        )}
                       </div>
                     </div>
                   </div>
+                </CollapsibleTrigger>
 
-                  <div className="grid gap-2 sm:grid-cols-3 lg:w-[360px]">
-                    <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Uczestnicy</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-900">
-                        {searchQuery && group.participants.length !== group.originalCount
-                          ? `${group.participants.length}/${group.originalCount}`
-                          : group.participantCount}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Zaznacz.</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-900">
-                        {group.participants.filter((p) => selectedParticipants.has(p.id)).length}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Kontakt</p>
-                      <p className="mt-0.5 text-sm font-bold text-slate-900">Email</p>
-                    </div>
+                <CollapsibleContent>
+                  <div className="border-t border-gray-100 bg-slate-50/40 p-4">
+                    {rows.length === 0 ? (
+                      <div className="p-8 text-center text-sm text-gray-500">
+                        {searchQuery ? 'Brak pasujących uczestników' : 'Brak uczestników w tej grupie'}
+                      </div>
+                    ) : (
+                      <ParticipantsTable
+                        rows={rows}
+                        allGroups={flatGroups}
+                        selectedIds={selectedIds}
+                        onSelectionChange={setSelectedIds}
+                        hideGroupColumn
+                      />
+                    )}
                   </div>
-
-                  <div className="flex items-center gap-2 lg:justify-end">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                          onClick={(e) => openRenameDialog(group, e)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="rounded-lg">Zmień nazwę</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-                          onClick={(e) => openDeleteDialog(group, e)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="rounded-lg">Usuń grupę</TooltipContent>
-                    </Tooltip>
-                    <div className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                      isOpen ? 'bg-blue-600' : 'bg-gray-50'
-                    )}>
-                      {isOpen ? (
-                        <ChevronUp className="h-4 w-4 text-white" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleTrigger>
-
-              <CollapsibleContent>
-                <div className="border-t border-gray-100">
-                  {group.participants.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500 text-sm">
-                      {searchQuery ? 'Brak pasujących uczestników' : 'Brak uczestników w tej grupie'}
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm border-collapse">
-                        <colgroup>
-                          <col className="w-10" />   {/* checkbox */}
-                          <col />                    {/* nazwisko */}
-                          <col className="w-28" />   {/* data ur. */}
-                          <col className="w-24" />   {/* grupa */}
-                          <col />                    {/* email */}
-                          <col className="w-32" />   {/* telefon */}
-                          <col className="w-36" />   {/* notatka */}
-                          <col className="w-24" />   {/* akcje */}
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-gray-100">
-                            {/* Checkbox zaznacz wszystkich */}
-                            <th className="px-4 py-2 text-left bg-gray-50/50">
-                              <Checkbox
-                                checked={group.participants.every(p => selectedParticipants.has(p.id))}
-                                onCheckedChange={() => toggleAllInGroup(group.id, group.participants)}
-                              />
-                            </th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Nazwisko i imię</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Data ur.</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Grupa</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Email</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Telefon</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase tracking-wider bg-gray-50/30">Notatka</th>
-                            <th className="px-3 py-2 bg-gray-50/30"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {group.participants.map((participant) => {
-                            const birthDate = new Date(participant.birth_date);
-                            const emailId = `email-${group.id}-${participant.id}`;
-                            const phoneId = `phone-${group.id}-${participant.id}`;
-                            const isSelected = selectedParticipants.has(participant.id);
-
-                            return (
-                              <tr
-                                key={participant.id}
-                                className={cn(
-                                  'hover:bg-gray-50/50 transition-colors',
-                                  isSelected && 'bg-blue-50/50'
-                                )}
-                              >
-                                {/* Checkbox */}
-                                <td className="px-4 py-2.5">
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={() => toggleParticipant(participant.id)}
-                                  />
-                                </td>
-
-                                {/* Nazwisko i imię */}
-                                <td className="px-3 py-2.5">
-                                  <Link
-                                    href={`/admin/participants/${participant.id}`}
-                                    className="font-medium text-gray-900 text-sm hover:text-primary hover:underline"
-                                  >
-                                    {participant.last_name} {participant.first_name}
-                                  </Link>
-                                </td>
-
-                                {/* Data urodzenia */}
-                                <td className="px-3 py-2.5 text-sm text-gray-500 whitespace-nowrap">
-                                  {format(birthDate, 'dd.MM.yyyy')}
-                                </td>
-
-                                {/* Grupa */}
-                                <td className="px-3 py-2.5">
-                                  <span className={cn(
-                                    'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium border whitespace-nowrap',
-                                    colors.bg, colors.text, colors.border
-                                  )}>
-                                    {group.name}
-                                  </span>
-                                </td>
-
-                                {/* Email */}
-                                <td className="px-3 py-2.5 max-w-0">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => copyToClipboard(participant.parent.email, emailId)}
-                                        className="text-sm hover:text-primary cursor-pointer flex items-center gap-1 group w-full truncate"
-                                      >
-                                        <span className="truncate">{participant.parent.email}</span>
-                                        {copiedField === emailId ? (
-                                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                        ) : (
-                                          <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
-                                        )}
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Kliknij aby skopiować</TooltipContent>
-                                  </Tooltip>
-                                  {participant.parent.secondary_email && (
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {participant.parent.secondary_email}
-                                    </p>
-                                  )}
-                                </td>
-
-                                {/* Telefon */}
-                                <td className="px-3 py-2.5">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        onClick={() => copyToClipboard(participant.parent.phone, phoneId)}
-                                        className="text-sm hover:text-primary cursor-pointer flex items-center gap-1 group whitespace-nowrap"
-                                      >
-                                        {participant.parent.phone}
-                                        {copiedField === phoneId ? (
-                                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                        ) : (
-                                          <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 flex-shrink-0" />
-                                        )}
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Kliknij aby skopiować</TooltipContent>
-                                  </Tooltip>
-                                  {participant.parent.secondary_phone && (
-                                    <p className="text-xs text-muted-foreground whitespace-nowrap">
-                                      {participant.parent.secondary_phone}
-                                    </p>
-                                  )}
-                                </td>
-
-                                {/* Notatka */}
-                                <td className="px-3 py-2.5">
-                                  {participant.notes ? (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          onClick={() => openNoteDialog(participant)}
-                                          className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg ring-1 ring-amber-200 transition-colors max-w-[130px] group"
-                                        >
-                                          <StickyNote className="h-3 w-3 flex-shrink-0" />
-                                          <span className="truncate">{participant.notes}</span>
-                                          <PencilLine className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-60" />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-xs whitespace-pre-wrap">
-                                        {participant.notes}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : (
-                                    <button
-                                      onClick={() => openNoteDialog(participant)}
-                                      className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 rounded-lg hover:bg-gray-50"
-                                    >
-                                      <PencilLine className="h-3 w-3" />
-                                      Dodaj
-                                    </button>
-                                  )}
-                                </td>
-
-                                {/* Przycisk Szczegóły */}
-                                <td className="px-3 py-2.5">
-                                  <Link
-                                    href={`/admin/participants/${participant.id}`}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg ring-1 ring-gray-200 transition-colors whitespace-nowrap"
-                                  >
-                                    <Eye className="h-3.5 w-3.5" />
-                                    Szczegóły
-                                  </Link>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </CollapsibleContent>
-            </div>
-          </Collapsible>
-        );
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          );
         })}
 
         {/* Brak wyników */}
         {groupsToShow.length === 0 && searchQuery && (
-          <div className="text-center py-12">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 mx-auto mb-4">
+          <div className="py-12 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
               <Search className="h-7 w-7 text-gray-400" />
             </div>
-            <p className="text-gray-500 text-sm">Nie znaleziono uczestników pasujących do &quot;{searchQuery}&quot;</p>
+            <p className="text-sm text-gray-500">
+              Nie znaleziono uczestników pasujących do &quot;{searchQuery}&quot;
+            </p>
           </div>
         )}
       </div>
 
-      {/* Dialog potwierdzenia usunięcia */}
+      {/* Dialog masowego usuwania */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Usuń zaznaczonych uczestników</AlertDialogTitle>
             <AlertDialogDescription>
-              Czy na pewno chcesz usunąć {selectedParticipants.size} zaznaczonych uczestników?
-              Tej operacji nie można cofnąć.
+              Czy na pewno chcesz usunąć {selectedIds.size} zaznaczonych uczestników? Tej operacji nie
+              można cofnąć.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -819,9 +596,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Dodaj nową grupę</DialogTitle>
-            <DialogDescription>
-              Podaj nazwę nowej grupy treningowej.
-            </DialogDescription>
+            <DialogDescription>Podaj nazwę nowej grupy treningowej.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <Input
@@ -840,12 +615,12 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
             <Button onClick={handleCreateGroup} disabled={isCreatingGroup || !newGroupName.trim()}>
               {isCreatingGroup ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Tworzenie...
                 </>
               ) : (
                 <>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   Dodaj grupę
                 </>
               )}
@@ -862,8 +637,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
             <AlertDialogDescription>
               {selectedGroup?.participantCount === 0
                 ? 'Czy na pewno chcesz usunąć tę grupę? Tej operacji nie można cofnąć.'
-                : `Ta grupa ma ${selectedGroup?.participantCount} uczestników. Usunięcie grupy spowoduje usunięcie przypisań uczestników i wyjazdów do tej grupy. Tej operacji nie można cofnąć.`
-              }
+                : `Ta grupa ma ${selectedGroup?.participantCount} uczestników. Usunięcie grupy spowoduje usunięcie przypisań uczestników i wyjazdów do tej grupy. Tej operacji nie można cofnąć.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -905,7 +679,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
             <Button onClick={handleRenameGroup} disabled={isRenamingGroup || !newGroupName.trim()}>
               {isRenamingGroup ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Zapisywanie...
                 </>
               ) : (
@@ -918,67 +692,75 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
 
       {/* Dialog importu */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Import bazy klientów</DialogTitle>
             <DialogDescription>
-              Zaimportuj dane z tabeli import_buffer. Zostaną utworzone konta rodziców, uczestnicy i grupy.
+              Zaimportuj dane z tabeli import_buffer. Zostaną utworzone konta rodziców, uczestnicy i
+              grupy.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Statystyki */}
-          <div className="grid gap-3 grid-cols-4">
+          <div className="grid grid-cols-4 gap-3">
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold">{importStats.total}</p>
               <p className="text-xs text-muted-foreground">Łącznie</p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold text-yellow-600">{importStats.oczekuje}</p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+              <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" /> Oczekujące
               </p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold text-green-600">{importStats.zaimportowano}</p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+              <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3 w-3" /> Zaimportowane
               </p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold text-red-600">{importStats.blad}</p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+              <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <XCircle className="h-3 w-3" /> Błędy
               </p>
             </div>
           </div>
 
-          {/* Wynik importu */}
           {importResult && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-2">
-              <p className="font-medium text-sm">Wynik importu</p>
-              <div className="grid gap-2 grid-cols-2 md:grid-cols-4 text-sm">
-                <div>Przetworzono: <strong>{importResult.total}</strong></div>
-                <div className="text-green-700">OK: <strong>{importResult.imported}</strong></div>
-                <div className="text-red-700">Błędy: <strong>{importResult.errors}</strong></div>
-                <div>Nowi rodzice: <strong>{importResult.newParents}</strong></div>
+            <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-medium">Wynik importu</p>
+              <div className="grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+                <div>
+                  Przetworzono: <strong>{importResult.total}</strong>
+                </div>
+                <div className="text-green-700">
+                  OK: <strong>{importResult.imported}</strong>
+                </div>
+                <div className="text-red-700">
+                  Błędy: <strong>{importResult.errors}</strong>
+                </div>
+                <div>
+                  Nowi rodzice: <strong>{importResult.newParents}</strong>
+                </div>
               </div>
-              {importResult.details.filter(d => d.status === 'error').length > 0 && (
+              {importResult.details.filter((d) => d.status === 'error').length > 0 && (
                 <div className="mt-2 space-y-1">
-                  {importResult.details.filter(d => d.status === 'error').map((d) => (
-                    <p key={d.id} className="text-xs text-red-600">
-                      #{d.id} {d.name}: {d.error}
-                    </p>
-                  ))}
+                  {importResult.details
+                    .filter((d) => d.status === 'error')
+                    .map((d) => (
+                      <p key={d.id} className="text-xs text-red-600">
+                        #{d.id} {d.name}: {d.error}
+                      </p>
+                    ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* Podgląd danych */}
           {importData.length > 0 && (
-            <div className="rounded-md border max-h-[300px] overflow-y-auto">
+            <div className="max-h-[300px] overflow-y-auto rounded-md border">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50 sticky top-0">
+                <thead className="sticky top-0 bg-muted/50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium">#</th>
                     <th className="px-3 py-2 text-left font-medium">Nazwisko</th>
@@ -991,33 +773,41 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                 </thead>
                 <tbody className="divide-y">
                   {importData.map((row) => (
-                    <tr key={row.id} className={
-                      row.status_importu === 'zaimportowano' ? 'bg-green-50' :
-                      row.status_importu === 'blad' ? 'bg-red-50' : ''
-                    }>
+                    <tr
+                      key={row.id}
+                      className={
+                        row.status_importu === 'zaimportowano'
+                          ? 'bg-green-50'
+                          : row.status_importu === 'blad'
+                            ? 'bg-red-50'
+                            : ''
+                      }
+                    >
                       <td className="px-3 py-1.5 text-muted-foreground">{row.id}</td>
                       <td className="px-3 py-1.5 font-medium">{row.nazwisko_dziecka}</td>
                       <td className="px-3 py-1.5">{row.imie_dziecka}</td>
                       <td className="px-3 py-1.5">{row.data_urodzenia}</td>
                       <td className="px-3 py-1.5 text-xs">{row.mail_1}</td>
                       <td className="px-3 py-1.5">
-                        <Badge variant="outline" className="text-xs">{row.sekcja}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {row.sekcja}
+                        </Badge>
                       </td>
                       <td className="px-3 py-1.5">
                         {row.status_importu === 'oczekuje' && (
-                          <Badge variant="secondary" className="text-xs gap-1">
+                          <Badge variant="secondary" className="gap-1 text-xs">
                             <Clock className="h-3 w-3" /> Czeka
                           </Badge>
                         )}
                         {row.status_importu === 'zaimportowano' && (
-                          <Badge className="bg-green-100 text-green-800 text-xs gap-1">
+                          <Badge className="gap-1 bg-green-100 text-xs text-green-800">
                             <CheckCircle2 className="h-3 w-3" /> OK
                           </Badge>
                         )}
                         {row.status_importu === 'blad' && (
                           <Tooltip>
                             <TooltipTrigger>
-                              <Badge variant="destructive" className="text-xs gap-1">
+                              <Badge variant="destructive" className="gap-1 text-xs">
                                 <XCircle className="h-3 w-3" /> Błąd
                               </Badge>
                             </TooltipTrigger>
@@ -1032,7 +822,6 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
             </div>
           )}
 
-          {/* Przyciski */}
           <div className="flex items-center justify-between pt-2">
             <div className="flex gap-2">
               {importStats.blad > 0 && (
@@ -1060,49 +849,11 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                 </Button>
               )}
             </div>
-            <Button
-              onClick={handleImport}
-              disabled={isImporting || importStats.oczekuje === 0}
-              className="gap-2"
-            >
+            <Button onClick={handleImport} disabled={isImporting || importStats.oczekuje === 0} className="gap-2">
               <Upload className="h-4 w-4" />
               {isImporting ? 'Importowanie...' : `Importuj (${importStats.oczekuje})`}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog edycji notatki */}
-      <Dialog
-        open={noteDialog?.isOpen ?? false}
-        onOpenChange={(open) => { if (!open) setNoteDialog(null); }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <StickyNote className="h-4 w-4" />
-              Notatka — {noteDialog?.participantName}
-            </DialogTitle>
-            <DialogDescription>
-              Notatka widoczna tylko dla adminów.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Wpisz notatkę..."
-            rows={5}
-            className="resize-none"
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNoteDialog(null)} disabled={isSavingNote}>
-              Anuluj
-            </Button>
-            <Button onClick={handleSaveNote} disabled={isSavingNote}>
-              {isSavingNote && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Zapisz
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </TooltipProvider>

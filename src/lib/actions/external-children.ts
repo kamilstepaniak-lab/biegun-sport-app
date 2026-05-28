@@ -102,13 +102,22 @@ export async function createExternalChild(formData: ExternalChildInput) {
     return { error: 'Nie udało się dodać dziecka' };
   }
 
-  // Przypisz do grupy jeśli wybrana (dla dzieci "z zewnątrz" zwykle brak grupy)
-  if (data.group_id) {
+  // Przypisz do grupy — gdy nie wybrano, domyślnie "Bez kategorii"
+  let targetGroupId = data.group_id;
+  if (!targetGroupId) {
+    const { data: defaultGroup } = await admin
+      .from('groups')
+      .select('id')
+      .eq('name', 'Bez kategorii')
+      .maybeSingle();
+    targetGroupId = defaultGroup?.id ?? null;
+  }
+  if (targetGroupId) {
     const { error: groupError } = await admin
       .from('participant_groups')
       .insert({
         participant_id: participant.id,
-        group_id: data.group_id,
+        group_id: targetGroupId,
         assigned_by: user.id,
       });
     if (groupError) console.error('Group assign error:', groupError);

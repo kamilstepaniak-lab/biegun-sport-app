@@ -554,3 +554,32 @@ export async function updateParticipantNote(participantId: string, notes: string
 }
 
 // deleteParticipants jest zdefiniowana w groups.ts (lepsza wersja z kontrolą rejestracji)
+
+export async function bulkUpdateParticipantGroup(participantIds: string[], groupId: string) {
+  const { supabase, user, role } = await getAuthUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
+  if (participantIds.length === 0) return { error: 'Brak zaznaczonych uczestników' };
+
+  await supabase
+    .from('participant_groups')
+    .delete()
+    .in('participant_id', participantIds);
+
+  const rows = participantIds.map((pid) => ({
+    participant_id: pid,
+    group_id: groupId,
+    assigned_by: user.id,
+  }));
+
+  const { error } = await supabase.from('participant_groups').insert(rows);
+
+  if (error) {
+    console.error('Bulk group assignment error:', error);
+    return { error: 'Nie udało się zmienić grupy' };
+  }
+
+  revalidatePath('/admin/participants');
+  revalidatePath('/admin/groups');
+  return { success: true, updated: participantIds.length };
+}

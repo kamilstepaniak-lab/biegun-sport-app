@@ -39,6 +39,23 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-28 (Uczestnicy / Grupy — CRM)
+
+- Nowy komponent `src/components/admin/participants-table.tsx` — wspólna tabela
+  CRM (sekcje literowe, checkboxy, inline zmiana grupy przez dropdown, edycja
+  notatki, kopiowanie email/telefon). Używana w `/admin/participants` i w
+  rozwinięciu grupy w `/admin/groups` (prop `hideGroupColumn`).
+- Migracja `default-uncategorized-group.sql` — tworzy grupę „Bez kategorii"
+  (display_order 9999, `is_selectable_by_parent=false`) i backfilluje wszystkich
+  uczestników bez przypisania. Nowe dzieci dodawane przez „Dodaj dziecko
+  z zewnątrz" bez wybranej grupy domyślnie trafiają do „Bez kategorii"
+  (`createExternalChild`).
+- `bulkUpdateParticipantGroup` w `lib/actions/participants.ts` — masowa zmiana
+  grupy. `participants-list.tsx`: pasek akcji masowych (zmień grupę, eksport CSV,
+  usuń, wyczyść zaznaczenie).
+- `groups-list.tsx` — redukcja z ~1110 do ~700 linii dzięki wyniesieniu tabeli
+  do wspólnego komponentu, ujednolicony wygląd listy dzieci między widokami.
+
 ### 2026-05-19 (Płatności — dialog wpłaty i etykiety)
 
 - Dialog „Zarejestruj wpłatę": dodana lista wcześniejszych wpłat

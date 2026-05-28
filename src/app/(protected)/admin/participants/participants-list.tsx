@@ -1,81 +1,209 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { format } from 'date-fns';
-import { Calendar, ChevronRight, Mail, Phone, Search, X, Eye, Plus, Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Download,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+  Users as UsersIcon,
+  X,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-import { getGroupColor } from '@/lib/group-colors';
-import { cn } from '@/lib/utils';
-import type { ParticipantFull, Group } from '@/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  ParticipantsTable,
+  type ParticipantRow,
+} from '@/components/admin/participants-table';
 import { AddExternalChildDialog } from './add-external-child-dialog';
+import { deleteParticipants } from '@/lib/actions/groups';
+import { bulkUpdateParticipantGroup } from '@/lib/actions/participants';
+import type { ParticipantFull, Group } from '@/types';
 
 interface ParticipantsListProps {
   participants: ParticipantFull[];
   groups: Group[];
 }
 
-const NO_GROUP = '__none__';
+const ALL = 'all';
+
+function toRow(p: ParticipantFull): ParticipantRow {
+  return {
+    id: p.id,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    birth_date: p.birth_date,
+    notes: p.notes ?? null,
+    group: p.group ? { id: p.group.id, name: p.group.name } : null,
+    parent: {
+      email: p.parent?.email ?? '',
+      phone: p.parent?.phone ?? '',
+      secondary_email: p.parent?.secondary_email ?? null,
+      secondary_phone: p.parent?.secondary_phone ?? null,
+    },
+  };
+}
 
 export function ParticipantsList({ participants, groups }: ParticipantsListProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [groupFilter, setGroupFilter] = useState<string>(ALL);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const filtered = useMemo(() => {
-    let list = [...participants];
+  const [showBulkGroupDialog, setShowBulkGroupDialog] = useState(false);
+  const [bulkGroupId, setBulkGroupId] = useState<string>('');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
-    if (groupFilter !== 'all') {
-      list = list.filter((p) => {
-        if (groupFilter === NO_GROUP) return !p.group;
-        return p.group?.id === groupFilter;
-      });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const rows = useMemo(() => {
+    let list = participants;
+
+    if (groupFilter !== ALL) {
+      list = list.filter((p) => p.group?.id === groupFilter);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter((p) => {
         const fullName = `${p.last_name} ${p.first_name}`.toLowerCase();
-        const fullNameReversed = `${p.first_name} ${p.last_name}`.toLowerCase();
+        const reverse = `${p.first_name} ${p.last_name}`.toLowerCase();
         const parentName = `${p.parent?.last_name ?? ''} ${p.parent?.first_name ?? ''}`.toLowerCase();
         const email = (p.parent?.email ?? '').toLowerCase();
         return (
           fullName.includes(q) ||
-          fullNameReversed.includes(q) ||
+          reverse.includes(q) ||
           parentName.includes(q) ||
           email.includes(q)
         );
       });
     }
 
-    list.sort((a, b) => a.last_name.localeCompare(b.last_name, 'pl'));
-    return list;
+    return list.map(toRow);
   }, [participants, searchQuery, groupFilter]);
 
-  const groupedParticipants = useMemo(() => {
-    const groupsByLetter = new Map<string, ParticipantFull[]>();
-    filtered.forEach((participant) => {
-      const letter = participant.last_name.charAt(0).toUpperCase();
-      const bucket = groupsByLetter.get(letter) ?? [];
-      bucket.push(participant);
-      groupsByLetter.set(letter, bucket);
-    });
-    return Array.from(groupsByLetter.entries()).sort(([a], [b]) => a.localeCompare(b, 'pl'));
-  }, [filtered]);
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  async function handleBulkGroupChange() {
+    if (!bulkGroupId || selectedIds.size === 0) return;
+    setIsBulkUpdating(true);
+    try {
+      const result = await bulkUpdateParticipantGroup(Array.from(selectedIds), bulkGroupId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(`Zmieniono grupę u ${result.updated} uczestników`);
+        setShowBulkGroupDialog(false);
+        setBulkGroupId('');
+        clearSelection();
+        router.refresh();
+      }
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return;
+    setIsDeleting(true);
+    try {
+      const result = await deleteParticipants(Array.from(selectedIds));
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(`Usunięto ${result.deleted} uczestników`);
+        clearSelection();
+        setShowDeleteDialog(false);
+        router.refresh();
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  function exportCsv() {
+    const ids = selectedIds.size > 0 ? selectedIds : new Set(rows.map((r) => r.id));
+    const exportRows = rows.filter((r) => ids.has(r.id));
+    if (exportRows.length === 0) {
+      toast.info('Brak danych do eksportu');
+      return;
+    }
+
+    const headers = ['Nazwisko', 'Imię', 'Data urodzenia', 'Grupa', 'Email', 'Telefon', 'Notatka'];
+    const escape = (v: string) => {
+      const safe = v.replace(/"/g, '""');
+      return /[",;\n]/.test(safe) ? `"${safe}"` : safe;
+    };
+    const lines = [headers.join(';')];
+    for (const r of exportRows) {
+      lines.push(
+        [
+          r.last_name,
+          r.first_name,
+          r.birth_date,
+          r.group?.name ?? 'Bez kategorii',
+          r.parent.email,
+          r.parent.phone,
+          r.notes ?? '',
+        ]
+          .map(escape)
+          .join(';'),
+      );
+    }
+
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `uczestnicy-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="space-y-4">
-      {/* Pasek akcji */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-          {/* Wyszukiwarka */}
+      {/* Pasek filtrów */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:w-auto">
           <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               placeholder="Szukaj po nazwisku, imieniu, rodzicu lub emailu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-10 pr-10 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+              className="h-11 w-full rounded-xl border-0 bg-white pl-10 pr-10 text-base text-gray-700 ring-1 ring-gray-200 transition-all placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 md:text-sm"
             />
             {searchQuery && (
               <button
@@ -87,14 +215,12 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
             )}
           </div>
 
-          {/* Filtr po grupie */}
           <select
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
-            className="h-11 px-3 rounded-xl bg-white ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+            className="h-11 rounded-xl border-0 bg-white px-3 text-base text-gray-700 ring-1 ring-gray-200 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300 md:text-sm"
           >
-            <option value="all">Wszystkie grupy</option>
-            <option value={NO_GROUP}>Bez grupy (z zewnątrz)</option>
+            <option value={ALL}>Wszystkie grupy</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
@@ -105,138 +231,139 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
 
         <button
           onClick={() => setShowAddDialog(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shrink-0"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
           Dodaj dziecko z zewnątrz
         </button>
       </div>
 
-      {/* Licznik */}
-      <p className="text-sm text-gray-500">
-        {filtered.length === participants.length
-          ? `${participants.length} ${pluralize(participants.length, 'uczestnik', 'uczestników', 'uczestników')}`
-          : `Znaleziono ${filtered.length} z ${participants.length}`}
-      </p>
+      {/* Licznik + pasek akcji masowych */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-gray-500">
+          {rows.length === participants.length
+            ? `${participants.length} ${pluralize(participants.length, 'uczestnik', 'uczestników', 'uczestników')}`
+            : `Znaleziono ${rows.length} z ${participants.length}`}
+        </p>
 
-      {/* Lista */}
-      {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl ring-1 ring-gray-100 p-12 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 mx-auto mb-4">
-            <Users className="h-7 w-7 text-gray-400" />
+        {selectedIds.size > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 ring-1 ring-blue-200">
+            <span className="text-sm font-medium text-blue-900">
+              Zaznaczono: {selectedIds.size}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowBulkGroupDialog(true)}
+              className="h-8 gap-1.5"
+            >
+              <UsersIcon className="h-3.5 w-3.5" />
+              Zmień grupę
+            </Button>
+            <Button size="sm" variant="outline" onClick={exportCsv} className="h-8 gap-1.5">
+              <Download className="h-3.5 w-3.5" />
+              Eksport CSV
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDeleteDialog(true)}
+              className="h-8 gap-1.5 text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Usuń
+            </Button>
+            <Button size="sm" variant="ghost" onClick={clearSelection} className="h-8">
+              Wyczyść
+            </Button>
           </div>
-          <p className="text-gray-500 text-sm">
-            {searchQuery || groupFilter !== 'all'
-              ? 'Brak uczestników pasujących do filtrów'
-              : 'Brak uczestników w systemie'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {groupedParticipants.map(([letter, letterParticipants]) => (
-            <div key={letter} className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white shadow-sm">
-                  {letter}
-                </div>
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
-                  {letterParticipants.length}
-                </span>
-              </div>
+        )}
+      </div>
 
-              <div className="grid gap-3">
-                {letterParticipants.map((p) => {
-                  const colors = p.group ? getGroupColor(p.group.name) : null;
-                  return (
-                    <div
-                      key={p.id}
-                      className="group overflow-hidden rounded-2xl border-2 border-slate-200 bg-white shadow-sm transition-all hover:border-blue-300 hover:shadow-lg"
-                    >
-                      <div className="grid gap-4 p-4 lg:grid-cols-[1.25fr_1fr_auto] lg:items-center">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-600">
-                            {p.first_name.charAt(0)}
-                            {p.last_name.charAt(0)}
-                          </div>
-                          <div className="min-w-0">
-                            <Link
-                              href={`/admin/participants/${p.id}`}
-                              className="text-base font-semibold text-slate-900 hover:text-blue-600"
-                            >
-                              {p.last_name} {p.first_name}
-                            </Link>
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                              <span className="inline-flex items-center gap-1">
-                                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                {format(new Date(p.birth_date), 'dd.MM.yyyy')}
-                              </span>
-                              {p.group && colors ? (
-                                <span
-                                  className={cn(
-                                    'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold',
-                                    colors.bg,
-                                    colors.text,
-                                    colors.border
-                                  )}
-                                >
-                                  <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
-                                  {p.group.name}
-                                </span>
-                              ) : (
-                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-400">
-                                  Bez grupy
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="grid min-w-0 gap-2 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                          <div className="flex min-w-0 items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                            <Mail className="h-4 w-4 shrink-0 text-slate-400" />
-                            <span className="truncate">{p.parent?.email ?? '—'}</span>
-                          </div>
-                          <div className="flex min-w-0 items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
-                            <Phone className="h-4 w-4 shrink-0 text-slate-400" />
-                            <span className="truncate">{p.parent?.phone ?? '—'}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3 lg:justify-end">
-                          <div className="max-w-[280px] truncate text-xs text-slate-500">
-                            {p.notes?.trim() ? (
-                              <span className="rounded-full bg-amber-50 px-3 py-1 font-medium text-amber-700 ring-1 ring-amber-200">
-                                {p.notes}
-                              </span>
-                            ) : (
-                              <span className="text-slate-300">Brak notatki</span>
-                            )}
-                          </div>
-                        <Link
-                          href={`/admin/participants/${p.id}`}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-blue-50 hover:text-blue-700 hover:ring-blue-200"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Szczegóły
-                            <ChevronRight className="h-3.5 w-3.5" />
-                        </Link>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <ParticipantsTable
+        rows={rows}
+        allGroups={groups}
+        selectedIds={selectedIds}
+        onSelectionChange={setSelectedIds}
+        emptyMessage={
+          searchQuery || groupFilter !== ALL
+            ? 'Brak uczestników pasujących do filtrów'
+            : 'Brak uczestników w systemie'
+        }
+      />
 
       <AddExternalChildDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         groups={groups}
       />
+
+      {/* Dialog masowej zmiany grupy */}
+      <Dialog open={showBulkGroupDialog} onOpenChange={setShowBulkGroupDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zmień grupę zaznaczonych</DialogTitle>
+            <DialogDescription>
+              Wybierz grupę dla {selectedIds.size}{' '}
+              {pluralize(selectedIds.size, 'uczestnika', 'uczestników', 'uczestników')}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Select value={bulkGroupId} onValueChange={setBulkGroupId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Wybierz grupę" />
+              </SelectTrigger>
+              <SelectContent>
+                {groups.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    {g.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkGroupDialog(false)}
+              disabled={isBulkUpdating}
+            >
+              Anuluj
+            </Button>
+            <Button
+              onClick={handleBulkGroupChange}
+              disabled={!bulkGroupId || isBulkUpdating}
+            >
+              {isBulkUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Zmień grupę
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog masowego usuwania */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Usuń zaznaczonych uczestników</AlertDialogTitle>
+            <AlertDialogDescription>
+              Czy na pewno usunąć {selectedIds.size}{' '}
+              {pluralize(selectedIds.size, 'uczestnika', 'uczestników', 'uczestników')}? Tej
+              operacji nie można cofnąć.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Anuluj</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Usuwanie...' : 'Usuń'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
