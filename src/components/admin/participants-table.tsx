@@ -216,7 +216,7 @@ export function ParticipantsTable({
 
               <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-sm">
+                  <table className="w-full table-fixed border-collapse text-sm">
                     <colgroup>
                       <col className="w-10" />
                       <col />
