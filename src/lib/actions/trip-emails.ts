@@ -3,11 +3,11 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import {
-  sendTripEmail,
   buildTripDetailsHtml,
   type TripEmailData,
   type PaymentLineItem,
 } from '@/lib/email';
+import { enqueueSystemEmails, type EnqueueSystemEmailInput } from '@/lib/email-queue';
 import { logActivity } from './activity-logs';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -128,6 +128,7 @@ export async function sendTripInfoEmailToGroup(
 ): Promise<{
   success?: boolean;
   sent?: number;
+  queued?: number;
   skipped?: number;
   error?: string;
 }> {
@@ -226,6 +227,7 @@ export async function sendTripInfoEmailToGroup(
 
   let sent = 0;
   let skipped = 0;
+  const queueItems: EnqueueSystemEmailInput[] = [];
 
   const subject = customSubject || `${trip.title} – informacja o wyjeździe`;
   // Link do listy wyjazdów rodzica w aplikacji
@@ -234,8 +236,16 @@ export async function sendTripInfoEmailToGroup(
   for (const recipient of toSend) {
     try {
       if (customBodyHtml) {
-        // Tryb: wyślij edytowany HTML admina
-        await sendTripEmail(recipient.parentEmail, subject, customBodyHtml, tripId);
+        queueItems.push({
+          templateId: 'trip_info',
+          sourceType: 'trip_info',
+          sourceId: tripId,
+          tripId,
+          toEmail: recipient.parentEmail,
+          recipientName: recipient.parentFirstName || recipient.parentEmail,
+          subject,
+          bodyHtml: customBodyHtml,
+        });
       } else {
         // Tryb: generuj HTML per-odbiorca (z filtrowaniem płatności wg rocznika)
         const emailPaymentLines: PaymentLineItem[] = (paymentTemplates || [])
@@ -259,7 +269,16 @@ export async function sendTripInfoEmailToGroup(
         const tripDetailsHtml = buildTripDetailsHtml(trip as TripEmailData, emailPaymentLines, tripsAppUrl);
         const autoBodyHtml = `<p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 16px;">Informacja o wyjeździe 🏔️</p><p style="font-size:14px;color:#374151;margin:0 0 10px;">Drogi/a ${recipient.parentFirstName || 'Rodzicu'},</p><p style="font-size:14px;color:#374151;margin:0 0 16px;">Przekazujemy informacje o planowanym wyjeździe <strong>${trip.title}</strong> dla <strong>${recipient.childName}</strong>.</p>${tripDetailsHtml}`;
 
-        await sendTripEmail(recipient.parentEmail, subject, autoBodyHtml, tripId);
+        queueItems.push({
+          templateId: 'trip_info',
+          sourceType: 'trip_info',
+          sourceId: tripId,
+          tripId,
+          toEmail: recipient.parentEmail,
+          recipientName: recipient.parentFirstName || recipient.parentEmail,
+          subject,
+          bodyHtml: autoBodyHtml,
+        });
       }
       sent++;
     } catch (err) {
@@ -268,14 +287,22 @@ export async function sendTripInfoEmailToGroup(
     }
   }
 
+  try {
+    await enqueueSystemEmails(queueItems);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: `Nie udało się dodać wiadomości do kolejki: ${msg}` };
+  }
+
   // Activity log
   logActivity(user.id, user.email ?? undefined, 'trip_email_sent', {
     tripId,
     tripTitle: trip.title,
     subject,
-    sent,
+    sent: 0,
+    queued: queueItems.length,
     skipped,
   }).catch(console.error);
 
-  return { success: true, sent, skipped };
+  return { success: true, sent: 0, queued: queueItems.length, skipped };
 }

@@ -122,6 +122,7 @@ export interface Trip {
   status: TripStatus;
   attendance_type: AttendanceType;
   category: TripCategory;
+  registration_form_enabled: boolean;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -317,6 +318,7 @@ export interface CreateTripInput {
   status: TripStatus;
   attendance_type?: AttendanceType;
   category?: TripCategory;
+  registration_form_enabled?: boolean;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
   allow_own_transport?: boolean;

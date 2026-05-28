@@ -175,6 +175,7 @@ export async function createTrip(input: CreateTripInput) {
     status,
     attendance_type,
     category,
+    registration_form_enabled,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -213,6 +214,7 @@ export async function createTrip(input: CreateTripInput) {
       status,
       attendance_type: attendance_type ?? 'optional',
       category: category ?? 'winter_camp',
+      registration_form_enabled: registration_form_enabled ?? false,
       created_by: user.id,
     })
     .select()
@@ -552,6 +554,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
     status,
     attendance_type,
     category,
+    registration_form_enabled,
     allow_own_transport,
     group_ids,
     payment_templates,
@@ -581,6 +584,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (status !== undefined) updateData.status = status;
   if (attendance_type !== undefined) updateData.attendance_type = attendance_type;
   if (category !== undefined) updateData.category = category;
+  if (registration_form_enabled !== undefined) updateData.registration_form_enabled = registration_form_enabled;
   if (allow_own_transport !== undefined) updateData.allow_own_transport = allow_own_transport;
   if (packing_list !== undefined) updateData.packing_list = packing_list || null;
   if (additional_info !== undefined) updateData.additional_info = additional_info || null;

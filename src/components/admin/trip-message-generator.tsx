@@ -173,7 +173,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
         toast.error(result.error);
       } else {
         toast.success(
-          `Wysłano ${result.sent} e-mail${result.sent === 1 ? '' : 'e'} do rodziców${result.skipped ? ` (błędy: ${result.skipped})` : ''}`,
+          `Dodano ${result.queued ?? result.sent ?? 0} e-maili do kolejki${result.skipped ? ` (pominięto: ${result.skipped})` : ''}`,
           { duration: 6000 }
         );
       }

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Activity, Mail, ChevronDown, ChevronRight, UserPlus, ShieldCheck, Landmark, FileText } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
-import { getActivityLogs, getEmailLogs } from '@/lib/actions/activity-logs';
+import { getActivityLogs, getEmailLogs, getSystemEmailQueueLogs } from '@/lib/actions/activity-logs';
 import { getBankAccounts } from '@/lib/actions/settings';
 import { ParentAccountsManager } from './parent-accounts-manager';
 import { SyncJwtRolesButton } from './sync-jwt-roles';
@@ -11,9 +11,10 @@ import { ActivityLogsPanel } from './activity-logs-panel';
 import { EmailLogsPanel } from './email-logs-panel';
 
 export default async function SettingsPage() {
-  const [activityLogs, emailLogs, bankAccounts] = await Promise.all([
+  const [activityLogs, emailLogs, queueLogs, bankAccounts] = await Promise.all([
     getActivityLogs(30),
     getEmailLogs(30),
+    getSystemEmailQueueLogs(30),
     getBankAccounts(),
   ]);
 
@@ -126,13 +127,13 @@ export default async function SettingsPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900 text-sm">Logi e-maili</p>
-              <p className="text-xs text-gray-500">Wysłane wiadomości z ostatnich 30 dni · {emailLogs.length} maili</p>
+              <p className="text-xs text-gray-500">Wysłane i kolejkowane wiadomości z ostatnich 30 dni · {emailLogs.length} wysłanych</p>
             </div>
           </div>
           <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-open:rotate-180 flex-shrink-0" />
         </summary>
         <div className="border-t border-gray-100">
-          <EmailLogsPanel logs={emailLogs} />
+          <EmailLogsPanel logs={emailLogs} queueLogs={queueLogs} />
         </div>
       </details>
     </div>

@@ -127,7 +127,7 @@ async function sendEmail(
   }
   try {
     const from = `BiegunSport <${process.env.EMAIL_FROM}>`;
-    await getTransporter().sendMail({
+    const info = await getTransporter().sendMail({
       from,
       to,
       subject: prefixedSubject,
@@ -145,10 +145,24 @@ async function sendEmail(
     } catch (logErr) {
       console.error('Email log insert error:', logErr);
     }
+    return { messageId: info.messageId };
   } catch (err) {
     console.error('Email send error:', err);
     throw err;
   }
+}
+
+export async function sendQueuedSystemEmail(
+  to: string,
+  subject: string,
+  bodyHtml: string,
+  meta?: { templateId?: string; tripId?: string },
+) {
+  if (!process.env.EMAIL_FROM || !process.env.EMAIL_APP_PASSWORD) {
+    throw new Error('EMAIL_NOT_CONFIGURED');
+  }
+
+  return sendEmail(to, subject, bodyHtml, meta);
 }
 
 // ─── Typy dla maila z danymi wyjazdu ─────────────────────────────────────────

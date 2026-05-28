@@ -11,12 +11,36 @@ type EmailLog = {
   template_id: string | null;
 };
 
+type QueueLog = {
+  id: string;
+  created_at: string;
+  scheduled_at: string;
+  sent_at: string | null;
+  to_email: string;
+  recipient_name: string | null;
+  subject: string;
+  template_id: string | null;
+  source_type: string;
+  status: string;
+  attempt_count: number;
+  last_error: string | null;
+};
+
 const TEMPLATE_LABELS: Record<string, string> = {
   welcome:           'Witamy',
   registration:      'Potwierdzenie zapisu',
   payment_confirmed: 'Płatność przyjęta',
   payment_reminder:  'Przypomnienie o płatności',
   trip_info:         'Informacja o wyjeździe',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'W kolejce',
+  sending: 'Wysyłanie',
+  sent: 'Wysłano',
+  failed: 'Błąd',
+  bounced: 'Zwrotka',
+  cancelled: 'Anulowano',
 };
 
 function formatDateTime(iso: string) {
@@ -57,7 +81,7 @@ function downloadCsv(rows: EmailLog[]) {
   URL.revokeObjectURL(url);
 }
 
-export function EmailLogsPanel({ logs }: { logs: EmailLog[] }) {
+export function EmailLogsPanel({ logs, queueLogs = [] }: { logs: EmailLog[]; queueLogs?: QueueLog[] }) {
   const [search, setSearch] = useState('');
   const [templateFilter, setTemplateFilter] = useState<string>('');
   const [dateFrom, setDateFrom] = useState('');
@@ -85,7 +109,7 @@ export function EmailLogsPanel({ logs }: { logs: EmailLog[] }) {
     });
   }, [logs, search, templateFilter, dateFrom, dateTo]);
 
-  if (logs.length === 0) {
+  if (logs.length === 0 && queueLogs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 text-gray-400 space-y-2">
         <Mail className="h-8 w-8" />
@@ -96,6 +120,50 @@ export function EmailLogsPanel({ logs }: { logs: EmailLog[] }) {
 
   return (
     <>
+      {queueLogs.length > 0 && (
+        <div className="border-b border-gray-100">
+          <div className="px-4 py-3 bg-blue-50/50">
+            <p className="text-xs font-semibold text-blue-900">Kolejka systemowych e-maili</p>
+            <p className="text-xs text-blue-700">Status techniczny: do kogo system ma wysłać, co już przyjął Gmail i gdzie są błędy.</p>
+          </div>
+          <div className="max-h-72 overflow-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-gray-50 text-left">
+                <tr>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Utworzono</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Do</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Temat</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Szablon</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Status</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Próby</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500 text-xs">Błąd</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {queueLogs.map((entry) => (
+                  <tr key={entry.id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap font-mono">{formatDateTime(entry.created_at)}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="text-sm font-medium text-gray-700">{entry.recipient_name ?? entry.to_email}</div>
+                      <div className="text-xs text-gray-400">{entry.to_email}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-sm text-gray-600 max-w-[260px] truncate">{entry.subject}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-500">{entry.template_id ? (TEMPLATE_LABELS[entry.template_id] ?? entry.template_id) : entry.source_type}</td>
+                    <td className="px-4 py-2.5">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                        {STATUS_LABELS[entry.status] ?? entry.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-gray-500">{entry.attempt_count}</td>
+                    <td className="px-4 py-2.5 text-xs text-red-600 max-w-[220px] truncate">{entry.last_error ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2 px-4 py-3 bg-gray-50/50 border-b border-gray-100">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />

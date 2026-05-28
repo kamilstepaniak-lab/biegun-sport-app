@@ -78,3 +78,21 @@ export async function getEmailLogs(days = 30) {
 
   return data ?? [];
 }
+
+export async function getSystemEmailQueueLogs(days = 30) {
+  const { user, role } = await getAuthUser();
+  if (!user || role !== 'admin') return [];
+
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const supabaseAdmin = createAdminClient();
+  const { data } = await supabaseAdmin
+    .from('system_email_queue')
+    .select('id, created_at, scheduled_at, sent_at, to_email, recipient_name, subject, template_id, source_type, status, attempt_count, last_error')
+    .gte('created_at', since.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(500);
+
+  return data ?? [];
+}

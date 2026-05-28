@@ -23,6 +23,7 @@ export interface TripFormData {
   allow_own_transport: boolean;
   packing_list: string;
   additional_info: string;
+  registration_form_enabled: boolean;
 }
 
 export const emptyPayment: CreatePaymentTemplateInput = {

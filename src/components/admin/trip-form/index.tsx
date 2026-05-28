@@ -17,6 +17,7 @@ import { ScheduleSection } from './schedule-section';
 import { EmailContentFields } from './email-content-section';
 import { GroupsSection } from './groups-section';
 import { PaymentsSection } from './payments-section';
+import { WordpressSection } from './wordpress-section';
 
 interface TripFormProps {
   groups: Group[];
@@ -78,6 +79,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     allow_own_transport: t?.allow_own_transport ?? false,
     packing_list: t?.packing_list || '',
     additional_info: t?.additional_info || '',
+    registration_form_enabled: t?.registration_form_enabled ?? false,
   });
 
   function updateFormData(data: Partial<TripFormData>) {
@@ -150,6 +152,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         return_stop2_datetime: formData.return_stop2_datetime ? localToISO(formData.return_stop2_datetime) : null,
         return_stop2_location: formData.return_stop2_location || null,
         allow_own_transport: formData.allow_own_transport,
+        registration_form_enabled: formData.registration_form_enabled,
       };
 
       const result = mode === 'create'
@@ -207,6 +210,11 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         updateFormData={updateFormData}
         groups={groups}
         hasErrors={hasGroupErrors}
+      />
+      <WordpressSection
+        formData={formData}
+        updateFormData={updateFormData}
+        tripId={trip?.id}
       />
 
       {/* Przyciski akcji */}
