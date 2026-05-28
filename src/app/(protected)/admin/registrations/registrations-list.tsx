@@ -1,9 +1,26 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { format, differenceInYears, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, Copy, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import {
   approveRegistrationRequest,
   rejectRegistrationRequest,
@@ -15,19 +32,33 @@ type StatusFilter = 'pending' | 'approved' | 'rejected' | 'all';
 
 function statusBadge(status: TripRegistrationRequestRow['status']) {
   if (status === 'pending')
-    return <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">Oczekuje</span>;
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+        Oczekuje
+      </span>
+    );
   if (status === 'approved')
-    return <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">Zatwierdzone</span>;
-  return <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">Odrzucone</span>;
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+        Zatwierdzone
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+      <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+      Odrzucone
+    </span>
+  );
 }
 
-function ageFromBirth(birth: string): number {
-  const b = new Date(birth);
-  const now = new Date();
-  let age = now.getFullYear() - b.getFullYear();
-  const m = now.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
-  return age;
+function formatSubmittedAt(iso: string): string {
+  try {
+    return format(parseISO(iso), 'dd.MM.yyyy HH:mm');
+  } catch {
+    return iso;
+  }
 }
 
 export default function RegistrationsList({
@@ -39,8 +70,22 @@ export default function RegistrationsList({
   const [status, setStatus] = useState<StatusFilter>('pending');
   const [search, setSearch] = useState('');
   const [pending, startTransition] = useTransition();
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [rejectFor, setRejectFor] = useState<TripRegistrationRequestRow | null>(null);
   const [reason, setReason] = useState('');
+
+  const sections = useMemo(() => {
+    const map = new Map<string, TripRegistrationRequestRow[]>();
+    [...rows]
+      .sort((a, b) => a.child_last_name.localeCompare(b.child_last_name, 'pl'))
+      .forEach((r) => {
+        const letter = r.child_last_name.charAt(0).toUpperCase() || '#';
+        const bucket = map.get(letter) ?? [];
+        bucket.push(r);
+        map.set(letter, bucket);
+      });
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b, 'pl'));
+  }, [rows]);
 
   function refresh(nextStatus: StatusFilter = status, nextSearch: string = search) {
     startTransition(async () => {
@@ -53,13 +98,25 @@ export default function RegistrationsList({
     });
   }
 
+  async function copy(text: string, key: string) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      toast.success('Skopiowano');
+      setTimeout(() => setCopiedKey(null), 1500);
+    } catch {
+      toast.error('Nie udało się skopiować');
+    }
+  }
+
   function approve(row: TripRegistrationRequestRow) {
     const ok = confirm(
-      `Zatwierdzić zgłoszenie dziecka ${row.child_first_name} ${row.child_last_name}?\n\n` +
-      `• Konto rodzica (${row.parent_email}) zostanie utworzone (magic link), jeśli jeszcze nie istnieje.\n` +
-      `• Dziecko trafi do CRM jako „Bez kategorii".\n` +
-      `• Zostanie zapisane na wyjazd: ${row.trip_title ?? row.trip_id}.\n` +
-      `• Standardowy mail rejestracyjny wyjdzie automatycznie.`
+      `Zatwierdzić zgłoszenie: ${row.child_last_name} ${row.child_first_name}?\n\n` +
+        `• Konto rodzica (${row.parent_email}) zostanie utworzone (magic link), jeśli jeszcze nie istnieje.\n` +
+        `• Dziecko trafi do CRM jako „Bez kategorii".\n` +
+        `• Zostanie zapisane na wyjazd: ${row.trip_title ?? row.trip_id}.\n` +
+        `• Standardowy mail rejestracyjny wyjdzie automatycznie.`
     );
     if (!ok) return;
     startTransition(async () => {
@@ -91,139 +148,261 @@ export default function RegistrationsList({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={status}
-          onChange={(e) => {
-            const v = e.target.value as StatusFilter;
-            setStatus(v);
-            refresh(v, search);
-          }}
-          className="rounded border border-input bg-background px-2 py-1 text-sm"
-        >
-          <option value="pending">Oczekujące</option>
-          <option value="approved">Zatwierdzone</option>
-          <option value="rejected">Odrzucone</option>
-          <option value="all">Wszystkie</option>
-        </select>
-        <input
-          placeholder="Szukaj (imię, nazwisko, email)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onBlur={() => refresh()}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') refresh();
-          }}
-          className="rounded border border-input bg-background px-2 py-1 text-sm"
-        />
-        <span className="text-xs text-muted-foreground">
-          {rows.length} wpisów{pending ? ' • aktualizuję…' : ''}
-        </span>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={status}
+            onChange={(e) => {
+              const v = e.target.value as StatusFilter;
+              setStatus(v);
+              refresh(v, search);
+            }}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="pending">Oczekujące</option>
+            <option value="approved">Zatwierdzone</option>
+            <option value="rejected">Odrzucone</option>
+            <option value="all">Wszystkie</option>
+          </select>
+          <input
+            placeholder="Szukaj (imię, nazwisko, email)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onBlur={() => refresh()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') refresh();
+            }}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+          />
+          <span className="text-xs text-slate-500">
+            {rows.length} {rows.length === 1 ? 'wpis' : 'wpisów'}
+            {pending && ' • aktualizuję…'}
+          </span>
+        </div>
 
-      <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-3 py-2">Dziecko</th>
-              <th className="px-3 py-2">Data ur. (wiek)</th>
-              <th className="px-3 py-2">Wzrost</th>
-              <th className="px-3 py-2">Rodzic</th>
-              <th className="px-3 py-2">Wyjazd</th>
-              <th className="px-3 py-2">Zgłoszono</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2 text-right">Akcje</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-slate-100">
-                <td className="px-3 py-2 font-medium">
-                  {r.child_first_name} {r.child_last_name}
-                </td>
-                <td className="px-3 py-2 text-xs">
-                  {r.child_birth_date}
-                  <span className="ml-1 text-slate-500">({ageFromBirth(r.child_birth_date)} lat)</span>
-                </td>
-                <td className="px-3 py-2 text-xs">{r.child_height_cm ? `${r.child_height_cm} cm` : '—'}</td>
-                <td className="px-3 py-2 text-xs">
-                  <div>{r.parent_email}</div>
-                  <div className="text-slate-500">{r.parent_phone ?? ''}</div>
-                </td>
-                <td className="px-3 py-2 text-xs">{r.trip_title ?? r.trip_id}</td>
-                <td className="px-3 py-2 text-xs text-slate-500">
-                  {new Date(r.submitted_at).toLocaleString('pl-PL')}
-                </td>
-                <td className="px-3 py-2">{statusBadge(r.status)}</td>
-                <td className="px-3 py-2 text-right">
-                  {r.status === 'pending' ? (
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => approve(r)}
-                        disabled={pending}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                        <span className="ml-1">Zatwierdź</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          setRejectFor(r);
-                          setReason('');
-                        }}
-                        disabled={pending}
-                      >
-                        <X className="h-3 w-3" />
-                        <span className="ml-1">Odrzuć</span>
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-400">{r.rejection_reason ?? ''}</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-sm text-slate-500">
-                  Brak zgłoszeń{status !== 'all' ? ` o statusie „${status === 'pending' ? 'oczekuje' : status === 'approved' ? 'zatwierdzone' : 'odrzucone'}"` : ''}.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {rejectFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded bg-white p-4 shadow-xl">
-            <h2 className="text-sm font-semibold">
-              Odrzuć zgłoszenie: {rejectFor.child_first_name} {rejectFor.child_last_name}
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Powód (opcjonalny, zapisywany tylko wewnętrznie, nie jest wysyłany rodzicowi).
+        {rows.length === 0 ? (
+          <div className="rounded-2xl bg-white p-12 text-center ring-1 ring-slate-200">
+            <p className="text-sm text-slate-500">
+              Brak zgłoszeń
+              {status !== 'all' &&
+                ` o statusie „${
+                  status === 'pending' ? 'oczekuje' : status === 'approved' ? 'zatwierdzone' : 'odrzucone'
+                }"`}
+              .
             </p>
-            <textarea
+          </div>
+        ) : (
+          sections.map(([letter, sectionRows]) => (
+            <div key={letter} className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
+                  {letter}
+                </div>
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+                  {sectionRows.length}
+                </span>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full table-fixed border-collapse text-sm">
+                    <colgroup>
+                      <col />
+                      <col />
+                      <col className="w-32" />
+                      <col className="w-20" />
+                      <col />
+                      <col className="w-36" />
+                      <col className="w-32" />
+                      <col className="w-32" />
+                      <col className="w-44" />
+                    </colgroup>
+                    <thead>
+                      <tr className="bg-slate-50/70 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th className="px-3 py-2.5">Nazwisko i imię</th>
+                        <th className="px-3 py-2.5">Wyjazd</th>
+                        <th className="px-3 py-2.5">Data urodzenia</th>
+                        <th className="px-3 py-2.5">Wzrost</th>
+                        <th className="px-3 py-2.5">Email</th>
+                        <th className="px-3 py-2.5">Telefon</th>
+                        <th className="px-3 py-2.5">Zgłoszono</th>
+                        <th className="px-3 py-2.5">Status</th>
+                        <th className="px-3 py-2.5 text-right">Akcje</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {sectionRows.map((r, idx) => {
+                        const age = (() => {
+                          try {
+                            return differenceInYears(new Date(), parseISO(r.child_birth_date));
+                          } catch {
+                            return null;
+                          }
+                        })();
+                        const emailKey = `e-${r.id}`;
+                        const phoneKey = `p-${r.id}`;
+
+                        return (
+                          <tr
+                            key={r.id}
+                            className={cn(
+                              'transition-colors hover:bg-slate-50/70',
+                              idx % 2 === 1 && 'bg-slate-50/30',
+                            )}
+                          >
+                            <td className="px-3 py-2.5">
+                              <span className="text-sm font-semibold text-slate-900">
+                                {r.child_last_name} {r.child_first_name}
+                              </span>
+                            </td>
+
+                            <td className="px-3 py-2.5">
+                              <span className="line-clamp-2 text-sm text-slate-600">
+                                {r.trip_title ?? (
+                                  <span className="font-mono text-xs text-slate-400">{r.trip_id}</span>
+                                )}
+                              </span>
+                            </td>
+
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm text-slate-600">
+                              {(() => {
+                                try {
+                                  return format(parseISO(r.child_birth_date), 'dd.MM.yyyy');
+                                } catch {
+                                  return r.child_birth_date;
+                                }
+                              })()}
+                              {age !== null && (
+                                <span className="ml-1 text-xs text-slate-400">({age} l.)</span>
+                              )}
+                            </td>
+
+                            <td className="px-3 py-2.5 text-sm text-slate-600">
+                              {r.child_height_cm ? `${r.child_height_cm} cm` : '—'}
+                            </td>
+
+                            <td className="px-3 py-2.5 max-w-0">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => copy(r.parent_email, emailKey)}
+                                    className="group flex w-full items-center gap-1 truncate text-left text-sm text-slate-600 hover:text-blue-600"
+                                  >
+                                    <span className="truncate">{r.parent_email || '—'}</span>
+                                    {copiedKey === emailKey ? (
+                                      <Check className="h-3 w-3 flex-shrink-0 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-50" />
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Kliknij aby skopiować</TooltipContent>
+                              </Tooltip>
+                            </td>
+
+                            <td className="px-3 py-2.5">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => copy(r.parent_phone ?? '', phoneKey)}
+                                    className="group flex items-center gap-1 whitespace-nowrap text-sm text-slate-600 hover:text-blue-600"
+                                  >
+                                    {r.parent_phone || '—'}
+                                    {copiedKey === phoneKey ? (
+                                      <Check className="h-3 w-3 flex-shrink-0 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-50" />
+                                    )}
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Kliknij aby skopiować</TooltipContent>
+                              </Tooltip>
+                            </td>
+
+                            <td className="px-3 py-2.5 whitespace-nowrap text-xs text-slate-500">
+                              {formatSubmittedAt(r.submitted_at)}
+                            </td>
+
+                            <td className="px-3 py-2.5">{statusBadge(r.status)}</td>
+
+                            <td className="px-3 py-2.5 text-right">
+                              {r.status === 'pending' ? (
+                                <div className="flex justify-end gap-1.5">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => approve(r)}
+                                    disabled={pending}
+                                    className="h-7 gap-1 bg-emerald-600 px-2.5 text-xs hover:bg-emerald-700"
+                                  >
+                                    {pending ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Check className="h-3 w-3" />
+                                    )}
+                                    Zatwierdź
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => {
+                                      setRejectFor(r);
+                                      setReason('');
+                                    }}
+                                    disabled={pending}
+                                    className="h-7 gap-1 px-2.5 text-xs"
+                                  >
+                                    <X className="h-3 w-3" />
+                                    Odrzuć
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">
+                                  {r.rejection_reason ?? ''}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+
+        <Dialog open={rejectFor !== null} onOpenChange={(o) => !o && setRejectFor(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                Odrzuć zgłoszenie — {rejectFor?.child_last_name} {rejectFor?.child_first_name}
+              </DialogTitle>
+              <DialogDescription>
+                Powód (opcjonalny, zapisywany tylko wewnętrznie — nie jest wysyłany rodzicowi).
+              </DialogDescription>
+            </DialogHeader>
+            <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="mt-2 h-24 w-full rounded border border-input bg-background p-2 text-sm"
               placeholder="Np. duplikat, dziecko poza grupą wiekową…"
+              rows={4}
+              className="resize-none"
             />
-            <div className="mt-3 flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setRejectFor(null)} disabled={pending}>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectFor(null)} disabled={pending}>
                 Anuluj
               </Button>
               <Button variant="destructive" onClick={submitReject} disabled={pending}>
-                {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Odrzuć'}
+                {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Odrzuć
               </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TooltipProvider>
   );
 }
