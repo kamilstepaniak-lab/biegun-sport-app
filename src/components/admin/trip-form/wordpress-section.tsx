@@ -11,14 +11,18 @@ interface Props extends SectionProps {
 }
 
 export function WordpressSection({ formData, updateFormData, tripId }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState<'id' | 'embed' | null>(null);
 
-  async function copyId() {
-    if (!tripId) return;
+  const appOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const embedSnippet = tripId
+    ? `<!-- Formularz zapisow BiegunSport — wyjazd ${tripId} -->\n<div data-bs-trip="${tripId}"></div>\n<script src="${appOrigin}/embed/widget.js" async></script>`
+    : '';
+
+  async function copy(value: string, which: 'id' | 'embed') {
     try {
-      await navigator.clipboard.writeText(tripId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(value);
+      setCopiedField(which);
+      setTimeout(() => setCopiedField(null), 1500);
     } catch {
       // ignore
     }
@@ -32,11 +36,11 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
           Połączenie z formularzem &bdquo;Zapisz dziecko&rdquo; na stronie BiegunSport.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         {tripId ? (
           <div>
             <label className="text-xs font-medium text-muted-foreground">
-              ID wyjazdu (wklej w pole &bdquo;ID wyjazdu w systemie&rdquo; przy wpisie WP)
+              ID wyjazdu (referencja techniczna, np. do logów / supportu)
             </label>
             <div className="mt-1 flex items-center gap-2">
               <input
@@ -45,9 +49,9 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
                 onFocus={(e) => e.currentTarget.select()}
                 className="flex-1 rounded border border-input bg-muted px-2 py-1.5 font-mono text-xs"
               />
-              <Button type="button" variant="outline" size="sm" onClick={copyId}>
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                <span className="ml-1">{copied ? 'Skopiowano' : 'Kopiuj'}</span>
+              <Button type="button" variant="outline" size="sm" onClick={() => copy(tripId, 'id')}>
+                {copiedField === 'id' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                <span className="ml-1">{copiedField === 'id' ? 'Skopiowano' : 'Kopiuj'}</span>
               </Button>
             </div>
           </div>
@@ -72,6 +76,32 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
             </span>
           </span>
         </label>
+
+        {tripId && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Kod do wklejenia w stronę WordPress (pod opisem wyjazdu)
+            </label>
+            <div className="mt-1 flex items-start gap-2">
+              <textarea
+                readOnly
+                value={embedSnippet}
+                onFocus={(e) => e.currentTarget.select()}
+                rows={3}
+                className="flex-1 rounded border border-input bg-muted px-2 py-1.5 font-mono text-[11px] leading-tight"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => copy(embedSnippet, 'embed')}>
+                {copiedField === 'embed' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                <span className="ml-1">{copiedField === 'embed' ? 'Skopiowano' : 'Kopiuj'}</span>
+              </Button>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+              Wklej w bloku &bdquo;HTML niestandardowy&rdquo; (Gutenberg) lub w edytorze HTML wpisu wyjazdu.
+              Formularz załaduje się automatycznie. Działa tylko na domenach, które admin dopisał do whitelisty
+              (zmienna <code className="font-mono text-[10px]">WIDGET_ALLOWED_ORIGINS</code>).
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

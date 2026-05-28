@@ -3,6 +3,45 @@
 Kontrakt dla developera WordPress: jak wyslac zgloszenie dziecka z formularza
 "Zapisz dziecko" do aplikacji BiegunSport.
 
+Sa DWIE drogi integracji — wybierz jedna:
+
+- **A) Widget JS (zalecane, najprostsze)** — wklejasz gotowy snippet w strone WP.
+  Aplikacja sama renderuje formularz, sama wysyla zgloszenie. Zero kodu po stronie WP.
+- **B) Wlasny formularz + bezposredni POST** — robisz wlasny HTML i sam wysylasz
+  request do endpointu. Wymaga klucza API trzymanego po stronie serwera WP (PHP).
+
+---
+
+## A) Widget JS
+
+W panelu admina na karcie wyjazdu (sekcja "Zapisy zewnetrzne (WordPress)") jest
+gotowy snippet do skopiowania:
+
+```html
+<div data-bs-trip="UUID-WYJAZDU"></div>
+<script src="https://<app-domena>/embed/widget.js" async></script>
+```
+
+Wklej w "HTML niestandardowy" w Gutenbergu albo w edytorze HTML wpisu wyjazdu.
+Widget sam wyrenderuje formularz, sam wysle zgloszenie, sam pokaze komunikat.
+
+Wymagania konfiguracji (admin aplikacji ustawia w Vercel ENV):
+
+- `WIDGET_ALLOWED_ORIGINS` — lista domen z prawem korzystania z widgetu, po przecinku.
+  Np. `https://biegunsport.pl,https://www.biegunsport.pl`.
+  Mozna uzyc wildcard subdomeny: `*.biegunsport.pl`.
+  Bez tego widget zwraca `origin_not_allowed`.
+
+Klucz API NIE jest tu potrzebny — endpoint widgetu chroni Origin + flaga
+`registration_form_enabled` na wyjezdzie + moderacja admina.
+
+Endpoint pod spodem: `POST /api/public/trip-registrations-widget`.
+Schemat body identyczny jak w wariancie B.
+
+---
+
+## B) Wlasny POST z kluczem API
+
 ## Endpoint
 
 `POST https://<app-domain>/api/public/trip-registrations`
