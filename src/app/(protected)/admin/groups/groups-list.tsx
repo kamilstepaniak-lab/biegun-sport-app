@@ -87,6 +87,9 @@ function toRow(group: GroupWithParticipants, p: ParticipantInGroup): Participant
     last_name: p.last_name,
     birth_date: p.birth_date,
     notes: p.notes,
+    has_whatsapp: p.has_whatsapp,
+    entry_fee_paid: p.entry_fee_paid,
+    contract_signed: p.contract_signed,
     group: { id: group.id, name: group.name },
     parent: {
       email: p.parent.email,

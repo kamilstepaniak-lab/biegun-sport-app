@@ -193,7 +193,7 @@ export function ParticipantsTable({
     );
   }
 
-  const colCount = hideGroupColumn ? 7 : 8;
+  const colCount = (hideGroupColumn ? 7 : 8) + 3;
 
   return (
     <TooltipProvider>
@@ -431,6 +431,37 @@ export function ParticipantsTable({
                                   Dodaj
                                 </button>
                               )}
+                            </td>
+
+                            <td className="px-2 py-2.5 text-center">
+                              <Checkbox
+                                checked={p.has_whatsapp}
+                                disabled={pendingFlag === `${p.id}:has_whatsapp`}
+                                onCheckedChange={(v) =>
+                                  toggleFlag(p.id, 'has_whatsapp', v === true)
+                                }
+                                aria-label="WhatsApp"
+                              />
+                            </td>
+                            <td className="px-2 py-2.5 text-center">
+                              <Checkbox
+                                checked={p.entry_fee_paid}
+                                disabled={pendingFlag === `${p.id}:entry_fee_paid`}
+                                onCheckedChange={(v) =>
+                                  toggleFlag(p.id, 'entry_fee_paid', v === true)
+                                }
+                                aria-label="Wpisowe"
+                              />
+                            </td>
+                            <td className="px-2 py-2.5 text-center">
+                              <Checkbox
+                                checked={p.contract_signed}
+                                disabled={pendingFlag === `${p.id}:contract_signed`}
+                                onCheckedChange={(v) =>
+                                  toggleFlag(p.id, 'contract_signed', v === true)
+                                }
+                                aria-label="Umowa"
+                              />
                             </td>
 
                             <td className="px-3 py-2.5 text-right">

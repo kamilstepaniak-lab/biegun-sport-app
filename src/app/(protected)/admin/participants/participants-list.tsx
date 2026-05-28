@@ -62,6 +62,9 @@ function toRow(p: ParticipantFull): ParticipantRow {
     last_name: p.last_name,
     birth_date: p.birth_date,
     notes: p.notes ?? null,
+    has_whatsapp: p.has_whatsapp ?? false,
+    entry_fee_paid: p.entry_fee_paid ?? false,
+    contract_signed: p.contract_signed ?? false,
     group: p.group ? { id: p.group.id, name: p.group.name } : null,
     parent: {
       email: p.parent?.email ?? '',
