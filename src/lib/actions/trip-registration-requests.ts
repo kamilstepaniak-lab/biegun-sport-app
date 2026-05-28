@@ -90,14 +90,24 @@ export async function listTripRegistrationRequests(filter?: {
 }
 
 export async function countPendingRegistrationRequests(): Promise<number> {
-  const { user, role } = await getAuthUser();
-  if (!user || role !== 'admin') return 0;
-  const admin = createAdminClient();
-  const { count } = await admin
-    .from('trip_registration_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'pending');
-  return count ?? 0;
+  try {
+    const { user, role } = await getAuthUser();
+    if (!user || role !== 'admin') return 0;
+    const admin = createAdminClient();
+    const { count, error } = await admin
+      .from('trip_registration_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    if (error) {
+      // Migracja jeszcze nie odpalona na bazie — nie kraszuj layoutu.
+      console.warn('countPendingRegistrationRequests:', error.message);
+      return 0;
+    }
+    return count ?? 0;
+  } catch (e) {
+    console.warn('countPendingRegistrationRequests fatal:', e);
+    return 0;
+  }
 }
 
 export async function approveRegistrationRequest(requestId: string) {

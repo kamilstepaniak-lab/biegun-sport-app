@@ -9,13 +9,13 @@ function buildNavItems(pendingRegistrations: number): SidebarItem[] {
   return [
     { title: 'Uczestnicy', href: '/admin/participants', icon: 'Users' },
     { title: 'Grupy', href: '/admin/groups', icon: 'UsersRound' },
-    { title: 'Wyjazdy', href: '/admin/trips', icon: 'MapPin' },
     {
       title: 'Zgłoszenia',
       href: '/admin/registrations',
       icon: 'ClipboardList',
       badge: pendingRegistrations > 0 ? pendingRegistrations : undefined,
     },
+    { title: 'Wyjazdy', href: '/admin/trips', icon: 'MapPin' },
     { title: 'Kalendarz', href: '/admin/calendar', icon: 'CalendarDays' },
     { title: 'Płatności', href: '/admin/payments', icon: 'CreditCard' },
     { title: 'Finanse', href: '/admin/finance', icon: 'BarChart2' },
