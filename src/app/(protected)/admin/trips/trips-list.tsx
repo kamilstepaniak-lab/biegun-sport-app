@@ -286,6 +286,14 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         {g.name}
                       </span>
                     ))}
+                    {trip.registration_form_enabled && (
+                      <span
+                        className="rounded-full bg-amber-400/30 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-50 ring-1 ring-amber-200/40"
+                        title="Wyjazd przyjmuje zgloszenia z formularza WordPress"
+                      >
+                        WP
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
                   <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
