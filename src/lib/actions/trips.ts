@@ -8,10 +8,10 @@ import { regenerateUnsignedContractsForTrip } from './contracts';
 import { getBankAccounts } from './settings';
 import { resolveEffectiveDueDate } from '@/lib/payment-due';
 import {
-  sendRegistrationConfirmationEmail,
   type TripEmailData,
   type PaymentLineItem,
 } from '@/lib/email';
+import { queueRegistrationConfirmationEmail } from '@/lib/system-email';
 import type {
   Trip,
   TripWithGroups,
@@ -1499,12 +1499,14 @@ export async function updateParticipationStatusByParent(
             payment_method: (pt.template as { payment_method?: string | null } | null)?.payment_method ?? null,
           }));
 
-        sendRegistrationConfirmationEmail(
+        queueRegistrationConfirmationEmail(
           parentInfo.email,
           parentInfo.first_name || '',
           `${participantData.first_name} ${participantData.last_name}`,
           tripData as TripEmailData,
           emailPaymentLines,
+          tripId,
+          participantId,
         ).catch(console.error);
       }
     } catch (err) {

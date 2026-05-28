@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import type { TripRegistration, RegistrationWithDetails } from '@/types';
-import { sendRegistrationConfirmationEmail, type TripEmailData, type PaymentLineItem } from '@/lib/email';
+import type { TripEmailData, PaymentLineItem } from '@/lib/email';
+import { queueRegistrationConfirmationEmail } from '@/lib/system-email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
 
@@ -109,13 +110,14 @@ export async function registerParticipantToTrip(
 
     if (tripData && parentData?.email) {
       const childName = `${participant.first_name} ${participant.last_name}`;
-      sendRegistrationConfirmationEmail(
+      queueRegistrationConfirmationEmail(
         parentData.email,
         parentData.first_name || '',
         childName,
         tripData as TripEmailData,
         emailPaymentLines,
         tripId,
+        participant.parent_id,
       ).catch(console.error);
     }
   } catch {

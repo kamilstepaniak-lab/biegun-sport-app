@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { sendPaymentReminderEmail } from '@/lib/email';
+import { queuePaymentReminderEmail } from '@/lib/system-email';
 
 // Cron job — uruchamiany codziennie przez Vercel Cron
 // Wysyła przypomnienie do rodziców gdy do terminu płatności zostały 3 dni
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       : 'Pełna opłata';
 
     try {
-      await sendPaymentReminderEmail(
+      await queuePaymentReminderEmail(
         parent.email,
         parent.first_name || '',
         `${participant.first_name} ${participant.last_name}`,
@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
         payment.currency,
         payment.due_date,
         paymentLabel,
+        { paymentId: payment.id },
       );
       sent++;
     } catch (err) {

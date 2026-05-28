@@ -37,6 +37,19 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-05-28
+
+- Maile systemowe (`trip_info`, `registration`, `payment_confirmed`,
+  `payment_reminder`) przepięto na techniczną kolejkę `system_email_queue`:
+  akcje aplikacji dodają wiadomości do kolejki, a cron `/api/cron/email-queue`
+  wysyła je partiami przez Gmail SMTP.
+- Dodano renderowanie treści maili z istniejących szablonów bez tworzenia
+  kampanii/newsletterów; maile pozostają mailami systemowymi.
+- Dodano statusy per odbiorca (`pending`, `sending`, `sent`, `failed`,
+  `bounced`) oraz retry do 3 prób.
+- Wymagana ręczna migracja Supabase: `system-email-queue.sql` przed użyciem
+  kolejkowanych maili na produkcji.
+
 ### 2026-05-24
 
 - `/admin/*`: wdrożono redesign Alpine z paczki BSAPP — nowy shell admina,

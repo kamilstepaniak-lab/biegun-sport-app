@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow, PaymentStatus } from '@/types';
-import { sendPaymentConfirmedEmail } from '@/lib/email';
+import { queuePaymentConfirmedEmail } from '@/lib/system-email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
 import { format } from 'date-fns';
@@ -516,7 +516,7 @@ export async function markPaymentAsPaid(
         ? `Rata ${fullPayment.installment_number}`
         : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
 
-      sendPaymentConfirmedEmail(
+      queuePaymentConfirmedEmail(
         reg.participant.parent.email,
         reg.participant.parent.first_name,
         `${reg.participant.first_name} ${reg.participant.last_name}`,
@@ -524,6 +524,7 @@ export async function markPaymentAsPaid(
         fullPayment.amount,
         fullPayment.currency,
         paymentLabel,
+        { paymentId },
       ).catch(console.error);
     }
   } catch {
@@ -958,7 +959,7 @@ export async function updatePaymentStatus(
             ? `Rata ${fullPayment.installment_number}`
             : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
 
-          await sendPaymentConfirmedEmail(
+          await queuePaymentConfirmedEmail(
             reg.participant.parent.email,
             reg.participant.parent.first_name,
             `${reg.participant.first_name} ${reg.participant.last_name}`,
@@ -966,6 +967,7 @@ export async function updatePaymentStatus(
             fullPayment.amount,
             fullPayment.currency,
             paymentLabel,
+            { paymentId },
           );
         }
       } catch {

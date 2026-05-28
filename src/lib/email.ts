@@ -410,6 +410,16 @@ export async function sendRegistrationConfirmationEmail(
   payments: PaymentLineItem[] = [],
   tripId?: string,
 ) {
+  const rendered = await renderRegistrationConfirmationEmail(parentFirstName, childName, trip, payments);
+  await sendEmail(to, rendered.subject, rendered.bodyHtml, { templateId: 'registration', tripId });
+}
+
+export async function renderRegistrationConfirmationEmail(
+  parentFirstName: string,
+  childName: string,
+  trip: TripEmailData,
+  payments: PaymentLineItem[] = [],
+) {
   const tpl = await getTemplate('registration') ?? DEFAULTS.registration;
   const tripDetailsHtml = buildTripDetailsHtml(trip, payments);
   const vars: Record<string, string> = {
@@ -427,11 +437,30 @@ export async function sendRegistrationConfirmationEmail(
   if (!tpl.body_html.includes('{{szczegoly_wyjazdu}}')) {
     bodyHtml += tripDetailsHtml;
   }
-  await sendEmail(to, interpolate(tpl.subject, vars), bodyHtml, { templateId: 'registration', tripId });
+  return { subject: interpolate(tpl.subject, vars), bodyHtml };
 }
 
 export async function sendPaymentConfirmedEmail(
   to: string,
+  parentFirstName: string,
+  childName: string,
+  tripTitle: string,
+  amount: number,
+  currency: string,
+  paymentLabel: string,
+) {
+  const rendered = await renderPaymentConfirmedEmail(
+    parentFirstName,
+    childName,
+    tripTitle,
+    amount,
+    currency,
+    paymentLabel,
+  );
+  await sendEmail(to, rendered.subject, rendered.bodyHtml, { templateId: 'payment_confirmed' });
+}
+
+export async function renderPaymentConfirmedEmail(
   parentFirstName: string,
   childName: string,
   tripTitle: string,
@@ -448,11 +477,32 @@ export async function sendPaymentConfirmedEmail(
     '{{kwota}}': amount.toFixed(0),
     '{{waluta}}': currency,
   };
-  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars), { templateId: 'payment_confirmed' });
+  return { subject: interpolate(tpl.subject, vars), bodyHtml: interpolate(tpl.body_html, vars) };
 }
 
 export async function sendPaymentReminderEmail(
   to: string,
+  parentFirstName: string,
+  childName: string,
+  tripTitle: string,
+  amount: number,
+  currency: string,
+  dueDate: string,
+  paymentLabel: string,
+) {
+  const rendered = await renderPaymentReminderEmail(
+    parentFirstName,
+    childName,
+    tripTitle,
+    amount,
+    currency,
+    dueDate,
+    paymentLabel,
+  );
+  await sendEmail(to, rendered.subject, rendered.bodyHtml, { templateId: 'payment_reminder' });
+}
+
+export async function renderPaymentReminderEmail(
   parentFirstName: string,
   childName: string,
   tripTitle: string,
@@ -474,5 +524,5 @@ export async function sendPaymentReminderEmail(
     '{{waluta}}': currency,
     '{{termin}}': dueDateFormatted,
   };
-  await sendEmail(to, interpolate(tpl.subject, vars), interpolate(tpl.body_html, vars), { templateId: 'payment_reminder' });
+  return { subject: interpolate(tpl.subject, vars), bodyHtml: interpolate(tpl.body_html, vars) };
 }
