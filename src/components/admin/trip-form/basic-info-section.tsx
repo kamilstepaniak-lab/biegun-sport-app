@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import type { TripStatus, AttendanceType } from '@/types';
+import type { TripStatus, AttendanceType, TripCategory } from '@/types';
 
 import type { SectionProps } from './types';
 
@@ -97,6 +98,22 @@ export function BasicInfoSection({
                   <Label htmlFor="optional" className="font-normal cursor-pointer">Dla chętnych</Label>
                 </div>
               </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label>Kategoria wyjazdu *</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => updateFormData({ category: value as TripCategory })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="summer_camp">Obóz letni</SelectItem>
+                  <SelectItem value="winter_camp">Obóz zimowy</SelectItem>
+                  <SelectItem value="family_camp">Obóz rodzinny</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="declaration_deadline">Deklaracja do</Label>

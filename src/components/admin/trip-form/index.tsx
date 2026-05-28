@@ -45,6 +45,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
     location: t?.location || '',
     status: t?.status || 'draft',
     attendance_type: t?.attendance_type ?? 'optional',
+    category: t?.category ?? 'winter_camp',
     departure_datetime: trip?.departure_datetime
       ? (() => {
           const full = formatDateTimeLocal(trip.departure_datetime);

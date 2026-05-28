@@ -42,6 +42,7 @@ import { getGroupColor } from '@/lib/group-colors';
 import { cn } from '@/lib/utils';
 import {
   assignParticipantToGroup,
+  setParticipantFlag,
   updateParticipantNote,
 } from '@/lib/actions/participants';
 import type { Group } from '@/types';
@@ -52,6 +53,9 @@ export interface ParticipantRow {
   last_name: string;
   birth_date: string;
   notes: string | null;
+  has_whatsapp: boolean;
+  entry_fee_paid: boolean;
+  contract_signed: boolean;
   group: { id: string; name: string } | null;
   parent: {
     email: string;
@@ -60,6 +64,8 @@ export interface ParticipantRow {
     secondary_phone: string | null;
   };
 }
+
+type FlagKey = 'has_whatsapp' | 'entry_fee_paid' | 'contract_signed';
 
 interface ParticipantsTableProps {
   rows: ParticipantRow[];
@@ -81,6 +87,7 @@ export function ParticipantsTable({
   const router = useRouter();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
+  const [pendingFlag, setPendingFlag] = useState<string | null>(null);
 
   const [noteDialog, setNoteDialog] = useState<{
     participantId: string;
@@ -128,6 +135,21 @@ export function ParticipantsTable({
       setTimeout(() => setCopiedKey(null), 1500);
     } catch {
       toast.error('Nie udało się skopiować');
+    }
+  }
+
+  async function toggleFlag(participantId: string, flag: FlagKey, value: boolean) {
+    const key = `${participantId}:${flag}`;
+    setPendingFlag(key);
+    try {
+      const result = await setParticipantFlag(participantId, flag, value);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setPendingFlag(null);
     }
   }
 
@@ -198,11 +220,14 @@ export function ParticipantsTable({
                     <colgroup>
                       <col className="w-10" />
                       <col />
-                      <col className="w-32" />
                       {!hideGroupColumn && <col className="w-44" />}
+                      <col className="w-32" />
                       <col />
                       <col className="w-36" />
                       <col className="w-36" />
+                      <col className="w-14" />
+                      <col className="w-16" />
+                      <col className="w-14" />
                       <col className="w-28" />
                     </colgroup>
                     <thead>
@@ -215,11 +240,14 @@ export function ParticipantsTable({
                           />
                         </th>
                         <th className="px-3 py-2.5">Nazwisko i imię</th>
-                        <th className="px-3 py-2.5">Data urodzenia</th>
                         {!hideGroupColumn && <th className="px-3 py-2.5">Grupa</th>}
+                        <th className="px-3 py-2.5">Data urodzenia</th>
                         <th className="px-3 py-2.5">Email</th>
                         <th className="px-3 py-2.5">Telefon</th>
                         <th className="px-3 py-2.5">Notatka</th>
+                        <th className="px-2 py-2.5 text-center">WA</th>
+                        <th className="px-2 py-2.5 text-center">Wpisowe</th>
+                        <th className="px-2 py-2.5 text-center">Umowa</th>
                         <th className="px-3 py-2.5 text-right">Akcje</th>
                       </tr>
                     </thead>
@@ -261,15 +289,6 @@ export function ParticipantsTable({
                               >
                                 {p.last_name} {p.first_name}
                               </Link>
-                            </td>
-
-                            <td className="px-3 py-2.5 whitespace-nowrap text-sm text-slate-600">
-                              {format(parseISO(p.birth_date), 'dd.MM.yyyy')}
-                              {age !== null && (
-                                <span className="ml-1 text-xs text-slate-400">
-                                  ({age} l.)
-                                </span>
-                              )}
                             </td>
 
                             {!hideGroupColumn && (
@@ -316,6 +335,15 @@ export function ParticipantsTable({
                                 </DropdownMenu>
                               </td>
                             )}
+
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm text-slate-600">
+                              {format(parseISO(p.birth_date), 'dd.MM.yyyy')}
+                              {age !== null && (
+                                <span className="ml-1 text-xs text-slate-400">
+                                  ({age} l.)
+                                </span>
+                              )}
+                            </td>
 
                             <td className="px-3 py-2.5 max-w-0">
                               <Tooltip>

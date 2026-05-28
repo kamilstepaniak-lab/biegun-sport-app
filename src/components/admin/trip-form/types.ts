@@ -1,4 +1,4 @@
-import type { CreatePaymentTemplateInput, TripStatus, AttendanceType } from '@/types';
+import type { CreatePaymentTemplateInput, TripStatus, AttendanceType, TripCategory } from '@/types';
 
 export interface TripFormData {
   title: string;
@@ -7,6 +7,7 @@ export interface TripFormData {
   location: string;
   status: TripStatus;
   attendance_type: AttendanceType;
+  category: TripCategory;
   departure_datetime: string;
   departure_time_known: boolean;
   departure_location: string;

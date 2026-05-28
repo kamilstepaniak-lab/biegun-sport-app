@@ -555,6 +555,32 @@ export async function updateParticipantNote(participantId: string, notes: string
 
 // deleteParticipants jest zdefiniowana w groups.ts (lepsza wersja z kontrolą rejestracji)
 
+type ParticipantFlag = 'has_whatsapp' | 'entry_fee_paid' | 'contract_signed';
+
+export async function setParticipantFlag(
+  participantId: string,
+  flag: ParticipantFlag,
+  value: boolean,
+) {
+  const { supabase, user, role } = await getAuthUser();
+  if (!user) return { error: 'Nie jesteś zalogowany' };
+  if (role !== 'admin') return { error: 'Brak uprawnień' };
+
+  const { error } = await supabase
+    .from('participants')
+    .update({ [flag]: value, updated_at: new Date().toISOString() })
+    .eq('id', participantId);
+
+  if (error) {
+    console.error('Flag update error:', error);
+    return { error: 'Nie udało się zapisać zmiany' };
+  }
+
+  revalidatePath('/admin/participants');
+  revalidatePath('/admin/groups');
+  return { success: true };
+}
+
 export async function bulkUpdateParticipantGroup(participantIds: string[], groupId: string) {
   const { supabase, user, role } = await getAuthUser();
   if (!user) return { error: 'Nie jesteś zalogowany' };

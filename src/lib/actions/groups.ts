@@ -112,6 +112,9 @@ export interface ParticipantInGroup {
   birth_date: string;
   height_cm: number | null;
   notes: string | null;
+  has_whatsapp: boolean;
+  entry_fee_paid: boolean;
+  contract_signed: boolean;
   parent: {
     email: string;
     phone: string;
@@ -141,6 +144,9 @@ export async function getGroupsWithParticipants(): Promise<GroupWithParticipants
           birth_date,
           height_cm,
           notes,
+          has_whatsapp,
+          entry_fee_paid,
+          contract_signed,
           parent:profiles!parent_id (
             email,
             phone,
@@ -171,6 +177,9 @@ export async function getGroupsWithParticipants(): Promise<GroupWithParticipants
           birth_date: string;
           height_cm: number | null;
           notes: string | null;
+          has_whatsapp: boolean | null;
+          entry_fee_paid: boolean | null;
+          contract_signed: boolean | null;
           parent: unknown;
         };
 
@@ -191,6 +200,9 @@ export async function getGroupsWithParticipants(): Promise<GroupWithParticipants
           birth_date: p.birth_date,
           height_cm: p.height_cm,
           notes: p.notes,
+          has_whatsapp: p.has_whatsapp ?? false,
+          entry_fee_paid: p.entry_fee_paid ?? false,
+          contract_signed: p.contract_signed ?? false,
           parent: parent || { email: '', phone: '', secondary_email: null, secondary_phone: null },
         } as ParticipantInGroup;
       })

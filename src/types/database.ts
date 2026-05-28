@@ -6,6 +6,8 @@ export type TripStatus = 'draft' | 'published' | 'cancelled' | 'completed';
 
 export type AttendanceType = 'mandatory' | 'optional';
 
+export type TripCategory = 'summer_camp' | 'winter_camp' | 'family_camp';
+
 export type PaymentType = 'installment' | 'season_pass';
 
 export type PaymentStatus = 'pending' | 'partially_paid' | 'paid' | 'overdue' | 'partially_paid_overdue' | 'cancelled';
@@ -53,6 +55,9 @@ export interface Participant {
   parent_notes_food: string | null;
   parent_notes_accommodation: string | null;
   parent_notes_additional: string | null;
+  has_whatsapp: boolean;
+  entry_fee_paid: boolean;
+  contract_signed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -116,6 +121,7 @@ export interface Trip {
   return_time_known: boolean;
   status: TripStatus;
   attendance_type: AttendanceType;
+  category: TripCategory;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -310,6 +316,7 @@ export interface CreateTripInput {
   return_stop2_location?: string | null;
   status: TripStatus;
   attendance_type?: AttendanceType;
+  category?: TripCategory;
   group_ids: string[];
   payment_templates: CreatePaymentTemplateInput[];
   allow_own_transport?: boolean;
