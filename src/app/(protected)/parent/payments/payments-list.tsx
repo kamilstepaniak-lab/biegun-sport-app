@@ -165,10 +165,10 @@ export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccoun
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {bankAccounts.bank_account_pln && (
-          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
-            <div>
+          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3 gap-2">
+            <div className="min-w-0">
               <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
-              <p className="text-sm text-gray-900">{bankAccounts.bank_account_pln}</p>
+              <p className="text-sm text-gray-900 break-all">{bankAccounts.bank_account_pln}</p>
             </div>
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white text-gray-400 hover:text-gray-600 transition-colors"
@@ -179,10 +179,10 @@ export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccoun
           </div>
         )}
         {bankAccounts.bank_account_eur && (
-          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3">
-            <div>
+          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3 gap-2">
+            <div className="min-w-0">
               <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
-              <p className="text-sm text-gray-900">{bankAccounts.bank_account_eur}</p>
+              <p className="text-sm text-gray-900 break-all">{bankAccounts.bank_account_eur}</p>
             </div>
             <button
               className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white text-gray-400 hover:text-gray-600 transition-colors"
@@ -461,9 +461,15 @@ function PaymentsTable({
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
         </div>
       )}
-      <p className="text-xs text-gray-400 px-4 pt-2 pb-0.5">Żeby zobaczyć całą tabelkę przesuń palcem w bok</p>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[680px]">
+      {/* Mobile: karty */}
+      <div className="md:hidden divide-y divide-gray-100">
+        {payments.map((p) => (
+          <PaymentCard key={p.id} payment={p} bankAccounts={bankAccounts} allPayments={allPayments} />
+        ))}
+      </div>
+      {/* Desktop: tabela */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/60">
               <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
@@ -481,6 +487,99 @@ function PaymentsTable({
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Karta płatności (mobile) ─────────────────────────────────────────────
+function PaymentCard({
+  payment,
+  bankAccounts,
+  allPayments,
+}: {
+  payment: ParentPayment;
+  bankAccounts: BankAccountInfo;
+  allPayments: ParentPayment[];
+}) {
+  const { cfg, StatusIcon, isOverdue, remaining, transferTitle } = getPaymentData(payment);
+  const relatedTransferPayments = getRelatedTransferPayments(payment, allPayments);
+
+  return (
+    <div
+      className={cn(
+        'p-4 space-y-3',
+        payment.status === 'paid'
+          ? 'bg-emerald-50/20'
+          : isOverdue
+            ? 'bg-red-50/10'
+            : '',
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-gray-900">{payment.child_name}</p>
+          <p className="mt-0.5 text-sm text-gray-700 truncate">{payment.trip_title}</p>
+          <p className="mt-0.5 text-xs text-gray-500">{getPaymentTypeLabel(payment)}</p>
+        </div>
+        <div className="text-right shrink-0">
+          {payment.status === 'paid' ? (
+            <span className="text-sm font-semibold text-emerald-600 tabular-nums">
+              {payment.amount.toFixed(0)} {payment.currency}
+            </span>
+          ) : (
+            <>
+              <span className={cn('text-base font-bold tabular-nums', isOverdue ? 'text-red-600' : 'text-gray-900')}>
+                {remaining.toFixed(0)} {payment.currency}
+              </span>
+              {payment.amount_paid > 0 && (
+                <span className="block text-xs text-gray-400">
+                  {payment.amount_paid.toFixed(0)} {payment.currency} wpłacono
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold', cfg.bgClass)}>
+          <StatusIcon className="h-3 w-3" />
+          {cfg.label}
+        </span>
+        {isOverdue && payment.status !== 'overdue' && payment.status !== 'partially_paid_overdue' && (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+            Po terminie
+          </span>
+        )}
+        <span className="ml-auto text-xs text-gray-600">
+          <PaymentDue
+            paymentDueDate={payment.due_date}
+            departureDate={payment.trip_departure_date}
+            status={payment.status}
+          />
+        </span>
+      </div>
+
+      <button
+        className="flex w-full items-center gap-1 group"
+        onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
+        title="Kopiuj tytuł przelewu"
+      >
+        <span className="text-xs text-gray-400 truncate group-hover:text-blue-500 transition-colors">{transferTitle}</span>
+        <Copy className="h-3 w-3 text-blue-500 flex-shrink-0" />
+      </button>
+
+      <div className="flex justify-end pt-1">
+        {payment.status === 'paid' ? (
+          <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
+        ) : (
+          <PaymentDialog
+            payment={payment}
+            bankAccounts={bankAccounts}
+            relatedPayments={relatedTransferPayments}
+          />
+        )}
       </div>
     </div>
   );

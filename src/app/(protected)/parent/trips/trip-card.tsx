@@ -1,9 +1,10 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
+  Calendar,
   ChevronDown,
   ChevronUp,
   X,
@@ -18,7 +19,9 @@ import {
   CheckCircle2,
   Backpack,
   Info,
-  Home,
+  MapPin,
+  Mountain,
+  type LucideIcon,
 } from 'lucide-react';
 
 import {
@@ -63,18 +66,49 @@ function getTemplateLabel(template: { payment_type: string; installment_number?:
   return template.payment_type;
 }
 
-function getMethodLabel(method: string | null | undefined, short = false) {
-  if (method === 'transfer') return 'Przelew';
-  if (method === 'cash') return 'Gotówka';
-  if (method === 'both') return short ? 'Przel./Got.' : 'Przelew/Got.';
-  return '–';
+function getMethodLabel(method: string | null | undefined, short = false): { label: string; className: string } {
+  if (method === 'transfer') return { label: 'Przelew', className: 'bg-blue-100 text-blue-700' };
+  if (method === 'cash') return { label: 'Gotówka', className: 'bg-amber-100 text-amber-700' };
+  if (method === 'both') return { label: short ? 'Przel./Got.' : 'Przelew/Gotówka', className: 'bg-violet-100 text-violet-700' };
+  return { label: '–', className: 'bg-gray-100 text-gray-600' };
 }
 
-// Opis wyjazdu zawiera HTML kontrolowany przez admina (edytor WYSIWYG).
 function RichDescription({ html }: { html: string }) {
   const DANGER_KEY = 'dangerouslySetInnerHTML' as const;
-  const props = { className: 'rich-content text-sm text-gray-600 leading-relaxed', [DANGER_KEY]: { __html: html } } as React.HTMLAttributes<HTMLDivElement>;
+  const props = { className: 'rich-content text-sm leading-relaxed text-slate-700', [DANGER_KEY]: { __html: html } } as React.HTMLAttributes<HTMLDivElement>;
   return <div {...props} />;
+}
+
+function DetailCard({
+  icon: Icon,
+  title,
+  children,
+  className,
+}: {
+  icon: LucideIcon;
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn('rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200', className)}>
+      <div className="mb-4 flex items-center gap-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <h4 className="text-sm font-bold text-slate-900">{title}</h4>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+      <CheckCircle2 className="h-3 w-3" />
+    </span>
+  );
 }
 
 export interface TripCardProps {
@@ -115,59 +149,92 @@ function TripCardInner({
   onStatusChange,
   onCopy,
 }: TripCardProps) {
+  const [renderedAt] = useState(() => Date.now());
   const departureDate = new Date(trip.departure_datetime);
+  const returnDate = new Date(trip.return_datetime);
   const hasStop2 = !!trip.departure_stop2_location;
+  const daysUntilDeparture = Math.max(0, Math.ceil((departureDate.getTime() - renderedAt) / 86400000));
+  const confirmedChild = trip.children.find((c) => c.participation_status === 'confirmed');
+  const paymentDueByTemplate = new Map<string, string | null>();
+  (confirmedChild?.payments ?? []).forEach((p) => {
+    if (p.template_id) paymentDueByTemplate.set(p.template_id, p.due_date);
+  });
+  const totalsByCurrency = new Map<string, number>();
+  (trip.payment_templates ?? []).forEach((template) => {
+    totalsByCurrency.set(template.currency, (totalsByCurrency.get(template.currency) ?? 0) + template.amount);
+  });
+  const totalLabel = Array.from(totalsByCurrency.entries())
+    .sort(([a], [b]) => (a === 'PLN' ? -1 : b === 'PLN' ? 1 : a.localeCompare(b)))
+    .map(([currency, amount]) => `${amount.toFixed(0)} ${currency}`)
+    .join(' · ');
 
   return (
     <Collapsible open={isOpen} onOpenChange={() => onToggle(trip.id)}>
       <div className={cn(
-        'rounded-2xl transition-all duration-200',
+        'overflow-hidden rounded-2xl transition-all duration-200',
         isOpen
-          ? 'bg-white shadow-lg ring-2 ring-blue-400'
-          : 'bg-white shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200',
+          ? 'border-2 border-blue-600 bg-white shadow-xl shadow-blue-600/15'
+          : 'border border-gray-100 bg-white shadow-sm hover:border-blue-300 hover:shadow-md',
         isPast && !isOpen && 'opacity-60'
       )}>
         <CollapsibleTrigger asChild>
-          <div className="p-3 sm:p-5 cursor-pointer">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="mb-1.5">
-                  <h3 className="font-semibold text-lg text-gray-900 leading-tight">{trip.title}</h3>
-                  <p className="text-xs font-semibold text-gray-600 mt-0.5">
-                    {format(departureDate, 'd MMM yyyy', { locale: pl })} – {format(new Date(trip.return_datetime), 'd MMM yyyy', { locale: pl })}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    {trip.groups.map((g) => {
-                      const colors = getGroupColor(g.name);
-                      return (
-                        <span key={g.id} className={cn(
-                          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium',
-                          colors.bg, colors.text
-                        )}>
-                          <span className={cn('w-1 h-1 rounded-full', colors.dot)} />
-                          {g.name}
-                        </span>
-                      );
-                    })}
-                    {isPast && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-400">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
-                        Zrealizowany
-                      </span>
-                    )}
-                  </div>
-                </div>
+          <div className="cursor-pointer">
+            <div className="grid gap-4 p-4 lg:grid-cols-[auto_1fr_auto_minmax(190px,auto)_auto] lg:items-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Mountain className="h-5 w-5" />
               </div>
-              <div className={cn(
-                'w-8 h-8 rounded-xl flex items-center justify-center transition-colors ml-3',
-                isOpen ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'
+
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-bold text-slate-900">
+                  {trip.title}
+                  {trip.location ? ` – ${trip.location}` : ''}
+                </h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">
+                  {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })} ·{' '}
+                  {Math.max(1, Math.ceil((returnDate.getTime() - departureDate.getTime()) / 86400000))} dni
+                </p>
+              </div>
+
+              <span className={cn(
+                'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
+                isPast
+                  ? 'border-slate-200 bg-slate-100 text-slate-500'
+                  : 'border-blue-200 bg-white text-blue-700'
               )}>
-                {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                <span className={cn('h-1.5 w-1.5 rounded-full', isPast ? 'bg-slate-400' : 'bg-blue-600')} />
+                {isPast ? 'Zrealizowany' : 'Zapisy otwarte'}
+              </span>
+
+              <div className="flex flex-wrap gap-1.5 lg:justify-end">
+                {trip.groups.map((g) => {
+                  const colors = getGroupColor(g.name);
+                  return (
+                    <span
+                      key={g.id}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold',
+                        colors.bg,
+                        colors.text,
+                        colors.border
+                      )}
+                    >
+                      <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
+                      {g.name}
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
+                isOpen ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-500'
+              )}>
+                <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
               </div>
             </div>
 
             {!isPast && (
-              <div className="mt-4 space-y-2">
+              <div className="space-y-2 border-t border-slate-100 bg-slate-50/70 p-4">
                 {trip.children.map((child) => {
                   const key = `${trip.id}-${child.child_id}`;
                   const currentStatus = childStatusOverrides[key] || child.participation_status;
@@ -358,195 +425,186 @@ function TripCardInner({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="px-3 sm:px-5 pb-4 sm:pb-5 space-y-4">
-            <div className="h-px bg-gray-100" />
+          <div className="grid gap-4 bg-slate-50 p-6 lg:grid-cols-3">
+            <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
+              <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-bold text-emerald-50 ring-1 ring-white/20">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                      Zapisy otwarte
+                    </span>
+                    {trip.groups.map((g) => (
+                      <span key={g.id} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
+                        {g.name}
+                      </span>
+                    ))}
+                    {isPast && (
+                      <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
+                        Zrealizowany
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
+                  <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
+                    <MapPin className="h-4 w-4" />
+                    Miejsce
+                    <span className="normal-case tracking-normal text-white">{trip.location || trip.departure_location || '—'}</span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trip.children.map((child) => (
+                    <span key={child.child_id} className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/30">
+                      <Bus className="h-3.5 w-3.5" />
+                      {child.child_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-            {/* Podstawowe informacje */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-1 lg:col-span-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                   <Info className="h-3.5 w-3.5 text-white" />
                 </div>
-                <h4 className="text-sm font-semibold text-gray-900">Podstawowe informacje</h4>
+                <h4 className="text-sm font-bold text-slate-900">Podstawowe informacje</h4>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <p className="text-[11px] font-medium text-slate-500">Nazwa wyjazdu</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{trip.title}</p>
+                </div>
+                {trip.declaration_deadline && (
+                  <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                    <p className="text-[11px] font-medium text-slate-500">Deklaracja do</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {format(new Date(trip.declaration_deadline), 'd MMMM yyyy', { locale: pl })}
+                    </p>
+                  </div>
+                )}
               </div>
               {trip.description && (
-                <div className="bg-white rounded-xl p-3">
+                <div className="mt-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                  <p className="mb-2 text-[11px] font-medium text-slate-500">Opis</p>
                   <RichDescription html={trip.description} />
-                </div>
-              )}
-              {/* Terminy — zawsze pod opisem */}
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="bg-white rounded-xl p-3 space-y-2 ring-1 ring-gray-100">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <ArrowRight className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-xs font-semibold text-gray-700">Wyjazd</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm text-gray-900">{trip.departure_location}</p>
-                    <p className="text-sm text-gray-900">
-                      {format(new Date(trip.departure_datetime), 'd MMMM yyyy', { locale: pl })}
-                    </p>
-                    {(trip.departure_time_known ?? true) && (
-                      <p className="text-sm text-gray-900">
-                        {format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}
-                      </p>
-                    )}
-                  </div>
-                  {trip.departure_stop2_location && (
-                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-900">{trip.departure_stop2_location}</p>
-                      {trip.departure_stop2_datetime && (
-                        <>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
-                          </p>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="bg-white rounded-xl p-3 space-y-2 ring-1 ring-gray-100">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <ArrowLeft className="h-3.5 w-3.5 text-red-400" />
-                    <span className="text-xs font-semibold text-gray-700">Powrót</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm text-gray-900">{trip.return_location}</p>
-                    <p className="text-sm text-gray-900">
-                      {format(new Date(trip.return_datetime), 'd MMMM yyyy', { locale: pl })}
-                    </p>
-                    {(trip.return_time_known ?? true) && (
-                      <p className="text-sm text-gray-900">
-                        {format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}
-                      </p>
-                    )}
-                  </div>
-                  {trip.return_stop2_location && (
-                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-900">{trip.return_stop2_location}</p>
-                      {trip.return_stop2_datetime && (
-                        <>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
-                          </p>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {(trip.location || trip.declaration_deadline) && (
-                <div className="grid gap-2 md:grid-cols-2">
-                  {trip.location && (
-                    <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                      <p className="text-xs font-semibold text-gray-500 mb-0.5 flex items-center gap-1">
-                        <Home className="h-3 w-3" />
-                        Miejsce
-                      </p>
-                      <p className="text-sm text-gray-900">{trip.location}</p>
-                    </div>
-                  )}
-                  {trip.declaration_deadline && (
-                    <div className="bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                      <p className="text-xs text-gray-400 mb-0.5">Deklaracja do</p>
-                      <p className="text-sm text-gray-900">
-                        {format(new Date(trip.declaration_deadline), 'd MMMM yyyy', { locale: pl })}
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
 
-            {/* Co zabrać */}
-            {trip.packing_list && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Backpack className="h-3.5 w-3.5 text-white" />
+            <DetailCard icon={Calendar} title="Terminy" className="lg:order-2">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 border-b border-slate-200 pb-3">
+                  <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Co zabrać</h4>
-                </div>
-                <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                  {trip.packing_list
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Dodatkowe informacje */}
-            {trip.additional_info && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Info className="h-3.5 w-3.5 text-white" />
+                  <div>
+                    <p className="text-[11px] font-medium text-slate-500">Wyjazd</p>
+                    <p className="text-sm font-bold text-slate-900">
+                      {format(departureDate, (trip.departure_time_known ?? true) ? 'd MMMM yyyy, HH:mm' : 'd MMMM yyyy', { locale: pl })}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{trip.departure_location}</p>
+                    {trip.departure_stop2_location && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {trip.departure_stop2_location}
+                        {trip.departure_stop2_datetime ? ` · ${format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}` : ''}
+                      </p>
+                    )}
                   </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Dodatkowe informacje</h4>
                 </div>
-                <ul className="bg-white rounded-xl p-3 space-y-1.5">
-                  {trip.additional_info
-                    .split('\n')
-                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
-                    .filter(Boolean)
-                    .map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                </ul>
+                <div className="flex items-start gap-3 border-b border-slate-200 pb-3">
+                  <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-500">
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-medium text-slate-500">Powrót</p>
+                    <p className="text-sm font-bold text-slate-900">
+                      {format(returnDate, (trip.return_time_known ?? true) ? 'd MMMM yyyy, HH:mm' : 'd MMMM yyyy', { locale: pl })}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{trip.return_location}</p>
+                    {trip.return_stop2_location && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {trip.return_stop2_location}
+                        {trip.return_stop2_datetime ? ` · ${format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}` : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {!isPast && (
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                      <Calendar className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium text-slate-500">Za ile dni</p>
+                      <p className="text-sm font-bold text-slate-900">{daysUntilDeparture} dni</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </DetailCard>
 
             {trip.payment_templates && trip.payment_templates.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-3 lg:col-span-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Receipt className="h-3.5 w-3.5 text-white" />
                   </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Cennik</h4>
+                  <h4 className="text-sm font-bold text-slate-900">Cennik</h4>
                 </div>
-                <div className="bg-white rounded-xl overflow-x-auto ring-1 ring-gray-100">
+                {/* Mobile: karty */}
+                <div className="mt-4 md:hidden space-y-2">
+                  {trip.payment_templates.map((template) => {
+                    const label = getTemplateLabel(template);
+                    const method = getMethodLabel(template.payment_method);
+                    return (
+                      <div key={template.id} className="rounded-xl ring-1 ring-slate-200 p-3 bg-white">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-semibold text-gray-900 text-sm">{label}</p>
+                          <p className="text-sm font-bold text-gray-900 tabular-nums whitespace-nowrap">
+                            {template.amount.toFixed(0)} {template.currency}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>
+                            {method.label}
+                          </span>
+                          <span className="text-gray-600">
+                            <PaymentDue
+                              paymentDueDate={paymentDueByTemplate.get(template.id)}
+                              templateDueDate={template.due_date}
+                              dueDaysFromConfirmation={template.due_days_from_confirmation}
+                              confirmedAt={confirmedChild?.confirmed_at}
+                              departureDate={trip.departure_datetime}
+                            />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {totalLabel && (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 ring-1 ring-slate-200">
+                      <span className="text-sm font-bold text-slate-900">Razem</span>
+                      <span className="text-base font-black text-slate-950">{totalLabel}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Desktop: tabela */}
+                <div className="mt-4 hidden md:block overflow-x-auto rounded-xl ring-1 ring-slate-200">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100">
-                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Typ</th>
-                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Termin</th>
-                        <th className="px-4 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Forma</th>
-                        <th className="px-4 py-2.5 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kwota</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Typ</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Termin</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Forma</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Kwota</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {(() => {
-                        // Po potwierdzeniu udziału płatność ma już konkretną datę —
-                        // pokazujemy ją zamiast "X dni od potwierdzenia".
-                        const confirmedChild = trip.children.find((c) => c.participation_status === 'confirmed');
-                        const paymentDueByTemplate = new Map<string, string | null>();
-                        (confirmedChild?.payments ?? []).forEach((p) => {
-                          if (p.template_id) paymentDueByTemplate.set(p.template_id, p.due_date);
-                        });
-                        return trip.payment_templates.map((template) => {
+                      {trip.payment_templates.map((template) => {
                         const label = getTemplateLabel(template);
-                        const methodLabel = getMethodLabel(template.payment_method);
-                        const methodCls = template.payment_method === 'cash'
-                          ? 'bg-amber-100 text-amber-700'
-                          : template.payment_method === 'both'
-                            ? 'bg-violet-100 text-violet-700'
-                            : 'bg-blue-100 text-blue-700';
+                        const method = getMethodLabel(template.payment_method);
+
                         return (
                           <tr key={template.id} className="hover:bg-gray-50/50">
                             <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{label}</td>
@@ -560,8 +618,8 @@ function TripCardInner({
                               />
                             </td>
                             <td className="px-4 py-2.5 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodCls}`}>
-                                {methodLabel}
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>
+                                {method.label}
                               </span>
                             </td>
                             <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
@@ -569,74 +627,116 @@ function TripCardInner({
                             </td>
                           </tr>
                         );
-                        });
-                      })()}
+                      })}
                     </tbody>
+                    {totalLabel && (
+                      <tfoot>
+                        <tr className="border-t border-slate-200">
+                          <td colSpan={3} className="px-4 py-3 text-sm font-bold text-slate-900">
+                            Razem
+                          </td>
+                          <td className="px-4 py-3 text-right text-lg font-black text-slate-950">
+                            {totalLabel}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               </div>
             )}
 
             {(trip.bank_account_pln || trip.bank_account_eur) && (
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
-                    <Banknote className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-900">Dane do przelewu</h4>
-                </div>
-                <div className="space-y-2">
+              <DetailCard icon={Banknote} title="Dane do przelewu" className="lg:order-4">
+                <div className="grid gap-3">
                   {trip.children.map((child) => {
                     const [firstName, ...lastNameParts] = child.child_name.split(' ');
                     const lastName = lastNameParts.join(' ');
                     const tripDate = format(departureDate, 'dd.MM.yyyy', { locale: pl });
                     const transferTitle = `${lastName} ${firstName} ${trip.title} ${tripDate}`;
                     return (
-                      <div key={child.child_id} className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-400 mb-0.5">Tytuł przelewu – {child.child_name}</p>
-                          <p className="text-sm font-medium text-gray-900 break-all">{transferTitle}</p>
+                      <div key={child.child_id} className="flex items-center justify-between rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-400 mb-0.5">Tytuł przelewu</p>
+                          <p className="break-all text-sm font-medium text-gray-900">{transferTitle}</p>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); onCopy(transferTitle, 'Tytuł przelewu'); }} className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 flex-shrink-0">
+                        <button onClick={(e) => { e.stopPropagation(); onCopy(transferTitle, 'Tytuł przelewu'); }} className="ml-2 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white hover:text-gray-600">
                           <Copy className="h-4 w-4" />
                         </button>
                       </div>
                     );
                   })}
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {trip.bank_account_pln && (
-                      <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <div>
-                          <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
-                          <p className="text-sm text-gray-900">{trip.bank_account_pln}</p>
-                        </div>
-                        <button
-                          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-                          onClick={(e) => { e.stopPropagation(); onCopy(trip.bank_account_pln!, 'Numer konta PLN'); }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
+                  {trip.bank_account_pln && (
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
+                        <p className="text-sm text-gray-900">{trip.bank_account_pln}</p>
                       </div>
-                    )}
-                    {trip.bank_account_eur && (
-                      <div className="flex items-center justify-between bg-white rounded-xl p-3 ring-1 ring-gray-100">
-                        <div>
-                          <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
-                          <p className="text-sm text-gray-900">{trip.bank_account_eur}</p>
-                        </div>
-                        <button
-                          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
-                          onClick={(e) => { e.stopPropagation(); onCopy(trip.bank_account_eur!, 'Numer konta EUR'); }}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
+                      <button
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
+                        onClick={(e) => { e.stopPropagation(); onCopy(trip.bank_account_pln!, 'Numer konta PLN'); }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  {trip.bank_account_eur && (
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
+                        <p className="text-sm text-gray-900">{trip.bank_account_eur}</p>
                       </div>
-                    )}
-                  </div>
+                      <button
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
+                        onClick={(e) => { e.stopPropagation(); onCopy(trip.bank_account_eur!, 'Numer konta EUR'); }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
+              </DetailCard>
+            )}
+
+            {trip.packing_list && (
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-5 lg:col-span-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                    <Backpack className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900">Co zabrać</h4>
+                </div>
+                <ul className="mt-4 divide-y divide-slate-200">
+                  {trip.packing_list
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 py-2 text-sm text-slate-700">
+                        <CheckIcon />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
               </div>
             )}
 
+            {trip.additional_info && (
+              <DetailCard icon={Info} title="Dodatkowe informacje" className="lg:order-6">
+                <ul className="space-y-2">
+                  {trip.additional_info
+                    .split('\n')
+                    .map((line) => line.replace(/^[-•*]\s*/, '').trim())
+                    .filter(Boolean)
+                    .map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm leading-relaxed text-slate-700">
+                        <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-500" />
+                        {item}
+                      </li>
+                    ))}
+                </ul>
+              </DetailCard>
+            )}
           </div>
         </CollapsibleContent>
       </div>

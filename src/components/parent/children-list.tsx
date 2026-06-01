@@ -3,15 +3,13 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { differenceInYears, format } from 'date-fns';
+import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import {
   UserPlus,
   Check,
   Edit,
   Trash2,
-  Calendar,
-  Ruler,
   Users,
   Plus,
   MapPin,
@@ -116,16 +114,30 @@ export function ChildrenList({ participants }: ChildrenListProps) {
   }, []);
 
   useEffect(() => {
-    if (selectedChildId === 'all') {
+    if (selectedChildId === 'all' && participants.length === 0) {
       setDashboardData(null);
       return;
     }
     setDashboardLoading(true);
-    getDashboardData(selectedChildId)
+    const request = selectedChildId === 'all'
+      ? Promise.all(participants.map((child) => getDashboardData(child.id))).then((items): DashboardData => ({
+          upcomingTrips: items.flatMap((item) => item.upcomingTrips)
+            .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime())
+            .slice(0, 2),
+          overduePayments: items.flatMap((item) => item.overduePayments),
+          upcomingPayments: items.flatMap((item) => item.upcomingPayments),
+          overdueCount: items.reduce((sum, item) => sum + item.overdueCount, 0),
+          attendance: {
+            completed: items.reduce((sum, item) => sum + item.attendance.completed, 0),
+            total: items.reduce((sum, item) => sum + item.attendance.total, 0),
+          },
+        }))
+      : getDashboardData(selectedChildId);
+    request
       .then(setDashboardData)
       .catch(console.error)
       .finally(() => setDashboardLoading(false));
-  }, [selectedChildId]);
+  }, [selectedChildId, participants]);
 
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
     isOpen: false,
@@ -273,253 +285,93 @@ export function ChildrenList({ participants }: ChildrenListProps) {
 
   return (
     <>
-      {/* ── Górny rząd: Wybór dziecka | Wiadomości ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* LEWY: Lista dzieci */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <p className="text-base font-semibold text-gray-800">Moje dzieci</p>
-            </div>
-            <Link
-              href="/parent/children/add"
-              className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Dodaj
-            </Link>
+      <div className="rounded-2xl bg-blue-600 p-5 text-white shadow-sm shadow-blue-600/15">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-blue-100">Moje dzieci</p>
+            <h2 className="mt-1 text-2xl font-bold leading-tight">{participants.length} dzieci w systemie</h2>
+            <p className="mt-2 max-w-2xl text-sm text-blue-100">
+              Wybierz dziecko i przejdź do jego informacji, wyjazdów oraz płatności.
+            </p>
           </div>
-
-          <div className="divide-y divide-gray-50">
-            {/* Opcja "Wszystkie dzieci" */}
-            <div
-              onClick={handleSelectAll}
-              className={cn(
-                'flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-all duration-150 relative',
-                isAll ? 'bg-blue-50/50' : 'hover:bg-gray-50'
-              )}
-            >
-              {isAll && (
-                <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500 rounded-r-sm" />
-              )}
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className={cn(
-                    'text-sm font-semibold',
-                    isAll ? 'text-blue-700' : 'text-gray-800'
-                  )}>
-                    Wszystkie dzieci
-                  </p>
-                  {isAll && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 flex-shrink-0">
-                      <Check className="h-2.5 w-2.5 text-white" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-gray-400 mt-0.5">Wybierz dziecko, aby zobaczyć jego wyjazdy i płatności</p>
-              </div>
-            </div>
-
-            {participants.map((child, index) => {
-              const birthDate = new Date(child.birth_date);
-              const age = differenceInYears(new Date(), birthDate);
-              const isSelected = selectedChildId === child.id;
-              const color = avatarColors[index % avatarColors.length];
-
-              return (
-                <div
-                  key={child.id}
-                  onClick={() => handleSelectChild(child)}
-                  className={cn(
-                    'flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-all duration-150 relative',
-                    isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50'
-                  )}
-                >
-                  {isSelected && (
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-500 rounded-r-sm" />
-                  )}
-
-                  <div className={cn(
-                    'w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0',
-                    color.bg, color.text
-                  )}>
-                    {child.first_name.charAt(0)}{child.last_name.charAt(0)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className={cn(
-                        'text-sm font-semibold',
-                        isSelected ? 'text-blue-700' : 'text-gray-800'
-                      )}>
-                        {child.first_name} {child.last_name}
-                      </p>
-                      {isSelected && (
-                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 flex-shrink-0">
-                          <Check className="h-2.5 w-2.5 text-white" />
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2.5 text-[11px] text-gray-400 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-2.5 w-2.5" />
-                        {age} lat
-                      </span>
-                      {child.height_cm && (
-                        <span className="flex items-center gap-1">
-                          <Ruler className="h-2.5 w-2.5" />
-                          {child.height_cm} cm
-                        </span>
-                      )}
-                      {child.group ? (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-2.5 w-2.5" />
-                          {child.group.name}
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-amber-600">
-                          <AlertCircle className="h-2.5 w-2.5" />
-                          Brak grupy
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <Link
-                      href={`/parent/children/${child.id}`}
-                      className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                    >
-                      <Edit className="h-3.5 w-3.5 text-gray-400" />
-                    </Link>
-                    <button
-                      onClick={(e) => handleDeleteClick(e, child.id)}
-                      disabled={deleteLoadingId === child.id}
-                      aria-label={`Usuń ${child.first_name} ${child.last_name}`}
-                      className="w-7 h-7 rounded-lg hover:bg-red-50 flex items-center justify-center transition-colors disabled:opacity-60"
-                    >
-                      {deleteLoadingId === child.id ? (
-                        <Loader2 className="h-3.5 w-3.5 text-gray-400 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5 text-gray-400 hover:text-red-500" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {!isAll && (
-            <div className="px-5 py-3 border-t border-gray-50">
-              <p className="text-xs text-gray-400 text-center">Kliknij ponownie, aby odznaczyć dziecko</p>
-            </div>
-          )}
+          <Link
+            href="/parent/children/add"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+          >
+            <Plus className="h-4 w-4" />
+            Dodaj dziecko
+          </Link>
         </div>
 
-        {/* PRAWY: Wiadomości */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '300px' }}>
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
-                <MessageSquare className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-base font-semibold text-gray-800">Wiadomości od organizatora</p>
-                {!messagesLoading && (
-                  <p className="text-[11px] text-gray-400">{messages.length} komunikatów</p>
-                )}
-              </div>
-            </div>
-            {unreadCount > 0 && (
-              <span className="text-xs font-bold text-white bg-red-500 px-2.5 py-1 rounded-full">
-                {unreadCount} nowych
-              </span>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={handleSelectAll}
+            className={cn(
+              'inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ring-1',
+              isAll
+                ? 'bg-white text-blue-700 ring-white'
+                : 'bg-white/12 text-white ring-white/20 hover:bg-white/20'
             )}
-          </div>
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-current/15">
+              <Users className="h-4 w-4" />
+            </span>
+            Wszystkie dzieci
+            {isAll && <Check className="h-4 w-4" />}
+          </button>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
-            {messagesLoading ? (
-              <div className="p-5 space-y-4 animate-pulse">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
-                    <div className="flex-1 space-y-2 pt-1">
-                      <div className="h-3.5 bg-gray-100 rounded w-2/3" />
-                      <div className="h-3 bg-gray-100 rounded w-full" />
-                      <div className="h-3 bg-gray-100 rounded w-4/5" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-12 text-center px-6">
-                <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mb-3">
-                  <MessageSquare className="h-6 w-6 text-white/40" />
-                </div>
-                <p className="text-sm font-medium text-gray-500">Brak wiadomości</p>
-                <p className="text-xs text-gray-400 mt-1">Organizator nie wysłał jeszcze żadnych komunikatów</p>
-              </div>
-            ) : (
-              messages.map((msg) => (
+          {participants.map((child, index) => {
+            const isSelected = selectedChildId === child.id;
+            const color = avatarColors[index % avatarColors.length];
+
+            return (
+              <div
+                key={child.id}
+                className={cn(
+                  'inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ring-1',
+                  isSelected
+                    ? 'bg-white text-blue-700 ring-white'
+                    : 'bg-white/12 text-white ring-white/20 hover:bg-white/20'
+                )}
+              >
                 <button
-                  key={msg.id}
-                  onClick={() => {
-                    setExpandedMessage(msg);
-                    if (!msg.is_read) handleMarkRead(msg.id);
-                  }}
-                  className={cn(
-                    'w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors',
-                    !msg.is_read && 'bg-blue-50/20'
-                  )}
+                  onClick={() => handleSelectChild(child)}
+                  className="inline-flex min-w-0 items-center gap-2"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5',
-                      msg.is_read ? 'bg-gray-100' : 'bg-blue-100'
-                    )}>
-                      <MessageSquare className={cn('h-3.5 w-3.5', msg.is_read ? 'text-gray-400' : 'text-blue-500')} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <p className={cn(
-                          'text-sm truncate flex items-center gap-1.5',
-                          msg.is_read ? 'text-gray-600' : 'font-semibold text-gray-900'
-                        )}>
-                          {!msg.is_read && (
-                            <span className="h-2 w-2 rounded-full bg-red-500 flex-shrink-0" />
-                          )}
-                          <span className="truncate">{msg.title}</span>
-                        </p>
-                        <span className="text-[11px] text-gray-400 flex-shrink-0">
-                          {format(new Date(msg.created_at), 'd MMM', { locale: pl })}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">
-                        {msg.body}
-                      </p>
-                      <span className="inline-block mt-1.5 text-[10px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
-                        {!msg.is_read ? 'Nowa • Kliknij aby przeczytać' : 'Kliknij aby przeczytać'}
-                      </span>
-                    </div>
-                  </div>
+                  <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold', isSelected ? color.bg : 'bg-white/15', isSelected ? color.text : 'text-white')}>
+                    {child.first_name.charAt(0)}{child.last_name.charAt(0)}
+                  </span>
+                  <span className="truncate">{child.first_name} {child.last_name}</span>
+                  {isSelected && <Check className="h-4 w-4 flex-shrink-0" />}
                 </button>
-              ))
-            )}
-          </div>
+                <span className={cn('h-5 w-px', isSelected ? 'bg-blue-200' : 'bg-white/20')} />
+                <Link
+                  href={`/parent/children/${child.id}`}
+                  className={cn('flex h-7 w-7 items-center justify-center rounded-lg transition-colors', isSelected ? 'hover:bg-blue-50' : 'hover:bg-white/15')}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Edytuj ${child.first_name} ${child.last_name}`}
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Link>
+                <button
+                  onClick={(e) => handleDeleteClick(e, child.id)}
+                  disabled={deleteLoadingId === child.id}
+                  aria-label={`Usuń ${child.first_name} ${child.last_name}`}
+                  className={cn('flex h-7 w-7 items-center justify-center rounded-lg transition-colors disabled:opacity-60', isSelected ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-white/15')}
+                >
+                  {deleteLoadingId === child.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── Dolny rząd: Wyjazdy | Płatności ── */}
-      {!isAll && selectedChild && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+      <div className="space-y-5">
 
           {/* Najbliższe wyjazdy */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -629,6 +481,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
             )}
           </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5">
           {/* Płatności */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
@@ -753,8 +606,90 @@ export function ChildrenList({ participants }: ChildrenListProps) {
               </div>
             )}
           </div>
+
+          {/* Wiadomości */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '300px' }}>
+            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-gray-800">Wiadomości</p>
+                  {!messagesLoading && (
+                    <p className="text-[11px] text-gray-400">{messages.length} wiadomości od organizatora</p>
+                  )}
+                </div>
+              </div>
+              <Link href="/parent/children" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
+                Wszystkie →
+              </Link>
+            </div>
+
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+              {messagesLoading ? (
+                <div className="p-5 space-y-4 animate-pulse">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-3.5 bg-gray-100 rounded w-2/3" />
+                        <div className="h-3 bg-gray-100 rounded w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="m-5 flex items-center gap-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-300 ring-1 ring-gray-200">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600">Brak nowych wiadomości</p>
+                    <p className="text-xs text-gray-400">Powiadomienia o płatnościach i wyjazdach pojawią się tutaj.</p>
+                  </div>
+                </div>
+              ) : (
+                messages.slice(0, 3).map((msg) => (
+                  <button
+                    key={msg.id}
+                    onClick={() => {
+                      setExpandedMessage(msg);
+                      if (!msg.is_read) handleMarkRead(msg.id);
+                    }}
+                    className={cn(
+                      'w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors',
+                      !msg.is_read && 'bg-blue-50/20'
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold text-white">
+                        BS
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <p className={cn('text-sm truncate', msg.is_read ? 'text-gray-600' : 'font-semibold text-gray-900')}>
+                            {msg.title}
+                          </p>
+                          <span className="text-[11px] text-gray-400 flex-shrink-0">
+                            {format(new Date(msg.created_at), 'd MMM', { locale: pl })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">{msg.body}</p>
+                        {!msg.is_read && (
+                          <span className="inline-block mt-1.5 text-[10px] font-semibold text-blue-600">
+                            • Nowa
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Modal pełnej wiadomości */}
       <Dialog open={!!expandedMessage} onOpenChange={(open) => !open && setExpandedMessage(null)}>

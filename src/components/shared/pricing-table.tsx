@@ -44,25 +44,17 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
     });
 
     return (
-        <div className="rounded-lg border bg-card overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="border-b bg-muted/30">
-                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">Za co</th>
-                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">Termin</th>
-                        <th className="px-4 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">Forma</th>
-                        <th className="px-4 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">Kwota</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y">
-                    {sortedTemplates.map((template) => {
-                        const methodStyle = getMethodLabel(template.payment_method);
-                        const label = getPaymentTypeLabel(template);
-
-                        return (
-                            <tr key={template.id} className="hover:bg-muted/30 transition-colors">
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                    <p className="font-semibold text-foreground">{label}</p>
+        <div className="rounded-lg border bg-card">
+            {/* Mobile: karty */}
+            <div className="md:hidden divide-y">
+                {sortedTemplates.map((template) => {
+                    const methodStyle = getMethodLabel(template.payment_method);
+                    const label = getPaymentTypeLabel(template);
+                    return (
+                        <div key={template.id} className="p-3">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-foreground text-sm">{label}</p>
                                     {(template.payment_type === 'season_pass' || (template.is_first_installment && template.includes_season_pass)) && (
                                         <p className="text-xs text-muted-foreground mt-0.5">
                                             {template.payment_type === 'season_pass'
@@ -70,28 +62,78 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                                                 : '(zawiera karnet)'}
                                         </p>
                                     )}
-                                </td>
-                                <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                </div>
+                                <p className="text-sm font-bold text-green-600 tabular-nums whitespace-nowrap">
+                                    {template.amount.toFixed(0)} {template.currency}
+                                </p>
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodStyle.className}`}>
+                                    {methodStyle.label}
+                                </span>
+                                <span className="text-muted-foreground">
                                     <PaymentDue
                                         paymentDueDate={actualDueDatesByTemplateId?.[template.id]}
                                         templateDueDate={template.due_date}
                                         dueDaysFromConfirmation={template.due_days_from_confirmation}
                                         departureDate={departureDate}
                                     />
-                                </td>
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodStyle.className}`}>
-                                        {methodStyle.label}
-                                    </span>
-                                </td>
-                                <td className="px-4 py-3 text-right font-bold text-green-600 whitespace-nowrap">
-                                    {template.amount.toFixed(0)} {template.currency}
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+            {/* Desktop: tabela */}
+            <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="border-b bg-muted/30">
+                            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">Za co</th>
+                            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">Termin</th>
+                            <th className="px-4 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">Forma</th>
+                            <th className="px-4 py-2.5 text-right font-medium text-muted-foreground whitespace-nowrap">Kwota</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                        {sortedTemplates.map((template) => {
+                            const methodStyle = getMethodLabel(template.payment_method);
+                            const label = getPaymentTypeLabel(template);
+
+                            return (
+                                <tr key={template.id} className="hover:bg-muted/30 transition-colors">
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <p className="font-semibold text-foreground">{label}</p>
+                                        {(template.payment_type === 'season_pass' || (template.is_first_installment && template.includes_season_pass)) && (
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {template.payment_type === 'season_pass'
+                                                    ? `Roczniki: ${template.birth_year_from}–${template.birth_year_to}`
+                                                    : '(zawiera karnet)'}
+                                            </p>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                        <PaymentDue
+                                            paymentDueDate={actualDueDatesByTemplateId?.[template.id]}
+                                            templateDueDate={template.due_date}
+                                            dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                            departureDate={departureDate}
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${methodStyle.className}`}>
+                                            {methodStyle.label}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-bold text-green-600 whitespace-nowrap">
+                                        {template.amount.toFixed(0)} {template.currency}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

@@ -51,12 +51,13 @@ export default async function ParentContractsPage({ searchParams }: Props) {
     : null;
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6">
       <PageHeader
         title="Dokumenty"
         description="Dokumenty ogólne i umowy uczestnictwa"
       />
 
+      <div className="space-y-6 max-w-3xl mx-auto">
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={selectedChildName} childrenList={childrenList}>
         {/* ── SEKCJA: Dokumenty ── */}
         <div className="space-y-4">
@@ -160,6 +161,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
           </>
         )}
       </ChildGuard>
+      </div>
     </div>
   );
 }

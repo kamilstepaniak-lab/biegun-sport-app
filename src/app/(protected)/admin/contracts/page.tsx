@@ -45,7 +45,7 @@ export default async function AdminContractsPage() {
   }, {});
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Dokumenty"
         description="Dokumenty ogólne i umowy uczestnictwa"

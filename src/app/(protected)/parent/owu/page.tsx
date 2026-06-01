@@ -1,6 +1,7 @@
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/shared';
 import { OWU_TEXT } from '@/lib/contract-template';
 
 export const metadata = {
@@ -11,29 +12,22 @@ export default function OwuPage() {
   const sections = OWU_TEXT.split(/━+/).map((s) => s.trim()).filter(Boolean);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Nawigacja wstecz */}
-      <Link
-        href="/parent/contracts"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+    <div className="space-y-6">
+      <PageHeader
+        title="Ogólne Warunki Uczestnictwa"
+        description="BiegunSport — dokument regulaminowy"
       >
-        <ArrowLeft className="h-4 w-4" />
-        Powrót do umów
-      </Link>
+        <Link
+          href="/parent/contracts"
+          className="inline-flex items-center gap-2 text-sm bg-white px-3 py-2 rounded-xl transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Powrót do umów
+        </Link>
+      </PageHeader>
 
       {/* Dokument OWU */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Nagłówek */}
-        <div className="bg-gradient-to-r from-blue-700 to-blue-900 px-8 py-6 text-white">
-          <div className="flex items-center gap-3">
-            <Shield className="h-6 w-6 text-blue-300" />
-            <div>
-              <p className="text-blue-200 text-xs font-medium uppercase tracking-widest mb-0.5">BiegunSport</p>
-              <h1 className="text-xl font-bold">Ogólne Warunki Uczestnictwa</h1>
-            </div>
-          </div>
-        </div>
-
+      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Sekcje OWU */}
         <div className="divide-y divide-gray-100">
           {sections.map((section, idx) => (

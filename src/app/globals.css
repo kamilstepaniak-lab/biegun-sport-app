@@ -216,76 +216,57 @@
   font-weight: 600;
 }
 
-.admin-shell .page-header {
+.page-header {
   position: relative;
-  min-height: 150px;
-  overflow: hidden;
   padding: 28px clamp(18px, 3vw, 36px) 22px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
-  background:
-    linear-gradient(155deg, transparent 0 46%, rgba(255, 255, 255, 0.68) 46% 49%, transparent 49%),
-    linear-gradient(145deg, transparent 0 52%, rgba(96, 165, 250, 0.48) 52% 54%, transparent 54%),
-    linear-gradient(135deg, rgba(186, 230, 253, 0.8) 0%, rgba(224, 242, 254, 0.88) 42%, #f8fafc 100%);
+  background: #2563eb;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
-.admin-shell .page-header::before,
-.admin-shell .page-header::after {
-  content: "";
-  position: absolute;
-  inset: auto -4% 0 auto;
-  width: 62%;
-  height: 86%;
-  pointer-events: none;
-  opacity: 0.9;
-  clip-path: polygon(0 100%, 18% 58%, 28% 73%, 43% 30%, 54% 50%, 68% 16%, 100% 100%);
-}
-
-.admin-shell .page-header::before {
-  background: linear-gradient(180deg, rgba(147, 197, 253, 0.4), rgba(37, 99, 235, 0.18));
-}
-
-.admin-shell .page-header::after {
-  inset: auto -10% 0 auto;
-  width: 48%;
-  height: 58%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(96, 165, 250, 0.25));
-  opacity: 0.65;
-}
-
-.admin-shell .page-header-copy,
-.admin-shell .page-header-actions {
+.page-header-copy,
+.page-header-actions {
   position: relative;
   z-index: 1;
 }
 
-.admin-shell .page-header h1 {
-  color: var(--admin-ink);
-  font-size: clamp(30px, 3.2vw, 34px);
-  line-height: 1.08;
+.page-header h1 {
+  color: #ffffff;
+  font-size: clamp(26px, 3vw, 32px);
+  line-height: 1.1;
   letter-spacing: 0;
 }
 
-.admin-shell .page-header p {
+.page-header p {
   margin-top: 6px;
-  color: var(--admin-body);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
 }
 
-.admin-shell .page-header a,
-.admin-shell .page-header button {
+.page-header a,
+.page-header button {
   border-radius: 10px;
 }
 
-.admin-shell .page-header a.bg-blue-600,
-.admin-shell .page-header button.bg-blue-600 {
-  background: var(--admin-blue);
-  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+.page-header a.bg-blue-600,
+.page-header button.bg-blue-600 {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
 }
 
-.admin-shell .page-header a.bg-white,
-.admin-shell .page-header button.bg-white {
-  border: 1px solid var(--admin-line);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+.page-header a.bg-white,
+.page-header button.bg-white,
+.page-header [data-slot="button"][class*="bg-background"],
+.page-header [data-slot="button"][class*="border bg-"] {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.page-header [data-slot="button"][class*="bg-background"]:hover,
+.page-header [data-slot="button"][class*="border bg-"]:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
 }
 
 .admin-shell .rounded-2xl {

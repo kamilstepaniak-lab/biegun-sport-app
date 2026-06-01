@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle, Clock, User, Mail } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Breadcrumbs } from '@/components/shared';
+import { Breadcrumbs, PageHeader } from '@/components/shared';
 import { ContractDocument } from '@/components/contract-document';
 import { getContractById } from '@/lib/actions/contracts';
 
@@ -47,7 +47,7 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
   const contractNumber = (contract as Record<string, unknown>).contract_number as string | null ?? null;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <Breadcrumbs
         homeHref="/admin/groups"
         items={[
@@ -58,21 +58,17 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
         ]}
       />
 
-      {/* Nagłówek */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Podgląd umowy</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {trip?.title} — {childName}
-          </p>
-        </div>
+      <PageHeader
+        title="Podgląd umowy"
+        description={`${trip?.title ?? ''} — ${childName}`}
+      >
         <Button variant="outline" asChild>
           <Link href={`/admin/trips/${id}/contracts`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Powrót do listy
           </Link>
         </Button>
-      </div>
+      </PageHeader>
 
       {/* Metadane */}
       <Card>

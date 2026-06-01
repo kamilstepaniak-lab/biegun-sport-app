@@ -19,12 +19,13 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="space-y-3 max-w-4xl">
+    <div className="space-y-6">
       <PageHeader
         title="Ustawienia"
         description="Konfiguracja aplikacji, logi i narzędzia administracyjne"
       />
 
+      <div className="space-y-3 max-w-4xl">
       {/* ── Szablony e-maili ───────────────────────────────────────── */}
       <Link
         href="/admin/settings/email-templates"
@@ -136,6 +137,7 @@ export default async function SettingsPage() {
           <EmailLogsPanel logs={emailLogs} queueLogs={queueLogs} />
         </div>
       </details>
+      </div>
     </div>
   );
 }

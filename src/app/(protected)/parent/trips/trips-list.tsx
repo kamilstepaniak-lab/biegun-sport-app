@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { updateParticipationStatusByParent, type TripForParent, type ChildTripStatus } from '@/lib/actions/trips';
@@ -150,18 +150,27 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
         </div>
       )}
 
-      {upcomingByMonth.map((group) => (
-        <div key={group.monthKey} className="space-y-4">
-          <div className="flex items-center gap-4 px-1">
-            <div className="h-px flex-1 bg-gray-200" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-              {group.month} {group.year}
-            </span>
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
-          {group.trips.map((trip) => renderTripCard(trip, false))}
+      {upcomingByMonth.length > 0 && (
+        <div className="relative space-y-6 pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200">
+          {upcomingByMonth.map((group) => (
+            <div key={group.monthKey} className="relative space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="absolute -left-10 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/25">
+                  <CalendarIcon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-700">
+                  {group.month} {group.year}
+                </span>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
+                  {group.trips.length}
+                </span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+              {group.trips.map((trip) => renderTripCard(trip, false))}
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
       {pastTrips.length > 0 && (
         <div className="space-y-4">
@@ -181,15 +190,20 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
           </button>
 
           {pastExpanded && (
-            <div className="space-y-4">
+            <div className="relative space-y-6 pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200">
               {pastByMonth.map((group) => (
-                <div key={group.monthKey} className="space-y-4">
-                  <div className="flex items-center gap-4 px-1">
-                    <div className="h-px flex-1 bg-gray-200" />
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                <div key={group.monthKey} className="relative space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="absolute -left-10 flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+                      <CalendarIcon className="h-4 w-4" />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-600">
                       {group.month} {group.year}
                     </span>
-                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
+                      {group.trips.length}
+                    </span>
+                    <div className="h-px flex-1 bg-slate-200" />
                   </div>
                   {group.trips.map((trip) => renderTripCard(trip, true))}
                 </div>
@@ -201,4 +215,3 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
     </div>
   );
 }
-

@@ -191,8 +191,10 @@ interface TripBlockProps {
 // inaczej każdy render rodzica tworzy nowy typ komponentu i remountuje
 // wszystkie bloki wyjazdów (utrata animacji collapsible, zbędna praca).
 function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contractTemplate }: TripBlockProps) {
+  const [renderedAt] = useState(() => Date.now());
   const departureDate = new Date(trip.departure_datetime);
   const returnDate = new Date(trip.return_datetime);
+  const daysUntilDeparture = Math.max(0, Math.ceil((departureDate.getTime() - renderedAt) / 86400000));
   const totalAmount =
     trip.payment_templates?.reduce((sum, template) => sum + Number(template.amount ?? 0), 0) ?? 0;
   const primaryCurrency = trip.payment_templates?.[0]?.currency ?? 'PLN';
@@ -269,11 +271,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
         <CollapsibleContent>
           <div className="grid gap-4 bg-slate-50 p-6 lg:grid-cols-3">
-            <div className="relative -m-6 mb-2 overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 p-6 text-white shadow-sm lg:col-span-3">
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-3/5 opacity-45">
-                <div className="absolute bottom-0 right-0 h-36 w-full bg-blue-900/60 [clip-path:polygon(0_100%,18%_56%,30%_74%,46%_28%,58%_55%,73%_20%,100%_100%)]" />
-                <div className="absolute bottom-0 right-16 h-24 w-3/4 bg-white/35 [clip-path:polygon(0_100%,24%_58%,38%_76%,58%_34%,72%_58%,88%_24%,100%_100%)]" />
-              </div>
+            <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
               <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -449,7 +447,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   <div>
                     <p className="text-[11px] font-medium text-slate-500">Za ile dni</p>
                     <p className="text-sm font-bold text-slate-900">
-                      {Math.max(0, Math.ceil((departureDate.getTime() - Date.now()) / 86400000))} dni
+                      {daysUntilDeparture} dni
                     </p>
                   </div>
                 </div>

@@ -42,19 +42,18 @@ export default async function AdminPaymentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader
-          title="Płatności"
-          description="Zarządzaj wszystkimi płatnościami w systemie"
-        />
+      <PageHeader
+        title="Płatności"
+        description="Zarządzaj wszystkimi płatnościami w systemie"
+      >
         <Link
           href="/admin/payments/history"
-          className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap flex-shrink-0"
+          className="flex items-center gap-2 px-3 py-2 text-sm bg-white border rounded-xl transition-colors whitespace-nowrap flex-shrink-0"
         >
           <History className="h-4 w-4" />
           Historia zmian
         </Link>
-      </div>
+      </PageHeader>
 
       {total === 0 && !hasActiveFilter ? (
         <EmptyState

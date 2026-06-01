@@ -11,12 +11,13 @@ export default async function AdminMessagesPage() {
   const [messages, groups] = await Promise.all([getAdminMessages(), getGroups()]);
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6">
       <PageHeader
         title="Wiadomości"
         description="Wysyłaj informacje do rodziców"
       />
 
+      <div className="space-y-6 max-w-3xl mx-auto">
       {/* Formularz nowej wiadomości */}
       <Card>
         <CardHeader>
@@ -45,6 +46,7 @@ export default async function AdminMessagesPage() {
           <AdminMessageList messages={messages} groups={groups} />
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

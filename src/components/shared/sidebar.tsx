@@ -103,7 +103,8 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const isAdmin = subtitle?.toLowerCase().includes('admin') ?? false;
+  // Ujednolicony styl sidebara dla panelu admina i rodzica
+  const isAdmin = true;
 
   // Aktywny jest tylko najbardziej szczegółowy pasujący element —
   // dzięki temu /admin/settings/email-templates nie podświetla też /admin/settings.

@@ -153,9 +153,56 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
             <p className="text-gray-500 text-sm">Brak wyjazdów w tym miesiącu</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <p className="md:hidden text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
-            <table className="w-full min-w-[560px]">
+          <>
+          {/* Mobile: karty */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {monthTrips.map((trip) => {
+              const { label, variant } = getDaysLabel(trip);
+              const badgeClass = {
+                done: 'bg-gray-100 text-gray-500',
+                active: 'bg-green-100 text-green-700',
+                today: 'bg-blue-600 text-white',
+                soon: 'bg-orange-100 text-orange-700',
+                medium: 'bg-yellow-100 text-yellow-700',
+                far: 'bg-gray-100 text-gray-600',
+              }[variant];
+              const dep = new Date(trip.departure_datetime);
+              const ret = new Date(trip.return_datetime);
+              return (
+                <Link key={trip.id} href={`/parent/trips/${trip.id}`} className="block p-4 hover:bg-gray-50/60 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-medium text-gray-900 text-sm leading-snug flex-1 min-w-0">{trip.title}</p>
+                    <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0', badgeClass)}>{label}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                        <ArrowUpRight className="h-3 w-3 text-green-500" />
+                        Wyjazd
+                      </div>
+                      <p className="font-semibold text-gray-900">{format(dep, 'd.MM.yyyy', { locale: pl })}</p>
+                      {(trip.departure_time_known ?? true) && (
+                        <p className="text-xs text-gray-600">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</p>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                        <ArrowDownLeft className="h-3 w-3 text-red-400" />
+                        Powrót
+                      </div>
+                      <p className="font-semibold text-gray-900">{format(ret, 'd.MM.yyyy', { locale: pl })}</p>
+                      {(trip.return_time_known ?? true) && (
+                        <p className="text-xs text-gray-600">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          {/* Desktop: tabela */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">Tytuł wyjazdu</th>
@@ -238,6 +285,7 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
