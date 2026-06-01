@@ -179,7 +179,7 @@ function TripCardInner({
       )}>
         <CollapsibleTrigger asChild>
           <div className="cursor-pointer">
-            <div className="grid gap-4 p-4 lg:grid-cols-[auto_1fr_auto_minmax(190px,auto)_auto] lg:items-center">
+            <div className="grid gap-4 p-4 lg:grid-cols-[auto_1fr_auto_auto] lg:items-center">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                 <Mountain className="h-5 w-5" />
               </div>
@@ -203,26 +203,6 @@ function TripCardInner({
                 <span className={cn('h-1.5 w-1.5 rounded-full', isPast ? 'bg-slate-400' : 'bg-blue-600')} />
                 {isPast ? 'Zrealizowany' : 'Zapisy otwarte'}
               </span>
-
-              <div className="flex flex-wrap gap-1.5 lg:justify-end">
-                {trip.groups.map((g) => {
-                  const colors = getGroupColor(g.name);
-                  return (
-                    <span
-                      key={g.id}
-                      className={cn(
-                        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold',
-                        colors.bg,
-                        colors.text,
-                        colors.border
-                      )}
-                    >
-                      <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
-                      {g.name}
-                    </span>
-                  );
-                })}
-              </div>
 
               <div className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
@@ -441,11 +421,23 @@ function TripCardInner({
                     )}
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {trip.groups.map((g) => (
-                      <span key={g.id} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
-                        {g.name}
-                      </span>
-                    ))}
+                    {trip.groups.map((g) => {
+                      const colors = getGroupColor(g.name);
+                      return (
+                        <span
+                          key={g.id}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold',
+                            colors.bg,
+                            colors.text,
+                            colors.border
+                          )}
+                        >
+                          <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
+                          {g.name}
+                        </span>
+                      );
+                    })}
                   </div>
                   <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
                     <MapPin className="h-4 w-4" />

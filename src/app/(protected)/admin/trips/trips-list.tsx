@@ -212,7 +212,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         isSelected && !isOpen && 'border-blue-500'
       )}>
         <CollapsibleTrigger asChild>
-          <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[auto_auto_1fr_auto_minmax(220px,auto)_auto_auto] lg:items-center">
+          <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[auto_auto_1fr_auto_auto_auto] lg:items-center">
             <div onClick={onToggleSelect}>
                 <Checkbox
                   checked={isSelected}
@@ -243,12 +243,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
               {statusLabels[trip.status]}
             </span>
-
-            <div className="flex flex-wrap gap-1.5 lg:justify-end">
-              {trip.groups.map((g) => (
-                <TripGroupChip key={g.id} name={g.name} />
-              ))}
-            </div>
 
             <div className={cn(
               'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
@@ -290,9 +284,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {trip.groups.map((g) => (
-                      <span key={g.id} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
-                        {g.name}
-                      </span>
+                      <TripGroupChip key={g.id} name={g.name} />
                     ))}
                   </div>
                   <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
