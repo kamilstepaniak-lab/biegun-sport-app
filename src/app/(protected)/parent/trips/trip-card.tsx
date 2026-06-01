@@ -184,14 +184,13 @@ function TripCardInner({
                 <Mountain className="h-5 w-5" />
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h3 className="truncate text-sm font-bold text-slate-900">
                   {trip.title}
                   {trip.location ? ` – ${trip.location}` : ''}
                 </h3>
-                <p className="mt-1 text-xs font-medium text-slate-500">
-                  {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })} ·{' '}
-                  {Math.max(1, Math.ceil((returnDate.getTime() - departureDate.getTime()) / 86400000))} dni
+                <p className="text-xs font-medium text-slate-500 whitespace-nowrap">
+                  · {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
                 </p>
               </div>
 
@@ -260,9 +259,9 @@ function TripCardInner({
                             {child.child_name.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                            <span className="font-medium text-gray-800">{child.child_name}</span>
+                            <p className="font-medium text-gray-800 leading-tight">{child.child_name}</p>
                             {currentStatus !== 'unconfirmed' && (
-                              <span className={cn('ml-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium', status.color)}>
+                              <span className={cn('mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium', status.color)}>
                                 <StatusIcon className="h-3 w-3" />
                                 {statusLabel}
                               </span>
@@ -429,23 +428,25 @@ function TripCardInner({
             <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
               <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-bold text-emerald-50 ring-1 ring-white/20">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
                       Zapisy otwarte
                     </span>
-                    {trip.groups.map((g) => (
-                      <span key={g.id} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
-                        {g.name}
-                      </span>
-                    ))}
                     {isPast && (
                       <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
                         Zrealizowany
                       </span>
                     )}
                   </div>
-                  <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {trip.groups.map((g) => (
+                      <span key={g.id} className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
+                        {g.name}
+                      </span>
+                    ))}
+                  </div>
                   <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
                     <MapPin className="h-4 w-4" />
                     Miejsce
