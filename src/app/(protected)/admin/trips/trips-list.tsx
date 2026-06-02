@@ -283,9 +283,21 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     )}
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {trip.groups.map((g) => (
-                      <TripGroupChip key={g.id} name={g.name} />
-                    ))}
+                    {trip.groups.map((g) => {
+                      const colors = getGroupColor(g.name);
+                      return (
+                        <span
+                          key={g.id}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full bg-white/10 ring-1 ring-white/40 px-2.5 py-1 text-[11px] font-semibold',
+                            colors.text === 'text-white' ? 'text-white' : colors.text
+                          )}
+                        >
+                          <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
+                          {g.name}
+                        </span>
+                      );
+                    })}
                   </div>
                   <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
                     <MapPin className="h-4 w-4" />
