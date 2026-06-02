@@ -269,6 +269,59 @@
   color: #ffffff;
 }
 
+/* ── Jasny nagłówek z grafiką gór (admin + rodzic) ────────── */
+.admin-shell .page-header {
+  min-height: 150px;
+  background: linear-gradient(180deg, #eef5fe 0%, #f6faff 60%, #ffffff 100%);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+.admin-shell .page-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("/parent-hero-mountains.svg") no-repeat right bottom;
+  background-size: auto 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.admin-shell .page-header h1 {
+  color: #0f172a;
+}
+
+.admin-shell .page-header p {
+  color: #475569;
+}
+
+.admin-shell .page-header a.bg-blue-600,
+.admin-shell .page-header button.bg-blue-600 {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22);
+}
+
+.admin-shell .page-header a.bg-blue-600:hover,
+.admin-shell .page-header button.bg-blue-600:hover {
+  background: #1d4ed8;
+}
+
+.admin-shell .page-header a.bg-white,
+.admin-shell .page-header button.bg-white,
+.admin-shell .page-header [data-slot="button"][class*="bg-background"],
+.admin-shell .page-header [data-slot="button"][class*="border bg-"] {
+  background: #ffffff;
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.admin-shell .page-header [data-slot="button"][class*="bg-background"]:hover,
+.admin-shell .page-header [data-slot="button"][class*="border bg-"]:hover {
+  background: #f1f6ff;
+  color: #1d4ed8;
+}
+
 .admin-shell .rounded-2xl {
   border-radius: 14px;
 }

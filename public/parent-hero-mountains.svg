@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 240" preserveAspectRatio="xMaxYMax slice" fill="none">
+  <defs>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="0.32" stop-color="#fff" stop-opacity="0.45"/>
+      <stop offset="0.62" stop-color="#fff" stop-opacity="1"/>
+    </linearGradient>
+    <mask id="fadeMask">
+      <rect width="1200" height="240" fill="url(#fade)"/>
+    </mask>
+  </defs>
+
+  <g mask="url(#fadeMask)">
+    <!-- back range: gentle silhouette across the top -->
+    <path d="M0 240 L0 168 L170 126 L350 158 L520 116 L700 150 L880 96 L1050 138 L1200 104 L1200 240 Z" fill="#e7f0fb"/>
+
+    <!-- mid-left soft hill -->
+    <polygon points="320,240 430,150 430,240" fill="#dbe8f9"/>
+    <polygon points="430,150 540,240 430,240" fill="#cbddf6"/>
+
+    <!-- main central-right peak -->
+    <polygon points="600,240 760,72 760,240" fill="#cbdcf4"/>
+    <polygon points="760,72 920,240 760,240" fill="#b2cdf0"/>
+    <polygon points="731,110 760,72 791,110" fill="#eff5ff"/>
+
+    <!-- far-right peak -->
+    <polygon points="880,240 1010,98 1010,240" fill="#d3e2f7"/>
+    <polygon points="1010,98 1140,240 1010,240" fill="#bcd4f2"/>
+    <polygon points="989,130 1010,98 1033,130" fill="#f1f6ff"/>
+
+    <!-- front-right ridge -->
+    <polygon points="820,240 905,134 905,240" fill="#c3d8f2"/>
+    <polygon points="905,134 992,240 905,240" fill="#adcaee"/>
+  </g>
+</svg>
