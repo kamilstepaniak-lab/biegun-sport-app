@@ -131,6 +131,10 @@ Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
   `ring-1 ring-gray-100` (radius `rounded-2xl` już był), ikony-nagłówki
   w Dokumentach `rounded-xl` → `rounded-lg` (kanon dla niebieskich boksów
   ikon). Dialogowe boksy ikon zostają `rounded-xl` (osobna konwencja).
+- Cleanup ui: banner „uzupełnij dane do umowy" w Dokumentach → `Alert` z ui.
+  Surowy `<select>` w `payments-list` zostaje natywny świadomie — natywny
+  picker to lepszy UX na telefonie (panel rodzica głównie mobilny); zamiana
+  na Radix `Select` byłaby regresją.
 - Odłożone do zrobienia z testem na żywo: podwójny redirect ChildUrlSync +
   ChildGuard (#13) — celowa defensywa, refaktor wymaga przeklikania wyboru
   dziecka, by nie wprowadzić regresji.

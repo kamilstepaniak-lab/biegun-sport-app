@@ -2,6 +2,7 @@ import { FileText, CheckCircle, Clock, AlertTriangle, BookOpen } from 'lucide-re
 import Link from 'next/link';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
 import { getContractsForParent } from '@/lib/actions/contracts';
@@ -104,12 +105,12 @@ export default async function ParentContractsPage({ searchParams }: Props) {
         </div>
 
         {!contractDataComplete && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
-            <span>
+          <Alert className="rounded-xl border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-600">
+            <AlertTriangle />
+            <AlertDescription className="text-amber-800">
               Uzupełnij <Link href="/parent/profile" className="font-semibold underline hover:text-amber-900">dane do umowy w profilu</Link> (imię, nazwisko, adres, PESEL) — bez nich umowy nie będą zawierać Twoich danych.
-            </span>
-          </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {contracts.length === 0 ? (
