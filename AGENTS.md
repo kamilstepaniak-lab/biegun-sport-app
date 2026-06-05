@@ -44,6 +44,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/trips`: dopracowano górski header po podglądzie — zmniejszono
+  proporcje, usunięto ikonę przy tytule, flagę na szczycie i placeholder
+  wyszukiwarki oraz przywrócono przycisk „Wszystkie dzieci".
 - `/parent/trips`: wdrożono pełnoszeroki jasny header Wyjazdów z autorską
   grafiką gór, dużym tytułem, polem wyszukiwania przez wpisywanie nazwy
   wyjazdu oraz wyborem dziecka w jednej sekcji.

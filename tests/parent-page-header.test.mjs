@@ -47,12 +47,14 @@ test('parent trips has its own full-width mountain header layout', () => {
   assert.match(tripsShell, /parent-trips-hero/);
   assert.match(globals, /:not\(\.parent-trips-hero\)/);
   assert.match(tripsShell, /parent-hero-mountains\.svg/);
-  assert.match(tripsShell, /lg:min-h-\[360px\]/);
-  assert.match(tripsShell, /showAllOption=\{false\}/);
+  assert.match(tripsShell, /lg:min-h-\[285px\]/);
+  assert.match(tripsShell, /bg-gradient-to-b from-transparent via-\[#f8fbff\]\/80 to-\[#f8fafc\]/);
+  assert.doesNotMatch(tripsShell, /showAllOption=\{false\}/);
   assert.match(tripsShell, /htmlFor="parent-trip-search"/);
   assert.match(tripsShell, /Wpisz nazwę wyjazdu/);
-  assert.match(tripsShell, /placeholder="np\. Zimowisko w Tatrach"/);
+  assert.doesNotMatch(tripsShell, /placeholder=/);
   assert.doesNotMatch(tripsShell, /bg-blue-600 text-white/);
   assert.match(mountains, /viewBox="0 0 1500 420"/);
   assert.match(mountains, /id="peakLight"/);
+  assert.doesNotMatch(mountains, /V36Z/);
 });

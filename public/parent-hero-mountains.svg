@@ -68,8 +68,6 @@
     <path d="M1440 379h60l-30-88-30 88Z" fill="#8db8ea"/>
   </g>
 
-  <path d="M1038 30v49" stroke="#7eaef0" stroke-width="4" stroke-linecap="round"/>
-  <path d="M1041 36c22 0 30 16 52 8-18 18-37 9-52 16V36Z" fill="#70a7f0"/>
   <path d="M826 135c10-12 21-12 31 0" stroke="#7eb1f4" stroke-width="3" stroke-linecap="round"/>
   <path d="M1262 90c10-10 21-10 31 0" stroke="#9bc4f7" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
   <path d="M980 322c50-26 106-34 167-30" stroke="#f8fbff" stroke-width="8" stroke-linecap="round" opacity="0.42"/>
