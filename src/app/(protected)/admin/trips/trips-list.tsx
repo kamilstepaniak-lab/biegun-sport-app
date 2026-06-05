@@ -210,7 +210,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         isSelected && !isOpen && 'border-blue-500'
       )}>
         <CollapsibleTrigger asChild>
-          <div className="grid cursor-pointer gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_auto_1fr_auto_auto_auto] lg:items-center">
+          <div className="grid cursor-pointer gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_auto_18rem_auto_1fr_auto_auto] lg:items-center">
             <div onClick={onToggleSelect}>
                 <Checkbox
                   checked={isSelected}
@@ -230,6 +230,8 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
               <Calendar className="h-3.5 w-3.5 text-blue-500" />
               {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
             </p>
+
+            <div className="hidden lg:block" />
 
             <span className={cn(
               'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
