@@ -573,6 +573,13 @@ export async function createPaymentsForRegistration(registrationId: string, trip
     return { success: true, message: 'Brak szablonów płatności' };
   }
 
+  const { data: tripRelease } = await supabaseAdmin
+    .from('trips')
+    .select('payments_released_at')
+    .eq('id', tripId)
+    .maybeSingle();
+  const parentVisible = Boolean(tripRelease?.payments_released_at);
+
   // Pobierz dane uczestnika (do sprawdzenia rocznika dla karnetów)
   const { data: participant } = await supabaseAdmin
     .from('participants')
@@ -624,7 +631,7 @@ export async function createPaymentsForRegistration(registrationId: string, trip
         currency: template.currency,
         due_date: dueDate,
         status: 'pending',
-        parent_visible: false,
+        parent_visible: parentVisible,
         amount_paid: 0,
       };
     });

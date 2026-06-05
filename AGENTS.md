@@ -37,6 +37,19 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-06-05
+
+- Dodano widoczność płatności rodzica sterowaną komunikacją wyjazdową:
+  rodzic widzi plan kosztów w `/parent/trips`, ale realne rekordy w
+  `/parent/payments` pojawiają się dopiero po odblokowaniu wyjazdu przez
+  wysłanie wiadomości `trip_info`.
+- Wysłanie wiadomości wyjazdowej ustawia `trips.payments_released_at` i
+  publikuje istniejące płatności (`payments.parent_visible = true`); płatności
+  tworzone później po potwierdzeniu udziału rodzica są od razu widoczne.
+- Przypomnienia o płatnościach pomijają pozycje niewidoczne dla rodzica.
+- Wymagana ręczna migracja Supabase:
+  `supabase/migrations/payment-parent-visibility.sql` przed pushem na produkcję.
+
 ### 2026-05-28
 
 - Maile systemowe (`trip_info`, `registration`, `payment_confirmed`,

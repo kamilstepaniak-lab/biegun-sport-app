@@ -123,6 +123,7 @@ export interface Trip {
   attendance_type: AttendanceType;
   category: TripCategory;
   registration_form_enabled: boolean;
+  payments_released_at: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;

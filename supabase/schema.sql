@@ -97,6 +97,7 @@ CREATE TABLE trips (
   bank_account_pln TEXT,
   bank_account_eur TEXT,
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'cancelled', 'completed')),
+  payments_released_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID REFERENCES profiles(id)

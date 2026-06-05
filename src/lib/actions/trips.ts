@@ -365,6 +365,13 @@ async function syncTripPaymentsAfterPricingChange(
 
   if (!activeRegs || activeRegs.length === 0) return;
 
+  const { data: tripRelease } = await supabaseAdmin
+    .from('trips')
+    .select('payments_released_at')
+    .eq('id', id)
+    .maybeSingle();
+  const parentVisible = Boolean(tripRelease?.payments_released_at);
+
   for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string; confirmed_at: string | null }[]) {
     const { data: participant } = await supabaseAdmin
       .from('participants')
@@ -501,7 +508,7 @@ async function syncTripPaymentsAfterPricingChange(
             currency: template.currency,
             due_date: effectiveDueDate,
             status: 'pending',
-            parent_visible: false,
+            parent_visible: parentVisible,
             amount_paid: 0,
             payment_method: template.payment_method,
           });

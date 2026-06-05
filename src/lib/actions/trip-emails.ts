@@ -14,7 +14,6 @@ import { logActivity } from './activity-logs';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 
-
 // ─── Podgląd e-maila (do edytora w dialogu wyjazdu) ──────────────────────────
 
 /**
@@ -227,7 +226,6 @@ export async function sendTripInfoEmailToGroup(
     });
   }
 
-  let sent = 0;
   let skipped = 0;
   const queueItems: EnqueueSystemEmailInput[] = [];
 
@@ -282,7 +280,6 @@ export async function sendTripInfoEmailToGroup(
           bodyHtml: autoBodyHtml,
         });
       }
-      sent++;
     } catch (err) {
       console.error(`sendTripInfoEmailToGroup: failed for ${recipient.parentEmail}`, err);
       skipped++;
@@ -297,6 +294,16 @@ export async function sendTripInfoEmailToGroup(
   }
 
   if (queueItems.length > 0) {
+    const releasedAt = new Date().toISOString();
+    const { error: tripReleaseError } = await supabaseAdmin
+      .from('trips')
+      .update({ payments_released_at: releasedAt, updated_at: releasedAt })
+      .eq('id', tripId);
+
+    if (tripReleaseError) {
+      return { error: `Wiadomości dodano do kolejki, ale nie udało się odblokować płatności wyjazdu: ${tripReleaseError.message}` };
+    }
+
     const { data: registrations } = await supabaseAdmin
       .from('trip_registrations')
       .select('id')
