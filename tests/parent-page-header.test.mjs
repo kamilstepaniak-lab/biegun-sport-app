@@ -10,7 +10,6 @@ function read(path) {
 
 test('parent pages use the dedicated parent page header', () => {
   const pages = [
-    'src/app/(protected)/parent/trips/parent-trips-shell.tsx',
     'src/app/(protected)/parent/payments/page.tsx',
     'src/app/(protected)/parent/calendar/page.tsx',
     'src/app/(protected)/parent/contracts/page.tsx',
@@ -39,11 +38,14 @@ test('child guard can defer child selection UI to the parent page header', () =>
   assert.match(tripsPage, /showSelector=\{false\}/);
 });
 
-test('parent page header action panel sits flush on the bottom edge', () => {
-  const header = read('src/components/parent/parent-page-header.tsx');
+test('parent trips has its own full-width hero layout', () => {
+  const tripsShell = read('src/app/(protected)/parent/trips/parent-trips-shell.tsx');
+  const globals = read('src/app/globals.css');
 
-  assert.match(header, /parent-page-hero[^']*overflow-hidden/);
-  assert.match(header, /<div className="p-4 sm:p-5 lg:p-6">/);
-  assert.match(header, /<div className="bg-white p-3 text-slate-900/);
-  assert.doesNotMatch(header, /<div className="mt-\d/);
+  assert.doesNotMatch(tripsShell, /ParentPageHeader/);
+  assert.match(tripsShell, /parent-trips-hero/);
+  assert.match(globals, /:not\(\.parent-trips-hero\)/);
+  assert.match(tripsShell, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(280px,360px\)\]/);
+  assert.match(tripsShell, /variant="compact"/);
+  assert.match(tripsShell, /mx-4 mb-4/);
 });

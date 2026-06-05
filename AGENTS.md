@@ -44,6 +44,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/trips`: wydzielono eksperymentalny full-width header tylko dla
+  Wyjazdów — wyszukiwarka trafiła do prawej części niebieskiej apli, a wybór
+  dziecka do mniejszego białego panelu odsuniętego od krawędzi.
 - `/parent/*`: biały panel akcji w headerze rodzica przyklejono do dolnej
   krawędzi niebieskiej apli i rozciągnięto na pełną szerokość headera.
 - `/parent/*`: zmniejszono proporcje wspólnego headera rodzica po wdrożeniu
