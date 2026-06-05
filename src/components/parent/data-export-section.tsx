@@ -41,7 +41,9 @@ export function DataExportSection() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Download className="h-4 w-4" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+            <Download className="h-3.5 w-3.5 text-white" />
+          </span>
           Pobierz moje dane
         </CardTitle>
         <CardDescription>

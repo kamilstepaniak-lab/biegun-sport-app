@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, User, Phone, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -68,7 +68,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Dane osobowe</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                <User className="h-3.5 w-3.5 text-white" />
+              </span>
+              Dane osobowe
+            </CardTitle>
             <CardDescription>
               Twoje podstawowe informacje
             </CardDescription>
@@ -118,7 +123,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Dane kontaktowe</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                <Phone className="h-3.5 w-3.5 text-white" />
+              </span>
+              Dane kontaktowe
+            </CardTitle>
             <CardDescription>
               Informacje kontaktowe dla instruktorów i organizatorów
             </CardDescription>
@@ -214,7 +224,12 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Dane do umowy</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                <FileText className="h-3.5 w-3.5 text-white" />
+              </span>
+              Dane do umowy
+            </CardTitle>
             <CardDescription>
               Wymagane do generowania umów uczestnictwa. Muszą być zgodne z dowodem osobistym.
             </CardDescription>

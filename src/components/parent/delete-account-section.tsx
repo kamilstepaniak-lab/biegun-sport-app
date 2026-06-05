@@ -36,7 +36,9 @@ export function DeleteAccountSection() {
     <Card className="border-red-200">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-red-700">
-          <Trash2 className="h-4 w-4" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-600">
+            <Trash2 className="h-3.5 w-3.5 text-white" />
+          </span>
           Usuń konto
         </CardTitle>
         <CardDescription>

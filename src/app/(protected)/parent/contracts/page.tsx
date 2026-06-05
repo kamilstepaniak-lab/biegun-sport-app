@@ -58,7 +58,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
         description="Dokumenty ogólne i umowy uczestnictwa"
       />
 
-      <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="space-y-6">
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={selectedChildName} childrenList={childrenList}>
         {/* ── SEKCJA: Dokumenty ── */}
         <div className="space-y-4">
