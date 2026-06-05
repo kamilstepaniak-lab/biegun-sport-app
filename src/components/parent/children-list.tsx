@@ -302,7 +302,8 @@ export function ChildrenList({ participants }: ChildrenListProps) {
 
   return (
     <>
-      <div className="rounded-2xl bg-blue-600 p-5 text-white shadow-sm shadow-blue-600/15">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+      <div className="rounded-2xl bg-blue-600 p-5 text-white shadow-sm shadow-blue-600/15 lg:order-1">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-blue-100">Moje dzieci</p>
@@ -388,10 +389,8 @@ export function ChildrenList({ participants }: ChildrenListProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-
           {/* Najbliższe wyjazdy */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:order-3">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -513,7 +512,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
           </div>
 
           {/* Płatności */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:order-4">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -638,7 +637,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
           </div>
 
           {/* Wiadomości */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '300px' }}>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col lg:order-2" style={{ minHeight: '300px' }}>
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">

@@ -187,10 +187,10 @@ function TripCardInner({
               <div className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h3 className="truncate text-sm font-bold text-slate-900">
                   {trip.title}
-                  {trip.location ? ` – ${trip.location}` : ''}
                 </h3>
-                <p className="text-xs font-medium text-slate-500 whitespace-nowrap">
-                  · {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
+                <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
+                  <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                  {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
                 </p>
               </div>
 
