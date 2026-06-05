@@ -16,6 +16,7 @@ export interface NearestTrip {
   return_stop2_datetime: string | null;
   return_stop2_location: string | null;
   daysUntil: number;
+  childNames?: string[];
 }
 
 export interface PaymentSummaryItem {
@@ -146,7 +147,16 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
       );
     });
 
-  const upcomingTrips: NearestTrip[] = upcomingConfirmed.slice(0, 2).map((r) => {
+  // Dedup po id wyjazdu — dziecko może mieć kilka zapisów na ten sam wyjazd
+  const seenTripIds = new Set<string>();
+  const upcomingUnique = upcomingConfirmed.filter((r) => {
+    const t = getTrip(r);
+    if (!t || seenTripIds.has(t.id)) return false;
+    seenTripIds.add(t.id);
+    return true;
+  });
+
+  const upcomingTrips: NearestTrip[] = upcomingUnique.slice(0, 2).map((r) => {
     const t = getTrip(r);
     if (!t) return null;
     const daysUntil = Math.max(

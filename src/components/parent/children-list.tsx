@@ -120,18 +120,35 @@ export function ChildrenList({ participants }: ChildrenListProps) {
     }
     setDashboardLoading(true);
     const request = selectedChildId === 'all'
-      ? Promise.all(participants.map((child) => getDashboardData(child.id))).then((items): DashboardData => ({
-          upcomingTrips: items.flatMap((item) => item.upcomingTrips)
-            .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime())
-            .slice(0, 2),
-          overduePayments: items.flatMap((item) => item.overduePayments),
-          upcomingPayments: items.flatMap((item) => item.upcomingPayments),
-          overdueCount: items.reduce((sum, item) => sum + item.overdueCount, 0),
-          attendance: {
-            completed: items.reduce((sum, item) => sum + item.attendance.completed, 0),
-            total: items.reduce((sum, item) => sum + item.attendance.total, 0),
-          },
-        }))
+      ? Promise.all(participants.map((child) => getDashboardData(child.id))).then((items): DashboardData => {
+          // Dedup wyjazdów po id — kilkoro dzieci może być na tym samym wyjeździe;
+          // zbieramy imiona dzieci, których dotyczy dany wyjazd.
+          const tripMap = new Map<string, DashboardData['upcomingTrips'][number]>();
+          items.forEach((item, idx) => {
+            const child = participants[idx];
+            const childName = `${child.first_name} ${child.last_name}`;
+            item.upcomingTrips.forEach((trip) => {
+              const existing = tripMap.get(trip.id);
+              if (existing) {
+                existing.childNames = [...(existing.childNames ?? []), childName];
+              } else {
+                tripMap.set(trip.id, { ...trip, childNames: [childName] });
+              }
+            });
+          });
+          return {
+            upcomingTrips: Array.from(tripMap.values())
+              .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime())
+              .slice(0, 2),
+            overduePayments: items.flatMap((item) => item.overduePayments),
+            upcomingPayments: items.flatMap((item) => item.upcomingPayments),
+            overdueCount: items.reduce((sum, item) => sum + item.overdueCount, 0),
+            attendance: {
+              completed: items.reduce((sum, item) => sum + item.attendance.completed, 0),
+              total: items.reduce((sum, item) => sum + item.attendance.total, 0),
+            },
+          };
+        })
       : getDashboardData(selectedChildId);
     request
       .then(setDashboardData)
@@ -371,7 +388,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
         </div>
       </div>
 
-      <div className="space-y-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
           {/* Najbliższe wyjazdy */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -411,7 +428,21 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                   <div key={trip.id} className="px-5 py-4 space-y-2.5">
                     {/* Tytuł + badge */}
                     <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-gray-900 text-sm leading-snug">{trip.title}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm leading-snug">{trip.title}</p>
+                        {trip.childNames && trip.childNames.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {trip.childNames.map((name) => (
+                              <span
+                                key={name}
+                                className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700"
+                              >
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       <span className={cn(
                         'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold flex-shrink-0',
                         trip.daysUntil === 0
@@ -481,7 +512,6 @@ export function ChildrenList({ participants }: ChildrenListProps) {
             )}
           </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-5">
           {/* Płatności */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
@@ -688,7 +718,6 @@ export function ChildrenList({ participants }: ChildrenListProps) {
               )}
             </div>
           </div>
-        </div>
       </div>
 
       {/* Modal pełnej wiadomości */}
