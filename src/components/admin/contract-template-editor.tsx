@@ -132,9 +132,9 @@ export function ContractTemplateEditor({
       {compact ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50"
         >
-          <FileText className="h-4 w-4" />
+          <FileText className="h-3.5 w-3.5" />
           Wzór umowy
           {isActive && <ShieldCheck className="h-3.5 w-3.5 text-green-600" />}
         </button>

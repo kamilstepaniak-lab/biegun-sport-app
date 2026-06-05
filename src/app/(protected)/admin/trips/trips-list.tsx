@@ -23,11 +23,7 @@ import {
   Info,
   ArrowRight,
   ArrowLeft,
-  Home,
-  FileText,
   MapPin,
-  MessageSquare,
-  MoreVertical,
   Search,
   SlidersHorizontal,
   Check,
@@ -214,7 +210,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         isSelected && !isOpen && 'border-blue-500'
       )}>
         <CollapsibleTrigger asChild>
-          <div className="grid cursor-pointer gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_auto_1fr_auto_auto_auto_auto] lg:items-center">
+          <div className="grid cursor-pointer gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_auto_1fr_auto_auto_auto] lg:items-center">
             <div onClick={onToggleSelect}>
                 <Checkbox
                   checked={isSelected}
@@ -251,15 +247,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
             )}>
               <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
             </div>
-
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Więcej"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </button>
           </div>
         </CollapsibleTrigger>
 
@@ -311,7 +298,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   />
                   <Link
                     href={`/admin/trips/${trip.id}/registrations`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/30 transition-colors hover:bg-white/20"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50"
                   >
                     <UserCheck className="h-3.5 w-3.5" />
                     Zapisani
@@ -359,61 +346,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   />
                 </div>
               )}
-              {/* Terminy — zawsze pod opisem */}
-              <div className="mt-4 hidden">
-                <div className="bg-white rounded-xl p-3 space-y-2 ring-1 ring-gray-100">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <ArrowRight className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-xs font-semibold text-gray-700">Wyjazd</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm text-gray-900">{trip.departure_location}</p>
-                    <p className="text-sm text-gray-900">{format(departureDate, 'd MMMM yyyy', { locale: pl })}</p>
-                    <p className="text-sm text-gray-900">{format(departureDate, 'HH:mm', { locale: pl })}</p>
-                  </div>
-                  {trip.departure_stop2_location && (
-                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-900">{trip.departure_stop2_location}</p>
-                      {trip.departure_stop2_datetime && (
-                        <>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.departure_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
-                          </p>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="bg-white rounded-xl p-3 space-y-2 ring-1 ring-gray-100">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <ArrowLeft className="h-3.5 w-3.5 text-red-400" />
-                    <span className="text-xs font-semibold text-gray-700">Powrót</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm text-gray-900">{trip.return_location}</p>
-                    <p className="text-sm text-gray-900">{format(returnDate, 'd MMMM yyyy', { locale: pl })}</p>
-                    <p className="text-sm text-gray-900">{format(returnDate, 'HH:mm', { locale: pl })}</p>
-                  </div>
-                  {trip.return_stop2_location && (
-                    <div className="space-y-0.5 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-900">{trip.return_stop2_location}</p>
-                      {trip.return_stop2_datetime && (
-                        <>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.return_stop2_datetime), 'd MMMM yyyy', { locale: pl })}
-                          </p>
-                          <p className="text-sm text-gray-900">
-                            {format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             <TripCard icon={Calendar} title="Terminy" className="lg:order-2">
@@ -425,9 +357,15 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   <div>
                     <p className="text-[11px] font-medium text-slate-500">Wyjazd</p>
                     <p className="text-sm font-bold text-slate-900">
-                      {format(departureDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                      {format(departureDate, (trip.departure_time_known ?? true) ? 'd MMMM yyyy, HH:mm' : 'd MMMM yyyy', { locale: pl })}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">{trip.departure_location}</p>
+                    {trip.departure_stop2_location && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {trip.departure_stop2_location}
+                        {trip.departure_stop2_datetime ? ` · ${format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })}` : ''}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-3 border-b border-slate-200 pb-3">
@@ -437,9 +375,15 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   <div>
                     <p className="text-[11px] font-medium text-slate-500">Powrót</p>
                     <p className="text-sm font-bold text-slate-900">
-                      {format(returnDate, 'd MMMM yyyy, HH:mm', { locale: pl })}
+                      {format(returnDate, (trip.return_time_known ?? true) ? 'd MMMM yyyy, HH:mm' : 'd MMMM yyyy', { locale: pl })}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">{trip.return_location}</p>
+                    {trip.return_stop2_location && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {trip.return_stop2_location}
+                        {trip.return_stop2_datetime ? ` · ${format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })}` : ''}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -613,30 +557,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
               </div>
             )}
 
-            {/* Przyciski akcji */}
-            <div className="hidden flex-wrap gap-2 pt-1">
-              <Link
-                href={`/admin/trips/${trip.id}/edit`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-              >
-                <Edit className="h-4 w-4" />
-                Edytuj
-              </Link>
-              <TripMessageGenerator trip={trip} compact />
-              <ContractTemplateEditor
-                tripId={trip.id}
-                initialTemplate={contractTemplate as TripContractTemplate | null}
-                defaultTemplateText={CONTRACT_TEMPLATE}
-                compact
-              />
-              <Link
-                href={`/admin/trips/${trip.id}/registrations`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
-              >
-                <UserCheck className="h-4 w-4" />
-                Zapisani
-              </Link>
-            </div>
           </div>
         </CollapsibleContent>
       </div>
