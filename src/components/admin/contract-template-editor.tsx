@@ -132,11 +132,11 @@ export function ContractTemplateEditor({
       {compact ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-white/20"
         >
           <FileText className="h-3.5 w-3.5" />
           Wzór umowy
-          {isActive && <ShieldCheck className="h-3.5 w-3.5 text-green-600" />}
+          {isActive && <ShieldCheck className="h-3.5 w-3.5 text-green-200" />}
         </button>
       ) : (
         <Button variant="outline" onClick={() => setIsOpen(true)}>

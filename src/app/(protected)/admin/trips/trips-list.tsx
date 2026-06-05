@@ -259,16 +259,12 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                 <div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-bold text-emerald-50 ring-1 ring-white/20">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                      {statusLabels[trip.status]}
-                    </span>
                     {trip.registration_form_enabled && (
                       <span
                         className="rounded-full bg-amber-400/30 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-50 ring-1 ring-amber-200/40"
                         title="Wyjazd przyjmuje zgloszenia z formularza WordPress"
                       >
-                        WP
+                        WordPress
                       </span>
                     )}
                   </div>
@@ -282,7 +278,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col gap-3 xl:items-end">
+                <div className="flex flex-col gap-3 xl:items-end xl:self-stretch xl:justify-between">
                   {trip.groups.length > 0 && (
                     <div className="flex flex-wrap gap-x-4 gap-y-2 xl:justify-end">
                       {trip.groups.map((g) => (
@@ -300,14 +296,14 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   />
                   <Link
                     href={`/admin/trips/${trip.id}/registrations`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50"
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-white/20"
                   >
                     <UserCheck className="h-3.5 w-3.5" />
                     Zapisani
                   </Link>
                   <Link
                     href={`/admin/trips/${trip.id}/edit`}
-                    className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50"
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-white/20"
                   >
                     <Edit className="h-3.5 w-3.5" />
                     Edytuj
