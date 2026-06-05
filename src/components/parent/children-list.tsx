@@ -336,7 +336,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
       </div>
 
           {/* Najbliższe wyjazdy */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:order-3">
+          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden lg:order-3">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -458,7 +458,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
           </div>
 
           {/* Płatności */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:order-4">
+          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden lg:order-4">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -571,7 +571,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
           </div>
 
           {/* Wiadomości */}
-          <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm lg:order-2">
+          <div className="flex h-full flex-col overflow-hidden rounded-2xl ring-1 ring-gray-100 bg-white shadow-sm lg:order-2">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">

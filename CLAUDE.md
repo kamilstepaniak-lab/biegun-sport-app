@@ -127,6 +127,10 @@ Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
 - Zgodność z CLAUDE.md (komponenty z ui): #18 surowy input → `Input`,
   #19 banner → `Alert`. Sąsiednie `payments-list`/`contracts` zostają surowe
   (osobny, całościowy cleanup do zrobienia później).
+- #2 ujednolicenie kart panelu rodzica: karty na „Moje dzieci" `border` →
+  `ring-1 ring-gray-100` (radius `rounded-2xl` już był), ikony-nagłówki
+  w Dokumentach `rounded-xl` → `rounded-lg` (kanon dla niebieskich boksów
+  ikon). Dialogowe boksy ikon zostają `rounded-xl` (osobna konwencja).
 - Odłożone do zrobienia z testem na żywo: podwójny redirect ChildUrlSync +
   ChildGuard (#13) — celowa defensywa, refaktor wymaga przeklikania wyboru
   dziecka, by nie wprowadzić regresji.

@@ -63,7 +63,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
         {/* ── SEKCJA: Dokumenty ── */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
               <BookOpen className="h-4 w-4 text-white" />
             </div>
             <div>
