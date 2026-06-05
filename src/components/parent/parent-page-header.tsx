@@ -6,8 +6,12 @@ import { cn } from '@/lib/utils';
 interface ParentPageHeaderProps {
   icon: LucideIcon;
   title: string;
-  description: string;
+  description: React.ReactNode;
   note?: string;
+  hideIcon?: boolean;
+  /** Slot na narzędzia specyficzne dla podstrony (np. wyszukiwarka) — po lewej od wyboru dziecka. */
+  tools?: React.ReactNode;
+  /** Zwykle <ParentChildSelector>. Renderowane w dolnym pasku nagłówka. */
   children?: React.ReactNode;
   className?: string;
 }
@@ -17,39 +21,63 @@ export function ParentPageHeader({
   title,
   description,
   note,
+  hideIcon = false,
+  tools,
   children,
   className,
 }: ParentPageHeaderProps) {
-  return (
-    <section className={cn('parent-page-hero rounded-[14px] bg-blue-600 p-4 text-white shadow-sm sm:p-5 lg:p-6', className)}>
-      <div className="grid gap-4 lg:grid-cols-[1fr_0.62fr] lg:items-center">
-        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px] bg-white/12 ring-1 ring-white/10 sm:h-16 sm:w-16">
-            <Icon className="h-7 w-7 text-white sm:h-8 sm:w-8" strokeWidth={1.9} />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-3xl font-black leading-tight tracking-normal text-white sm:text-[34px]">
-              {title}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-blue-50 sm:text-[15px]">
-              {description}
-            </p>
-          </div>
-        </div>
+  const hasBottomRow = Boolean(tools || children);
 
-        {note && (
-          <div className="hidden border-l border-white/16 pl-6 lg:flex lg:items-center lg:gap-4">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/70 text-blue-600">
-              <Info className="h-5 w-5" />
-            </span>
-            <p className="max-w-sm text-sm leading-relaxed text-blue-50">{note}</p>
+  return (
+    <section
+      className={cn(
+        'parent-page-hero relative overflow-hidden rounded-[16px] border border-blue-100/70 bg-[#eef6ff] px-4 pb-5 pt-6 text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-7 sm:pb-7 sm:pt-8 lg:px-10 lg:pb-10 lg:pt-10',
+        className,
+      )}
+    >
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.92)_30%,rgba(248,251,255,0.35)_58%,rgba(248,251,255,0.12)_100%),url('/parent-hero-mountains.svg')] bg-[length:100%_100%,auto_100%] bg-[position:left_top,right_bottom] bg-no-repeat"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-b from-transparent via-[#f8fbff]/80 to-[#f8fafc]"
+      />
+
+      <div className="relative z-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+        {!hideIcon && (
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-blue-100/70 text-blue-500 shadow-sm ring-1 ring-blue-200/50 sm:h-16 sm:w-16">
+            <Icon className="h-7 w-7 sm:h-8 sm:w-8" strokeWidth={1.8} />
           </div>
         )}
+        <div className="min-w-0">
+          <h1 className="text-4xl font-black leading-none tracking-normal text-slate-950 sm:text-5xl lg:text-[52px]">
+            {title}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
+            {description}
+          </p>
+          {note && (
+            <p className="mt-3 inline-flex items-start gap-2 text-sm leading-snug text-slate-500">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" />
+              {note}
+            </p>
+          )}
+        </div>
       </div>
 
-      {children && (
-        <div className="mt-5 rounded-[12px] bg-white p-3 text-slate-900 shadow-sm ring-1 ring-blue-950/5 sm:p-4">
-          {children}
+      {hasBottomRow && (
+        <div
+          className={cn(
+            'relative z-10 mt-7 grid gap-4 lg:mt-10 lg:items-end',
+            tools
+              ? 'lg:grid-cols-[minmax(260px,390px)_1px_minmax(0,1fr)]'
+              : 'lg:grid-cols-1',
+          )}
+        >
+          {tools && <div className="min-w-0">{tools}</div>}
+          {tools && children && <div className="hidden h-full min-h-20 w-px bg-slate-300/80 lg:block" />}
+          {children && <div className="min-w-0">{children}</div>}
         </div>
       )}
     </section>

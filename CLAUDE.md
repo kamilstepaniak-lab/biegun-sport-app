@@ -42,6 +42,24 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-05 (Panel rodzica — jednolity nagłówek na wszystkich podstronach)
+
+- `ParentPageHeader` przepisany ze starego niebieskiego panelu na jasny hero
+  z grafiką gór (`/parent-hero-mountains.svg`) w stylu Wyjazdów: błękitny
+  kafelek ikony (props `hideIcon`), duży tytuł, opis, `note` jako subtelny
+  hint, dolny pasek z opcjonalnym slotem `tools` (np. wyszukiwarka) i wyborem
+  dziecka. Jeden wspólny komponent = jedno źródło prawdy.
+- `parent-trips-shell.tsx`: usunięty bespoke header, Wyjazdy korzystają teraz
+  z `ParentPageHeader` (wyszukiwarka wpięta jako `tools`, `hideIcon`,
+  klasa `parent-trips-hero` na własne dopasowanie pełnego bleedu).
+- `globals.css`: klasa `.parent-page-hero` dodana do wyjątków marginesów
+  (`:not(...)`) w obu breakpointach — nagłówek rodzica jest pełnoszerokościowy
+  (edge-to-edge) jak Wyjazdy.
+- Pozostałe podstrony (Płatności, Kalendarz, Dokumenty, Wiadomości, Profil,
+  Moje dzieci, Dodaj/Edytuj dziecko) dostają nowy wygląd automatycznie — bez
+  zmian w ich kodzie. Test `tests/parent-page-header.test.mjs` zaktualizowany
+  pod nową architekturę (wspólny nagłówek zamiast osobnego dla Wyjazdów).
+
 **Zawsze na końcu każdej sesji/zadania** (nie tylko przy push/deploy) dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 — bez proszenia przez użytkownika. Nagłówek z datą, najnowsze wpisy na górze.

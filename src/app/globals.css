@@ -162,7 +162,7 @@
   padding: 0 0 36px;
 }
 
-.admin-shell .admin-main > div > *:not(.page-header):not(.parent-trips-hero) {
+.admin-shell .admin-main > div > *:not(.page-header):not(.parent-trips-hero):not(.parent-page-hero) {
   margin-left: clamp(16px, 3vw, 36px);
   margin-right: clamp(16px, 3vw, 36px);
 }
@@ -377,7 +377,7 @@
     padding-right: 16px;
   }
 
-  .admin-shell .admin-main > div > *:not(.page-header):not(.parent-trips-hero) {
+  .admin-shell .admin-main > div > *:not(.page-header):not(.parent-trips-hero):not(.parent-page-hero) {
     margin-left: 16px;
     margin-right: 16px;
   }

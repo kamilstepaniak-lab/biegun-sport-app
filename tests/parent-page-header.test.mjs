@@ -38,22 +38,30 @@ test('child guard can defer child selection UI to the parent page header', () =>
   assert.match(tripsPage, /showSelector=\{false\}/);
 });
 
-test('parent trips has its own full-width mountain header layout', () => {
+test('all parent headers share one full-width mountain layout', () => {
+  const header = read('src/components/parent/parent-page-header.tsx');
   const tripsShell = read('src/app/(protected)/parent/trips/parent-trips-shell.tsx');
   const globals = read('src/app/globals.css');
   const mountains = read('public/parent-hero-mountains.svg');
 
-  assert.doesNotMatch(tripsShell, /ParentPageHeader/);
-  assert.match(tripsShell, /parent-trips-hero/);
-  assert.match(globals, /:not\(\.parent-trips-hero\)/);
-  assert.match(tripsShell, /parent-hero-mountains\.svg/);
-  assert.match(tripsShell, /lg:min-h-\[285px\]/);
-  assert.match(tripsShell, /bg-gradient-to-b from-transparent via-\[#f8fbff\]\/80 to-\[#f8fafc\]/);
-  assert.doesNotMatch(tripsShell, /showAllOption=\{false\}/);
+  // Wspólny komponent jest źródłem wyglądu gór i jest pełnoszerokościowy.
+  assert.match(header, /parent-page-hero/);
+  assert.match(header, /parent-hero-mountains\.svg/);
+  assert.match(header, /bg-gradient-to-b from-transparent via-\[#f8fbff\]\/80 to-\[#f8fafc\]/);
+  assert.match(header, /tools\?: React\.ReactNode/);
+  assert.match(header, /hideIcon\?: boolean/);
+  assert.match(globals, /:not\(\.parent-page-hero\)/);
+  assert.doesNotMatch(header, /bg-blue-600 text-white/);
+
+  // Wyjazdy korzystają ze wspólnego nagłówka i wpinają wyszukiwarkę jako narzędzie.
+  assert.match(tripsShell, /ParentPageHeader/);
+  assert.match(tripsShell, /hideIcon/);
+  assert.match(tripsShell, /rounded-none border-0/);
   assert.match(tripsShell, /htmlFor="parent-trip-search"/);
   assert.match(tripsShell, /Wpisz nazwę wyjazdu/);
+  assert.match(tripsShell, /className="h-12/);
   assert.doesNotMatch(tripsShell, /placeholder=/);
-  assert.doesNotMatch(tripsShell, /bg-blue-600 text-white/);
+
   assert.match(mountains, /viewBox="0 0 1500 420"/);
   assert.match(mountains, /id="peakLight"/);
   assert.doesNotMatch(mountains, /V36Z/);
