@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight, ArrowUpRight, ArrowDownLeft, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, X } from 'lucide-react';
 
 import {
   HoverCard,
@@ -17,9 +17,10 @@ import type { TripForParent } from '@/lib/actions/trips';
 
 interface ParentCalendarViewProps {
   trips: TripForParent[];
+  childQuery: string;
 }
 
-export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
+export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTrip, setSelectedTrip] = useState<TripForParent | null>(null);
 
@@ -169,7 +170,7 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
               const dep = new Date(trip.departure_datetime);
               const ret = new Date(trip.return_datetime);
               return (
-                <Link key={trip.id} href={`/parent/trips/${trip.id}`} className="block p-4 hover:bg-gray-50/60 transition-colors">
+                <Link key={trip.id} href={`/parent/trips?${childQuery}&trip=${trip.id}`} className="block p-4 hover:bg-gray-50/60 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium text-gray-900 text-sm leading-snug flex-1 min-w-0">{trip.title}</p>
                     <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0', badgeClass)}>{label}</span>
@@ -274,9 +275,8 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold', badgeClass)}>{label}</span>
                       </td>
                       <td className="px-4 py-3.5 text-right align-top">
-                        <Link href={`/parent/trips/${trip.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors">
+                        <Link href={`/parent/trips?${childQuery}&trip=${trip.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors">
                           Szczegóły
-                          <ArrowRight className="h-3 w-3" />
                         </Link>
                       </td>
                     </tr>
@@ -449,11 +449,10 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
                                 {/* Link do szczegółów */}
                                 <div className="pt-1.5 border-t border-gray-100">
                                   <Link
-                                    href={`/parent/trips/${trip.id}`}
+                                    href={`/parent/trips?${childQuery}&trip=${trip.id}`}
                                     className="flex items-center justify-center gap-1.5 w-full py-1.5 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                                   >
                                     Szczegóły wyjazdu
-                                    <ArrowRight className="h-3.5 w-3.5" />
                                   </Link>
                                 </div>
                               </div>
@@ -576,12 +575,11 @@ export function ParentCalendarView({ trips }: ParentCalendarViewProps) {
 
               {/* Przycisk szczegóły */}
               <Link
-                href={`/parent/trips/${selectedTrip.id}`}
+                href={`/parent/trips?${childQuery}&trip=${selectedTrip.id}`}
                 onClick={() => setSelectedTrip(null)}
                 className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors"
               >
                 Szczegóły wyjazdu
-                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

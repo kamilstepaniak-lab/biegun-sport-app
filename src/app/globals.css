@@ -271,8 +271,8 @@
 
 /* ── Jasny nagłówek z grafiką gór (admin + rodzic) ────────── */
 .admin-shell .page-header {
-  min-height: 220px;
-  background: linear-gradient(180deg, #eef5fe 0%, #f3f8fe 45%, #f8fafc 100%);
+  min-height: 210px;
+  background: linear-gradient(180deg, #eaf3fe 0%, #f1f7fe 50%, #f8fafc 100%);
   border-bottom: none;
   overflow: hidden;
 }
@@ -281,8 +281,14 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: url("/parent-hero-mountains.svg") no-repeat center bottom;
-  background-size: 100% auto;
+  /* warstwa 1 (na wierzchu): gradient wygaszający dół do koloru sekcji poniżej,
+     warstwa 2: grafika gór przy dolnej krawędzi */
+  background-image:
+    linear-gradient(to bottom, rgba(248, 250, 252, 0) 55%, #f8fafc 100%),
+    url("/parent-hero-mountains.svg");
+  background-repeat: no-repeat, no-repeat;
+  background-position: bottom, center bottom;
+  background-size: 100% 100%, 100% auto;
   pointer-events: none;
   z-index: 0;
 }

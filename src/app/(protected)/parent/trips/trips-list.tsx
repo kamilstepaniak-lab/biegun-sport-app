@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,17 +48,39 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
   const upcomingByMonth = useMemo(() => groupByMonth(upcomingTrips), [upcomingTrips]);
   const pastByMonth = useMemo(() => groupByMonth(pastTrips), [pastTrips]);
 
+  const searchParams = useSearchParams();
+  const focusTripId = searchParams.get('trip');
+
   const nearestTripId = upcomingTrips.length > 0 ? upcomingTrips[0].id : null;
 
-  const [openTrips, setOpenTrips] = useState<Set<string>>(() =>
-    nearestTripId ? new Set([nearestTripId]) : new Set(),
-  );
+  const [openTrips, setOpenTrips] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    if (nearestTripId) initial.add(nearestTripId);
+    if (focusTripId) initial.add(focusTripId);
+    return initial;
+  });
+
   const [updatingChild, setUpdatingChild] = useState<string | null>(null);
   const [childStatuses, setChildStatuses] = useState<Record<string, ChildTripStatus['participation_status']>>({});
   const [childNotes, setChildNotes] = useState<Record<string, string | null>>({});
   const [confirmPanel, setConfirmPanel] = useState<{ key: string; type: ConfirmType } | null>(null);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [pastExpanded, setPastExpanded] = useState(false);
+
+  // Wejście z kalendarza (?trip=<id>) — rozwiń wskazany wyjazd, rozłóż „zrealizowane"
+  // jeśli to wyjazd archiwalny, i przewiń do niego.
+  useEffect(() => {
+    if (!focusTripId) return;
+    setOpenTrips((prev) => {
+      if (prev.has(focusTripId)) return prev;
+      const next = new Set(prev);
+      next.add(focusTripId);
+      return next;
+    });
+    if (pastTrips.some((t) => t.id === focusTripId)) setPastExpanded(true);
+    const el = document.getElementById(`trip-${focusTripId}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [focusTripId, pastTrips]);
 
   const toggleTrip = useCallback((tripId: string) => {
     setOpenTrips(prev => {
@@ -122,8 +145,8 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
     const isConfirmForThis = confirmPanel?.key.startsWith(prefix) ?? false;
     const isUpdatingForThis = updatingChild?.startsWith(prefix) ?? false;
     return (
+      <div key={trip.id} id={`trip-${trip.id}`} className="scroll-mt-24">
       <TripCard
-        key={trip.id}
         trip={trip}
         isPast={isPast}
         isOpen={openTrips.has(trip.id)}
@@ -139,6 +162,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
         onStatusChange={handleStatusChange}
         onCopy={copyToClipboard}
       />
+      </div>
     );
   };
 

@@ -57,7 +57,9 @@ export default async function ParentTripsPage({ searchParams }: Props) {
             />
           )
         ) : (
-          <ParentTripsList trips={trips} />
+          <div className="pt-4">
+            <ParentTripsList trips={trips} />
+          </div>
         )}
       </ChildGuard>
     </div>

@@ -432,7 +432,7 @@ function TripCardInner({
                       <MapPin className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-blue-100">Miejsce</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-blue-100">Miejsce</p>
                       <p className="text-sm font-normal text-white/90">{trip.location || trip.departure_location || '—'}</p>
                     </div>
                   </div>

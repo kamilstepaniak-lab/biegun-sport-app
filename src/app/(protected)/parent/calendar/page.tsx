@@ -27,6 +27,13 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
     groupName: c.group?.name ?? null,
   }));
 
+  // Query do listy wyjazdów — zachowuje wybór dziecka przy przejściu z kalendarza
+  const childQuery = selectedChildId
+    ? selectedChildId !== 'all' && childName
+      ? `child=${selectedChildId}&childName=${encodeURIComponent(childName)}`
+      : `child=${selectedChildId}`
+    : 'child=all';
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -35,7 +42,7 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
       />
 
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
-        <ParentCalendarView trips={trips} />
+        <ParentCalendarView trips={trips} childQuery={childQuery} />
       </ChildGuard>
     </div>
   );
