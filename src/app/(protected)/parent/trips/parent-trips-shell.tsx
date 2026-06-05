@@ -29,24 +29,24 @@ export function ParentTripsShell({
 
   return (
     <div className="space-y-6">
-      <section className="parent-trips-hero overflow-hidden rounded-[14px] bg-blue-600 text-white shadow-sm">
-        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-center lg:p-6">
+      <section className="parent-trips-hero rounded-[14px] bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80">
+        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)_minmax(360px,1.1fr)] lg:items-start lg:p-6">
           <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px] bg-white/12 ring-1 ring-white/10 sm:h-16 sm:w-16">
-              <CalendarDays className="h-7 w-7 text-white sm:h-8 sm:w-8" strokeWidth={1.9} />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-blue-50 text-blue-600 ring-1 ring-blue-100 sm:h-14 sm:w-14">
+              <CalendarDays className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={1.9} />
             </div>
             <div className="min-w-0">
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-white sm:text-[34px]">
+              <h1 className="text-3xl font-black leading-tight tracking-normal text-slate-950 sm:text-[34px]">
                 Wyjazdy
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-blue-50 sm:text-[15px]">
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-[15px]">
                 Zarządzaj wyjazdami Twoich dzieci w jednym miejscu. Przeglądaj listę, sprawdzaj szczegóły i dodawaj nowe zgłoszenia.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-100">
+          <div className="space-y-2 lg:border-l lg:border-slate-200 lg:pl-5">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-700">
               <Search className="h-3.5 w-3.5" />
               Nazwa wyjazdu
             </div>
@@ -57,7 +57,7 @@ export function ParentTripsShell({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Wpisz nazwę wyjazdu..."
-                className="h-11 rounded-[10px] border-white/30 bg-white pl-9 pr-9 text-sm text-slate-900 shadow-none focus-visible:ring-white/70"
+                className="h-10 rounded-[10px] border-slate-200 bg-slate-50 pl-9 pr-9 text-sm text-slate-900 shadow-none focus-visible:bg-white focus-visible:ring-blue-500"
               />
               {query && (
                 <button
@@ -71,15 +71,15 @@ export function ParentTripsShell({
               )}
             </div>
           </div>
-        </div>
 
-        <div className="mx-4 mb-4 rounded-[12px] bg-white p-3 text-slate-900 shadow-sm ring-1 ring-blue-950/5 sm:mx-5 sm:mb-5 sm:p-4 lg:mx-6 lg:mb-6">
-          <ParentChildSelector
-            selectedChildId={selectedChildId}
-            selectedChildName={childName}
-            childrenList={childrenList}
-            variant="compact"
-          />
+          <div className="lg:border-l lg:border-slate-200 lg:pl-5">
+            <ParentChildSelector
+              selectedChildId={selectedChildId}
+              selectedChildName={childName}
+              childrenList={childrenList}
+              variant="compact"
+            />
+          </div>
         </div>
       </section>
 

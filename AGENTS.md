@@ -44,6 +44,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/trips`: usunięto niebieskie tło eksperymentalnego headera Wyjazdów;
+  zastąpiono je białym, pełnoszerokim blokiem z trzema rozdzielonymi sekcjami:
+  opis, wyszukiwarka i kompaktowy wybór dziecka.
 - `/parent/trips`: wydzielono eksperymentalny full-width header tylko dla
   Wyjazdów — wyszukiwarka trafiła do prawej części niebieskiej apli, a wybór
   dziecka do mniejszego białego panelu odsuniętego od krawędzi.

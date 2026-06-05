@@ -38,14 +38,16 @@ test('child guard can defer child selection UI to the parent page header', () =>
   assert.match(tripsPage, /showSelector=\{false\}/);
 });
 
-test('parent trips has its own full-width hero layout', () => {
+test('parent trips has its own full-width white header layout', () => {
   const tripsShell = read('src/app/(protected)/parent/trips/parent-trips-shell.tsx');
   const globals = read('src/app/globals.css');
 
   assert.doesNotMatch(tripsShell, /ParentPageHeader/);
   assert.match(tripsShell, /parent-trips-hero/);
   assert.match(globals, /:not\(\.parent-trips-hero\)/);
-  assert.match(tripsShell, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(280px,360px\)\]/);
+  assert.match(tripsShell, /bg-white text-slate-900/);
+  assert.doesNotMatch(tripsShell, /bg-blue-600 text-white/);
+  assert.match(tripsShell, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(260px,340px\)_minmax\(360px,1\.1fr\)\]/);
   assert.match(tripsShell, /variant="compact"/);
-  assert.match(tripsShell, /mx-4 mb-4/);
+  assert.match(tripsShell, /lg:border-l lg:border-slate-200/);
 });
