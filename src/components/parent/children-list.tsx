@@ -391,7 +391,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
 
                     {/* Wyjazd */}
                     <div className="flex items-start gap-2">
-                      <span className="text-green-500 font-bold text-xs flex-shrink-0 mt-0.5">↗</span>
+                      <span className="text-emerald-500 font-bold text-xs flex-shrink-0 mt-0.5">↗</span>
                       <div className="min-w-0 space-y-0.5">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-semibold text-gray-800 tabular-nums flex-shrink-0">

@@ -294,7 +294,7 @@ export default function RegistrationsList({
                                   >
                                     <span className="truncate">{r.parent_email || '—'}</span>
                                     {copiedKey === emailKey ? (
-                                      <Check className="h-3 w-3 flex-shrink-0 text-green-500" />
+                                      <Check className="h-3 w-3 flex-shrink-0 text-emerald-500" />
                                     ) : (
                                       <Copy className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-50" />
                                     )}
@@ -313,7 +313,7 @@ export default function RegistrationsList({
                                   >
                                     {r.parent_phone || '—'}
                                     {copiedKey === phoneKey ? (
-                                      <Check className="h-3 w-3 flex-shrink-0 text-green-500" />
+                                      <Check className="h-3 w-3 flex-shrink-0 text-emerald-500" />
                                     ) : (
                                       <Copy className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-50" />
                                     )}

@@ -161,7 +161,7 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
               const { label, variant } = getDaysLabel(trip);
               const badgeClass = {
                 done: 'bg-gray-100 text-gray-500',
-                active: 'bg-green-100 text-green-700',
+                active: 'bg-emerald-100 text-emerald-700',
                 today: 'bg-blue-600 text-white',
                 soon: 'bg-orange-100 text-orange-700',
                 medium: 'bg-yellow-100 text-yellow-700',
@@ -178,7 +178,7 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-                        <ArrowUpRight className="h-3 w-3 text-green-500" />
+                        <ArrowUpRight className="h-3 w-3 text-emerald-500" />
                         Wyjazd
                       </div>
                       <p className="font-semibold text-gray-900">{format(dep, 'd.MM.yyyy', { locale: pl })}</p>
@@ -209,7 +209,7 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">Tytuł wyjazdu</th>
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-4 py-3">
                     <span className="flex items-center gap-1">
-                      <ArrowUpRight className="h-3.5 w-3.5 text-green-500" />
+                      <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
                       Wyjazd
                     </span>
                   </th>
@@ -228,7 +228,7 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                   const { label, variant } = getDaysLabel(trip);
                   const badgeClass = {
                     done: 'bg-gray-100 text-gray-500',
-                    active: 'bg-green-100 text-green-700',
+                    active: 'bg-emerald-100 text-emerald-700',
                     today: 'bg-blue-600 text-white',
                     soon: 'bg-orange-100 text-orange-700',
                     medium: 'bg-yellow-100 text-yellow-700',
@@ -392,7 +392,7 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                                 </div>
                                 {/* Wyjazd */}
                                 <div className="flex items-start gap-1.5 text-xs">
-                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-green-600 flex-shrink-0 mt-0.5">
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-600 flex-shrink-0 mt-0.5">
                                     <ArrowUpRight className="h-3 w-3 text-white" />
                                   </div>
                                   <div className="space-y-0.5">
@@ -500,8 +500,8 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
             <div className="p-4 space-y-3">
 
               {/* Wyjazd */}
-              <div className="flex items-start gap-3 bg-green-50 rounded-xl p-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 flex-shrink-0">
+              <div className="flex items-start gap-3 bg-emerald-50 rounded-xl p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 flex-shrink-0">
                   <ArrowUpRight className="h-4 w-4 text-white" />
                 </div>
                 <div className="text-sm space-y-0.5">
@@ -518,7 +518,7 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                   {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (() => {
                     const stop2Time = format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl });
                     return (
-                      <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-green-100">
+                      <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-emerald-100">
                         {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
                         <span className="text-gray-500">{stop2Time !== '00:00' ? '· ' : ''}{selectedTrip.departure_stop2_location}</span>
                       </div>

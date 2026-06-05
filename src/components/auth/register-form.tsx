@@ -65,8 +65,8 @@ export function RegisterForm() {
     return (
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col items-center gap-4 py-10">
-          <div className="rounded-full bg-green-100 p-4">
-            <CheckCircle2 className="h-8 w-8 text-green-600" />
+          <div className="rounded-full bg-emerald-100 p-4">
+            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
           </div>
           <div className="text-center space-y-2">
             <h2 className="text-xl font-bold text-gray-900">Konto zostało utworzone!</h2>

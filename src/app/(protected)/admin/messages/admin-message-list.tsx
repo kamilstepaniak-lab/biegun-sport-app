@@ -244,7 +244,7 @@ function ReadStatsDialog({
                 <span
                   className={
                     'flex h-6 w-6 items-center justify-center rounded-full flex-shrink-0 ' +
-                    (d.is_read ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400')
+                    (d.is_read ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400')
                   }
                 >
                   {d.is_read ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}

@@ -146,7 +146,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
             {/* Zaakceptowane */}
             {accepted.length > 0 && (
               <div className="space-y-3">
-                <h2 className="text-base font-semibold text-green-700 flex items-center gap-2">
+                <h2 className="text-base font-semibold text-emerald-700 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4" />
                   Zaakceptowane ({accepted.length})
                 </h2>

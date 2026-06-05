@@ -77,7 +77,7 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Status</p>
               {isAccepted ? (
-                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                   <CheckCircle className="mr-1 h-3 w-3" />
                   Zaakceptowana
                 </Badge>
@@ -113,7 +113,7 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
 
           {isAccepted && contract.accepted_at && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-green-700 flex items-center gap-2">
+              <p className="text-sm text-emerald-700 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 Zaakceptowano {format(new Date(contract.accepted_at), 'd MMMM yyyy o HH:mm', { locale: pl })}
               </p>

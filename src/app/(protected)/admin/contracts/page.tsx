@@ -120,11 +120,11 @@ export default async function AdminContractsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-700">{accepted.length}</p>
+                <p className="text-2xl font-bold text-emerald-700">{accepted.length}</p>
                 <p className="text-sm text-muted-foreground">Zaakceptowanych</p>
               </div>
             </div>

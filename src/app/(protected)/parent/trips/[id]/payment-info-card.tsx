@@ -89,7 +89,7 @@ export function PaymentInfoCard({ trip, participants }: PaymentInfoCardProps) {
               className="shrink-0"
             >
               {copiedField === 'title' ? (
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-emerald-500" />
               ) : (
                 <Copy className="h-4 w-4" />
               )}
@@ -111,7 +111,7 @@ export function PaymentInfoCard({ trip, participants }: PaymentInfoCardProps) {
               className="shrink-0"
             >
               {copiedField === 'pln' ? (
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-emerald-500" />
               ) : (
                 <Copy className="h-4 w-4" />
               )}
@@ -133,7 +133,7 @@ export function PaymentInfoCard({ trip, participants }: PaymentInfoCardProps) {
               className="shrink-0"
             >
               {copiedField === 'eur' ? (
-                <Check className="h-4 w-4 text-green-500" />
+                <Check className="h-4 w-4 text-emerald-500" />
               ) : (
                 <Copy className="h-4 w-4" />
               )}

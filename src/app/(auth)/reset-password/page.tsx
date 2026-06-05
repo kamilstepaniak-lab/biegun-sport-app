@@ -79,8 +79,8 @@ export default function ResetPasswordPage() {
           <CardContent>
             {success ? (
               <div className="flex flex-col items-center gap-4 py-4">
-                <div className="rounded-full bg-green-100 p-3">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                <div className="rounded-full bg-emerald-100 p-3">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600" />
                 </div>
                 <p className="text-sm text-muted-foreground text-center">
                   Za chwilę zostaniesz przekierowany do strony logowania...

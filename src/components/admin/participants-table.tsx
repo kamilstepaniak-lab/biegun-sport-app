@@ -354,7 +354,7 @@ export function ParticipantsTable({
                                   >
                                     <span className="truncate">{p.parent.email || '—'}</span>
                                     {copiedKey === emailKey ? (
-                                      <Check className="h-3 w-3 flex-shrink-0 text-green-500" />
+                                      <Check className="h-3 w-3 flex-shrink-0 text-emerald-500" />
                                     ) : (
                                       <Copy className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-50" />
                                     )}
@@ -378,7 +378,7 @@ export function ParticipantsTable({
                                   >
                                     {p.parent.phone || '—'}
                                     {copiedKey === phoneKey ? (
-                                      <Check className="h-3 w-3 flex-shrink-0 text-green-500" />
+                                      <Check className="h-3 w-3 flex-shrink-0 text-emerald-500" />
                                     ) : (
                                       <Copy className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-50" />
                                     )}

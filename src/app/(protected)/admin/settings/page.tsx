@@ -85,8 +85,8 @@ export default async function SettingsPage() {
       <details className="group bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
         <summary className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none hover:bg-gray-50/50 transition-colors">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-              <ShieldCheck className="h-4 w-4 text-green-600" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
             </div>
             <div>
               <p className="font-semibold text-gray-900 text-sm">Synchronizacja ról JWT</p>

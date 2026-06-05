@@ -133,7 +133,7 @@ export function ChangePasswordForm() {
               <p className="text-xs text-red-600">Hasła się nie zgadzają</p>
             )}
             {isValid && (
-              <p className="text-xs text-green-600 flex items-center gap-1">
+              <p className="text-xs text-emerald-600 flex items-center gap-1">
                 <Check className="h-3 w-3" /> Hasła zgodne
               </p>
             )}

@@ -13,7 +13,7 @@ import { LocationSelect } from './location-select';
 import type { SectionProps } from './types';
 
 const ACCENT = {
-  green: { heading: 'text-green-700', sub: 'text-green-600', border: 'border-green-200' },
+  green: { heading: 'text-emerald-700', sub: 'text-emerald-600', border: 'border-emerald-200' },
   red: { heading: 'text-red-700', sub: 'text-red-600', border: 'border-red-200' },
 } as const;
 

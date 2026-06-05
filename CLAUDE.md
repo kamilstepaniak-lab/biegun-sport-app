@@ -112,9 +112,18 @@ Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
   (wcześniej linkowało do tej samej strony).
 - Layout rodzica: badge liczby **nieprzeczytanych wiadomości** na pozycji
   „Wiadomości" w nawigacji (Sidebar `badge`).
+- Lista wyjazdów rodzica (`trips-list.tsx`): **wyszukiwarka po nazwie**
+  wyjazdu (#18), widoczna przy >3 wyjazdach. Przy aktywnym wyszukiwaniu
+  sekcja „zrealizowane" jest automatycznie rozwinięta; pusty wynik ma własny
+  komunikat.
+- Profil rodzica (`profile/page.tsx`): **wskaźnik kompletności danych do
+  umowy** (#19) — amber z listą brakujących pól lub emerald „komplet".
 - Odłożone do zrobienia z testem na żywo: podwójny redirect ChildUrlSync +
   ChildGuard (#13) — celowa defensywa, refaktor wymaga przeklikania wyboru
   dziecka, by nie wprowadzić regresji.
+- Do decyzji biznesowej: badge „Zapisy zamknięte" po `declaration_deadline`
+  (#4) — dziś deadline nie blokuje potwierdzania, więc badge kłamałby; wymaga
+  decyzji czy blokować spóźnione deklaracje.
 - Bugfix: fallback imienia na „Moje dzieci" był zahardkodowany na „Karol";
   teraz pierwsza część `full_name` → login z maila → „Witaj".
 - Sprzątanie: usunięty martwy `localStorage.removeItem('selectedChild')`

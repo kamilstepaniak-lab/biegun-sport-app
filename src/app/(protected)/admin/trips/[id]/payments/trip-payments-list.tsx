@@ -38,7 +38,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  paid: 'bg-green-100 text-green-700',
+  paid: 'bg-emerald-100 text-emerald-700',
   partially_paid: 'bg-yellow-100 text-yellow-700',
   pending: 'bg-gray-100 text-gray-600',
   overdue: 'bg-red-100 text-red-700',
@@ -192,11 +192,11 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
         <Card>
           <CardContent className="pt-5">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                <CheckCircle className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-green-700">{formatByCurrency(stats.paidByCur)}</p>
+                <p className="text-xl font-bold text-emerald-700">{formatByCurrency(stats.paidByCur)}</p>
                 <p className="text-xs text-muted-foreground">Wpłacono ({stats.countPaid} opłaconych)</p>
               </div>
             </div>
@@ -291,7 +291,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
                         <td className="py-2.5 px-3 text-right tabular-nums font-medium">
                           {p.amount.toFixed(0)} {p.currency}
                         </td>
-                        <td className="py-2.5 px-3 text-right tabular-nums text-green-700">
+                        <td className="py-2.5 px-3 text-right tabular-nums text-emerald-700">
                           {(p.amount_paid ?? 0) > 0 ? `${(p.amount_paid ?? 0).toFixed(0)} ${p.currency}` : '—'}
                         </td>
                         <td className="py-2.5 px-3">

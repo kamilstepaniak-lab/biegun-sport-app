@@ -32,7 +32,7 @@ export function SyncJwtRolesButton() {
       <button
         onClick={handleSync}
         disabled={isLoading}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <><Loader2 className="h-4 w-4 animate-spin" />Synchronizacja...</>

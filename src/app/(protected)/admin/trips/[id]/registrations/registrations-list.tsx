@@ -72,7 +72,7 @@ interface RegistrationsListProps {
 type StatusFilter = 'all' | 'confirmed' | 'not_going' | 'unconfirmed' | 'other';
 
 const statusConfig = {
-  confirmed: { label: 'Jedzie', color: 'bg-green-100 text-green-700 border-green-300', icon: Check, order: 1 },
+  confirmed: { label: 'Jedzie', color: 'bg-emerald-100 text-emerald-700 border-emerald-300', icon: Check, order: 1 },
   not_going: { label: 'Nie jedzie', color: 'bg-red-100 text-red-700 border-red-300', icon: X, order: 2 },
   other: { label: 'Inne', color: 'bg-amber-100 text-amber-700 border-amber-300', icon: HelpCircle, order: 3 },
   unconfirmed: { label: 'Niepotwierdzony', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: Clock, order: 4 },
@@ -396,7 +396,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
               <SelectItem value="all">Wszyscy</SelectItem>
               <SelectItem value="confirmed">
                 <span className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-emerald-600" />
                   Jadą
                 </span>
               </SelectItem>
@@ -600,7 +600,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                             >
                               {participant.parent_email}
                               {copiedField === emailId ? (
-                                <Check className="h-3 w-3 text-green-500" />
+                                <Check className="h-3 w-3 text-emerald-500" />
                               ) : (
                                 <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50" />
                               )}
@@ -618,7 +618,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                             >
                               {participant.parent_phone}
                               {copiedField === phoneId ? (
-                                <Check className="h-3 w-3 text-green-500" />
+                                <Check className="h-3 w-3 text-emerald-500" />
                               ) : (
                                 <Copy className="h-3 w-3 opacity-0 group-hover:opacity-50" />
                               )}
@@ -644,7 +644,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                           <SelectContent>
                             <SelectItem value="confirmed">
                               <span className="flex items-center gap-2">
-                                <Check className="h-4 w-4 text-green-600" />
+                                <Check className="h-4 w-4 text-emerald-600" />
                                 Jedzie
                               </span>
                             </SelectItem>
@@ -687,7 +687,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                               <span
                                 className={`inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium ${
                                   isPaid
-                                    ? 'bg-green-100 text-green-700'
+                                    ? 'bg-emerald-100 text-emerald-700'
                                     : isPartiallyPaid
                                     ? 'bg-amber-100 text-amber-700'
                                     : 'bg-gray-100 text-gray-600'

@@ -136,7 +136,7 @@ export function ContractTemplateEditor({
         >
           <FileText className="h-3.5 w-3.5" />
           Wzór umowy
-          {isActive && <ShieldCheck className="h-3.5 w-3.5 text-green-200" />}
+          {isActive && <ShieldCheck className="h-3.5 w-3.5 text-emerald-200" />}
         </button>
       ) : (
         <Button variant="outline" onClick={() => setIsOpen(true)}>
@@ -144,7 +144,7 @@ export function ContractTemplateEditor({
           Wzór umowy
           {isActive && (
             <span className="ml-2 inline-flex items-center">
-              <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
             </span>
           )}
         </Button>
@@ -159,7 +159,7 @@ export function ContractTemplateEditor({
                 <FileText className="h-5 w-5 text-purple-600" />
                 Wzór umowy uczestnictwa
                 {isActive ? (
-                  <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                     <ShieldCheck className="mr-1 h-3 w-3" />
                     Aktywna
                   </Badge>
@@ -282,7 +282,7 @@ export function ContractTemplateEditor({
                 size="sm"
                 onClick={handleActivate}
                 disabled={isActivating || hasUnsavedChanges || !initialTemplate}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {isActivating ? (
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />

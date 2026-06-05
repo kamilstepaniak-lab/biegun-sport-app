@@ -716,7 +716,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
               </p>
             </div>
             <div className="rounded-lg border p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">{importStats.zaimportowano}</p>
+              <p className="text-2xl font-bold text-emerald-600">{importStats.zaimportowano}</p>
               <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3 w-3" /> Zaimportowane
               </p>
@@ -736,7 +736,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                 <div>
                   Przetworzono: <strong>{importResult.total}</strong>
                 </div>
-                <div className="text-green-700">
+                <div className="text-emerald-700">
                   OK: <strong>{importResult.imported}</strong>
                 </div>
                 <div className="text-red-700">
@@ -780,7 +780,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                       key={row.id}
                       className={
                         row.status_importu === 'zaimportowano'
-                          ? 'bg-green-50'
+                          ? 'bg-emerald-50'
                           : row.status_importu === 'blad'
                             ? 'bg-red-50'
                             : ''
@@ -803,7 +803,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                           </Badge>
                         )}
                         {row.status_importu === 'zaimportowano' && (
-                          <Badge className="gap-1 bg-green-100 text-xs text-green-800">
+                          <Badge className="gap-1 bg-emerald-100 text-xs text-emerald-800">
                             <CheckCircle2 className="h-3 w-3" /> OK
                           </Badge>
                         )}

@@ -63,7 +63,7 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                                         </p>
                                     )}
                                 </div>
-                                <p className="text-sm font-bold text-green-600 tabular-nums whitespace-nowrap">
+                                <p className="text-sm font-bold text-emerald-600 tabular-nums whitespace-nowrap">
                                     {template.amount.toFixed(0)} {template.currency}
                                 </p>
                             </div>
@@ -125,7 +125,7 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                                             {methodStyle.label}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-right font-bold text-green-600 whitespace-nowrap">
+                                    <td className="px-4 py-3 text-right font-bold text-emerald-600 whitespace-nowrap">
                                         {template.amount.toFixed(0)} {template.currency}
                                     </td>
                                 </tr>

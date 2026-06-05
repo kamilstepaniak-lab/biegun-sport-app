@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { updateParticipationStatusByParent, type TripForParent, type ChildTripStatus } from '@/lib/actions/trips';
@@ -32,18 +32,26 @@ function groupByMonth(trips: TripForParent[]) {
 }
 
 export function ParentTripsList({ trips }: ParentTripsListProps) {
+  const [query, setQuery] = useState('');
+  const trimmedQuery = query.trim().toLowerCase();
+
+  const filteredTrips = useMemo(() => {
+    if (!trimmedQuery) return trips;
+    return trips.filter((trip) => trip.title.toLowerCase().includes(trimmedQuery));
+  }, [trips, trimmedQuery]);
+
   const { upcomingTrips, pastTrips } = useMemo(() => {
     const now = Date.now();
     const upcoming: TripForParent[] = [];
     const past: TripForParent[] = [];
-    trips.forEach(trip => {
+    filteredTrips.forEach(trip => {
       if (new Date(trip.return_datetime).getTime() < now) past.push(trip);
       else upcoming.push(trip);
     });
     upcoming.sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime());
     past.sort((a, b) => new Date(b.departure_datetime).getTime() - new Date(a.departure_datetime).getTime());
     return { upcomingTrips: upcoming, pastTrips: past };
-  }, [trips]);
+  }, [filteredTrips]);
 
   const upcomingByMonth = useMemo(() => groupByMonth(upcomingTrips), [upcomingTrips]);
   const pastByMonth = useMemo(() => groupByMonth(pastTrips), [pastTrips]);
@@ -166,11 +174,37 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
     );
   };
 
+  const showPast = pastExpanded || trimmedQuery.length > 0;
+
   return (
     <div className="space-y-6">
+      {trips.length > 3 && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Szukaj wyjazdu po nazwie…"
+            className="h-11 w-full rounded-xl bg-white pl-9 pr-9 text-base md:text-sm text-gray-700 ring-1 ring-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              aria-label="Wyczyść wyszukiwanie"
+              className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {upcomingTrips.length === 0 && pastTrips.length === 0 && (
         <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center text-gray-400">
-          Brak wyjazdów
+          {trimmedQuery
+            ? `Brak wyjazdów pasujących do „${query.trim()}”`
+            : 'Brak wyjazdów'}
         </div>
       )}
 
@@ -206,14 +240,14 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
             <span className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-widest group-hover:text-gray-600 transition-colors whitespace-nowrap">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Wyjazdy zrealizowane ({pastTrips.length})
-              {pastExpanded
+              {showPast
                 ? <ChevronUp className="h-3.5 w-3.5" />
                 : <ChevronDown className="h-3.5 w-3.5" />}
             </span>
             <div className="h-px flex-1 bg-gray-300" />
           </button>
 
-          {pastExpanded && (
+          {showPast && (
             <div className="relative space-y-6 pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200">
               {pastByMonth.map((group) => (
                 <div key={group.monthKey} className="relative space-y-3">

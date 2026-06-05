@@ -61,7 +61,7 @@ export function ContractCard({ contract, parentName }: ContractCardProps) {
       <div
         className={`px-5 py-4 flex items-center justify-between gap-4 cursor-pointer transition-colors ${
           isAccepted
-            ? 'bg-green-50/40 hover:bg-green-50/70 border-b border-green-100'
+            ? 'bg-emerald-50/40 hover:bg-emerald-50/70 border-b border-emerald-100'
             : 'bg-amber-50/30 hover:bg-amber-50/60 border-b border-amber-100'
         }`}
         onClick={() => setExpanded((v) => !v)}
@@ -80,7 +80,7 @@ export function ContractCard({ contract, parentName }: ContractCardProps) {
             </span>
           )}
           {isAccepted ? (
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100 shrink-0">
+            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 shrink-0">
               <CheckCircle className="mr-1 h-3 w-3" />
               Zaakceptowana
               {contract.accepted_at && (

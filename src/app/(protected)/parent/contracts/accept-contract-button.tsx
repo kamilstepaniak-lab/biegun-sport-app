@@ -40,7 +40,7 @@ export function AcceptContractButton({ contractId }: AcceptContractButtonProps) 
 
   if (accepted) {
     return (
-      <div className="flex items-center gap-2 text-green-700 text-sm font-medium py-2">
+      <div className="flex items-center gap-2 text-emerald-700 text-sm font-medium py-2">
         <CheckCircle className="h-4 w-4" />
         Zaakceptowano pomyślnie
       </div>
@@ -77,7 +77,7 @@ export function AcceptContractButton({ contractId }: AcceptContractButtonProps) 
       <Button
         onClick={handleAccept}
         disabled={isLoading || !owuChecked}
-        className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white w-full sm:w-auto"
       >
         {isLoading ? (
           <>

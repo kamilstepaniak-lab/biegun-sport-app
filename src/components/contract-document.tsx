@@ -81,10 +81,10 @@ export function ContractDocument({
 
       {/* Blok podpisu elektronicznego */}
       {acceptedAt && (
-        <div className="bg-green-50 border-t border-green-200 px-8 py-5">
+        <div className="bg-emerald-50 border-t border-emerald-200 px-8 py-5">
           <div className="flex items-center gap-2 mb-3">
-            <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
-            <span className="text-sm font-bold text-green-800 uppercase tracking-wide">
+            <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span className="text-sm font-bold text-emerald-800 uppercase tracking-wide">
               Podpis elektroniczny
             </span>
           </div>

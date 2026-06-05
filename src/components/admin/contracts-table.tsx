@@ -195,7 +195,7 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
                   </td>
                   <td className="py-2.5 pr-4">
                     {contract.accepted_at ? (
-                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                         <CheckCircle className="mr-1 h-3 w-3" />
                         Zaakceptowana
                       </Badge>

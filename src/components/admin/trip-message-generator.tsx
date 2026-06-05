@@ -235,7 +235,7 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
               onClick={() => setActiveTab('whatsapp')}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'whatsapp'
-                  ? 'border-green-600 text-green-700'
+                  ? 'border-emerald-600 text-emerald-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >

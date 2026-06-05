@@ -147,7 +147,7 @@ export function ConfirmTokenClient({
           {/* Już użyty */}
           {phase === 'already-used' && (
             <div className="text-center py-4">
-              <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-900 mb-2">Link już był użyty</h2>
               <p className="text-sm text-gray-500">
                 Ta akcja została już wcześniej wykonana. Zapis jest aktualny.
@@ -194,7 +194,7 @@ export function ConfirmTokenClient({
                 <div className="space-y-3">
                   <button
                     onClick={() => handleConfirm('confirm')}
-                    className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
                     <CheckCircle className="h-5 w-5" />
                     Tak, potwierdzam udział
@@ -241,7 +241,7 @@ export function ConfirmTokenClient({
             <div className="text-center py-4">
               {result.action === 'confirm' ? (
                 <>
-                  <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+                  <CheckCircle className="h-14 w-14 text-emerald-500 mx-auto mb-4" />
                   <h2 className="text-xl font-bold text-gray-900 mb-2">Gotowe!</h2>
                   <p className="text-sm text-gray-600 mb-4">
                     Udział został potwierdzony.
