@@ -180,7 +180,7 @@ function TripCardInner({
       )}>
         <CollapsibleTrigger asChild>
           <div className="cursor-pointer">
-            <div className="grid gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_1fr_auto_auto_auto] lg:items-center">
+            <div className="grid gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_18rem_auto_1fr_auto_auto] lg:items-center">
               <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', campVisual.iconBox)}>
                 <campVisual.Icon className="h-5 w-5" />
               </div>
@@ -193,6 +193,8 @@ function TripCardInner({
                 <Calendar className="h-3.5 w-3.5 text-blue-500" />
                 {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
               </p>
+
+              <div className="hidden lg:block" />
 
               <span className={cn(
                 'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
