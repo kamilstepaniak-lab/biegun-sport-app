@@ -73,7 +73,9 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <CreditCard className="h-5 w-5" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+            <CreditCard className="h-3.5 w-3.5 text-white" />
+          </span>
           Zapisy i płatności
         </CardTitle>
         <CardDescription>Wyjazdy i płatności przypisane do uczestnika</CardDescription>

@@ -210,10 +210,12 @@ export function TripMessageGenerator({ trip, compact = false }: TripMessageGener
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+        <DialogContent className="flex max-h-[90vh] w-[95vw] max-w-5xl flex-col gap-0 overflow-hidden p-0">
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-white" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                <Mail className="h-4 w-4 text-white" />
+              </span>
               Wiadomość dla rodziców
             </DialogTitle>
           </DialogHeader>

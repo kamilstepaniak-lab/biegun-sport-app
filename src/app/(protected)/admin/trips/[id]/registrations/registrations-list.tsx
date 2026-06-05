@@ -14,6 +14,7 @@ import {
   Users,
   Search,
   Download,
+  MapPin,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -541,7 +542,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="min-w-[1180px] text-sm">
                       <thead className="bg-gray-50/50">
                         <tr>
                           <th className="p-3 w-10">
@@ -670,7 +671,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
                           </Select>
                           {stopLabel && (
                             <span className="text-xs text-gray-500 truncate max-w-[150px]" title={stopLabel}>
-                              📍 {stopLabel}
+                              <MapPin className="inline h-3 w-3" /> {stopLabel}
                             </span>
                           )}
                         </div>

@@ -56,8 +56,8 @@ export default async function TripContractsPage({ params }: PageProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
-                <FileText className="h-5 w-5 text-purple-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                <FileText className="h-5 w-5 text-white" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{contracts.length}</p>
@@ -142,7 +142,7 @@ export default async function TripContractsPage({ params }: PageProps) {
                     return (
                       <tr
                         key={contract.id}
-                        className="border-b last:border-0 hover:bg-purple-50/40 transition-colors group"
+                        className="border-b last:border-0 transition-colors hover:bg-blue-50/40 group"
                       >
                         <td className="py-3 pr-4">
                           {contractNumber ? (
@@ -179,7 +179,7 @@ export default async function TripContractsPage({ params }: PageProps) {
                         <td className="py-3">
                           <Link
                             href={`/admin/trips/${id}/contracts/${contract.id}`}
-                            className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 opacity-0 transition-opacity hover:text-blue-800 group-hover:opacity-100"
                           >
                             <Eye className="h-3.5 w-3.5" />
                             Podgląd

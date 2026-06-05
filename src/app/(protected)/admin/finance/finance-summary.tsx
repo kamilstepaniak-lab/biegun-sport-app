@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -79,10 +79,8 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
     [sorted, currentPage],
   );
 
-  // Reset paginacji przy zmianie filtra / sortowania.
-  useEffect(() => { setPage(1); }, [searchQuery, sortField, sortDir]);
-
   function toggleSort(field: keyof TripSummary) {
+    setPage(1);
     if (sortField === field) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     } else {
@@ -229,13 +227,19 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
               <input
                 placeholder="Szukaj wyjazdu..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full h-11 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
               />
               {searchQuery && (
                 <button
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setPage(1);
+                  }}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

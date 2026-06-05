@@ -180,7 +180,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6">
       <BasicInfoSection
         formData={formData}
         updateFormData={updateFormData}

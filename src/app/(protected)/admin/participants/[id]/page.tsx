@@ -59,7 +59,11 @@ function InfoRow({
 
   return (
     <div className="flex items-start gap-3">
-      {icon && <div className="mt-0.5 text-gray-400">{icon}</div>}
+      {icon && (
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+          {icon}
+        </div>
+      )}
       {href ? (
         <a href={href} className="min-w-0 hover:text-primary hover:underline">
           {content}
@@ -127,7 +131,9 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                    <UserRound className="h-5 w-5" />
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                      <UserRound className="h-3.5 w-3.5 text-white" />
+                    </span>
                     Dane dziecka
                   </CardTitle>
                   <CardDescription>Podstawowe informacje organizacyjne</CardDescription>
@@ -254,7 +260,9 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                <Users className="h-5 w-5" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+                  <Users className="h-3.5 w-3.5 text-white" />
+                </span>
                 Dane rodzica
               </CardTitle>
               <CardDescription>Kontakt i dane do umowy</CardDescription>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Eye, EyeOff, CheckCircle, Save, ShieldAlert, Loader2, ShieldCheck, X } from 'lucide-react';
+import { FileText, Eye, EyeOff, CheckCircle, Save, ShieldAlert, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -156,7 +156,9 @@ export function ContractTemplateEditor({
           <DialogHeader className="shrink-0">
             <div className="flex items-center justify-between gap-4 pr-8">
               <DialogTitle className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-purple-600" />
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
+                  <FileText className="h-4 w-4 text-white" />
+                </span>
                 Wzór umowy uczestnictwa
                 {isActive ? (
                   <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">

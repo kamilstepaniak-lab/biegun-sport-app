@@ -49,6 +49,24 @@ Jeśli w danym dniu istnieje już nagłówek tego samego tematu, dopisz do niego
 nowe punkty. Nowy temat = nowy nagłówek (mogą być różne tematy z tą samą datą).
 Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
 
+### 2026-06-05 (Admin UI — poprawki z notatek)
+
+- `/admin/participants` i `/admin/registrations`: tabele dostały minimalną
+  szerokość zamiast ściskania kolumn; nagłówek `WA` zmieniony na `WhatsApp`.
+- `/admin/participants/[id]`: karty szczegółów uczestnika dopasowane do stylu
+  profilu rodzica — niebieskie boksy ikon w nagłówkach i polach.
+- `/admin/groups`: ikony grup przepięte na `GroupIcon`, usunięty podpis
+  „Grupa”, dopisane roczniki obok nazwy i doprecyzowane metryki importu.
+- `/admin/trips/add|edit`: formularz wyjazdu na pełną szerokość; dialog
+  wiadomości do rodziców poszerzony i ujednolicony wizualnie.
+- `/admin/messages` i `/admin/settings`: usunięte sztuczne ograniczenia
+  szerokości kontenera.
+- `/admin/trips/[id]/contracts`: fioletowe akcenty umów wyjazdu zamienione na
+  brandowy niebieski; `/admin/trips/[id]/registrations` zabezpieczone przed
+  ściskaniem kolumn.
+- `AGENTS.md`: dopisana reguła parytetu ekranów admin/rodzic oraz kanonicznych
+  ikon/kolorów grup.
+
 ### 2026-06-05 (Płatności + Finanse — zniżki vs edycja ceny, spójność)
 
 - **Rozdzielenie zniżki od edycji ceny** (#14). `addPaymentTransaction`:

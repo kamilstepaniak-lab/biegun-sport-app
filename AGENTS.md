@@ -10,6 +10,11 @@ Wskazówki dla Codex przy pracy nad projektem `biegun-sport-app`
   danego czatu.
 - Na końcu każdego zadania w czacie **zapytaj użytkownika, czy zrobić push
   na `main` / wdrożenie na Vercel** — nie pushuj bez potwierdzenia.
+- Przy ekranach bliźniaczych admin/rodzic (Wyjazdy, Kalendarz, Płatności,
+  Dokumenty/Umowy) zmiany wyglądu i układu wdrażaj od razu po obu stronach,
+  zgodnie z `design.md`.
+- Ikony i kolory grup zawsze bierz z `src/lib/group-icons.tsx` oraz
+  `src/lib/group-colors.tsx`; nie hardkoduj ich w komponentach.
 
 ## Baza danych i migracje
 

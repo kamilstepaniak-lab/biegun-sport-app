@@ -39,6 +39,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { getGroupColor } from '@/lib/group-colors';
+import { GroupIcon } from '@/lib/group-icons';
 import { cn } from '@/lib/utils';
 import {
   assignParticipantToGroup,
@@ -216,7 +217,7 @@ export function ParticipantsTable({
 
               <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
                 <div className="overflow-x-auto">
-                  <table className="w-full table-fixed border-collapse text-sm">
+                  <table className="min-w-[1180px] table-fixed border-collapse text-sm">
                     <colgroup>
                       <col className="w-10" />
                       <col />
@@ -245,7 +246,7 @@ export function ParticipantsTable({
                         <th className="px-3 py-2.5">Email</th>
                         <th className="px-3 py-2.5">Telefon</th>
                         <th className="px-3 py-2.5">Notatka</th>
-                        <th className="px-2 py-2.5 text-center">WA</th>
+                        <th className="px-2 py-2.5 text-center">WhatsApp</th>
                         <th className="px-2 py-2.5 text-center">Wpisowe</th>
                         <th className="px-2 py-2.5 text-center">Umowa</th>
                         <th className="px-3 py-2.5 text-right">Akcje</th>
@@ -309,10 +310,12 @@ export function ParticipantsTable({
                                       ) : (
                                         <span
                                           className={cn(
-                                            'h-1.5 w-1.5 rounded-full',
+                                            'flex h-5 w-5 items-center justify-center rounded-full text-white',
                                             colors?.dot ?? 'bg-slate-400',
                                           )}
-                                        />
+                                        >
+                                          <GroupIcon name={p.group?.name ?? ''} className="h-3 w-3" />
+                                        </span>
                                       )}
                                       {p.group?.name ?? 'Bez kategorii'}
                                       <ChevronDown className="h-3 w-3 opacity-60" />

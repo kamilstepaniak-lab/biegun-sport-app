@@ -207,7 +207,7 @@ export default function RegistrationsList({
 
               <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
                 <div className="overflow-x-auto">
-                  <table className="w-full table-fixed border-collapse text-sm">
+                  <table className="min-w-[1180px] table-fixed border-collapse text-sm">
                     <colgroup>
                       <col />
                       <col />

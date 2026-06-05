@@ -50,7 +50,9 @@ export function ParticipantNotesCard({ participantId, initialNotes, compact = fa
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <StickyNote className={`h-5 w-5 ${notes ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+              <StickyNote className="h-3.5 w-3.5 text-white" />
+            </span>
             <div>
               <CardTitle className="text-base font-semibold">Notatki</CardTitle>
               <CardDescription>
@@ -90,7 +92,7 @@ export function ParticipantNotesCard({ participantId, initialNotes, compact = fa
         ) : (
           <div>
             {notes ? (
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                 <p className="whitespace-pre-wrap text-sm">{notes}</p>
               </div>
             ) : (

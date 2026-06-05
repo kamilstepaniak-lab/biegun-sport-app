@@ -25,7 +25,7 @@ export default async function SettingsPage() {
         description="Konfiguracja aplikacji, logi i narzędzia administracyjne"
       />
 
-      <div className="space-y-3 max-w-4xl">
+      <div className="space-y-3">
       {/* ── Szablony e-maili ───────────────────────────────────────── */}
       <Link
         href="/admin/settings/email-templates"

@@ -15,6 +15,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { assignParticipantToGroup } from '@/lib/actions/participants';
+import { getGroupColor } from '@/lib/group-colors';
+import { GroupIcon } from '@/lib/group-icons';
+import { cn } from '@/lib/utils';
 import type { Group } from '@/types';
 
 interface ChangeGroupCardProps {
@@ -54,7 +57,9 @@ export function ChangeGroupCard({ participantId, currentGroupId, groups }: Chang
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <Users className="h-5 w-5" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
+            <Users className="h-3.5 w-3.5 text-white" />
+          </span>
           Zmiana grupy
         </CardTitle>
         <CardDescription>Przypisz uczestnika do innej grupy</CardDescription>
@@ -68,7 +73,12 @@ export function ChangeGroupCard({ participantId, currentGroupId, groups }: Chang
             <SelectItem value="none">Brak grupy</SelectItem>
             {groups.map((group) => (
               <SelectItem key={group.id} value={group.id}>
-                {group.name}
+                <span className="flex items-center gap-2">
+                  <span className={cn('flex h-5 w-5 items-center justify-center rounded-full text-white', getGroupColor(group.name).dot)}>
+                    <GroupIcon name={group.name} className="h-3 w-3" />
+                  </span>
+                  {group.name}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

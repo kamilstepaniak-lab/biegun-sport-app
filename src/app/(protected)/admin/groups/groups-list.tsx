@@ -14,7 +14,6 @@ import {
   Search,
   Trash2,
   Upload,
-  Users,
   XCircle,
   X,
 } from 'lucide-react';
@@ -72,6 +71,7 @@ import {
   type ImportStats,
 } from '@/lib/actions/import';
 import { getGroupColor } from '@/lib/group-colors';
+import { GroupIcon } from '@/lib/group-icons';
 import { cn } from '@/lib/utils';
 import type { Group } from '@/types';
 
@@ -98,6 +98,20 @@ function toRow(group: GroupWithParticipants, p: ParticipantInGroup): Participant
       secondary_phone: p.parent.secondary_phone,
     },
   };
+}
+
+function getBirthYearsLabel(participants: ParticipantInGroup[]) {
+  const years = participants
+    .map((p) => {
+      const year = new Date(p.birth_date).getFullYear();
+      return Number.isNaN(year) ? null : year;
+    })
+    .filter((year): year is number => year !== null);
+
+  if (years.length === 0) return null;
+  const min = Math.min(...years);
+  const max = Math.max(...years);
+  return min === max ? `${min}` : `${min}-${max}`;
 }
 
 export function GroupsList({ groups, importStats }: GroupsListProps) {
@@ -355,7 +369,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           <div className="flex items-center gap-3">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
+              <Input
                 placeholder="Szukaj po nazwisku..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -442,11 +456,11 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           </div>
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-2xl font-bold text-amber-600">{importStats.oczekuje}</p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Do importu</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Oczekuje w imporcie</p>
           </div>
           <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
             <p className="text-2xl font-bold text-red-600">{importStats.blad}</p>
-            <p className="mt-1 text-xs font-medium text-slate-500">Błędy importu</p>
+            <p className="mt-1 text-xs font-medium text-slate-500">Błędy w imporcie</p>
           </div>
         </div>
 
@@ -456,6 +470,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           const isOpen = openGroupId === group.id || (!!searchQuery && group.participants.length > 0);
           const rows = group.participants.map((p) => toRow(group, p));
           const selectedInGroup = group.participants.filter((p) => selectedIds.has(p.id)).length;
+          const birthYearsLabel = getBirthYearsLabel(group.participants);
 
           return (
             <Collapsible key={group.id} open={isOpen} onOpenChange={() => toggleGroup(group.id)}>
@@ -471,14 +486,17 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                   <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
                     <div className="flex items-center gap-3">
                       <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', colors.bg)}>
-                        <Users className={cn('h-4 w-4', colors.text)} />
+                        <GroupIcon name={group.name} className={cn('h-5 w-5', colors.text)} />
                       </div>
                       <div>
-                        <h3 className="text-base font-semibold text-slate-900">{group.name}</h3>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                          <span className={cn('h-2 w-2 rounded-full', colors.dot)} />
-                          <span>Grupa</span>
-                        </div>
+                        <h3 className="text-base font-semibold text-slate-900">
+                          {group.name}
+                          {birthYearsLabel && (
+                            <span className="ml-2 text-sm font-medium text-slate-500">
+                              {birthYearsLabel}
+                            </span>
+                          )}
+                        </h3>
                       </div>
                     </div>
 
