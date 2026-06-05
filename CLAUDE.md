@@ -105,8 +105,16 @@ Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
   „Wszystkie dzieci" liczony serwerowo (`buildAggregateDashboard`).
 - `getMyChildren` (participants.ts) i `getMessagesForParent` (messages.ts)
   owinięte w `cache()` — deduplikacja zapytań w obrębie jednego renderu.
+- Nowa podstrona **`/parent/messages`** — pełny widok wszystkich wiadomości
+  od organizatora (`messages-list.tsx`, `markMessageRead`, dialog z pełną
+  treścią, styl nieprzeczytanych). Dodana do nawigacji (ikona MessageSquare).
+  „Wszystkie →" w karcie wiadomości na „Moje dzieci" prowadzi teraz tutaj
+  (wcześniej linkowało do tej samej strony).
 - Layout rodzica: badge liczby **nieprzeczytanych wiadomości** na pozycji
-  „Moje dzieci" w nawigacji (Sidebar `badge`).
+  „Wiadomości" w nawigacji (Sidebar `badge`).
+- Odłożone do zrobienia z testem na żywo: podwójny redirect ChildUrlSync +
+  ChildGuard (#13) — celowa defensywa, refaktor wymaga przeklikania wyboru
+  dziecka, by nie wprowadzić regresji.
 - Bugfix: fallback imienia na „Moje dzieci" był zahardkodowany na „Karol";
   teraz pierwsza część `full_name` → login z maila → „Witaj".
 - Sprzątanie: usunięty martwy `localStorage.removeItem('selectedChild')`

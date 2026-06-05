@@ -571,7 +571,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                   <p className="text-[11px] text-gray-400">{messages.length} wiadomości od organizatora</p>
                 </div>
               </div>
-              <Link href="/parent/children" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
+              <Link href="/parent/messages" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
                 Wszystkie →
               </Link>
             </div>

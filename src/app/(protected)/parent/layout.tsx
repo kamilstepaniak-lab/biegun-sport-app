@@ -33,6 +33,11 @@ const parentNavItems: SidebarItem[] = [
     icon: 'FileText',
   },
   {
+    title: 'Wiadomości',
+    href: '/parent/messages',
+    icon: 'MessageSquare',
+  },
+  {
     title: 'Profil',
     href: '/parent/profile',
     icon: 'User',
@@ -59,7 +64,7 @@ export default async function ParentLayout({
   const unreadCount = messages.filter((m) => !m.is_read).length;
 
   const navItems: SidebarItem[] = parentNavItems.map((item) =>
-    item.href === '/parent/children' && unreadCount > 0
+    item.href === '/parent/messages' && unreadCount > 0
       ? { ...item, badge: unreadCount }
       : item,
   );
