@@ -11,13 +11,29 @@ Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
 1. **Jeden spójny język wizualny** dla panelu admina i rodzica — te same
    tokeny, komponenty, radius, nagłówki. Różnią się treścią i nawigacją,
    nie wyglądem.
-2. **Komponenty zawsze z `src/components/ui`** (button, card, dialog, table,
+2. **Parytet analogicznych ekranów.** Ta sama strona w obu panelach
+   (np. Wyjazdy u admina i Wyjazdy u rodzica, podobnie Płatności, Kalendarz,
+   Umowy) to **warianty jednego widoku**: ten sam układ, te same karty,
+   nagłówek i kolejność sekcji. Różnią się **tylko zakresem funkcji** —
+   admin ma edycję/zarządzanie/akcje masowe, rodzic odczyt i akcje rodzica
+   (potwierdzenie, wpłata, akceptacja umowy).
+   - **Spójne wymiary.** Bloki, karty i wiersze danych mają mieć **te same
+     szerokości, odstępy, padding i proporcje** po obu stronach — ten sam
+     blok nie może być węższy/szerszy u rodzica niż u admina. Dane (kolumny,
+     etykiety, wartości) układaj tak samo.
+   - **Wspólne komponenty zamiast kopii.** Gdy ekran istnieje po obu stronach,
+     wynoś powtarzalny widok (karta wyjazdu, tabela, blok podsumowania) do
+     wspólnego komponentu i parametryzuj go uprawnieniami — nie utrzymuj
+     dwóch rozjeżdżających się wersji.
+   - Budując/zmieniając ekran po jednej stronie, **zawsze** sprawdź jego
+     odpowiednik po drugiej i trzymaj je zgodne (układ, wymiary, wygląd).
+3. **Komponenty zawsze z `src/components/ui`** (button, card, dialog, table,
    badge, input, select...). Najpierw szukaj istniejącego — nowy twórz tylko
    gdy naprawdę brak. **Zero inline ad-hoc styli** powielających to, co już
    jest w ui.
-3. **Tylko jasny motyw.** Dark mode ignorujemy — nie dodawaj wariantów
+4. **Tylko jasny motyw.** Dark mode ignorujemy — nie dodawaj wariantów
    `dark:`, nie testuj dark. (Definicja `.dark` w globals.css jest martwa.)
-4. **Oba urządzenia krytyczne.** Każdy ekran musi wyglądać dobrze na telefonie
+5. **Oba urządzenia krytyczne.** Każdy ekran musi wyglądać dobrze na telefonie
    i na desktopie — sprawdzaj obie szerokości zanim powiesz „gotowe". To PWA
    (safe-area), panel rodzica używany głównie na telefonie.
 
