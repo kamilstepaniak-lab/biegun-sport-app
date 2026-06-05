@@ -32,7 +32,9 @@ CREATE INDEX IF NOT EXISTS idx_payments_manual
   ON payments(participant_id, created_at DESC)
   WHERE registration_id IS NULL;
 
-CREATE OR REPLACE VIEW admin_payments_view
+DROP VIEW IF EXISTS admin_payments_view;
+
+CREATE VIEW admin_payments_view
 WITH (security_invoker = on) AS
 SELECT
   p.*,
