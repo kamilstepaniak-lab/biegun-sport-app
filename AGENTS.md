@@ -44,6 +44,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/*`: zmniejszono proporcje wspólnego headera rodzica po wdrożeniu
+  wzoru — niższy padding, mniejszy tytuł, ikony, input wyszukiwarki i przyciski
+  wyboru dziecka.
 - `/parent/*`: wprowadzono wspólny niebieski header rodzica z dużą ikoną,
   kontekstowym opisem i białym panelem akcji zgodnym ze wzorem dla `Wyjazdy`;
   podstrony dostały własne ikony i komunikaty.

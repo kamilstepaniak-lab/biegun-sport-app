@@ -36,27 +36,27 @@ export function ParentTripsShell({
         description="Zarządzaj wyjazdami Twoich dzieci w jednym miejscu. Przeglądaj listę, sprawdzaj szczegóły i dodawaj nowe zgłoszenia."
         note="Po potwierdzeniu pojawi się umowa i płatność do opłacenia."
       >
-        <div className="grid gap-5 lg:grid-cols-[0.32fr_1fr] lg:items-end">
-          <div className="space-y-3 lg:border-r lg:border-slate-200 lg:pr-5">
+        <div className="grid gap-4 lg:grid-cols-[0.32fr_1fr] lg:items-end">
+          <div className="space-y-2 lg:border-r lg:border-slate-200 lg:pr-4">
             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-700">
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="h-3.5 w-3.5" />
               Nazwa wyjazdu
             </div>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <Input
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Wpisz nazwę wyjazdu..."
-                className="h-[62px] rounded-[10px] border-blue-500 bg-white pl-10 pr-10 text-base shadow-none focus-visible:ring-blue-500"
+                className="h-12 rounded-[10px] border-blue-500 bg-white pl-9 pr-9 text-sm shadow-none focus-visible:ring-blue-500"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery('')}
                   aria-label="Wyczyść wyszukiwanie"
-                  className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                  className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
