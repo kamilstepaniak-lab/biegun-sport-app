@@ -222,7 +222,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
               <campVisual.Icon className="h-5 w-5" />
             </div>
 
-            <h3 className="min-w-0 truncate text-sm font-bold text-slate-900">
+            <h3 className="min-w-0 truncate text-base font-bold text-slate-900">
               {trip.title}
             </h3>
 
