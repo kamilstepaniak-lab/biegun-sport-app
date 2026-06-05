@@ -44,6 +44,8 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/*`: biały panel akcji w headerze rodzica przyklejono do dolnej
+  krawędzi niebieskiej apli i rozciągnięto na pełną szerokość headera.
 - `/parent/*`: zmniejszono proporcje wspólnego headera rodzica po wdrożeniu
   wzoru — niższy padding, mniejszy tytuł, ikony, input wyszukiwarki i przyciski
   wyboru dziecka.

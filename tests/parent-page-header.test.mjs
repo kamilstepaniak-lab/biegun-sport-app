@@ -38,3 +38,12 @@ test('child guard can defer child selection UI to the parent page header', () =>
   const tripsPage = read('src/app/(protected)/parent/trips/parent-trips-shell.tsx');
   assert.match(tripsPage, /showSelector=\{false\}/);
 });
+
+test('parent page header action panel sits flush on the bottom edge', () => {
+  const header = read('src/components/parent/parent-page-header.tsx');
+
+  assert.match(header, /parent-page-hero[^']*overflow-hidden/);
+  assert.match(header, /<div className="p-4 sm:p-5 lg:p-6">/);
+  assert.match(header, /<div className="bg-white p-3 text-slate-900/);
+  assert.doesNotMatch(header, /<div className="mt-\d/);
+});
