@@ -32,7 +32,7 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
     <div className="space-y-6">
       <PageHeader
         title="Płatności"
-        description="Zarządzaj płatnościami za wyjazdy swoich dzieci"
+        description="Znajdziesz tu wszystkie należności za wyjazdy oraz terminy ich opłacenia. Status każdej raty pokazuje, co jest już opłacone, a co czeka na wpłatę. Płać przed terminem, aby uniknąć przypomnień o zaległościach."
       />
 
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>

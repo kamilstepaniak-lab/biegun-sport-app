@@ -55,7 +55,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
     <div className="space-y-6">
       <PageHeader
         title="Dokumenty"
-        description="Dokumenty ogólne i umowy uczestnictwa"
+        description="W tym miejscu zebraliśmy dokumenty ogólne klubu oraz umowy uczestnictwa dla Twoich dzieci. Zapoznaj się z każdą umową i zaakceptuj ją — to warunek udziału w wyjeździe. Pamiętaj, aby wcześniej uzupełnić dane do umowy w profilu."
       />
 
       <div className="space-y-6">
