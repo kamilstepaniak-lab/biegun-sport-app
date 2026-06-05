@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, Search, X } from 'lucide-react';
+import { Backpack, Search, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { ChildGuard } from '@/components/parent/child-guard';
@@ -29,55 +29,69 @@ export function ParentTripsShell({
 
   return (
     <div className="space-y-6">
-      <section className="parent-trips-hero rounded-[14px] bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80">
-        <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,340px)_minmax(360px,1.1fr)] lg:items-start lg:p-6">
-          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-blue-50 text-blue-600 ring-1 ring-blue-100 sm:h-14 sm:w-14">
-              <CalendarDays className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={1.9} />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-3xl font-black leading-tight tracking-normal text-slate-950 sm:text-[34px]">
-                Wyjazdy
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-[15px]">
-                Zarządzaj wyjazdami Twoich dzieci w jednym miejscu. Przeglądaj listę, sprawdzaj szczegóły i dodawaj nowe zgłoszenia.
-              </p>
+      <section className="parent-trips-hero relative overflow-hidden rounded-[18px] border border-blue-100/80 bg-[#eef6ff] px-4 pb-5 pt-8 text-slate-900 shadow-[0_18px_45px_rgba(15,23,42,0.12)] sm:px-8 sm:pb-8 sm:pt-10 lg:min-h-[360px] lg:px-14 lg:pb-14 lg:pt-16">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.92)_30%,rgba(248,251,255,0.35)_58%,rgba(248,251,255,0.12)_100%),url('/parent-hero-mountains.svg')] bg-[length:100%_100%,auto_100%] bg-[position:left_top,right_bottom] bg-no-repeat"
+        />
+        <div className="relative z-10 flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-blue-100/70 text-blue-500 shadow-sm ring-1 ring-blue-200/50 sm:h-20 sm:w-20">
+            <Backpack className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={1.8} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-5xl font-black leading-none tracking-normal text-slate-950 sm:text-6xl lg:text-[72px]">
+              Wyjazdy
+            </h1>
+            <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-slate-600 sm:text-lg">
+              Zarządzaj wyjazdami Twoich dzieci w jednym miejscu.
+              <br className="hidden sm:block" />
+              Przeglądaj listę, sprawdzaj szczegóły i dodawaj nowe zgłoszenia.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10 mt-10 grid gap-5 lg:mt-16 lg:grid-cols-[minmax(280px,420px)_1px_minmax(0,1fr)] lg:items-end">
+          <div className="rounded-[14px] bg-white/86 p-4 shadow-[0_12px_34px_rgba(15,23,42,0.10)] ring-1 ring-slate-200/80 backdrop-blur">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-blue-50 text-blue-500 ring-1 ring-blue-100">
+                <Search className="h-5 w-5" strokeWidth={2} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <label htmlFor="parent-trip-search" className="mb-1 block text-sm font-semibold text-slate-500">
+                  Wpisz nazwę wyjazdu
+                </label>
+                <div className="relative">
+                  <Input
+                    id="parent-trip-search"
+                    type="text"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="np. Zimowisko w Tatrach"
+                    className="h-8 border-0 bg-transparent px-0 pr-8 text-lg font-black text-slate-950 shadow-none placeholder:text-slate-400 focus-visible:ring-0 sm:text-xl"
+                  />
+                  {query && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery('')}
+                      aria-label="Wyczyść wyszukiwanie"
+                      className="absolute right-0 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2 lg:border-l lg:border-slate-200 lg:pl-5">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-700">
-              <Search className="h-3.5 w-3.5" />
-              Nazwa wyjazdu
-            </div>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="text"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Wpisz nazwę wyjazdu..."
-                className="h-10 rounded-[10px] border-slate-200 bg-slate-50 pl-9 pr-9 text-sm text-slate-900 shadow-none focus-visible:bg-white focus-visible:ring-blue-500"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  aria-label="Wyczyść wyszukiwanie"
-                  className="absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+          <div className="hidden h-full min-h-20 w-px bg-slate-300/80 lg:block" />
 
-          <div className="lg:border-l lg:border-slate-200 lg:pl-5">
+          <div className="min-w-0">
             <ParentChildSelector
               selectedChildId={selectedChildId}
               selectedChildName={childName}
               childrenList={childrenList}
-              variant="compact"
+              showAllOption={false}
             />
           </div>
         </div>
@@ -92,13 +106,13 @@ export function ParentTripsShell({
         {trips.length === 0 ? (
           awaitingGroup ? (
             <EmptyState
-              icon={CalendarDays}
+              icon={Backpack}
               title="Dziecko czeka na przypisanie do grupy"
               description="Organizator nie przypisał jeszcze dziecka do grupy treningowej. Po przypisaniu zobaczysz tutaj dostępne wyjazdy."
             />
           ) : (
             <EmptyState
-              icon={CalendarDays}
+              icon={Backpack}
               title="Brak dostępnych wyjazdów"
               description="Aktualnie nie ma wyjazdów dla grup tego dziecka."
             />

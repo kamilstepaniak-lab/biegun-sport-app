@@ -1,41 +1,76 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 200" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 420" fill="none">
   <defs>
-    <!-- delikatny fade po lewej, żeby tytuł był czytelny -->
-    <linearGradient id="hFade" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
-      <stop offset="0.16" stop-color="#fff" stop-opacity="0.4"/>
-      <stop offset="0.4" stop-color="#fff" stop-opacity="0.9"/>
-      <stop offset="0.6" stop-color="#fff" stop-opacity="1"/>
+    <linearGradient id="sky" x1="750" y1="0" x2="750" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d9ecff"/>
+      <stop offset="0.48" stop-color="#edf6ff"/>
+      <stop offset="1" stop-color="#f8fbff"/>
     </linearGradient>
-    <mask id="fadeMask">
-      <rect width="1200" height="200" fill="url(#hFade)"/>
-    </mask>
+    <linearGradient id="peakLight" x1="800" y1="76" x2="1015" y2="367" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#cfe3fb"/>
+    </linearGradient>
+    <linearGradient id="peakShade" x1="1060" y1="82" x2="1115" y2="396" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#bdd9f7"/>
+      <stop offset="1" stop-color="#8cb9ed"/>
+    </linearGradient>
+    <linearGradient id="ridge" x1="365" y1="194" x2="1118" y2="412" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#dbeafe" stop-opacity="0.18"/>
+      <stop offset="0.45" stop-color="#bcd6f5" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#8db8ea"/>
+    </linearGradient>
+    <linearGradient id="groundFade" x1="750" y1="242" x2="750" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8fbff" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#f8fbff" stop-opacity="0.74"/>
+      <stop offset="1" stop-color="#f8fbff"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-40%" width="140%" height="180%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
   </defs>
 
-  <g mask="url(#fadeMask)">
-    <!-- najdalszy grzbiet -->
-    <path d="M0 200 L0 120 L150 95 L300 120 L450 80 L620 110 L780 70 L940 105 L1100 75 L1200 100 L1200 200 Z" fill="#dceafa"/>
+  <rect width="1500" height="420" fill="url(#sky)"/>
+  <circle cx="1345" cy="84" r="34" fill="#f6fbff" opacity="0.5"/>
+  <circle cx="1175" cy="74" r="25" fill="#f6fbff" opacity="0.65"/>
+  <path d="M1118 104c18-34 62-22 69 4 14-16 39-5 39 14h62c-38 12-118 10-214 7 13-16 31-20 44-25Z" fill="#fff" opacity="0.66" filter="url(#soft)"/>
+  <path d="M1246 114c25-22 53-7 58 14 18-11 42-3 49 15h58c-55 10-126 8-202 6 8-20 21-28 37-35Z" fill="#fff" opacity="0.54" filter="url(#soft)"/>
+  <path d="M558 145c17-31 56-20 62 3 13-14 35-4 35 13h56c-34 11-106 9-193 6 11-14 28-18 40-22Z" fill="#fff" opacity="0.44" filter="url(#soft)"/>
 
-    <!-- środkowy grzbiet -->
-    <path d="M0 200 L0 150 L180 110 L360 145 L540 100 L720 140 L900 95 L1080 135 L1200 110 L1200 200 Z" fill="#cadff5"/>
+  <path d="M0 420V288l156-22 114 28 176-104 210 141 186-142 132 142 144-150 184 150 198-108v197H0Z" fill="#dceafa" opacity="0.55"/>
+  <path d="M132 420V320l182-148 178 148 188-121 173 121 164-152 207 152 168-126 108 95v131H132Z" fill="url(#ridge)" opacity="0.78"/>
 
-    <!-- szczyt 1 -->
-    <polygon points="180,200 300,70 300,200" fill="#c2d6f0"/>
-    <polygon points="300,70 420,200 300,200" fill="#a8c6ec"/>
-    <polygon points="280,100 300,70 320,100" fill="#ffffff"/>
+  <path d="M702 420 1037 76v344H702Z" fill="url(#peakLight)"/>
+  <path d="m1037 76 312 344h-312V76Z" fill="url(#peakShade)"/>
+  <path d="m968 147 69-71 68 75-43 28-24-49-35 68-18-44-43 40 26-47Z" fill="#ffffff"/>
+  <path d="M1040 83v289l94-122-68 24 83-64-46 3 63-51-55 25 30-49-65 54-36-109Z" fill="#a9cdf4" opacity="0.56"/>
 
-    <!-- szczyt 2 (najwyższy) -->
-    <polygon points="480,200 640,45 640,200" fill="#c2d6f0"/>
-    <polygon points="640,45 800,200 640,200" fill="#a8c6ec"/>
-    <polygon points="616,82 640,45 664,82" fill="#ffffff"/>
+  <path d="M523 420 765 192v228H523Z" fill="#d8e8fb" opacity="0.92"/>
+  <path d="m765 192 222 228H765V192Z" fill="#a9c9ee" opacity="0.9"/>
+  <path d="m716 238 49-46 48 49-30 18-20-34-20 45-14-28-31 27 18-31Z" fill="#fff" opacity="0.95"/>
 
-    <!-- szczyt 3 -->
-    <polygon points="840,200 940,75 940,200" fill="#c8daf2"/>
-    <polygon points="940,75 1040,200 940,200" fill="#b2ceee"/>
-    <polygon points="921,103 940,75 959,103" fill="#f4f8ff"/>
+  <path d="M1128 420 1266 194v226h-138Z" fill="#d7e8fb" opacity="0.96"/>
+  <path d="m1266 194 178 226h-178V194Z" fill="#a6c6ed" opacity="0.86"/>
+  <path d="m1232 250 34-56 35 61-24 15-12-41-24 55-10-34-28 29 29-29Z" fill="#fff" opacity="0.9"/>
 
-    <!-- grzbiet skrajny prawy -->
-    <polygon points="1010,200 1090,110 1090,200" fill="#bcd2f0"/>
-    <polygon points="1090,110 1170,200 1090,200" fill="#a4c2ea"/>
+  <path d="M0 420V315l118 68 126-39 126 63 148-52 166 65H0Z" fill="#edf6ff" opacity="0.8"/>
+  <path d="M755 420c84-62 192-77 321-72 120 5 262-7 424-50v122H755Z" fill="#d9eafb" opacity="0.72"/>
+  <path d="M0 420h1500V298c-134 75-282 94-444 82-130-10-243 5-338 40H0Z" fill="url(#groundFade)"/>
+
+  <g opacity="0.74">
+    <path d="M1090 379h42l-21-65-21 65Z" fill="#80aee4"/>
+    <path d="M1110 379h50l-25-79-25 79Z" fill="#8db8ea"/>
+    <path d="M1148 379h42l-21-64-21 64Z" fill="#7aa8df"/>
+    <path d="M1182 379h52l-26-82-26 82Z" fill="#8db8ea"/>
+    <path d="M1228 379h42l-21-66-21 66Z" fill="#7aa8df"/>
+    <path d="M1260 379h56l-28-92-28 92Z" fill="#8db8ea"/>
+    <path d="M1310 379h42l-21-64-21 64Z" fill="#7aa8df"/>
+    <path d="M1344 379h62l-31-98-31 98Z" fill="#8db8ea"/>
+    <path d="M1400 379h46l-23-68-23 68Z" fill="#7aa8df"/>
+    <path d="M1440 379h60l-30-88-30 88Z" fill="#8db8ea"/>
   </g>
+
+  <path d="M1038 30v49" stroke="#7eaef0" stroke-width="4" stroke-linecap="round"/>
+  <path d="M1041 36c22 0 30 16 52 8-18 18-37 9-52 16V36Z" fill="#70a7f0"/>
+  <path d="M826 135c10-12 21-12 31 0" stroke="#7eb1f4" stroke-width="3" stroke-linecap="round"/>
+  <path d="M1262 90c10-10 21-10 31 0" stroke="#9bc4f7" stroke-width="3" stroke-linecap="round" opacity="0.85"/>
+  <path d="M980 322c50-26 106-34 167-30" stroke="#f8fbff" stroke-width="8" stroke-linecap="round" opacity="0.42"/>
 </svg>

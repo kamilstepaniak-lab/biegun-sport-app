@@ -44,6 +44,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/trips`: wdrożono pełnoszeroki jasny header Wyjazdów z autorską
+  grafiką gór, dużym tytułem, polem wyszukiwania przez wpisywanie nazwy
+  wyjazdu oraz wyborem dziecka w jednej sekcji.
 - `/parent/trips`: usunięto niebieskie tło eksperymentalnego headera Wyjazdów;
   zastąpiono je białym, pełnoszerokim blokiem z trzema rozdzielonymi sekcjami:
   opis, wyszukiwarka i kompaktowy wybór dziecka.

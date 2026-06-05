@@ -38,16 +38,21 @@ test('child guard can defer child selection UI to the parent page header', () =>
   assert.match(tripsPage, /showSelector=\{false\}/);
 });
 
-test('parent trips has its own full-width white header layout', () => {
+test('parent trips has its own full-width mountain header layout', () => {
   const tripsShell = read('src/app/(protected)/parent/trips/parent-trips-shell.tsx');
   const globals = read('src/app/globals.css');
+  const mountains = read('public/parent-hero-mountains.svg');
 
   assert.doesNotMatch(tripsShell, /ParentPageHeader/);
   assert.match(tripsShell, /parent-trips-hero/);
   assert.match(globals, /:not\(\.parent-trips-hero\)/);
-  assert.match(tripsShell, /bg-white text-slate-900/);
+  assert.match(tripsShell, /parent-hero-mountains\.svg/);
+  assert.match(tripsShell, /lg:min-h-\[360px\]/);
+  assert.match(tripsShell, /showAllOption=\{false\}/);
+  assert.match(tripsShell, /htmlFor="parent-trip-search"/);
+  assert.match(tripsShell, /Wpisz nazwę wyjazdu/);
+  assert.match(tripsShell, /placeholder="np\. Zimowisko w Tatrach"/);
   assert.doesNotMatch(tripsShell, /bg-blue-600 text-white/);
-  assert.match(tripsShell, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(260px,340px\)_minmax\(360px,1\.1fr\)\]/);
-  assert.match(tripsShell, /variant="compact"/);
-  assert.match(tripsShell, /lg:border-l lg:border-slate-200/);
+  assert.match(mountains, /viewBox="0 0 1500 420"/);
+  assert.match(mountains, /id="peakLight"/);
 });
