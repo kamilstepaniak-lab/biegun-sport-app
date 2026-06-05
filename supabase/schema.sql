@@ -166,10 +166,12 @@ CREATE INDEX idx_registrations_status ON trip_registrations(status);
 -- ====================================
 CREATE TABLE payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  registration_id UUID NOT NULL REFERENCES trip_registrations(id) ON DELETE CASCADE,
+  registration_id UUID REFERENCES trip_registrations(id) ON DELETE CASCADE,
+  participant_id UUID REFERENCES participants(id) ON DELETE CASCADE,
   template_id UUID REFERENCES trip_payment_templates(id),
-  payment_type TEXT NOT NULL CHECK (payment_type IN ('installment', 'season_pass')),
+  payment_type TEXT NOT NULL CHECK (payment_type IN ('installment', 'season_pass', 'manual')),
   installment_number INTEGER,
+  manual_title TEXT,
   original_amount DECIMAL(10,2) NOT NULL,
   discount_percentage DECIMAL(5,2) DEFAULT 0 CHECK (discount_percentage >= 0 AND discount_percentage <= 100),
   amount DECIMAL(10,2) NOT NULL,
@@ -185,13 +187,19 @@ CREATE TABLE payments (
   discount_applied_by UUID REFERENCES profiles(id),
   discount_applied_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT payments_trip_or_manual_check CHECK (
+    registration_id IS NOT NULL
+    OR (participant_id IS NOT NULL AND manual_title IS NOT NULL AND length(trim(manual_title)) > 0)
+  )
 );
 
 CREATE INDEX idx_payments_registration ON payments(registration_id);
+CREATE INDEX idx_payments_participant_id ON payments(participant_id);
 CREATE INDEX idx_payments_status ON payments(status);
 CREATE INDEX idx_payments_parent_visible ON payments(parent_visible);
 CREATE INDEX idx_payments_due_date ON payments(due_date);
+CREATE INDEX idx_payments_manual ON payments(participant_id, created_at DESC) WHERE registration_id IS NULL;
 
 -- ====================================
 -- TABELA: payment_transactions

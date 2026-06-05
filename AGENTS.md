@@ -39,6 +39,11 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/admin/payments`: dodano ręczne płatności przypisane bezpośrednio do dziecka
+  bez wyjazdu, z formularzem admina, widocznością w panelu rodzica, obsługą
+  przelewów i przypomnień oraz filtrem „Płatności ręczne".
+- Wymagana ręczna migracja Supabase:
+  `supabase/migrations/manual-child-payments.sql` przed pushem na produkcję.
 - `/parent/payments`: przeniesiono wybór dziecka nad dane do przelewu,
   ujednolicono tabelę płatności rodzica (nazwisko przed imieniem, kolumna
   „Płatność", wyrównanie do lewej) oraz powiększono etykiety kafelków

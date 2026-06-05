@@ -4,11 +4,13 @@ import { CreditCard, History } from 'lucide-react';
 import { PageHeader, EmptyState } from '@/components/shared';
 import {
   getAdminPaymentsPage,
+  getAdminPaymentParticipants,
   getAdminPaymentsStats,
   getAdminPaymentsTrips,
   type AdminPaymentsStatusFilter,
 } from '@/lib/actions/payments';
 import { PaymentsList } from './payments-list';
+import { ManualPaymentDialog } from '@/components/admin/manual-payment-dialog';
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -31,10 +33,11 @@ export default async function AdminPaymentsPage({
   const dateFrom = sp.from ?? '';
   const dateTo = sp.to ?? '';
 
-  const [{ rows, total }, stats, trips] = await Promise.all([
+  const [{ rows, total }, stats, trips, participants] = await Promise.all([
     getAdminPaymentsPage({ page, pageSize, search, tripId, status, dateFrom, dateTo }),
     getAdminPaymentsStats(),
     getAdminPaymentsTrips(),
+    getAdminPaymentParticipants(),
   ]);
 
   const hasActiveFilter =
@@ -46,6 +49,7 @@ export default async function AdminPaymentsPage({
         title="Płatności"
         description="Zarządzaj wszystkimi płatnościami w systemie"
       >
+        <ManualPaymentDialog participants={participants} />
         <Link
           href="/admin/payments/history"
           className="flex items-center gap-2 px-3 py-2 text-sm bg-white border rounded-xl transition-colors whitespace-nowrap flex-shrink-0"

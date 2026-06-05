@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
   const { data: payments, error } = await supabase
     .from('payments')
     .select(`
-      id, amount, currency, payment_type, installment_number, due_date,
+      id, amount, currency, payment_type, installment_number, due_date, manual_title,
+      participant:participants!payments_participant_id_fkey (
+        first_name, last_name, birth_date,
+        parent:profiles!parent_id (email, first_name)
+      ),
       registration:trip_registrations (
         participation_status,
-        participant:participants (
-          first_name, last_name, birth_date,
-          parent:profiles!parent_id (email, first_name)
-        ),
         trip:trips (title)
       )
     `)
@@ -62,16 +62,17 @@ export async function GET(request: NextRequest) {
   for (const payment of (payments || [])) {
     const reg = payment.registration as unknown as {
       participation_status: string;
-      participant: {
-        first_name: string;
-        last_name: string;
-        parent: { email: string; first_name: string } | null;
-      } | null;
       trip: { title: string } | null;
     } | null;
+    const directParticipant = payment.participant as unknown as {
+      first_name: string;
+      last_name: string;
+      parent: { email: string; first_name: string } | null;
+    } | null;
 
-    // Pomijaj dzieci które nie jadą
-    if (!reg || reg.participation_status !== 'confirmed') {
+    // Płatności wyjazdowe wysyłamy tylko dla potwierdzonych uczestników.
+    // Płatności ręczne nie mają registration_id, więc wystarczy przypisanie do dziecka.
+    if (reg && reg.participation_status !== 'confirmed') {
       skipped++;
       continue;
     }
@@ -82,11 +83,11 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    const parent = reg.participant?.parent;
-    const participant = reg.participant;
-    const trip = reg.trip;
+    const parent = directParticipant?.parent;
+    const participant = directParticipant;
+    const paymentTitle = reg?.trip?.title || payment.manual_title || 'Płatność ręczna';
 
-    if (!parent?.email || !participant || !trip) {
+    if (!parent?.email || !participant) {
       skipped++;
       continue;
     }
@@ -95,6 +96,8 @@ export async function GET(request: NextRequest) {
       ? `Rata ${payment.installment_number}`
       : payment.payment_type === 'season_pass'
       ? 'Karnet'
+      : payment.payment_type === 'manual'
+      ? 'Płatność ręczna'
       : 'Pełna opłata';
 
     try {
@@ -102,7 +105,7 @@ export async function GET(request: NextRequest) {
         parent.email,
         parent.first_name || '',
         `${participant.first_name} ${participant.last_name}`,
-        trip.title,
+        paymentTitle,
         payment.amount,
         payment.currency,
         payment.due_date,

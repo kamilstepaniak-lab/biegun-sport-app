@@ -64,6 +64,7 @@ function isOverduePayment(p: ParentPayment) {
 }
 
 function getPaymentTypeLabel(p: ParentPayment): string {
+  if (p.payment_type === 'manual') return 'Płatność ręczna';
   if (p.payment_type === 'installment') return `Rata ${p.installment_number}`;
   if (p.payment_type === 'season_pass') return 'Karnet';
   if (p.payment_type === 'full') return 'Pełna opłata';
@@ -212,7 +213,7 @@ function getPaymentData(payment: ParentPayment) {
   const tripDate = payment.trip_departure_date
     ? format(new Date(payment.trip_departure_date), 'dd.MM.yyyy', { locale: pl })
     : '';
-  const transferTitle = `${payment.child_last_name} ${payment.child_first_name} ${payment.trip_title} ${tripDate}`;
+  const transferTitle = `${payment.child_last_name} ${payment.child_first_name} ${payment.trip_title} ${tripDate}`.trim();
   return { cfg, StatusIcon, isOverdue, remaining, transferTitle };
 }
 
@@ -322,6 +323,15 @@ function PaymentDialog({
 }
 
 function getRelatedTransferPayments(payment: ParentPayment, allPayments: ParentPayment[]) {
+  if (payment.payment_type === 'manual') {
+    return allPayments.filter((item) => (
+      item.id === payment.id &&
+      item.status !== 'paid' &&
+      item.status !== 'cancelled' &&
+      item.amount - item.amount_paid > 0
+    ));
+  }
+
   return allPayments.filter((item) => (
     item.id === payment.id ||
     (

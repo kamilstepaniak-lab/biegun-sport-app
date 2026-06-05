@@ -328,6 +328,7 @@ export function PaymentsList({
   }
 
   function getPaymentLabel(row: AdminPaymentRow): string {
+    if (row.payment_type === 'manual') return 'Płatność ręczna';
     if (row.payment_type === 'installment') return `Rata ${row.installment_number}`;
     if (row.payment_type === 'season_pass') return 'Karnet';
     return row.payment_type;
@@ -554,7 +555,7 @@ export function PaymentsList({
                   due_date: row.due_date,
                   due_days_from_confirmation: row.due_days_from_confirmation,
                 },
-                row.trip_departure_datetime,
+                row.trip_departure_datetime ?? undefined,
               )}
             </span>
           )}
@@ -759,7 +760,7 @@ export function PaymentsList({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
-                placeholder="Szukaj po nazwisku lub wyjeździe..."
+                placeholder="Szukaj po nazwisku, wyjeździe lub opisie..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="h-11 pl-10 pr-8 rounded-xl bg-white ring-1 ring-gray-200 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 w-64 transition-all"

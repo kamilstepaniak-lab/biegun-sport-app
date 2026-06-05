@@ -10,6 +10,7 @@ export type ActivityActionType =
   | 'registration_cancelled'
   | 'trip_email_sent'
   | 'payment_deleted'
+  | 'manual_payment_created'
   | 'payment_recorded'
   | 'payment_amount_changed'
   | 'payment_status_changed'

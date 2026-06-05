@@ -3,7 +3,7 @@
 import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 'next/cache';
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import type { Payment, PaymentWithDetails, PaymentTransaction, AdminPaymentRow, PaymentStatus } from '@/types';
+import type { PaymentWithDetails, PaymentTransaction, AdminPaymentRow, PaymentStatus } from '@/types';
 import { queuePaymentConfirmedEmail } from '@/lib/system-email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
@@ -154,7 +154,9 @@ export async function getAdminPaymentsPage(
     .select('*', { count: 'exact' })
     .neq('status', 'cancelled');
 
-  if (params.tripId && params.tripId !== 'all') {
+  if (params.tripId === 'manual') {
+    query = query.is('trip_id', null);
+  } else if (params.tripId && params.tripId !== 'all') {
     query = query.eq('trip_id', params.tripId);
   }
 
@@ -248,7 +250,139 @@ export async function getAdminPaymentsTrips(): Promise<{ id: string; title: stri
     .select('id, title, departure_datetime')
     .order('departure_datetime', { ascending: true });
 
-  return (data ?? []).map((t) => ({ id: t.id, title: t.title }));
+  return [
+    { id: 'manual', title: 'Płatności ręczne' },
+    ...(data ?? []).map((t) => ({ id: t.id, title: t.title })),
+  ];
+}
+
+export async function getAdminPaymentParticipants(): Promise<{
+  id: string;
+  name: string;
+  parentName: string;
+  groupName: string | null;
+}[]> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('participants')
+    .select(`
+      id,
+      first_name,
+      last_name,
+      parent:profiles!parent_id (first_name, last_name, email),
+      participant_groups (
+        group:groups (name)
+      )
+    `)
+    .order('last_name', { ascending: true })
+    .order('first_name', { ascending: true });
+
+  if (error) {
+    console.error('getAdminPaymentParticipants error:', error);
+    return [];
+  }
+
+  type PaymentParticipantRow = {
+    id: string;
+    first_name: string;
+    last_name: string;
+    parent?: { first_name?: string | null; last_name?: string | null; email?: string | null }[] | { first_name?: string | null; last_name?: string | null; email?: string | null } | null;
+    participant_groups?: { group?: { name?: string | null }[] | { name?: string | null } | null }[] | { group?: { name?: string | null }[] | { name?: string | null } | null } | null;
+  };
+
+  return ((data ?? []) as PaymentParticipantRow[]).map((p) => {
+    const parent = Array.isArray(p.parent) ? p.parent[0] : p.parent;
+    const parentName = `${parent?.last_name ?? ''} ${parent?.first_name ?? ''}`.trim() || parent?.email || 'Brak rodzica';
+    const pg = p.participant_groups;
+    const group = Array.isArray(pg) ? pg[0]?.group : pg?.group;
+    const groupRow = Array.isArray(group) ? group[0] : group;
+    const groupName = groupRow?.name ?? null;
+    return {
+      id: p.id,
+      name: `${p.last_name} ${p.first_name}`,
+      parentName,
+      groupName,
+    };
+  });
+}
+
+export async function createManualPayment(input: {
+  participantId: string;
+  title: string;
+  amount: number;
+  currency: 'PLN' | 'EUR';
+  dueDate?: string | null;
+  parentVisible: boolean;
+  adminNotes?: string | null;
+}) {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
+
+  const title = input.title.trim();
+  if (!input.participantId) return { error: 'Wybierz dziecko' };
+  if (title.length < 3) return { error: 'Tytuł płatności musi mieć minimum 3 znaki' };
+  if (title.length > 160) return { error: 'Tytuł płatności może mieć maksymalnie 160 znaków' };
+  if (!Number.isFinite(input.amount) || input.amount <= 0) return { error: 'Kwota musi być większa od zera' };
+  if (input.amount > 100000) return { error: 'Kwota nie może przekraczać 100 000' };
+
+  const { data: participant, error: participantError } = await admin
+    .from('participants')
+    .select('id, first_name, last_name, parent_id')
+    .eq('id', input.participantId)
+    .maybeSingle();
+
+  if (participantError || !participant) {
+    return { error: 'Nie znaleziono dziecka' };
+  }
+
+  const { data: payment, error } = await admin
+    .from('payments')
+    .insert({
+      registration_id: null,
+      participant_id: input.participantId,
+      template_id: null,
+      payment_type: 'manual',
+      installment_number: null,
+      manual_title: title,
+      original_amount: input.amount,
+      discount_percentage: 0,
+      amount: input.amount,
+      amount_paid: 0,
+      currency: input.currency,
+      due_date: input.dueDate || null,
+      status: recomputePaymentStatus(input.amount, 0, input.dueDate || null),
+      parent_visible: input.parentVisible,
+      admin_notes: input.adminNotes?.trim() || null,
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('createManualPayment error:', error);
+    return { error: `Nie udało się dodać płatności: ${error.message}` };
+  }
+
+  logActivity(user.id, user.email ?? null, 'manual_payment_created', {
+    paymentId: payment.id,
+    participantId: participant.id,
+    participantName: `${participant.last_name} ${participant.first_name}`,
+    amount: input.amount,
+    currency: input.currency,
+    title,
+    parentVisible: input.parentVisible,
+  }).catch(console.error);
+
+  revalidateTag('payments');
+  revalidatePath('/admin/payments');
+  revalidatePath('/parent/payments');
+
+  return { success: true };
 }
 
 // ── Ekran /admin/finance — agregacja per wyjazd po stronie bazy ─────────────
@@ -622,6 +756,7 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       });
       return {
         registration_id: registrationId,
+        participant_id: participantId,
         template_id: template.id,
         payment_type: template.payment_type,
         installment_number: template.installment_number,
@@ -655,6 +790,7 @@ export interface ParentPayment {
   trip_id: string;
   trip_departure_date: string;
   trip_return_date: string | null;
+  manual_title: string | null;
   child_name: string;
   child_first_name: string;
   child_last_name: string;
@@ -712,25 +848,37 @@ const _fetchParentPaymentsDB = unstable_cache(
       .eq('status', 'active')
       .eq('participation_status', 'confirmed');
 
-    if (!registrations || registrations.length === 0) return [];
+    const registrationRows = registrations ?? [];
+    const registrationIds = registrationRows.map((r: { id: string }) => r.id);
 
-    const registrationIds = registrations.map((r: { id: string }) => r.id);
+    const { data: payments, error } = registrationIds.length > 0
+      ? await supabaseAdmin
+        .from('payments')
+        .select('*')
+        .in('registration_id', registrationIds)
+        .neq('status', 'cancelled')
+        .eq('parent_visible', true)
+        .order('due_date', { ascending: true })
+      : { data: [], error: null };
 
-    const { data: payments, error } = await supabaseAdmin
+    const { data: manualPayments, error: manualError } = await supabaseAdmin
       .from('payments')
       .select('*')
-      .in('registration_id', registrationIds)
+      .in('participant_id', childIds)
+      .is('registration_id', null)
       .neq('status', 'cancelled')
       .eq('parent_visible', true)
       .order('due_date', { ascending: true });
 
-    if (error || !payments) {
-      console.error('Payments fetch error:', error);
+    if (error || manualError || !payments) {
+      console.error('Payments fetch error:', error ?? manualError);
       return [];
     }
 
+    const allPaymentRows = [...payments, ...(manualPayments ?? [])];
+
     const templateIds = [...new Set(
-      payments
+      allPaymentRows
         .map((p: { template_id: string | null }) => p.template_id)
         .filter((id: string | null): id is string => !!id),
     )];
@@ -748,12 +896,14 @@ const _fetchParentPaymentsDB = unstable_cache(
       });
     }
 
-    const result: ParentPayment[] = payments.map((payment: {
+    const result: ParentPayment[] = allPaymentRows.map((payment: {
       id: string;
-      registration_id: string;
+      registration_id: string | null;
+      participant_id: string | null;
       template_id: string | null;
       payment_type: string;
       installment_number: number | null;
+      manual_title: string | null;
       amount: number;
       original_amount: number;
       currency: string;
@@ -761,14 +911,15 @@ const _fetchParentPaymentsDB = unstable_cache(
       status: string;
       amount_paid: number;
     }) => {
-      const registration = registrations.find((r: { id: string }) => r.id === payment.registration_id) as {
+      const registration = payment.registration_id ? registrationRows.find((r: { id: string }) => r.id === payment.registration_id) as {
         id: string;
         participant_id: string;
         trip_id: string;
         confirmed_at: string | null;
         trip: { id: string; title: string; departure_datetime: string; return_datetime: string } | null;
-      } | undefined;
-      const childData = childDataMap.get(registration?.participant_id || '');
+      } | undefined : undefined;
+      const participantId = registration?.participant_id || payment.participant_id || '';
+      const childData = childDataMap.get(participantId);
       const dueDays = payment.template_id ? (templateDueDaysMap.get(payment.template_id) ?? null) : null;
       const confirmedAt = registration?.confirmed_at ?? null;
       const computedDueDate = resolveEffectiveDueDate({
@@ -778,11 +929,12 @@ const _fetchParentPaymentsDB = unstable_cache(
       });
       return {
         id: payment.id,
-        participant_id: registration?.participant_id || '',
-        trip_title: registration?.trip?.title || 'Nieznany wyjazd',
+        participant_id: participantId,
+        trip_title: registration?.trip?.title || payment.manual_title || 'Płatność ręczna',
         trip_id: registration?.trip_id || '',
         trip_departure_date: registration?.trip?.departure_datetime || '',
         trip_return_date: registration?.trip?.return_datetime || null,
+        manual_title: payment.manual_title || null,
         child_name: childData?.name || 'Nieznane dziecko',
         child_first_name: childData?.first_name || '',
         child_last_name: childData?.last_name || '',

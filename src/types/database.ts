@@ -8,7 +8,7 @@ export type AttendanceType = 'mandatory' | 'optional';
 
 export type TripCategory = 'summer_camp' | 'winter_camp' | 'family_camp';
 
-export type PaymentType = 'installment' | 'season_pass';
+export type PaymentType = 'installment' | 'season_pass' | 'manual';
 
 export type PaymentStatus = 'pending' | 'partially_paid' | 'paid' | 'overdue' | 'partially_paid_overdue' | 'cancelled';
 
@@ -167,12 +167,34 @@ export interface TripRegistration {
   created_at: string;
 }
 
+export interface TripRegistrationRequest {
+  id: string;
+  trip_id: string;
+  child_first_name: string;
+  child_last_name: string;
+  child_birth_date: string;
+  child_height_cm: number | null;
+  parent_email: string;
+  parent_phone: string | null;
+  organizer_notes: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason: string | null;
+  admin_note: string | null;
+  submitted_at: string;
+  processed_at: string | null;
+  processed_by: string | null;
+  created_participant_id: string | null;
+  raw_payload: Record<string, unknown> | null;
+}
+
 export interface Payment {
   id: string;
-  registration_id: string;
+  registration_id: string | null;
+  participant_id: string | null;
   template_id: string | null;
   payment_type: PaymentType;
   installment_number: number | null;
+  manual_title: string | null;
   original_amount: number;
   discount_percentage: number;
   amount: number;
@@ -250,9 +272,9 @@ export interface AdminPaymentRow extends Payment {
   participant_first_name: string;
   participant_last_name: string;
   participant_name: string;
-  trip_id: string;
+  trip_id: string | null;
   trip_title: string;
-  trip_departure_datetime: string;
+  trip_departure_datetime: string | null;
   confirmed_at: string | null;
   due_days_from_confirmation: number | null;
   effective_due_date: string | null;
