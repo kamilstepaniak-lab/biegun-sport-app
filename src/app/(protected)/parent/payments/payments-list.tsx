@@ -70,6 +70,11 @@ function getPaymentTypeLabel(p: ParentPayment): string {
   return p.payment_type;
 }
 
+function getChildDisplayName(p: ParentPayment): string {
+  const name = `${p.child_last_name} ${p.child_first_name}`.trim();
+  return name || p.child_name;
+}
+
 // ── Bloki sumaryczne ──────────────────────────────────────────────────────
 function SummaryBlocks({
   pendingSource,
@@ -111,7 +116,7 @@ function SummaryBlocks({
             <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-700" />
           </div>
           <div>
-            <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide">Do zapłaty</span>
+            <span className="text-xs sm:text-sm font-bold text-amber-700 uppercase tracking-wide">Do zapłaty</span>
             <p className="hidden sm:block text-[10px] text-amber-400 leading-tight">razem z płatnościami po terminie</p>
           </div>
         </div>
@@ -134,7 +139,7 @@ function SummaryBlocks({
           <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${hasOverdue ? 'bg-red-200' : 'bg-gray-100'}`}>
             <AlertCircle className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`} />
           </div>
-          <span className={`text-[10px] font-semibold uppercase tracking-wide ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`}>Po terminie</span>
+          <span className={`text-xs sm:text-sm font-bold uppercase tracking-wide ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`}>Po terminie</span>
         </div>
         {hasOverdue ? (
           <div className="space-y-0.5">
@@ -276,7 +281,7 @@ function PaymentDialog({
           </div>
           <DialogTitle>Dane do przelewu</DialogTitle>
           <DialogDescription>
-            {payment.child_name} — {getPaymentTypeLabel(payment)}
+            {getChildDisplayName(payment)} — {getPaymentTypeLabel(payment)}
           </DialogDescription>
         </DialogHeader>
 
@@ -358,7 +363,7 @@ function PaymentRow({
     >
       {/* Dziecko */}
       <td className="py-3 pl-4 pr-3">
-        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{payment.child_name}</span>
+        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{getChildDisplayName(payment)}</span>
       </td>
 
       {/* Wyjazd */}
@@ -380,7 +385,7 @@ function PaymentRow({
       </td>
 
       {/* Kwota */}
-      <td className="py-3 px-3 text-right whitespace-nowrap">
+      <td className="py-3 px-3 text-left whitespace-nowrap">
         {payment.status === 'paid' ? (
           <span className="text-sm font-semibold text-emerald-600 tabular-nums">
             {payment.amount.toFixed(0)} {payment.currency}
@@ -424,7 +429,7 @@ function PaymentRow({
       </td>
 
       {/* Akcja */}
-      <td className="py-3 pl-3 pr-4 text-right whitespace-nowrap">
+      <td className="py-3 pl-3 pr-4 text-left whitespace-nowrap">
         {payment.status === 'paid' ? (
           <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
         ) : (
@@ -475,10 +480,10 @@ function PaymentsTable({
               <th className="text-left py-2.5 pl-4 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Dziecko</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Wyjazd</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Za co</th>
-              <th className="text-right py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
+              <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Kwota</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Status</th>
               <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Termin</th>
-              <th className="text-right py-2.5 pl-3 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Akcja</th>
+              <th className="text-left py-2.5 pl-3 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">Płatność</th>
             </tr>
           </thead>
           <tbody>
@@ -518,7 +523,7 @@ function PaymentCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">{payment.child_name}</p>
+          <p className="text-sm font-semibold text-gray-900">{getChildDisplayName(payment)}</p>
           <p className="mt-0.5 text-sm text-gray-700 truncate">{payment.trip_title}</p>
           <p className="mt-0.5 text-xs text-gray-500">{getPaymentTypeLabel(payment)}</p>
         </div>

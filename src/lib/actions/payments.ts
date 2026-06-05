@@ -690,7 +690,7 @@ const _fetchParentPaymentsDB = unstable_cache(
     const childIds = children.map((c: { id: string }) => c.id);
     const childDataMap = new Map(children.map((c: { id: string; first_name: string; last_name: string }) => [
       c.id,
-      { name: `${c.first_name} ${c.last_name}`, first_name: c.first_name, last_name: c.last_name },
+      { name: `${c.last_name} ${c.first_name}`, first_name: c.first_name, last_name: c.last_name },
     ]));
 
     const { data: registrations } = await supabaseAdmin

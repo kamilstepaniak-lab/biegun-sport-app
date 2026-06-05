@@ -34,11 +34,11 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
         description="Zarządzaj płatnościami za wyjazdy swoich dzieci"
       />
 
-      {(bankAccounts.bank_account_pln || bankAccounts.bank_account_eur) && (
-        <BankAccountsSection bankAccounts={bankAccounts} />
-      )}
-
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
+        {(bankAccounts.bank_account_pln || bankAccounts.bank_account_eur) && (
+          <BankAccountsSection bankAccounts={bankAccounts} />
+        )}
+
         {payments.length === 0 ? (
           <EmptyState
             icon={CreditCard}

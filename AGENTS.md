@@ -39,6 +39,10 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/payments`: przeniesiono wybór dziecka nad dane do przelewu,
+  ujednolicono tabelę płatności rodzica (nazwisko przed imieniem, kolumna
+  „Płatność", wyrównanie do lewej) oraz powiększono etykiety kafelków
+  „Do zapłaty" i „Po terminie".
 - `/parent/children`: wyrównano wysokość bloków „Moje dzieci” i „Wiadomości”,
   ograniczono podgląd wiadomości do 2 ostatnich wpisów oraz zmniejszono aplę
   wyboru dziecka.
