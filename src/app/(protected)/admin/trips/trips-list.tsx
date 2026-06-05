@@ -28,7 +28,6 @@ import {
   MapPin,
   MessageSquare,
   MoreVertical,
-  Mountain,
   Search,
   SlidersHorizontal,
   Check,
@@ -58,6 +57,7 @@ import { TripMessageGenerator } from '@/components/admin/trip-message-generator'
 import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
 import { SanitizedHtml } from '@/components/shared';
 import { getGroupColor } from '@/lib/group-colors';
+import { getCampVisual } from '@/lib/camp-visual';
 import { cn } from '@/lib/utils';
 import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
 import type { TripWithPaymentTemplates, Group, TripContractTemplate } from '@/types';
@@ -192,6 +192,7 @@ interface TripBlockProps {
 // wszystkie bloki wyjazdów (utrata animacji collapsible, zbędna praca).
 function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contractTemplate }: TripBlockProps) {
   const [renderedAt] = useState(() => Date.now());
+  const campVisual = getCampVisual(trip.category);
   const departureDate = new Date(trip.departure_datetime);
   const returnDate = new Date(trip.return_datetime);
   const daysUntilDeparture = Math.max(0, Math.ceil((departureDate.getTime() - renderedAt) / 86400000));
@@ -220,17 +221,17 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                 />
               </div>
 
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <Mountain className="h-5 w-5" />
+            <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', campVisual.iconBox)}>
+              <campVisual.Icon className="h-5 w-5" />
             </div>
 
             <div className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h3 className="truncate text-sm font-bold text-slate-900">
                 {trip.title}
-                {trip.location ? ` – ${trip.location}` : ''}
               </h3>
-              <p className="text-xs font-medium text-slate-500 whitespace-nowrap">
-                · {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
+              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
+                <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
               </p>
             </div>
 
@@ -267,7 +268,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
             <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
               <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-bold text-emerald-50 ring-1 ring-white/20">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
@@ -281,26 +282,28 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         WP
                       </span>
                     )}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     {trip.groups.map((g) => {
                       const colors = getGroupColor(g.name);
                       return (
                         <span
                           key={g.id}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-white/10 ring-1 ring-white/25 px-2.5 py-1 text-[11px] font-semibold text-white"
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-white"
                         >
-                          <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
+                          <span className={cn('h-2.5 w-2.5 rounded-full', colors.dot)} />
                           {g.name}
                         </span>
                       );
                     })}
                   </div>
-                  <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
-                    <MapPin className="h-4 w-4" />
-                    Miejsce
-                    <span className="normal-case tracking-normal text-white">{trip.location || trip.departure_location || '—'}</span>
-                  </p>
+                  <div className="mt-5 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+                      <MapPin className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-blue-100">Miejsce</p>
+                      <p className="text-base font-bold text-white">{trip.location || trip.departure_location || '—'}</p>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <TripMessageGenerator trip={trip} compact />

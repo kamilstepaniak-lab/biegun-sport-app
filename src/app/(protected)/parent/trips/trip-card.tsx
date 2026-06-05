@@ -20,7 +20,6 @@ import {
   Backpack,
   Info,
   MapPin,
-  Mountain,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -33,6 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import type { TripForParent, ChildTripStatus } from '@/lib/actions/trips';
 import { getGroupColor } from '@/lib/group-colors';
+import { getCampVisual } from '@/lib/camp-visual';
 import { cn } from '@/lib/utils';
 import { PaymentDue } from '@/components/shared/payment-due';
 
@@ -150,6 +150,7 @@ function TripCardInner({
   onCopy,
 }: TripCardProps) {
   const [renderedAt] = useState(() => Date.now());
+  const campVisual = getCampVisual(trip.category);
   const departureDate = new Date(trip.departure_datetime);
   const returnDate = new Date(trip.return_datetime);
   const hasStop2 = !!trip.departure_stop2_location;
@@ -180,8 +181,8 @@ function TripCardInner({
         <CollapsibleTrigger asChild>
           <div className="cursor-pointer">
             <div className="grid gap-4 p-4 lg:grid-cols-[auto_1fr_auto_auto] lg:items-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <Mountain className="h-5 w-5" />
+              <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', campVisual.iconBox)}>
+                <campVisual.Icon className="h-5 w-5" />
               </div>
 
               <div className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -413,15 +414,13 @@ function TripCardInner({
             <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
               <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
                     {isPast && (
                       <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
                         Zrealizowany
                       </span>
                     )}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                     {trip.groups.map((g) => {
                       const colors = getGroupColor(g.name);
                       return (
@@ -429,7 +428,7 @@ function TripCardInner({
                           key={g.id}
                           className="inline-flex items-center gap-1.5 text-sm font-semibold text-white"
                         >
-                          <span className={cn('h-2 w-2 rounded-full', colors.dot)} />
+                          <span className={cn('h-2.5 w-2.5 rounded-full', colors.dot)} />
                           {g.name}
                         </span>
                       );

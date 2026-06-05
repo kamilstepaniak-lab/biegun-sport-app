@@ -149,12 +149,12 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
   const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || childrenList?.find(c => c.id === effectiveChildId)?.name || 'Wybrane dziecko');
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Banner z wyborem dziecka */}
-      <div className="bg-blue-600 rounded-2xl p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-            {isAll ? <Users className="h-4 w-4" /> : displayName.charAt(0)}
+      <div className="rounded-xl bg-blue-600 p-3">
+        <div className="mb-2.5 flex items-center gap-2.5">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white">
+            {isAll ? <Users className="h-3.5 w-3.5" /> : displayName.charAt(0)}
           </div>
           <div className="min-w-0">
             <p className="text-xs text-blue-100">
@@ -170,7 +170,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
             <button
               onClick={() => navigateTo({ id: ALL_CHILDREN_ID, name: ALL_CHILDREN_NAME })}
               className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                 isAll
                   ? 'bg-white text-blue-700'
                   : 'bg-white/15 hover:bg-white/25 text-white'
@@ -184,13 +184,13 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
                 key={child.id}
                 onClick={() => navigateTo(child)}
                 className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                   child.id === effectiveChildId
                     ? 'bg-white text-blue-700'
                     : 'bg-white/15 hover:bg-white/25 text-white'
                 )}
               >
-                <span className="w-4 h-4 rounded bg-current/20 flex items-center justify-center text-[9px] font-bold opacity-80">
+                <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-current/20 text-[8px] font-bold opacity-80">
                   {child.name.charAt(0)}
                 </span>
                 {child.name}

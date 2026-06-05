@@ -302,19 +302,19 @@ export function ChildrenList({ participants }: ChildrenListProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-      <div className="rounded-2xl bg-blue-600 p-5 text-white shadow-sm shadow-blue-600/15 lg:order-1">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-stretch">
+      <div className="flex h-full flex-col rounded-xl bg-blue-600 p-4 text-white shadow-sm shadow-blue-600/15 lg:order-1">
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-blue-100">Moje dzieci</p>
-            <h2 className="mt-1 text-2xl font-bold leading-tight">{participants.length} dzieci w systemie</h2>
-            <p className="mt-2 max-w-2xl text-sm text-blue-100">
+            <h2 className="mt-1 text-xl font-bold leading-tight">{participants.length} dzieci w systemie</h2>
+            <p className="mt-1.5 max-w-2xl text-xs text-blue-100">
               Wybierz dziecko i przejdź do jego informacji, wyjazdów oraz płatności.
             </p>
           </div>
           <Link
             href="/parent/children/add"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50"
           >
             <Plus className="h-4 w-4" />
             Dodaj dziecko
@@ -325,17 +325,17 @@ export function ChildrenList({ participants }: ChildrenListProps) {
           <button
             onClick={handleSelectAll}
             className={cn(
-              'inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ring-1',
+              'inline-flex min-h-9 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ring-1',
               isAll
                 ? 'bg-white text-blue-700 ring-white'
                 : 'bg-white/12 text-white ring-white/20 hover:bg-white/20'
             )}
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-current/15">
-              <Users className="h-4 w-4" />
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-current/15">
+              <Users className="h-3.5 w-3.5" />
             </span>
             Wszystkie dzieci
-            {isAll && <Check className="h-4 w-4" />}
+            {isAll && <Check className="h-3.5 w-3.5" />}
           </button>
 
           {participants.map((child, index) => {
@@ -346,7 +346,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
               <div
                 key={child.id}
                 className={cn(
-                  'inline-flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition-colors ring-1',
+                  'inline-flex min-h-9 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ring-1',
                   isSelected
                     ? 'bg-white text-blue-700 ring-white'
                     : 'bg-white/12 text-white ring-white/20 hover:bg-white/20'
@@ -356,31 +356,31 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                   onClick={() => handleSelectChild(child)}
                   className="inline-flex min-w-0 items-center gap-2"
                 >
-                  <span className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold', isSelected ? color.bg : 'bg-white/15', isSelected ? color.text : 'text-white')}>
+                  <span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold', isSelected ? color.bg : 'bg-white/15', isSelected ? color.text : 'text-white')}>
                     {child.first_name.charAt(0)}{child.last_name.charAt(0)}
                   </span>
                   <span className="truncate">{child.first_name} {child.last_name}</span>
-                  {isSelected && <Check className="h-4 w-4 flex-shrink-0" />}
+                  {isSelected && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
                 </button>
                 <span className={cn('h-5 w-px', isSelected ? 'bg-blue-200' : 'bg-white/20')} />
                 <Link
                   href={`/parent/children/${child.id}`}
-                  className={cn('flex h-7 w-7 items-center justify-center rounded-lg transition-colors', isSelected ? 'hover:bg-blue-50' : 'hover:bg-white/15')}
+                  className={cn('flex h-6 w-6 items-center justify-center rounded-md transition-colors', isSelected ? 'hover:bg-blue-50' : 'hover:bg-white/15')}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`Edytuj ${child.first_name} ${child.last_name}`}
                 >
-                  <Edit className="h-3.5 w-3.5" />
+                  <Edit className="h-3 w-3" />
                 </Link>
                 <button
                   onClick={(e) => handleDeleteClick(e, child.id)}
                   disabled={deleteLoadingId === child.id}
                   aria-label={`Usuń ${child.first_name} ${child.last_name}`}
-                  className={cn('flex h-7 w-7 items-center justify-center rounded-lg transition-colors disabled:opacity-60', isSelected ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-white/15')}
+                  className={cn('flex h-6 w-6 items-center justify-center rounded-md transition-colors disabled:opacity-60', isSelected ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-white/15')}
                 >
                   {deleteLoadingId === child.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                   )}
                 </button>
               </div>
@@ -637,7 +637,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
           </div>
 
           {/* Wiadomości */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col lg:order-2" style={{ minHeight: '300px' }}>
+          <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm lg:order-2">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -679,7 +679,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                   </div>
                 </div>
               ) : (
-                messages.slice(0, 3).map((msg) => (
+                messages.slice(0, 2).map((msg) => (
                   <button
                     key={msg.id}
                     onClick={() => {
