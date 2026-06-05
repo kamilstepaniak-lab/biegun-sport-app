@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Eye, EyeOff, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Eye, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ContractDocument } from '@/components/contract-document';
+import { PanelIcon } from '@/components/shared';
 
 interface TemplateLibraryItem {
   id: string;
@@ -46,7 +47,7 @@ export function ContractTemplateLibrary({ templates }: ContractTemplateLibraryPr
             key={tpl.id}
             className={`bg-white rounded-2xl transition-all duration-200 ${
               isOpen
-                ? 'shadow-lg ring-1 ring-purple-200'
+                ? 'shadow-lg ring-1 ring-blue-200'
                 : 'shadow-sm ring-1 ring-gray-100 hover:shadow-md'
             }`}
           >
@@ -56,13 +57,11 @@ export function ContractTemplateLibrary({ templates }: ContractTemplateLibraryPr
               onClick={() => toggle(tpl.id)}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100 shrink-0">
-                  <FileText className="h-4 w-4 text-purple-600" />
-                </div>
+                <PanelIcon icon={FileText} />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-gray-900">{tpl.name}</p>
-                    <Badge variant="outline" className="text-purple-600 border-purple-200 text-xs">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">
                       Szablon
                     </Badge>
                   </div>

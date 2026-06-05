@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, ArrowRight, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, ArrowRight, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
 import {
   HoverCard,
@@ -249,8 +249,8 @@ export function CalendarView({ trips }: CalendarViewProps) {
                     done: 'bg-gray-100 text-gray-500',
                     active: 'bg-emerald-100 text-emerald-700',
                     today: 'bg-blue-600 text-white',
-                    soon: 'bg-orange-100 text-orange-700',
-                    medium: 'bg-yellow-100 text-yellow-700',
+                    soon: 'bg-amber-100 text-amber-700',
+                    medium: 'bg-amber-100 text-amber-700',
                     far: 'bg-gray-100 text-gray-600',
                   }[variant];
 

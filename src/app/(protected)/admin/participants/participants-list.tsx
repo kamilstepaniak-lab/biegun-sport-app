@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -202,43 +203,50 @@ export function ParticipantsList({ participants, groups }: ParticipantsListProps
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:w-auto">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
+            <Input
               placeholder="Szukaj po nazwisku, imieniu, rodzicu lub emailu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-11 w-full rounded-xl border-0 bg-white pl-10 pr-10 text-base text-gray-700 ring-1 ring-gray-200 transition-all placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 md:text-sm"
+              className="h-11 rounded-xl bg-white pl-10 pr-10"
             />
             {searchQuery && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setSearchQuery('')}
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             )}
           </div>
 
-          <select
+          <Select
             value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            className="h-11 rounded-xl border-0 bg-white px-3 text-base text-gray-700 ring-1 ring-gray-200 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300 md:text-sm"
+            onValueChange={setGroupFilter}
           >
-            <option value={ALL}>Wszystkie grupy</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="h-11 rounded-xl bg-white sm:w-56">
+              <SelectValue placeholder="Grupa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Wszystkie grupy</SelectItem>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <button
+        <Button
           onClick={() => setShowAddDialog(true)}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+          className="shrink-0 rounded-xl"
         >
           <Plus className="h-4 w-4" />
           Dodaj dziecko z zewnątrz
-        </button>
+        </Button>
       </div>
 
       {/* Licznik + pasek akcji masowych */}

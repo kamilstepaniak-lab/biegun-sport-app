@@ -55,9 +55,7 @@ export default async function ParentChildrenPage() {
   children.forEach((child, idx) => { dashboardByChild[child.id] = perChild[idx]; });
   const dashboardAll = buildAggregateDashboard(perChild, children);
 
-  const firstName = profile?.full_name?.split(' ')[0]
-    || profile?.email?.split('@')[0]
-    || 'Witaj';
+  const firstName = profile?.first_name?.trim() || 'Rodzicu';
   const today = format(new Date(), 'EEEE · d MMMM yyyy', { locale: pl });
 
   return (

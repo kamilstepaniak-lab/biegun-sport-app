@@ -7,7 +7,6 @@ import { Download, CreditCard, CheckCircle, Clock, AlertTriangle } from 'lucide-
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { PaymentWithDetails } from '@/types';
 import { resolveEffectiveDueDate } from '@/lib/payment-due';
@@ -39,10 +38,10 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   paid: 'bg-emerald-100 text-emerald-700',
-  partially_paid: 'bg-yellow-100 text-yellow-700',
+  partially_paid: 'bg-amber-100 text-amber-700',
   pending: 'bg-gray-100 text-gray-600',
   overdue: 'bg-red-100 text-red-700',
-  partially_paid_overdue: 'bg-orange-100 text-orange-700',
+  partially_paid_overdue: 'bg-red-100 text-red-700',
 };
 
 const paymentTypeLabel = (type: string, installmentNumber: number | null) => {

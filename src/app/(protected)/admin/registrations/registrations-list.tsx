@@ -5,6 +5,14 @@ import { format, differenceInYears, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Check, Copy, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
@@ -151,21 +159,25 @@ export default function RegistrationsList({
     <TooltipProvider>
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <Select
             value={status}
-            onChange={(e) => {
-              const v = e.target.value as StatusFilter;
+            onValueChange={(value) => {
+              const v = value as StatusFilter;
               setStatus(v);
               refresh(v, search);
             }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
           >
-            <option value="pending">Oczekujące</option>
-            <option value="approved">Zatwierdzone</option>
-            <option value="rejected">Odrzucone</option>
-            <option value="all">Wszystkie</option>
-          </select>
-          <input
+            <SelectTrigger className="h-11 w-full rounded-xl bg-white sm:w-48">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Oczekujące</SelectItem>
+              <SelectItem value="approved">Zatwierdzone</SelectItem>
+              <SelectItem value="rejected">Odrzucone</SelectItem>
+              <SelectItem value="all">Wszystkie</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
             placeholder="Szukaj (imię, nazwisko, email)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -173,7 +185,7 @@ export default function RegistrationsList({
             onKeyDown={(e) => {
               if (e.key === 'Enter') refresh();
             }}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="h-11 rounded-xl bg-white sm:w-80"
           />
           <span className="text-xs text-slate-500">
             {rows.length} {rows.length === 1 ? 'wpis' : 'wpisów'}

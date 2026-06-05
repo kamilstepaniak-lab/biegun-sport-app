@@ -200,7 +200,7 @@ export default async function ParticipantDetailPage({ params }: ParticipantDetai
                 )}
                 {participant.parent_notes_food && (
                   <div className="flex gap-3 rounded-lg bg-white/70 p-4 ring-1 ring-amber-100">
-                    <Utensils className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-500" />
+                    <Utensils className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
                     <div>
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Jedzenie i dieta</p>
                       <p className="whitespace-pre-wrap text-sm text-gray-950">{participant.parent_notes_food}</p>

@@ -12,9 +12,9 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Oczekująca', className: 'bg-yellow-100 text-yellow-800' },
+  pending: { label: 'Oczekująca', className: 'bg-amber-100 text-amber-800' },
   partially_paid: { label: 'Do dopłaty', className: 'bg-blue-100 text-blue-800' },
-  partially_paid_overdue: { label: 'Po terminie', className: 'bg-orange-100 text-orange-800' },
+  partially_paid_overdue: { label: 'Po terminie', className: 'bg-red-100 text-red-800' },
   paid: { label: 'Opłacona', className: 'bg-emerald-100 text-emerald-800' },
   overdue: { label: 'Po terminie', className: 'bg-red-100 text-red-800' },
   cancelled: { label: 'Anulowana', className: 'bg-gray-100 text-gray-600' },

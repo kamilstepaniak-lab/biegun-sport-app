@@ -50,7 +50,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bsapp.pro';
 function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
   const lines: string[] = [];
 
-  lines.push(`*${trip.title}* 🏔️`);
+  lines.push(`*${trip.title}*`);
   lines.push('');
 
   if (trip.description) {
@@ -60,29 +60,29 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
 
   const dl = (trip as TripWithPaymentTemplates & { declaration_deadline?: string | null }).declaration_deadline;
   if (dl) {
-    lines.push(`⏰ *Potwierdzenie do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}*`);
+    lines.push(`*Potwierdzenie do: ${format(new Date(dl), 'd MMMM yyyy', { locale: pl })}*`);
   }
-  lines.push(`👉 ${APP_URL}/parent/trips`);
+  lines.push(`Panel rodzica: ${APP_URL}/parent/trips`);
   lines.push('');
 
-  lines.push(`📅 *Wyjazd:* ${format(new Date(trip.departure_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
-  lines.push(`📍 ${format(new Date(trip.departure_datetime), 'HH:mm')} – ${trip.departure_location}`);
+  lines.push(`*Wyjazd:* ${format(new Date(trip.departure_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
+  lines.push(`${format(new Date(trip.departure_datetime), 'HH:mm')} – ${trip.departure_location}`);
 
   if (trip.departure_stop2_datetime && trip.departure_stop2_location) {
-    lines.push(`📍 ${format(new Date(trip.departure_stop2_datetime), 'HH:mm')} – ${trip.departure_stop2_location}`);
+    lines.push(`${format(new Date(trip.departure_stop2_datetime), 'HH:mm')} – ${trip.departure_stop2_location}`);
   }
 
   lines.push('');
-  lines.push(`📅 *Powrót:* ${format(new Date(trip.return_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
-  lines.push(`📍 ${format(new Date(trip.return_datetime), 'HH:mm')} – ${trip.return_location}`);
+  lines.push(`*Powrót:* ${format(new Date(trip.return_datetime), 'EEEE, d MMMM yyyy', { locale: pl })}`);
+  lines.push(`${format(new Date(trip.return_datetime), 'HH:mm')} – ${trip.return_location}`);
 
   if (trip.return_stop2_datetime && trip.return_stop2_location) {
-    lines.push(`📍 ${format(new Date(trip.return_stop2_datetime), 'HH:mm')} – ${trip.return_stop2_location}`);
+    lines.push(`${format(new Date(trip.return_stop2_datetime), 'HH:mm')} – ${trip.return_stop2_location}`);
   }
 
   if (trip.payment_templates && trip.payment_templates.length > 0) {
     lines.push('');
-    lines.push('💰 *Płatności:*');
+    lines.push('*Płatności:*');
 
     const departureDateStr = trip.departure_datetime.split('T')[0];
 
@@ -104,8 +104,8 @@ function buildWhatsAppText(trip: TripWithPaymentTemplates): string {
     });
 
     lines.push('');
-    if (trip.bank_account_pln) lines.push(`🏦 Konto PLN: ${trip.bank_account_pln}`);
-    if (trip.bank_account_eur) lines.push(`🏦 Konto EUR: ${trip.bank_account_eur}`);
+    if (trip.bank_account_pln) lines.push(`Konto PLN: ${trip.bank_account_pln}`);
+    if (trip.bank_account_eur) lines.push(`Konto EUR: ${trip.bank_account_eur}`);
     lines.push('_W tytule: imię, nazwisko dziecka + wyjazd_');
   }
 

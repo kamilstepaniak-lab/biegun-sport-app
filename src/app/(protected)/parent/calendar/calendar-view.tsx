@@ -164,8 +164,8 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                 done: 'bg-gray-100 text-gray-500',
                 active: 'bg-emerald-100 text-emerald-700',
                 today: 'bg-blue-600 text-white',
-                soon: 'bg-orange-100 text-orange-700',
-                medium: 'bg-yellow-100 text-yellow-700',
+                soon: 'bg-amber-100 text-amber-700',
+                medium: 'bg-amber-100 text-amber-700',
                 far: 'bg-gray-100 text-gray-600',
               }[variant];
               const dep = new Date(trip.departure_datetime);
@@ -241,8 +241,8 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                     done: 'bg-gray-100 text-gray-500',
                     active: 'bg-emerald-100 text-emerald-700',
                     today: 'bg-blue-600 text-white',
-                    soon: 'bg-orange-100 text-orange-700',
-                    medium: 'bg-yellow-100 text-yellow-700',
+                    soon: 'bg-amber-100 text-amber-700',
+                    medium: 'bg-amber-100 text-amber-700',
                     far: 'bg-gray-100 text-gray-600',
                   }[variant];
                   const dep = new Date(trip.departure_datetime);

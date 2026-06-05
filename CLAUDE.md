@@ -49,6 +49,30 @@ Jeśli w danym dniu istnieje już nagłówek tego samego tematu, dopisz do niego
 nowe punkty. Nowy temat = nowy nagłówek (mogą być różne tematy z tą samą datą).
 Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
 
+### 2026-06-05 (Design system — wspólne wzorce UI)
+
+- Dodany `src/components/shared/panel.tsx`: `PanelCard`, `PanelIcon`,
+  `SectionTitle`, `MetricCard`, `CopyIconButton`, `AdminTableShell` jako
+  wspólne klocki dla admina i rodzica.
+- Bazowe komponenty ui (`Button`, `Input`, `Textarea`, `Select`, `Badge`,
+  `Checkbox`, `RadioGroup`, `Switch`, `Tabs`, `Calendar`) oczyszczone z
+  wariantów `dark:` i ujednolicone radiusy zgodnie z jasnym motywem.
+- `/admin/finance` i `/parent/payments`: kafelki metryk oraz elementy kopiowania
+  przepięte na wspólne wzorce (`MetricCard`, `PanelCard`, `CopyIconButton`).
+- `/admin/contracts` i `/parent/contracts`: sekcje dokumentów/umów oraz metryki
+  przepięte na `SectionTitle`/`MetricCard`; usunięte emoji z kart umów.
+- `ContractTemplateLibrary`, logi aktywności i generator wiadomości wyjazdu:
+  usunięte fioletowe/indigo/orange wyjątki oraz emoji w treści WhatsApp.
+- Skan `bg/text/border-purple`, `dark:` i emoji komunikacyjnych w chronionych
+  ekranach oraz komponentach admin/parent/shared/ui jest czysty.
+
+### 2026-06-05 (Panel rodzica — powitanie)
+
+- `/parent/children`: nagłówek „Dzień dobry” bierze teraz imię z
+  `profile.first_name`, a nie z nieistniejącego `full_name` ani loginu maila.
+- Dodany test regresji `tests/parent-children-greeting.test.mjs`, żeby powitanie
+  nie wróciło do źródła innego niż imię rodzica z profilu.
+
 ### 2026-06-05 (Admin UI — poprawki z notatek)
 
 - `/admin/participants` i `/admin/registrations`: tabele dostały minimalną

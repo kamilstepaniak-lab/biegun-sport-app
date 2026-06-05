@@ -122,24 +122,6 @@ function TripCard({
   );
 }
 
-function TripGroupChip({ name }: { name: string }) {
-  const colors = getGroupColor(name);
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold',
-        colors.bg,
-        colors.text,
-        colors.border
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
-      {name}
-    </span>
-  );
-}
-
 function CheckIcon() {
   return (
     <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">

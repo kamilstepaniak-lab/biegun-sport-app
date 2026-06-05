@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Plus, MapPin, Upload } from 'lucide-react';
 
 import { PageHeader, EmptyState } from '@/components/shared';
+import { Button } from '@/components/ui/button';
 import { getTrips } from '@/lib/actions/trips';
 import { getGroups } from '@/lib/actions/groups';
 import { getTripContractTemplatesMap } from '@/lib/actions/contracts';
@@ -25,20 +26,18 @@ export default async function AdminTripsPage() {
         description={`Zarządzaj wyjazdami (${trips.length})`}
       >
         <div className="flex gap-2">
-          <Link
-            href="/admin/trips/import"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-xl ring-1 ring-gray-200 transition-colors"
-          >
-            <Upload className="h-4 w-4" />
-            Import
-          </Link>
-          <Link
-            href="/admin/trips/add"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Nowy wyjazd
-          </Link>
+          <Button variant="outline" className="rounded-xl" asChild>
+            <Link href="/admin/trips/import">
+              <Upload className="h-4 w-4" />
+              Import
+            </Link>
+          </Button>
+          <Button className="rounded-xl" asChild>
+            <Link href="/admin/trips/add">
+              <Plus className="h-4 w-4" />
+              Nowy wyjazd
+            </Link>
+          </Button>
         </div>
       </PageHeader>
 
@@ -48,13 +47,12 @@ export default async function AdminTripsPage() {
           title="Brak wyjazdów"
           description="Nie utworzono jeszcze żadnych wyjazdów."
         >
-          <Link
-            href="/admin/trips/add"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Utwórz pierwszy wyjazd
-          </Link>
+          <Button className="rounded-xl" asChild>
+            <Link href="/admin/trips/add">
+              <Plus className="h-4 w-4" />
+              Utwórz pierwszy wyjazd
+            </Link>
+          </Button>
         </EmptyState>
       ) : (
         <TripsList trips={trips} groups={groups} contractTemplates={contractTemplates} />

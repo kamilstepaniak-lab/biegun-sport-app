@@ -215,7 +215,7 @@ function exportToExcel(
   toast.success(`Wyeksportowano ${confirmed.length} uczestników (status: Jedzie)`);
 }
 
-export function RegistrationsList({ tripId, participants, groups, tripTitle = 'Wyjazd', stop1Name, stop2Name }: RegistrationsListProps) {
+export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', stop1Name, stop2Name }: RegistrationsListProps) {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [groupFilter, setGroupFilter] = useState<string>('all');
@@ -267,16 +267,7 @@ export function RegistrationsList({ tripId, participants, groups, tripTitle = 'W
 
   // Bulk selection helpers
   const allFilteredIds = filteredParticipants.map(p => p.participant_id);
-  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.has(id));
   const someSelected = allFilteredIds.some(id => selectedIds.has(id));
-
-  function toggleSelectAll() {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(allFilteredIds));
-    }
-  }
 
   function toggleSelect(id: string) {
     const next = new Set(selectedIds);

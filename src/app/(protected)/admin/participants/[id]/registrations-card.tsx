@@ -53,7 +53,7 @@ function formatShortDate(date: string | null | undefined) {
 function PaymentStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
     paid: { label: 'Zapłacono', className: 'bg-emerald-100 text-emerald-700' },
-    partial: { label: 'Do dopłaty', className: 'bg-yellow-100 text-yellow-700' },
+    partial: { label: 'Do dopłaty', className: 'bg-amber-100 text-amber-700' },
     unpaid: { label: 'Nieopłacone', className: 'bg-red-100 text-red-700' },
     cancelled: { label: 'Anulowano', className: 'bg-gray-100 text-gray-500' },
   };

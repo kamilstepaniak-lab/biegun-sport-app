@@ -4,7 +4,7 @@ import { FileText, CheckCircle, Clock, ExternalLink, Library, BookOpen, Archive 
 import Link from 'next/link';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeader } from '@/components/shared';
+import { MetricCard, PageHeader, SectionTitle } from '@/components/shared';
 import { ContractTemplateLibrary } from '@/components/admin/contract-template-library';
 import { ContractsTable } from '@/components/admin/contracts-table';
 import { GlobalDocumentEditor } from '@/components/admin/global-document-editor';
@@ -53,17 +53,11 @@ export default async function AdminContractsPage() {
 
       {/* ── SEKCJA: Dokumenty ── */}
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600">
-            <BookOpen className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Dokumenty</h2>
-            <p className="text-xs text-gray-500">
-              Stałe dokumenty widoczne dla rodziców — możesz edytować ich treść
-            </p>
-          </div>
-        </div>
+        <SectionTitle
+          icon={BookOpen}
+          title="Dokumenty"
+          description="Stałe dokumenty widoczne dla rodziców — możesz edytować ich treść"
+        />
         <div className="space-y-3">
           {GLOBAL_DOCUMENTS.map((doc, i) => (
             <GlobalDocumentEditor
@@ -88,61 +82,19 @@ export default async function AdminContractsPage() {
 
       {/* ── SEKCJA: Szablony umów ── */}
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600">
-            <Library className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Szablony umów</h2>
-            <p className="text-xs text-gray-500">
-              Wzory do edycji i kopiowania — wklej do edytora konkretnego wyjazdu
-            </p>
-          </div>
-        </div>
+        <SectionTitle
+          icon={Library}
+          title="Szablony umów"
+          description="Wzory do edycji i kopiowania — wklej do edytora konkretnego wyjazdu"
+        />
         <ContractTemplateLibrary templates={GLOBAL_TEMPLATES} />
       </div>
 
       {/* ── SEKCJA: Statystyki ── */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{contracts.length}</p>
-                <p className="text-sm text-muted-foreground">Wszystkich umów</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
-                <CheckCircle className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-emerald-700">{accepted.length}</p>
-                <p className="text-sm text-muted-foreground">Zaakceptowanych</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
-                <Clock className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-amber-700">{pending.length}</p>
-                <p className="text-sm text-muted-foreground">Oczekujących</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <MetricCard icon={FileText} label="Wszystkich umów" value={contracts.length} tone="blue" />
+        <MetricCard icon={CheckCircle} label="Zaakceptowanych" value={accepted.length} tone="emerald" />
+        <MetricCard icon={Clock} label="Oczekujących" value={pending.length} tone="amber" />
       </div>
 
       {/* ── SEKCJA: Lista umów pogrupowana per wyjazd ── */}
@@ -224,17 +176,12 @@ export default async function AdminContractsPage() {
       {/* ── SEKCJA: Archiwum (umowy po usunięciu wyjazdu) ── */}
       {archivedContracts.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-600">
-              <Archive className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Archiwum</h2>
-              <p className="text-xs text-gray-500">
-                Podpisane umowy z usuniętych wyjazdów — dowód prawny zachowany
-              </p>
-            </div>
-          </div>
+          <SectionTitle
+            icon={Archive}
+            title="Archiwum"
+            description="Podpisane umowy z usuniętych wyjazdów — dowód prawny zachowany"
+            tone="slate"
+          />
           <Card>
             <CardContent className="pt-6">
               <ContractsTable

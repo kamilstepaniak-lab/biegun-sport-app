@@ -728,7 +728,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
               <p className="text-xs text-muted-foreground">Łącznie</p>
             </div>
             <div className="rounded-lg border p-3 text-center">
-              <p className="text-2xl font-bold text-yellow-600">{importStats.oczekuje}</p>
+              <p className="text-2xl font-bold text-amber-600">{importStats.oczekuje}</p>
               <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" /> Oczekujące
               </p>

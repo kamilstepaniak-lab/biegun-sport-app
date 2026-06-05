@@ -21,6 +21,12 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  Plane,
+  UserRound,
+  type LucideIcon,
 } from 'lucide-react';
 
 import { updateEmailTemplate, sendTestEmail, previewEmailTemplate } from '@/lib/actions/email-templates';
@@ -30,29 +36,29 @@ interface Props {
   templates: EmailTemplate[];
 }
 
-const TEMPLATE_LABELS: Record<string, { label: string; icon: string; desc: string; trigger: string }> = {
+const TEMPLATE_LABELS: Record<string, { label: string; icon: LucideIcon; desc: string; trigger: string }> = {
   welcome: {
-    label: 'Powitalny', icon: '👋',
+    label: 'Powitalny', icon: UserRound,
     desc: 'Wysyłany gdy rodzic zakłada konto',
     trigger: 'wysyłany automatycznie zaraz po założeniu konta przez rodzica (tylko gdy nie jest wymagane potwierdzenie adresu e-mail — w przeciwnym razie rodzic dostaje wyłącznie maila weryfikacyjnego Supabase).',
   },
   trip_info: {
-    label: 'Info o wyjeździe', icon: '✈️',
+    label: 'Info o wyjeździe', icon: Plane,
     desc: 'Bazowy szablon wysyłki info o wyjeździe do grupy (zmienne: {{wyjazd}}, {{szczegoly_wyjazdu}})',
     trigger: 'wysyłany ręcznie przez administratora — masowa wysyłka informacji o wyjeździe do wybranej grupy rodziców z poziomu panelu wyjazdu.',
   },
   registration: {
-    label: 'Potwierdzenie zapisu', icon: '✅',
+    label: 'Potwierdzenie zapisu', icon: CheckCircle2,
     desc: 'Wysyłany gdy rodzic potwierdzi że dziecko jedzie',
     trigger: 'wysyłany automatycznie po potwierdzeniu zapisu na wyjazd — gdy rodzic potwierdzi udział dziecka w aplikacji albo gdy administrator ręcznie doda uczestnika do wyjazdu.',
   },
   payment_confirmed: {
-    label: 'Płatność potwierdzona', icon: '💳',
+    label: 'Płatność potwierdzona', icon: CreditCard,
     desc: 'Wysyłany gdy admin oznaczy płatność jako opłaconą',
     trigger: 'wysyłany automatycznie w chwili, gdy administrator oznaczy płatność jako opłaconą (lub jej status zmieni się na opłacony) w panelu /admin/payments.',
   },
   payment_reminder: {
-    label: 'Przypomnienie o płatności', icon: '⏰',
+    label: 'Przypomnienie o płatności', icon: Clock,
     desc: 'Wysyłany automatycznie 3 dni przed terminem płatności',
     trigger: 'wysyłany automatycznie codziennie o 7:00 do rodziców, którym do terminu płatności zostały dokładnie 3 dni, a płatność nadal nie jest opłacona.',
   },
@@ -417,8 +423,9 @@ export function EmailTemplatesEditor({ templates }: Props) {
   return (
     <div className="space-y-3">
       {templates.map((template) => {
-        const meta = TEMPLATE_LABELS[template.id] ?? { label: template.name, icon: '📧', desc: '', trigger: '' };
+        const meta = TEMPLATE_LABELS[template.id] ?? { label: template.name, icon: Mail, desc: '', trigger: '' };
         const isOpen = openId === template.id;
+        const TemplateIcon = meta.icon;
 
         return (
           <div key={template.id} className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
@@ -428,8 +435,8 @@ export function EmailTemplatesEditor({ templates }: Props) {
               onClick={() => setOpenId(isOpen ? null : template.id)}
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-lg">
-                  {meta.icon}
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <TemplateIcon className="h-4 w-4" />
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-semibold text-gray-900">{meta.label}</p>

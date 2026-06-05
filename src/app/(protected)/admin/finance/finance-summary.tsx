@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   TrendingUp,
   TrendingDown,
-  Users,
   ExternalLink,
   ChevronDown,
   ChevronUp,
@@ -13,11 +12,15 @@ import {
   X,
   Download,
   MapPin,
+  Users,
   CheckCircle2,
   AlertTriangle,
   BadgePercent,
 } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { MetricCard, PanelCard } from '@/components/shared';
 import type { TripFinanceSummary } from '@/lib/actions/payments';
 
 type TripSummary = TripFinanceSummary;
@@ -143,75 +146,49 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
     <div className="space-y-6">
 
       {/* Stat cards — spójne z kartami na /admin/payments (chip z ikoną) */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 flex-shrink-0">
-            <MapPin className="h-5 w-5 text-blue-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-gray-900">{tripSummaries.length}</p>
-            <p className="text-xs text-gray-500">Wyjazdy</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-emerald-600">{totals.paidPLN.toFixed(0)} zł</p>
-            <p className="text-xs text-gray-500">Zebrano · z {totals.totalPLN.toFixed(0)} zł</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-red-500">{totals.missingPLN.toFixed(0)} zł</p>
-            <p className="text-xs text-gray-500">Brakuje · zebrane {totalPct}%</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <MetricCard icon={MapPin} label="Wyjazdy" value={tripSummaries.length} tone="blue" />
+        <MetricCard
+          icon={CheckCircle2}
+          label="Zebrano PLN"
+          value={`${totals.paidPLN.toFixed(0)} zł`}
+          description={`z ${totals.totalPLN.toFixed(0)} zł`}
+          tone="emerald"
+        />
+        <MetricCard
+          icon={AlertTriangle}
+          label="Brakuje PLN"
+          value={`${totals.missingPLN.toFixed(0)} zł`}
+          description={`zebrane ${totalPct}%`}
+          tone="red"
+        />
       </div>
 
       {/* Currency / discount cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {totals.totalEUR > 0 && (
           <>
-            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-bold text-emerald-600">{totals.paidEUR.toFixed(0)} €</p>
-                <p className="text-xs text-gray-500">Zebrano · z {totals.totalEUR.toFixed(0)} €</p>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-2xl font-bold text-red-500">{totals.missingEUR.toFixed(0)} €</p>
-                <p className="text-xs text-gray-500">Brakuje (EUR)</p>
-              </div>
-            </div>
+            <MetricCard
+              icon={CheckCircle2}
+              label="Zebrano EUR"
+              value={`${totals.paidEUR.toFixed(0)} €`}
+              description={`z ${totals.totalEUR.toFixed(0)} €`}
+              tone="emerald"
+            />
+            <MetricCard icon={AlertTriangle} label="Brakuje EUR" value={`${totals.missingEUR.toFixed(0)} €`} tone="red" />
           </>
         )}
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0">
-            <BadgePercent className="h-5 w-5 text-amber-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-amber-600">{totals.discountPLN.toFixed(0)} zł</p>
-            <p className="text-xs text-gray-500">
-              Udzielone zniżki{totals.discountEUR > 0 ? ` · + ${totals.discountEUR.toFixed(0)} €` : ''}
-            </p>
-          </div>
-        </div>
+        <MetricCard
+          icon={BadgePercent}
+          label="Udzielone zniżki"
+          value={`${totals.discountPLN.toFixed(0)} zł`}
+          description={totals.discountEUR > 0 ? `+ ${totals.discountEUR.toFixed(0)} €` : undefined}
+          tone="amber"
+        />
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
+      <PanelCard className="overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
           <h2 className="font-semibold text-gray-900 text-sm">
             Zestawienie per wyjazd
@@ -224,17 +201,20 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
           <div className="flex items-center gap-2">
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
+              <Input
                 placeholder="Szukaj wyjazdu..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setPage(1);
                 }}
-                className="w-full h-11 pl-9 pr-8 rounded-xl bg-gray-50 ring-1 ring-gray-200 border-0 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-all"
+                className="h-11 rounded-xl border-0 bg-gray-50 pl-9 pr-8 ring-1 ring-gray-200"
               />
               {searchQuery && (
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   onClick={() => {
                     setSearchQuery('');
@@ -242,16 +222,17 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
                   }}
                 >
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               )}
             </div>
-            <button
+            <Button
+              type="button"
               onClick={exportCsv}
-              className="inline-flex items-center gap-1.5 h-11 px-4 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors whitespace-nowrap"
+              className="rounded-xl bg-slate-900 hover:bg-slate-700"
             >
               <Download className="h-4 w-4" />
               CSV
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -567,7 +548,7 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
             </div>
           </div>
         )}
-      </div>
+      </PanelCard>
     </div>
   );
 }

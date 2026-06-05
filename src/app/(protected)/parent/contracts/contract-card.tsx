@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { CheckCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, Clock, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ContractDocument } from '@/components/contract-document';
+import { PanelIcon } from '@/components/shared';
 import { PrintContractButton } from '@/components/parent/print-contract-button';
 import { AcceptContractButton } from './accept-contract-button';
 
@@ -67,10 +67,15 @@ export function ContractCard({ contract, parentName }: ContractCardProps) {
         onClick={() => setExpanded((v) => !v)}
       >
         <div className="min-w-0">
-          <p className="font-semibold text-gray-900 text-sm">
-            🏔️ {tripTitle} — {childName}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">{tripDates}</p>
+          <div className="flex min-w-0 items-start gap-3">
+            <PanelIcon icon={FileText} tone={isAccepted ? 'emerald' : 'amber'} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-gray-900">
+                {tripTitle} — {childName}
+              </p>
+              <p className="mt-0.5 text-xs text-gray-500">{tripDates}</p>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">

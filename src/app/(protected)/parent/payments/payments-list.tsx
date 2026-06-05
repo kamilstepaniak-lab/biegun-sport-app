@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { EmptyState } from '@/components/shared';
+import { CopyIconButton, EmptyState, MetricCard, PanelCard, SectionTitle } from '@/components/shared';
 import { cn } from '@/lib/utils';
 
 import type { ParentPayment, BankAccountInfo } from '@/lib/actions/payments';
@@ -111,50 +111,28 @@ function SummaryBlocks({
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="bg-amber-50 rounded-2xl ring-1 ring-amber-200 p-3 sm:p-4">
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-200 flex items-center justify-center flex-shrink-0">
-            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-700" />
-          </div>
-          <div>
-            <span className="text-xs sm:text-sm font-bold text-amber-700 uppercase tracking-wide">Do zapłaty</span>
-            <p className="hidden sm:block text-[10px] text-amber-400 leading-tight">razem z płatnościami po terminie</p>
-          </div>
-        </div>
-        {hasPending ? (
-          <div className="space-y-0.5">
-            {sortedPending.map(([currency, sum]) => (
-              <div key={currency} className="flex items-baseline gap-1">
-                <span className="text-base sm:text-xl font-bold text-amber-900 tabular-nums">{sum.toFixed(0)}</span>
-                <span className="text-xs sm:text-sm font-semibold text-amber-600">{currency}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs sm:text-sm font-semibold text-emerald-600">Wszystko opłacone</p>
-        )}
-      </div>
-
-      <div className={`rounded-2xl ring-1 p-3 sm:p-4 ${hasOverdue ? 'bg-red-50 ring-red-200' : 'bg-white ring-gray-100'}`}>
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${hasOverdue ? 'bg-red-200' : 'bg-gray-100'}`}>
-            <AlertCircle className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`} />
-          </div>
-          <span className={`text-xs sm:text-sm font-bold uppercase tracking-wide ${hasOverdue ? 'text-red-700' : 'text-gray-400'}`}>Po terminie</span>
-        </div>
-        {hasOverdue ? (
-          <div className="space-y-0.5">
-            {sortedOverdue.map(([currency, sum]) => (
-              <div key={currency} className="flex items-baseline gap-1">
-                <span className="text-base sm:text-xl font-bold text-red-700 tabular-nums">{sum.toFixed(0)}</span>
-                <span className="text-xs sm:text-sm font-semibold text-red-500">{currency}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs sm:text-sm font-semibold text-emerald-600">Brak zaległości</p>
-        )}
-      </div>
+      <MetricCard
+        icon={Clock}
+        label="Do zapłaty"
+        value={
+          hasPending
+            ? sortedPending.map(([currency, sum]) => `${sum.toFixed(0)} ${currency}`).join(' · ')
+            : '0 PLN'
+        }
+        description={hasPending ? 'razem z płatnościami po terminie' : 'Wszystko opłacone'}
+        tone="amber"
+      />
+      <MetricCard
+        icon={AlertCircle}
+        label="Po terminie"
+        value={
+          hasOverdue
+            ? sortedOverdue.map(([currency, sum]) => `${sum.toFixed(0)} ${currency}`).join(' · ')
+            : '0 PLN'
+        }
+        description={hasOverdue ? 'wymaga uwagi' : 'Brak zaległości'}
+        tone={hasOverdue ? 'red' : 'slate'}
+      />
     </div>
   );
 }
@@ -162,13 +140,8 @@ function SummaryBlocks({
 // ── Dane do przelewu ──────────────────────────────────────────────────────
 export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccountInfo }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-          <Banknote className="h-4 w-4 text-white" />
-        </div>
-        <h3 className="font-semibold text-gray-900 text-sm">Dane do przelewu</h3>
-      </div>
+    <PanelCard className="p-5">
+      <SectionTitle icon={Banknote} title="Dane do przelewu" className="mb-4" />
       <div className="grid gap-3 md:grid-cols-2">
         {bankAccounts.bank_account_pln && (
           <div className="flex items-center justify-between bg-gray-50 rounded-xl p-3 gap-2">
@@ -176,12 +149,10 @@ export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccoun
               <p className="text-xs text-gray-400 mb-0.5">Konto PLN</p>
               <p className="text-sm text-gray-900 break-all">{bankAccounts.bank_account_pln}</p>
             </div>
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white text-gray-400 hover:text-gray-600 transition-colors"
+            <CopyIconButton
+              label="Kopiuj numer konta PLN"
               onClick={() => copyToClipboard(bankAccounts.bank_account_pln!, 'Numer konta PLN')}
-            >
-              <Copy className="h-4 w-4" />
-            </button>
+            />
           </div>
         )}
         {bankAccounts.bank_account_eur && (
@@ -190,16 +161,14 @@ export function BankAccountsSection({ bankAccounts }: { bankAccounts: BankAccoun
               <p className="text-xs text-gray-400 mb-0.5">Konto EUR</p>
               <p className="text-sm text-gray-900 break-all">{bankAccounts.bank_account_eur}</p>
             </div>
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white text-gray-400 hover:text-gray-600 transition-colors"
+            <CopyIconButton
+              label="Kopiuj numer konta EUR"
               onClick={() => copyToClipboard(bankAccounts.bank_account_eur!, 'Numer konta EUR')}
-            >
-              <Copy className="h-4 w-4" />
-            </button>
+            />
           </div>
         )}
       </div>
-    </div>
+    </PanelCard>
   );
 }
 
@@ -242,13 +211,10 @@ function TransferCopyRow({
           {value}
         </p>
       </div>
-      <button
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-gray-400 ring-1 ring-gray-200 transition-colors hover:text-blue-600"
+      <CopyIconButton
+        label={`Kopiuj: ${label}`}
         onClick={() => copyToClipboard(value, copyLabel)}
-        title={`Kopiuj: ${label}`}
-      >
-        <Copy className="h-4 w-4" />
-      </button>
+      />
     </div>
   );
 }

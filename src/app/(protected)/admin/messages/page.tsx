@@ -1,7 +1,6 @@
 import { MessageSquare } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader, PanelCard, SectionTitle } from '@/components/shared';
 import { getAdminMessages } from '@/lib/actions/messages';
 import { getGroups } from '@/lib/actions/groups';
 import { NewMessageForm } from './new-message-form';
@@ -18,34 +17,26 @@ export default async function AdminMessagesPage() {
       />
 
       <div className="space-y-6">
-      {/* Formularz nowej wiadomości */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-amber-600" />
-            Nowa wiadomość
-          </CardTitle>
-          <CardDescription>
-            Wiadomość będzie widoczna dla wybranych rodziców w panelu „Moje dzieci&rdquo;.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <PanelCard className="p-6">
+          <SectionTitle
+            icon={MessageSquare}
+            title="Nowa wiadomość"
+            description="Wiadomość będzie widoczna dla wybranych rodziców w panelu „Moje dzieci”."
+            className="mb-5"
+          />
           <NewMessageForm groups={groups} />
-        </CardContent>
-      </Card>
+        </PanelCard>
 
-      {/* Historia wiadomości */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Wysłane wiadomości ({messages.length})</CardTitle>
-          <CardDescription>
-            Historia wszystkich wysłanych komunikatów
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
+        <PanelCard className="overflow-hidden">
+          <div className="p-6">
+            <SectionTitle
+              icon={MessageSquare}
+              title={`Wysłane wiadomości (${messages.length})`}
+              description="Historia wszystkich wysłanych komunikatów"
+            />
+          </div>
           <AdminMessageList messages={messages} groups={groups} />
-        </CardContent>
-      </Card>
+        </PanelCard>
       </div>
     </div>
   );

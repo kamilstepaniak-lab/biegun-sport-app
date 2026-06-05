@@ -14,16 +14,16 @@ type ActivityLog = {
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
   contract_accepted:        { label: 'Akceptacja umowy',     color: 'bg-emerald-100 text-emerald-800' },
   profile_updated:          { label: 'Zmiana profilu',       color: 'bg-blue-100 text-blue-800' },
-  registration_created:     { label: 'Zapis na wyjazd',      color: 'bg-purple-100 text-purple-800' },
+  registration_created:     { label: 'Zapis na wyjazd',      color: 'bg-blue-100 text-blue-800' },
   registration_cancelled:   { label: 'Anulowanie zapisu',    color: 'bg-red-100 text-red-800' },
   trip_email_sent:          { label: 'Wysłanie maili',       color: 'bg-amber-100 text-amber-800' },
   payment_deleted:          { label: 'Usunięcie płatności',  color: 'bg-red-100 text-red-800' },
   payment_recorded:         { label: 'Rejestracja wpłaty',   color: 'bg-emerald-100 text-emerald-800' },
-  payment_amount_changed:   { label: 'Zmiana kwoty',         color: 'bg-orange-100 text-orange-800' },
-  payment_status_changed:   { label: 'Zmiana statusu wpłaty', color: 'bg-orange-100 text-orange-800' },
+  payment_amount_changed:   { label: 'Zmiana kwoty',         color: 'bg-amber-100 text-amber-800' },
+  payment_status_changed:   { label: 'Zmiana statusu wpłaty', color: 'bg-amber-100 text-amber-800' },
   contracts_removed:        { label: 'Usunięcie umów',       color: 'bg-red-100 text-red-800' },
-  message_created:          { label: 'Nowa wiadomość',       color: 'bg-indigo-100 text-indigo-800' },
-  message_updated:          { label: 'Edycja wiadomości',    color: 'bg-indigo-100 text-indigo-800' },
+  message_created:          { label: 'Nowa wiadomość',       color: 'bg-blue-100 text-blue-800' },
+  message_updated:          { label: 'Edycja wiadomości',    color: 'bg-blue-100 text-blue-800' },
   message_deleted:          { label: 'Usunięcie wiadomości', color: 'bg-red-100 text-red-800' },
 };
 

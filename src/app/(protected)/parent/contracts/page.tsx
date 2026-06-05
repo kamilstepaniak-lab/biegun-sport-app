@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PageHeader } from '@/components/shared';
+import { PageHeader, SectionTitle } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
 import { getContractsForParent } from '@/lib/actions/contracts';
 import { getProfile } from '@/lib/actions/profile';
@@ -63,14 +63,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={selectedChildName} childrenList={childrenList}>
         {/* ── SEKCJA: Dokumenty ── */}
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-              <BookOpen className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Dokumenty</h2>
-            </div>
-          </div>
+          <SectionTitle icon={BookOpen} title="Dokumenty" />
           <div className="space-y-3">
             {GLOBAL_DOCUMENTS.map((doc, i) => (
               <GlobalDocumentReadonly
@@ -90,19 +83,16 @@ export default async function ParentContractsPage({ searchParams }: Props) {
         </div>
 
         {/* ── SEKCJA: Umowy uczestnictwa ── */}
-        <div className="flex items-center gap-3 pt-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600">
-            <FileText className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Umowy uczestnictwa</h2>
-            <p className="text-xs text-gray-500">
-              {selectedChildId && selectedChildId !== 'all'
-                ? 'Zapoznaj się z umowami i zaakceptuj je dla wybranego dziecka'
-                : 'Zapoznaj się z umowami i zaakceptuj je dla każdego dziecka'}
-            </p>
-          </div>
-        </div>
+        <SectionTitle
+          icon={FileText}
+          title="Umowy uczestnictwa"
+          description={
+            selectedChildId && selectedChildId !== 'all'
+              ? 'Zapoznaj się z umowami i zaakceptuj je dla wybranego dziecka'
+              : 'Zapoznaj się z umowami i zaakceptuj je dla każdego dziecka'
+          }
+          className="pt-2"
+        />
 
         {!contractDataComplete && (
           <Alert className="rounded-xl border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-600">
