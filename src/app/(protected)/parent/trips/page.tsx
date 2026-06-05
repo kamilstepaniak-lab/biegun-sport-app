@@ -38,7 +38,7 @@ export default async function ParentTripsPage({ searchParams }: Props) {
     <div className="space-y-6">
       <PageHeader
         title="Wyjazdy"
-        description="Tutaj zobaczysz wszystkie wyjazdy zaplanowane dla grupy Twojego dziecka. Potwierdź udział, aby zarezerwować miejsce, a przy wyjazdach dla chętnych zgłoś dziecko przed upływem terminu deklaracji. Po potwierdzeniu pojawi się umowa i płatność do opłacenia."
+        description="Przeglądaj wyjazdy zaplanowane dla grupy Twojego dziecka i potwierdź udział, aby zarezerwować miejsce. Po potwierdzeniu pojawi się umowa i płatność do opłacenia."
       />
 
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>

@@ -13,7 +13,7 @@ export function PageHeader({ title, description, children, className }: PageHead
       <div className="page-header-copy">
         <h1 className="text-2xl font-bold">{title}</h1>
         {description && (
-          <p className="text-sm mt-0.5">{description}</p>
+          <p className="text-sm mt-0.5 max-w-xl text-justify">{description}</p>
         )}
       </div>
       {children && <div className="page-header-actions flex items-center gap-2">{children}</div>}

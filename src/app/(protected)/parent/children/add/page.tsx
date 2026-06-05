@@ -17,7 +17,7 @@ export default async function AddChildPage() {
 
       <PageHeader
         title="Dodaj dziecko"
-        description="Wprowadź dane nowego uczestnika, aby zapisać go do klubu. Wybierz grupę treningową — dzięki temu pokażemy właściwe wyjazdy i terminy. Dane możesz później edytować w każdej chwili."
+        description="Wprowadź dane nowego uczestnika i wybierz grupę treningową — dzięki temu pokażemy właściwe wyjazdy i terminy. Dane możesz później edytować w każdej chwili."
       />
 
       <ChildForm groups={groups} mode="create" />

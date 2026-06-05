@@ -32,7 +32,7 @@ export default async function EditChildPage({ params }: EditChildPageProps) {
 
       <PageHeader
         title="Edytuj dane dziecka"
-        description="Zaktualizuj dane uczestnika oraz informacje ważne dla organizatora, np. zdrowotne i kontaktowe. Aktualne dane pomagają instruktorom zadbać o bezpieczeństwo dziecka na wyjazdach."
+        description="Zaktualizuj dane uczestnika oraz informacje ważne dla organizatora, np. zdrowotne i kontaktowe. Aktualne dane pomagają zadbać o bezpieczeństwo dziecka na wyjazdach."
       />
 
       <ChildForm

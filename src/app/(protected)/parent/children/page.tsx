@@ -18,7 +18,7 @@ export default async function ParentChildrenPage() {
     <div className="space-y-6">
       <PageHeader
         title={`Dzień dobry, ${firstName}`}
-        description={`${today} — sprawdź najbliższe wyjazdy swoich dzieci, opłać raty i zaakceptuj umowy. Wszystko, co wymaga Twojej uwagi, znajdziesz na kartach poniżej.`}
+        description={`${today} — sprawdź najbliższe wyjazdy swoich dzieci, opłać raty i zaakceptuj umowy. Wszystko, co wymaga uwagi, znajdziesz na kartach poniżej.`}
       />
 
       <ChildrenList participants={children} />

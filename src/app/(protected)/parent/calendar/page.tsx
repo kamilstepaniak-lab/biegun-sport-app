@@ -38,7 +38,7 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
     <div className="space-y-6">
       <PageHeader
         title="Kalendarz"
-        description="Kalendarz pokazuje terminy wszystkich wyjazdów w jednym miejscu. Kliknij wybrany dzień, aby zobaczyć szczegóły i sprawdzić, które dziecko bierze udział. Dzięki temu łatwiej zaplanujesz najbliższe tygodnie."
+        description="Terminy wszystkich wyjazdów w jednym miejscu. Kliknij wybrany dzień, aby zobaczyć szczegóły i sprawdzić, które dziecko bierze udział."
       />
 
       <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>

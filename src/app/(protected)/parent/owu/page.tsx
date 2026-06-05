@@ -15,7 +15,7 @@ export default function OwuPage() {
     <div className="space-y-6">
       <PageHeader
         title="Ogólne Warunki Uczestnictwa"
-        description="To regulamin określający zasady udziału w zajęciach i wyjazdach BiegunSport. Warto zapoznać się z nim przed pierwszym wyjazdem. Znajdziesz tu m.in. zasady rezygnacji, płatności i bezpieczeństwa."
+        description="Regulamin określający zasady udziału w zajęciach i wyjazdach BiegunSport. Znajdziesz tu m.in. zasady rezygnacji, płatności i bezpieczeństwa."
       >
         <Link
           href="/parent/contracts"

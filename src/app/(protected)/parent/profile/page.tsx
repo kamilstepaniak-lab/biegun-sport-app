@@ -18,7 +18,7 @@ export default async function ParentProfilePage() {
     <div className="space-y-6">
       <PageHeader
         title="Mój profil"
-        description="Zadbaj o aktualne dane kontaktowe — instruktorzy używają ich, aby szybko się z Tobą skontaktować. Dane do umowy (adres, PESEL) są potrzebne do wygenerowania umów uczestnictwa. Tutaj zmienisz też hasło i pobierzesz kopię swoich danych."
+        description="Zadbaj o aktualne dane kontaktowe — instruktorzy używają ich, aby szybko się z Tobą skontaktować. Dane do umowy (adres, PESEL) są potrzebne do wygenerowania umów uczestnictwa."
       />
 
       <ProfileForm profile={profile} />
