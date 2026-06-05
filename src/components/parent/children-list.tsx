@@ -268,7 +268,6 @@ export function ChildrenList({ participants }: ChildrenListProps) {
   );
 
   const selectedChild = participants.find((c) => c.id === selectedChildId);
-  const unreadCount = messages.filter((m) => !m.is_read).length;
   const isAll = selectedChildId === 'all';
 
   const childSlug = isAll

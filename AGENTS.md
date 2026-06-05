@@ -39,6 +39,9 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/children`: wyrównano wysokość bloków „Moje dzieci” i „Wiadomości”,
+  ograniczono podgląd wiadomości do 2 ostatnich wpisów oraz zmniejszono aplę
+  wyboru dziecka.
 - Dodano widoczność płatności rodzica sterowaną komunikacją wyjazdową:
   rodzic widzi plan kosztów w `/parent/trips`, ale realne rekordy w
   `/parent/payments` pojawiają się dopiero po odblokowaniu wyjazdu przez
