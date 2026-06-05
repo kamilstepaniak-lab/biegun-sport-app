@@ -16,6 +16,7 @@ const payloadSchema = z.object({
     email: z.string().email().max(120),
     phone: z.string().trim().min(6).max(30),
   }),
+  organizer_notes: z.string().trim().max(1000).nullable().optional(),
 });
 
 function unauthorized() {
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
       child_height_cm: data.child.height_cm ?? null,
       parent_email: data.parent.email.toLowerCase(),
       parent_phone: data.parent.phone,
+      organizer_notes: data.organizer_notes || null,
       raw_payload: body as object,
     })
     .select('id')

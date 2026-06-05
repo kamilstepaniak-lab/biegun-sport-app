@@ -215,6 +215,7 @@ export default function RegistrationsList({
                       <col className="w-20" />
                       <col />
                       <col className="w-36" />
+                      <col />
                       <col className="w-32" />
                       <col className="w-32" />
                       <col className="w-44" />
@@ -227,6 +228,7 @@ export default function RegistrationsList({
                         <th className="px-3 py-2.5">Wzrost</th>
                         <th className="px-3 py-2.5">Email</th>
                         <th className="px-3 py-2.5">Telefon</th>
+                        <th className="px-3 py-2.5">Uwagi</th>
                         <th className="px-3 py-2.5">Zgłoszono</th>
                         <th className="px-3 py-2.5">Status</th>
                         <th className="px-3 py-2.5 text-right">Akcje</th>
@@ -319,6 +321,12 @@ export default function RegistrationsList({
                                 </TooltipTrigger>
                                 <TooltipContent>Kliknij aby skopiować</TooltipContent>
                               </Tooltip>
+                            </td>
+
+                            <td className="px-3 py-2.5">
+                              <span className="line-clamp-2 text-sm text-slate-600">
+                                {r.organizer_notes || '—'}
+                              </span>
                             </td>
 
                             <td className="px-3 py-2.5 whitespace-nowrap text-xs text-slate-500">

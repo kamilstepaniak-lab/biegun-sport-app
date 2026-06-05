@@ -32,6 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import type { TripForParent, ChildTripStatus } from '@/lib/actions/trips';
 import { GroupBadge } from '@/lib/group-icons';
+import { getGroupColor } from '@/lib/group-colors';
 import { getCampVisual } from '@/lib/camp-visual';
 import { cn } from '@/lib/utils';
 import { PaymentDue } from '@/components/shared/payment-due';
@@ -237,7 +238,10 @@ function TripCardInner({
                     <div key={child.child_id} className="space-y-2" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-gray-50/80 gap-2">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
+                          <div className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0',
+                            getGroupColor(child.child_group_name ?? '').dot,
+                          )}>
                             {child.child_name.charAt(0)}
                           </div>
                           <div className="min-w-0">
@@ -429,7 +433,7 @@ function TripCardInner({
                     </div>
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-blue-100">Miejsce</p>
-                      <p className="text-base font-bold text-white">{trip.location || trip.departure_location || '—'}</p>
+                      <p className="text-sm font-normal text-white/90">{trip.location || trip.departure_location || '—'}</p>
                     </div>
                   </div>
                 </div>
@@ -577,7 +581,7 @@ function TripCardInner({
                         <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Typ</th>
                         <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Termin</th>
                         <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Forma</th>
-                        <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Kwota</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Kwota</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -602,7 +606,7 @@ function TripCardInner({
                                 {method.label}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
+                            <td className="px-4 py-2.5 text-left font-semibold text-gray-900 whitespace-nowrap">
                               {template.amount.toFixed(0)} {template.currency}
                             </td>
                           </tr>
@@ -612,10 +616,10 @@ function TripCardInner({
                     {totalLabel && (
                       <tfoot>
                         <tr className="border-t border-slate-200">
-                          <td colSpan={3} className="px-4 py-3 text-sm font-bold text-slate-900">
+                          <td colSpan={3} className="px-4 py-3 text-left text-sm font-bold text-slate-900">
                             Razem
                           </td>
-                          <td className="px-4 py-3 text-right text-lg font-black text-slate-950">
+                          <td className="px-4 py-3 text-left text-lg font-black text-slate-950">
                             {totalLabel}
                           </td>
                         </tr>

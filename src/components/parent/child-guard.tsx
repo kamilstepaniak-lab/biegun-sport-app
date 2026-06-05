@@ -156,7 +156,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     <div className="space-y-4">
       {/* Banner z wyborem dziecka */}
       <div className="rounded-xl bg-blue-600 p-3">
-        <div className="mb-2.5 flex items-center gap-2.5">
+        <div className="mb-4 flex items-center gap-2.5">
           <div className={cn(
             'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white',
             isAll ? 'bg-white/10' : selectedGroupColor.dot

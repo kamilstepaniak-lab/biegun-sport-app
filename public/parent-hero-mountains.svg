@@ -1,35 +1,48 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 240" preserveAspectRatio="xMaxYMax slice" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" preserveAspectRatio="xMidYMax slice" fill="none">
   <defs>
-    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+    <!-- poziomy fade: lewa strona (tytuł) jaśniejsza, prawa pełna -->
+    <linearGradient id="hFade" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#fff" stop-opacity="0"/>
-      <stop offset="0.32" stop-color="#fff" stop-opacity="0.45"/>
-      <stop offset="0.62" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="0.18" stop-color="#fff" stop-opacity="0.28"/>
+      <stop offset="0.42" stop-color="#fff" stop-opacity="0.72"/>
+      <stop offset="0.64" stop-color="#fff" stop-opacity="1"/>
+    </linearGradient>
+    <!-- pionowy fade: podstawy gór rozpływają się w sekcję poniżej -->
+    <linearGradient id="vFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="1"/>
     </linearGradient>
     <mask id="fadeMask">
-      <rect width="1200" height="240" fill="url(#fade)"/>
+      <rect width="1200" height="320" fill="url(#hFade)"/>
+      <rect width="1200" height="320" fill="url(#vFade)"/>
     </mask>
   </defs>
 
   <g mask="url(#fadeMask)">
-    <!-- back range: gentle silhouette across the top -->
-    <path d="M0 240 L0 168 L170 126 L350 158 L520 116 L700 150 L880 96 L1050 138 L1200 104 L1200 240 Z" fill="#e7f0fb"/>
+    <!-- najdalszy grzbiet: delikatna sylwetka przez całą szerokość -->
+    <path d="M0 320 L0 200 L120 150 L260 190 L400 130 L560 175 L720 120 L880 160 L1040 110 L1200 150 L1200 320 Z" fill="#e9f1fb"/>
 
-    <!-- mid-left soft hill -->
-    <polygon points="320,240 430,150 430,240" fill="#dbe8f9"/>
-    <polygon points="430,150 540,240 430,240" fill="#cbddf6"/>
+    <!-- środkowy grzbiet -->
+    <path d="M0 320 L0 235 L180 175 L360 220 L520 165 L700 210 L860 150 L1020 200 L1200 165 L1200 320 Z" fill="#dbe8f9"/>
 
-    <!-- main central-right peak -->
-    <polygon points="600,240 760,72 760,240" fill="#cbdcf4"/>
-    <polygon points="760,72 920,240 760,240" fill="#b2cdf0"/>
-    <polygon points="731,110 760,72 791,110" fill="#eff5ff"/>
+    <!-- szczyt lewy -->
+    <polygon points="180,320 300,140 300,320" fill="#cbddf6"/>
+    <polygon points="300,140 420,320 300,320" fill="#b2cdf0"/>
+    <polygon points="282,170 300,140 318,170" fill="#eff5ff"/>
 
-    <!-- far-right peak -->
-    <polygon points="880,240 1010,98 1010,240" fill="#d3e2f7"/>
-    <polygon points="1010,98 1140,240 1010,240" fill="#bcd4f2"/>
-    <polygon points="989,130 1010,98 1033,130" fill="#f1f6ff"/>
+    <!-- szczyt główny (wysoki, centralny) -->
+    <polygon points="470,320 620,100 620,320" fill="#cbdcf4"/>
+    <polygon points="620,100 770,320 620,320" fill="#b2cdf0"/>
+    <polygon points="598,140 620,100 642,140" fill="#eff5ff"/>
 
-    <!-- front-right ridge -->
-    <polygon points="820,240 905,134 905,240" fill="#c3d8f2"/>
-    <polygon points="905,134 992,240 905,240" fill="#adcaee"/>
+    <!-- szczyt prawy -->
+    <polygon points="820,320 930,130 930,320" fill="#d0e0f6"/>
+    <polygon points="930,130 1040,320 930,320" fill="#bcd4f2"/>
+    <polygon points="911,160 930,130 949,160" fill="#f1f6ff"/>
+
+    <!-- grzbiet skrajny prawy -->
+    <polygon points="1000,320 1080,175 1080,320" fill="#c3d8f2"/>
+    <polygon points="1080,175 1160,320 1080,320" fill="#adcaee"/>
   </g>
 </svg>

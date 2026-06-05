@@ -1,6 +1,7 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag as _revalidateTag } from 'next/cache';
+const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import { createPaymentsForRegistration } from './payments';
@@ -350,34 +351,55 @@ function computePaymentStatus(
 async function syncTripPaymentsAfterPricingChange(
   supabaseAdmin: ReturnType<typeof createAdminClient>,
   id: string
-) {
-  const { data: newTemplates } = await supabaseAdmin
+): Promise<{ success: true } | { error: string }> {
+  const { data: newTemplates, error: newTemplatesError } = await supabaseAdmin
     .from('trip_payment_templates')
     .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
     .eq('trip_id', id);
 
-  const { data: activeRegs } = await supabaseAdmin
+  if (newTemplatesError) {
+    console.error('Fetch new payment templates error:', newTemplatesError);
+    return { error: 'Nie udało się pobrać nowych szablonów płatności' };
+  }
+
+  const { data: activeRegs, error: activeRegsError } = await supabaseAdmin
     .from('trip_registrations')
     .select('id, participant_id, participation_status, confirmed_at')
     .eq('trip_id', id)
     .eq('status', 'active')
     .eq('participation_status', 'confirmed');
 
-  if (!activeRegs || activeRegs.length === 0) return;
+  if (activeRegsError) {
+    console.error('Fetch confirmed registrations error:', activeRegsError);
+    return { error: 'Nie udało się pobrać potwierdzonych zapisów' };
+  }
 
-  const { data: tripRelease } = await supabaseAdmin
+  if (!activeRegs || activeRegs.length === 0) return { success: true };
+
+  const { data: tripRelease, error: tripReleaseError } = await supabaseAdmin
     .from('trips')
     .select('payments_released_at')
     .eq('id', id)
     .maybeSingle();
+
+  if (tripReleaseError) {
+    console.error('Fetch trip payment release error:', tripReleaseError);
+    return { error: 'Nie udało się sprawdzić widoczności płatności rodzica' };
+  }
+
   const parentVisible = Boolean(tripRelease?.payments_released_at);
 
   for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string; confirmed_at: string | null }[]) {
-    const { data: participant } = await supabaseAdmin
+    const { data: participant, error: participantError } = await supabaseAdmin
       .from('participants')
       .select('birth_date')
       .eq('id', reg.participant_id)
       .single();
+
+    if (participantError) {
+      console.error('Fetch participant for payment sync error:', participantError);
+      return { error: 'Nie udało się pobrać danych uczestnika do synchronizacji płatności' };
+    }
 
     const birthYear = participant?.birth_date
       ? new Date(participant.birth_date).getFullYear()
@@ -411,11 +433,16 @@ async function syncTripPaymentsAfterPricingChange(
       return true;
     });
 
-    const { data: existingPayments } = await supabaseAdmin
+    const { data: existingPayments, error: existingPaymentsError } = await supabaseAdmin
       .from('payments')
       .select('id, payment_type, installment_number, status, amount, original_amount, amount_paid, discount_percentage')
       .eq('registration_id', reg.id)
       .neq('status', 'cancelled');
+
+    if (existingPaymentsError) {
+      console.error('Fetch existing payments error:', existingPaymentsError);
+      return { error: 'Nie udało się pobrać istniejących płatności' };
+    }
 
     const existing = (existingPayments || []) as {
       id: string;
@@ -430,11 +457,16 @@ async function syncTripPaymentsAfterPricingChange(
 
     // Płatności trwale anulowane (rezygnacja uczestnika lub usunięcie pozycji
     // z cennika) NIE są odtwarzane — uszanuj decyzję admina.
-    const { data: cancelledPayments } = await supabaseAdmin
+    const { data: cancelledPayments, error: cancelledPaymentsError } = await supabaseAdmin
       .from('payments')
       .select('payment_type, installment_number')
       .eq('registration_id', reg.id)
       .eq('status', 'cancelled');
+
+    if (cancelledPaymentsError) {
+      console.error('Fetch cancelled payments error:', cancelledPaymentsError);
+      return { error: 'Nie udało się pobrać anulowanych płatności' };
+    }
 
     const cancelledKeys = new Set(
       ((cancelledPayments || []) as { payment_type: string; installment_number: number | null }[]).map(
@@ -486,16 +518,21 @@ async function syncTripPaymentsAfterPricingChange(
           update.currency = template.currency;
         }
 
-        await supabaseAdmin
+        const { error: updatePaymentError } = await supabaseAdmin
           .from('payments')
           .update(update)
           .eq('id', match.id);
+
+        if (updatePaymentError) {
+          console.error('Update synced payment error:', updatePaymentError);
+          return { error: 'Nie udało się zaktualizować płatności uczestników' };
+        }
       } else {
         // Nie odtwarzaj płatności, która została wcześniej trwale anulowana
         if (cancelledKeys.has(`${template.payment_type}::${template.installment_number ?? ''}`)) {
           continue;
         }
-        await supabaseAdmin
+        const { error: insertPaymentError } = await supabaseAdmin
           .from('payments')
           .insert({
             registration_id: reg.id,
@@ -512,6 +549,11 @@ async function syncTripPaymentsAfterPricingChange(
             amount_paid: 0,
             payment_method: template.payment_method,
           });
+
+        if (insertPaymentError) {
+          console.error('Insert synced payment error:', insertPaymentError);
+          return { error: 'Nie udało się utworzyć nowych płatności uczestników' };
+        }
       }
     }
 
@@ -526,17 +568,24 @@ async function syncTripPaymentsAfterPricingChange(
         !hasTemplate &&
         ['pending', 'overdue', 'partially_paid', 'partially_paid_overdue'].includes(existingPayment.status)
       ) {
-        await supabaseAdmin
+        const { error: cancelPaymentError } = await supabaseAdmin
           .from('payments')
           .update({ status: 'cancelled' })
           .eq('id', existingPayment.id);
+
+        if (cancelPaymentError) {
+          console.error('Cancel stale payment error:', cancelPaymentError);
+          return { error: 'Nie udało się anulować płatności usuniętych z cennika' };
+        }
       }
     }
   }
+
+  return { success: true };
 }
 
 export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
-  const { supabase, user, role } = await getAuthUser();
+  const { user, role } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
   if (!user) {
     return { error: 'Nie jesteś zalogowany' };
@@ -652,10 +701,15 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
       // (FK bez ON DELETE SET NULL — musimy ręcznie wyzerować template_id)
       if (existingTemplates && existingTemplates.length > 0) {
         const templateIds = existingTemplates.map((t) => t.id);
-        await supabaseAdmin
+        const { error: unlinkPaymentsError } = await supabaseAdmin
           .from('payments')
           .update({ template_id: null })
           .in('template_id', templateIds);
+
+        if (unlinkPaymentsError) {
+          console.error('Unlink payment templates error:', unlinkPaymentsError);
+          return { error: 'Nie udało się odpiąć płatności od starych szablonów' };
+        }
       }
 
       // Usuń wszystkie stare szablony
@@ -701,7 +755,8 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 
   // Synchronizuj płatności uczestników wyłącznie gdy zmienił się cennik
   if (pricingChanged) {
-    await syncTripPaymentsAfterPricingChange(supabaseAdmin, id);
+    const syncResult = await syncTripPaymentsAfterPricingChange(supabaseAdmin, id);
+    if ('error' in syncResult) return syncResult;
   }
 
   // Odśwież treść niepodpisanych umów — dane wyjazdu / cennik mogły się zmienić
@@ -709,7 +764,11 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
 
   revalidatePath('/admin/trips');
   revalidatePath(`/admin/trips/${id}`);
+  revalidateTag('payments');
+  revalidatePath('/admin/payments');
+  revalidatePath(`/admin/trips/${id}/payments`);
   revalidatePath('/admin/calendar');
+  revalidatePath('/parent/payments');
   revalidatePath('/parent/trips');
   revalidatePath('/parent/trips', 'layout');
   revalidatePath('/parent/calendar');
@@ -1157,6 +1216,7 @@ export interface ChildPaymentSummary {
 export interface ChildTripStatus {
   child_id: string;
   child_name: string;
+  child_group_name: string | null;
   participation_status: 'unconfirmed' | 'confirmed' | 'not_going' | 'other';
   participation_note: string | null;
   registration_id: string | null;
@@ -1229,6 +1289,15 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
     .in('group_id', groupIds);
 
   if (!tripGroups || tripGroups.length === 0) return [];
+
+  // Nazwy grup (do koloru/awatara dziecka)
+  const { data: groupRows } = await supabase
+    .from('groups')
+    .select('id, name')
+    .in('id', groupIds);
+  const groupNameById = new Map<string, string>(
+    (groupRows || []).map((g: { id: string; name: string }) => [g.id, g.name]),
+  );
 
   const tripIds = [...new Set(tripGroups.map((tg: { trip_id: string }) => tg.trip_id))];
 
@@ -1304,11 +1373,26 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
       return childGroupIds.some((gid) => tripGroupIds.includes(gid));
     });
 
-    const childrenStatuses: ChildTripStatus[] = eligibleChildren.map((child: { id: string; first_name: string; last_name: string }) => {
+    const childrenStatuses: ChildTripStatus[] = eligibleChildren.map((child: {
+      id: string;
+      first_name: string;
+      last_name: string;
+      participant_groups: { group_id: string }[] | { group_id: string } | null;
+    }) => {
       const reg = registrationMap.get(`${trip.id}-${child.id}`);
+      const childGroupIds: string[] = [];
+      if (child.participant_groups) {
+        if (Array.isArray(child.participant_groups)) {
+          childGroupIds.push(...child.participant_groups.map((pg) => pg.group_id));
+        } else {
+          childGroupIds.push(child.participant_groups.group_id);
+        }
+      }
+      const matchingGroupId = childGroupIds.find((gid) => tripGroupIds.includes(gid));
       return {
         child_id: child.id,
         child_name: `${child.first_name} ${child.last_name}`,
+        child_group_name: matchingGroupId ? groupNameById.get(matchingGroupId) ?? null : null,
         participation_status: (reg?.participation_status as 'unconfirmed' | 'confirmed' | 'not_going' | 'other') || 'unconfirmed',
         participation_note: reg?.participation_note || null,
         registration_id: reg?.id ?? null,

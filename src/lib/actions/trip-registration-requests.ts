@@ -18,6 +18,7 @@ export type TripRegistrationRequestRow = {
   child_height_cm: number | null;
   parent_email: string;
   parent_phone: string | null;
+  organizer_notes: string | null;
   status: Status;
   submitted_at: string;
   processed_at: string | null;
@@ -38,7 +39,7 @@ export async function listTripRegistrationRequests(filter?: {
   let q = admin
     .from('trip_registration_requests')
     .select(
-      'id, trip_id, child_first_name, child_last_name, child_birth_date, child_height_cm, parent_email, parent_phone, status, submitted_at, processed_at, rejection_reason, created_participant_id, trips(title)'
+      'id, trip_id, child_first_name, child_last_name, child_birth_date, child_height_cm, parent_email, parent_phone, organizer_notes, status, submitted_at, processed_at, rejection_reason, created_participant_id, trips(title)'
     )
     .order('submitted_at', { ascending: false });
 
@@ -61,6 +62,7 @@ export async function listTripRegistrationRequests(filter?: {
     child_height_cm: number | null;
     parent_email: string;
     parent_phone: string | null;
+    organizer_notes: string | null;
     status: Status;
     submitted_at: string;
     processed_at: string | null;
@@ -79,6 +81,7 @@ export async function listTripRegistrationRequests(filter?: {
     child_height_cm: r.child_height_cm,
     parent_email: r.parent_email,
     parent_phone: r.parent_phone,
+    organizer_notes: r.organizer_notes,
     status: r.status,
     submitted_at: r.submitted_at,
     processed_at: r.processed_at,
@@ -146,6 +149,13 @@ export async function approveRegistrationRequest(requestId: string) {
     return { error: 'Nie udało się utworzyć uczestnika' };
   }
   const participantId = createRes.data.id;
+
+  if (reqRow.organizer_notes) {
+    await admin
+      .from('participants')
+      .update({ parent_notes_additional: reqRow.organizer_notes })
+      .eq('id', participantId);
+  }
 
   // 2) Zapis na wyjazd jako admin (registerParticipantToTrip wysyła standardowy mail rejestracyjny).
   const regRes = await registerParticipantToTrip(reqRow.trip_id, participantId, 'admin');

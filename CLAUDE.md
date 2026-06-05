@@ -39,6 +39,21 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-06-05 (Ikony i kolory grup)
+
+- Nowy `src/lib/group-icons.tsx` — `GroupIcon` (switch po nazwie grupy) i
+  `GroupBadge` (powiększona kropka 20px z ikonką + nazwa). Ikony: Beeski=pszczółka,
+  ProKids=rakieta, SemiPRO=narciarz, Hero=biceps, Pro=ogień. Pszczółka i narciarz
+  to własne SVG (lucide ich nie ma); reszta z lucide.
+- Moje dzieci (`children-list.tsx`) i wspólny selektor w zakładkach
+  (`child-guard.tsx`): avatar dziecka = pierwsza litera imienia + kolor grupy
+  (`getGroupColor` z nazwy grupy) zamiast dwóch inicjałów. `ChildOption` dostał
+  `groupName`; strony parent/{payments,calendar,contracts,trips} przekazują je.
+- Lista wyjazdów (rodzic `trip-card.tsx`, admin `trips-list.tsx`): tytuł i data
+  rozbite na osobne komórki gridu — daty wyrównane w kolumnie. W rozwiniętym
+  wyjeździe kropki grup (`GroupBadge`) przeniesione do prawej krawędzi na
+  niebieskim tle.
+
 ### 2026-05-28 (Uczestnicy / Grupy — CRM)
 
 - Nowy komponent `src/components/admin/participants-table.tsx` — wspólna tabela

@@ -158,7 +158,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                 <div className="absolute -left-10 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/25">
                   <CalendarIcon className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-700">
+                <span className="ml-4 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
                   {group.month} {group.year}
                 </span>
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
@@ -197,7 +197,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
                     <div className="absolute -left-10 flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-500">
                       <CalendarIcon className="h-4 w-4" />
                     </div>
-                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-600">
+                    <span className="ml-4 text-xs font-black uppercase tracking-[0.16em] text-slate-600">
                       {group.month} {group.year}
                     </span>
                     <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">

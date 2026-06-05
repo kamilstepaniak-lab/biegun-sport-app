@@ -278,7 +278,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     </div>
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-wide text-blue-100">Miejsce</p>
-                      <p className="text-base font-bold text-white">{trip.location || trip.departure_location || '—'}</p>
+                      <p className="text-sm font-normal text-white/90">{trip.location || trip.departure_location || '—'}</p>
                     </div>
                   </div>
                 </div>
@@ -466,7 +466,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Typ</th>
                         <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Termin</th>
                         <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Forma</th>
-                        <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Kwota</th>
+                        <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">Kwota</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -489,7 +489,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                                 {method.label}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">
+                            <td className="px-4 py-2.5 text-left font-semibold text-gray-900 whitespace-nowrap">
                               {template.amount.toFixed(0)} {template.currency}
                             </td>
                           </tr>
@@ -498,10 +498,10 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     </tbody>
                     <tfoot>
                       <tr className="border-t border-slate-200">
-                        <td colSpan={3} className="px-4 py-3 text-sm font-bold text-slate-900">
+                        <td colSpan={3} className="px-4 py-3 text-left text-sm font-bold text-slate-900">
                           Razem
                         </td>
-                        <td className="px-4 py-3 text-right text-xl font-black text-slate-950">
+                        <td className="px-4 py-3 text-left text-xl font-black text-slate-950">
                           {totalAmount.toFixed(0)} {primaryCurrency}
                         </td>
                       </tr>
@@ -807,7 +807,7 @@ export function TripsList({ trips, groups, contractTemplates }: TripsListProps) 
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/25">
                   <Calendar className="h-4 w-4" />
                 </div>
-                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-700">
+                <span className="ml-3 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
                   {month}
                 </span>
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">

@@ -295,10 +295,9 @@ export function ChildrenList({ participants }: ChildrenListProps) {
     <>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-stretch">
       <div className="flex h-full flex-col rounded-xl bg-blue-600 p-4 text-white shadow-sm shadow-blue-600/15 lg:order-1">
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-100">Moje dzieci</p>
-            <h2 className="mt-1 text-xl font-bold leading-tight">{participants.length} dzieci w systemie</h2>
+            <h2 className="text-2xl font-bold leading-tight">Moje dzieci</h2>
             <p className="mt-1.5 max-w-2xl text-xs text-blue-100">
               Wybierz dziecko i przejdź do jego informacji, wyjazdów oraz płatności.
             </p>
@@ -450,22 +449,22 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                       <span className="text-green-500 font-bold text-xs flex-shrink-0 mt-0.5">↗</span>
                       <div className="min-w-0 space-y-0.5">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                          <span className="text-sm font-semibold text-gray-800 tabular-nums flex-shrink-0">
                             {format(new Date(trip.departure_datetime), 'HH:mm', { locale: pl })}
                           </span>
-                          <span className="text-xs text-gray-500 truncate">{trip.departure_location || '—'}</span>
+                          <span className="text-sm text-gray-600 truncate">{trip.departure_location || '—'}</span>
                         </div>
                         {trip.departure_stop2_location && (
                           <div className="flex items-baseline gap-2">
-                            <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                            <span className="text-sm font-semibold text-gray-800 tabular-nums flex-shrink-0">
                               {trip.departure_stop2_datetime
                                 ? format(new Date(trip.departure_stop2_datetime), 'HH:mm', { locale: pl })
                                 : '—'}
                             </span>
-                            <span className="text-xs text-gray-500 truncate">{trip.departure_stop2_location}</span>
+                            <span className="text-sm text-gray-600 truncate">{trip.departure_stop2_location}</span>
                           </div>
                         )}
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-xs font-medium text-gray-500">
                           {format(new Date(trip.departure_datetime), 'd.MM.yyyy', { locale: pl })}
                         </p>
                       </div>
@@ -476,22 +475,22 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                       <span className="text-red-500 font-bold text-xs flex-shrink-0 mt-0.5">↙</span>
                       <div className="min-w-0 space-y-0.5">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                          <span className="text-sm font-semibold text-gray-800 tabular-nums flex-shrink-0">
                             {format(new Date(trip.return_datetime), 'HH:mm', { locale: pl })}
                           </span>
-                          <span className="text-xs text-gray-500 truncate">{trip.return_location || '—'}</span>
+                          <span className="text-sm text-gray-600 truncate">{trip.return_location || '—'}</span>
                         </div>
                         {trip.return_stop2_location && (
                           <div className="flex items-baseline gap-2">
-                            <span className="text-xs font-medium text-gray-800 tabular-nums flex-shrink-0">
+                            <span className="text-sm font-semibold text-gray-800 tabular-nums flex-shrink-0">
                               {trip.return_stop2_datetime
                                 ? format(new Date(trip.return_stop2_datetime), 'HH:mm', { locale: pl })
                                 : '—'}
                             </span>
-                            <span className="text-xs text-gray-500 truncate">{trip.return_stop2_location}</span>
+                            <span className="text-sm text-gray-600 truncate">{trip.return_stop2_location}</span>
                           </div>
                         )}
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-xs font-medium text-gray-500">
                           {format(new Date(trip.return_datetime), 'd.MM.yyyy', { locale: pl })}
                         </p>
                       </div>
