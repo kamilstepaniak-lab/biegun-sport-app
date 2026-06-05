@@ -55,10 +55,10 @@ Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
 
 ### Kolory
 
-- **Kolor wiodący (brand): niebieski `#2563eb`** (= `blue-600`). To jest
-  primary aplikacji, mimo że domyślny token shadcn `--primary` jest neutralny
-  (czarny). Docelowo tokeny mają być przepisane na niebieski — do tego czasu
-  używaj `blue-600` świadomie, nie czarnego primary.
+- **Kolor wiodący (brand): niebieski `#2563eb`** (= `blue-600`). Tokeny shadcn
+  `--primary` i `--ring` są przepisane na ten niebieski w globals.css, więc
+  `bg-primary` i domyślny `Button` są już niebieskie. Dla statycznego brandu
+  możesz używać `blue-600` zamiennie.
 - **Neutralne: slate.** Tekst główny `#0f172a` (slate-900), tekst pomocniczy
   `#475569` (slate-600), wyciszony `#94a3b8`, linie/obramowania `#e2e8f0`,
   tło sekcji `#f8fafc`. Zmienne `--admin-*` w globals.css.
@@ -67,8 +67,8 @@ Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
   - ostrzeżenie / do dopłaty → **amber** (`bg-amber-100` / `text-amber-700`)
   - błąd / po terminie → **red** (`bg-red-100` / `text-red-700`)
   - info / akcja → **blue** (`bg-blue-600` / `text-blue-700`)
-  - Uwaga: w kodzie jest jeszcze stare `green-*` dla sukcesu — przy okazji
-    edycji migruj na `emerald`, nie dokładaj nowych `green`.
+  - Stare `green-*` zostało zmigrowane na `emerald-*` w całym `src/` —
+    nie dokładaj nowych `green`.
 
 ### Layout i nagłówki
 
