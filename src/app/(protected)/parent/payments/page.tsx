@@ -22,6 +22,7 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
   const childrenList = myChildren.map(c => ({
     id: c.id,
     name: `${c.first_name} ${c.last_name}`,
+    groupName: c.group?.name ?? null,
   }));
 
   const pendingPayments = payments.filter(p => p.status !== 'paid');

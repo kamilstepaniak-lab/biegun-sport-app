@@ -5,10 +5,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Users } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { getGroupColor } from '@/lib/group-colors';
 
 interface ChildOption {
   id: string;
   name: string;
+  groupName?: string | null;
 }
 
 interface ChildGuardProps {
@@ -121,7 +123,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
                 onClick={() => navigateTo(child)}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-colors"
               >
-                <span className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-700">
+                <span className={cn('w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold text-white', getGroupColor(child.groupName ?? '').dot)}>
                   {child.name.charAt(0)}
                 </span>
                 {child.name}
@@ -146,14 +148,19 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     );
   }
 
-  const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || childrenList?.find(c => c.id === effectiveChildId)?.name || 'Wybrane dziecko');
+  const selectedChild = childrenList?.find(c => c.id === effectiveChildId);
+  const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || selectedChild?.name || 'Wybrane dziecko');
+  const selectedGroupColor = getGroupColor(selectedChild?.groupName ?? '');
 
   return (
     <div className="space-y-4">
       {/* Banner z wyborem dziecka */}
       <div className="rounded-xl bg-blue-600 p-3">
         <div className="mb-2.5 flex items-center gap-2.5">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white">
+          <div className={cn(
+            'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white',
+            isAll ? 'bg-white/10' : selectedGroupColor.dot
+          )}>
             {isAll ? <Users className="h-3.5 w-3.5" /> : displayName.charAt(0)}
           </div>
           <div className="min-w-0">
@@ -190,7 +197,7 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
                     : 'bg-white/15 hover:bg-white/25 text-white'
                 )}
               >
-                <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-current/20 text-[8px] font-bold opacity-80">
+                <span className={cn('flex h-4 w-4 items-center justify-center rounded text-[8px] font-bold text-white', getGroupColor(child.groupName ?? '').dot)}>
                   {child.name.charAt(0)}
                 </span>
                 {child.name}

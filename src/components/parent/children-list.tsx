@@ -47,6 +47,7 @@ import { getMessagesForParent, markMessageRead, type AppMessage } from '@/lib/ac
 import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
+import { getGroupColor } from '@/lib/group-colors';
 import { PaymentDue } from '@/components/shared/payment-due';
 
 interface ChildrenListProps {
@@ -64,15 +65,6 @@ interface DeleteDialogState {
   }>;
   isLoading: boolean;
 }
-
-const avatarColors = [
-  { bg: 'bg-blue-100', text: 'text-blue-700' },
-  { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  { bg: 'bg-amber-100', text: 'text-amber-700' },
-  { bg: 'bg-violet-100', text: 'text-violet-700' },
-  { bg: 'bg-rose-100', text: 'text-rose-700' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700' },
-];
 
 function pluralizeTrips(n: number): string {
   if (n === 1) return 'wyjazd';
@@ -337,9 +329,9 @@ export function ChildrenList({ participants }: ChildrenListProps) {
             {isAll && <Check className="h-3.5 w-3.5" />}
           </button>
 
-          {participants.map((child, index) => {
+          {participants.map((child) => {
             const isSelected = selectedChildId === child.id;
-            const color = avatarColors[index % avatarColors.length];
+            const groupColor = getGroupColor(child.group?.name ?? '');
 
             return (
               <div
@@ -355,8 +347,8 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                   onClick={() => handleSelectChild(child)}
                   className="inline-flex min-w-0 items-center gap-2"
                 >
-                  <span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold', isSelected ? color.bg : 'bg-white/15', isSelected ? color.text : 'text-white')}>
-                    {child.first_name.charAt(0)}{child.last_name.charAt(0)}
+                  <span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold text-white', groupColor.dot)}>
+                    {child.first_name.charAt(0)}
                   </span>
                   <span className="truncate">{child.first_name} {child.last_name}</span>
                   {isSelected && <Check className="h-3.5 w-3.5 flex-shrink-0" />}

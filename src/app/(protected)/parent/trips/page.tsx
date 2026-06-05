@@ -25,6 +25,7 @@ export default async function ParentTripsPage({ searchParams }: Props) {
   const childrenList = myChildren.map(c => ({
     id: c.id,
     name: `${c.first_name} ${c.last_name}`,
+    groupName: c.group?.name ?? null,
   }));
 
   // Czy (wybrane) dzieci czekają na przypisanie do grupy przez organizatora?

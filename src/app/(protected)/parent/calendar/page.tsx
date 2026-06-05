@@ -24,6 +24,7 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
   const childrenList = myChildren.map(c => ({
     id: c.id,
     name: `${c.first_name} ${c.last_name}`,
+    groupName: c.group?.name ?? null,
   }));
 
   return (

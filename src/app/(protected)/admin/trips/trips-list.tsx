@@ -57,6 +57,7 @@ import { TripMessageGenerator } from '@/components/admin/trip-message-generator'
 import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
 import { SanitizedHtml } from '@/components/shared';
 import { getGroupColor } from '@/lib/group-colors';
+import { GroupBadge } from '@/lib/group-icons';
 import { getCampVisual } from '@/lib/camp-visual';
 import { cn } from '@/lib/utils';
 import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
@@ -213,7 +214,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         isSelected && !isOpen && 'border-blue-500'
       )}>
         <CollapsibleTrigger asChild>
-          <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[auto_auto_1fr_auto_auto_auto] lg:items-center">
+          <div className="grid cursor-pointer gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_auto_1fr_auto_auto_auto_auto] lg:items-center">
             <div onClick={onToggleSelect}>
                 <Checkbox
                   checked={isSelected}
@@ -225,15 +226,14 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
               <campVisual.Icon className="h-5 w-5" />
             </div>
 
-            <div className="min-w-0 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="truncate text-sm font-bold text-slate-900">
-                {trip.title}
-              </h3>
-              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
-                <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
-              </p>
-            </div>
+            <h3 className="min-w-0 truncate text-sm font-bold text-slate-900">
+              {trip.title}
+            </h3>
+
+            <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
+              <Calendar className="h-3.5 w-3.5 text-blue-500" />
+              {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
+            </p>
 
             <span className={cn(
               'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
@@ -282,18 +282,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         WP
                       </span>
                     )}
-                    {trip.groups.map((g) => {
-                      const colors = getGroupColor(g.name);
-                      return (
-                        <span
-                          key={g.id}
-                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-white"
-                        >
-                          <span className={cn('h-2.5 w-2.5 rounded-full', colors.dot)} />
-                          {g.name}
-                        </span>
-                      );
-                    })}
                   </div>
                   <div className="mt-5 flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
@@ -305,7 +293,15 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-3 xl:items-end">
+                  {trip.groups.length > 0 && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 xl:justify-end">
+                      {trip.groups.map((g) => (
+                        <GroupBadge key={g.id} name={g.name} />
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2 xl:justify-end">
                   <TripMessageGenerator trip={trip} compact />
                   <ContractTemplateEditor
                     tripId={trip.id}
@@ -327,6 +323,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     <Edit className="h-3.5 w-3.5" />
                     Edytuj
                   </Link>
+                  </div>
                 </div>
               </div>
             </div>

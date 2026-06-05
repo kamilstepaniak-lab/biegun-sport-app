@@ -32,6 +32,7 @@ export default async function ParentContractsPage({ searchParams }: Props) {
   const childrenList = myChildren.map(c => ({
     id: c.id,
     name: `${c.first_name} ${c.last_name}`,
+    groupName: c.group?.name ?? null,
   }));
 
   const contractDataComplete = !!(
