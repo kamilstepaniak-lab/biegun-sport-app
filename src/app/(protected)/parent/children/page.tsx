@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import { Users } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { ChildrenList } from '@/components/parent';
 import { getUserProfile } from '@/lib/actions/auth';
 import { getMyChildren } from '@/lib/actions/participants';
@@ -60,9 +61,11 @@ export default async function ParentChildrenPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={Users}
         title={`Dzień dobry, ${firstName}`}
-        description={`${today} — sprawdź najbliższe wyjazdy swoich dzieci, opłać raty i zaakceptuj umowy. Wszystko, co wymaga uwagi, znajdziesz na kartach poniżej.`}
+        description={`${today}. Sprawdź najbliższe wyjazdy swoich dzieci, opłać raty i zaakceptuj umowy.`}
+        note="Najważniejsze sprawy do załatwienia znajdziesz na kartach poniżej."
       />
 
       <ChildrenList

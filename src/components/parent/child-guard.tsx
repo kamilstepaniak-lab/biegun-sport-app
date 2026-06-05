@@ -14,12 +14,10 @@ interface ChildOption {
 }
 
 interface ChildGuardProps {
-  /** ID wybranego dziecka lub 'all' — przekazywane z searchParams po stronie serwera */
   selectedChildId?: string;
-  /** Nazwa dziecka do wyświetlenia w bannerze (opcjonalna) */
   selectedChildName?: string;
-  /** Lista wszystkich dzieci rodzica — do wyboru dziecka */
   childrenList?: ChildOption[];
+  showSelector?: boolean;
   children: React.ReactNode;
 }
 
@@ -27,7 +25,13 @@ const STORAGE_KEY = 'biegun_selected_child';
 const ALL_CHILDREN_ID = 'all';
 const ALL_CHILDREN_NAME = 'Wszystkie dzieci';
 
-export function ChildGuard({ selectedChildId, selectedChildName, childrenList, children }: ChildGuardProps) {
+export function ChildGuard({
+  selectedChildId,
+  selectedChildName,
+  childrenList,
+  showSelector = true,
+  children,
+}: ChildGuardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [redirecting, setRedirecting] = useState(false);
@@ -150,6 +154,10 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
   const selectedChild = childrenList?.find(c => c.id === effectiveChildId);
   const displayName = isAll ? ALL_CHILDREN_NAME : (selectedChildName || selectedChild?.name || 'Wybrane dziecko');
   const selectedGroupColor = getGroupColor(selectedChild?.groupName ?? '');
+
+  if (!showSelector) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="space-y-4">

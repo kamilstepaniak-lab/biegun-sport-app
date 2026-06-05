@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation';
-import { PageHeader } from '@/components/shared';
+import { CalendarDays } from 'lucide-react';
+
 import { ChildGuard } from '@/components/parent/child-guard';
+import { ParentChildSelector } from '@/components/parent/parent-child-selector';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { getTripsForParentWithChildren } from '@/lib/actions/trips';
 import { getUserProfile } from '@/lib/actions/auth';
 import { getMyChildren } from '@/lib/actions/participants';
@@ -36,12 +39,20 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={CalendarDays}
         title="Kalendarz"
-        description="Terminy wszystkich wyjazdów w jednym miejscu. Kliknij wybrany dzień, aby zobaczyć szczegóły i sprawdzić, które dziecko bierze udział."
-      />
+        description="Terminy wyjazdów Twoich dzieci w przejrzystym widoku miesięcznym."
+        note="Kliknij dzień w kalendarzu, żeby przejść do szczegółów wyjazdu."
+      >
+        <ParentChildSelector
+          selectedChildId={selectedChildId}
+          selectedChildName={childName}
+          childrenList={childrenList}
+        />
+      </ParentPageHeader>
 
-      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
+      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList} showSelector={false}>
         <ParentCalendarView trips={trips} childQuery={childQuery} />
       </ChildGuard>
     </div>

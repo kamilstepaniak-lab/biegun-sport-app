@@ -1,7 +1,9 @@
 import { CreditCard } from 'lucide-react';
 
-import { PageHeader, EmptyState } from '@/components/shared';
+import { EmptyState } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
+import { ParentChildSelector } from '@/components/parent/parent-child-selector';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { getPaymentsForParent, getBankAccountsForParent } from '@/lib/actions/payments';
 import { getMyChildren } from '@/lib/actions/participants';
 import { ParentPaymentsList, BankAccountsSection } from './payments-list';
@@ -30,12 +32,20 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={CreditCard}
         title="Płatności"
-        description="Wszystkie należności za wyjazdy oraz terminy ich opłacenia w jednym miejscu. Status każdej raty pokazuje, co jest już opłacone, a co czeka na wpłatę."
-      />
+        description="Sprawdzaj należności, terminy i dane do przelewu dla każdego dziecka."
+        note="Płatności pojawią się po potwierdzeniu udziału i odblokowaniu wyjazdu przez organizatora."
+      >
+        <ParentChildSelector
+          selectedChildId={selectedChildId}
+          selectedChildName={childName}
+          childrenList={childrenList}
+        />
+      </ParentPageHeader>
 
-      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList}>
+      <ChildGuard selectedChildId={selectedChildId} selectedChildName={childName} childrenList={childrenList} showSelector={false}>
         {(bankAccounts.bank_account_pln || bankAccounts.bank_account_eur) && (
           <BankAccountsSection bankAccounts={bankAccounts} />
         )}

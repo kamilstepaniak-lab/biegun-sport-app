@@ -1,5 +1,8 @@
-import { PageHeader, Breadcrumbs } from '@/components/shared';
+import { UserPlus } from 'lucide-react';
+
+import { Breadcrumbs } from '@/components/shared';
 import { ChildForm } from '@/components/parent';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { getSelectableGroups } from '@/lib/actions/groups';
 
 export default async function AddChildPage() {
@@ -15,9 +18,11 @@ export default async function AddChildPage() {
         ]}
       />
 
-      <PageHeader
+      <ParentPageHeader
+        icon={UserPlus}
         title="Dodaj dziecko"
-        description="Wprowadź dane nowego uczestnika i wybierz grupę treningową — dzięki temu pokażemy właściwe wyjazdy i terminy. Dane możesz później edytować w każdej chwili."
+        description="Wprowadź dane nowego uczestnika i wybierz grupę treningową."
+        note="Dzięki temu pokażemy właściwe wyjazdy i terminy."
       />
 
       <ChildForm groups={groups} mode="create" />

@@ -1,4 +1,6 @@
-import { PageHeader } from '@/components/shared';
+import { MessageSquare } from 'lucide-react';
+
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { ParentMessagesList } from '@/components/parent/messages-list';
 import { getMessagesForParent } from '@/lib/actions/messages';
 
@@ -7,9 +9,11 @@ export default async function ParentMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={MessageSquare}
         title="Wiadomości"
-        description="Powiadomienia i ogłoszenia od organizatora — o płatnościach, wyjazdach i bieżących sprawach klubu. Kliknij wiadomość, aby przeczytać całość."
+        description="Powiadomienia i ogłoszenia od organizatora o płatnościach, wyjazdach i sprawach klubu."
+        note="Kliknij wiadomość, aby przeczytać pełną treść."
       />
 
       <ParentMessagesList initialMessages={messages} />

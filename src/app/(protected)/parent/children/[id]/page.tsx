@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
+import { UserRoundCog } from 'lucide-react';
 
-import { PageHeader, Breadcrumbs } from '@/components/shared';
+import { Breadcrumbs } from '@/components/shared';
 import { ChildForm } from '@/components/parent';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { getParticipantFull } from '@/lib/actions/participants';
 import { getSelectableGroups } from '@/lib/actions/groups';
 
@@ -30,9 +32,11 @@ export default async function EditChildPage({ params }: EditChildPageProps) {
         ]}
       />
 
-      <PageHeader
+      <ParentPageHeader
+        icon={UserRoundCog}
         title="Edytuj dane dziecka"
-        description="Zaktualizuj dane uczestnika oraz informacje ważne dla organizatora, np. zdrowotne i kontaktowe. Aktualne dane pomagają zadbać o bezpieczeństwo dziecka na wyjazdach."
+        description="Zaktualizuj dane uczestnika oraz informacje ważne dla organizatora."
+        note="Aktualne dane pomagają zadbać o bezpieczeństwo dziecka na wyjazdach."
       />
 
       <ChildForm

@@ -3,8 +3,10 @@ import Link from 'next/link';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PageHeader, SectionTitle } from '@/components/shared';
+import { SectionTitle } from '@/components/shared';
 import { ChildGuard } from '@/components/parent/child-guard';
+import { ParentChildSelector } from '@/components/parent/parent-child-selector';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { getContractsForParent } from '@/lib/actions/contracts';
 import { getProfile } from '@/lib/actions/profile';
 import { getGlobalDocument, getDynamicDocuments } from '@/lib/actions/documents';
@@ -54,13 +56,21 @@ export default async function ParentContractsPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={FileText}
         title="Dokumenty"
-        description="Dokumenty ogólne klubu oraz umowy uczestnictwa dla Twoich dzieci. Zapoznaj się z każdą umową i zaakceptuj ją — to warunek udziału w wyjeździe."
-      />
+        description="Dokumenty klubu oraz umowy uczestnictwa dla Twoich dzieci w jednym miejscu."
+        note="Akceptacja umowy jest wymagana przed udziałem dziecka w wyjeździe."
+      >
+        <ParentChildSelector
+          selectedChildId={selectedChildId}
+          selectedChildName={selectedChildName}
+          childrenList={childrenList}
+        />
+      </ParentPageHeader>
 
       <div className="space-y-6">
-      <ChildGuard selectedChildId={selectedChildId} selectedChildName={selectedChildName} childrenList={childrenList}>
+      <ChildGuard selectedChildId={selectedChildId} selectedChildName={selectedChildName} childrenList={childrenList} showSelector={false}>
         {/* ── SEKCJA: Dokumenty ── */}
         <div className="space-y-4">
           <SectionTitle icon={BookOpen} title="Dokumenty" />

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, User } from 'lucide-react';
 
-import { PageHeader } from '@/components/shared';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProfileForm } from '@/components/parent/profile-form';
 import { ChangePasswordForm } from '@/components/parent/change-password-form';
@@ -30,9 +30,11 @@ export default async function ParentProfilePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={User}
         title="Mój profil"
-        description="Zadbaj o aktualne dane kontaktowe — instruktorzy używają ich, aby szybko się z Tobą skontaktować. Dane do umowy (adres, PESEL) są potrzebne do wygenerowania umów uczestnictwa."
+        description="Aktualizuj dane kontaktowe i informacje potrzebne do umów uczestnictwa."
+        note="Adres i PESEL są potrzebne do poprawnego wygenerowania umowy."
       />
 
       {missingContractFields.length > 0 ? (

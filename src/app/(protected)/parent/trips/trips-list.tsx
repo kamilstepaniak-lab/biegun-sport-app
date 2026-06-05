@@ -2,15 +2,15 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2, Search, X } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Input } from '@/components/ui/input';
 import { updateParticipationStatusByParent, type TripForParent, type ChildTripStatus } from '@/lib/actions/trips';
 import { TripCard, type ConfirmType, type ParticipationStatus } from './trip-card';
 
 interface ParentTripsListProps {
   trips: TripForParent[];
+  searchQuery?: string;
 }
 
 const monthNames = [
@@ -32,9 +32,8 @@ function groupByMonth(trips: TripForParent[]) {
   return groups;
 }
 
-export function ParentTripsList({ trips }: ParentTripsListProps) {
-  const [query, setQuery] = useState('');
-  const trimmedQuery = query.trim().toLowerCase();
+export function ParentTripsList({ trips, searchQuery = '' }: ParentTripsListProps) {
+  const trimmedQuery = searchQuery.trim().toLowerCase();
 
   const filteredTrips = useMemo(() => {
     if (!trimmedQuery) return trips;
@@ -179,32 +178,10 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
 
   return (
     <div className="space-y-4">
-      {trips.length > 3 && (
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Szukaj wyjazdu po nazwie…"
-            className="rounded-xl bg-white pl-9 pr-9"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery('')}
-              aria-label="Wyczyść wyszukiwanie"
-              className="absolute right-2.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      )}
-
       {upcomingTrips.length === 0 && pastTrips.length === 0 && (
         <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-100 text-center text-gray-400">
           {trimmedQuery
-            ? `Brak wyjazdów pasujących do „${query.trim()}”`
+            ? `Brak wyjazdów pasujących do „${searchQuery.trim()}”`
             : 'Brak wyjazdów'}
         </div>
       )}

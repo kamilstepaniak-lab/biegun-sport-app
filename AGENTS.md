@@ -44,6 +44,12 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/*`: wprowadzono wspólny niebieski header rodzica z dużą ikoną,
+  kontekstowym opisem i białym panelem akcji zgodnym ze wzorem dla `Wyjazdy`;
+  podstrony dostały własne ikony i komunikaty.
+- `/parent/trips`: przeniesiono wyszukiwarkę wyjazdu do białego panelu headera
+  obok wyboru dziecka; lista wyjazdów korzysta z wyszukiwania sterowanego
+  z headera.
 - `/parent/trips` i `/admin/trips`: wyrównano badge/kropki grup na niebieskim
   tle do wysokości tytułu wyjazdu, zmieniono ikonę SemiPRO na pionowe narty
   oraz zmniejszono odstęp między wyborem dziecka, wyszukiwarką i osią wyjazdów.

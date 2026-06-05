@@ -1,7 +1,7 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileCheck2 } from 'lucide-react';
 import Link from 'next/link';
 
-import { PageHeader } from '@/components/shared';
+import { ParentPageHeader } from '@/components/parent/parent-page-header';
 import { OWU_TEXT } from '@/lib/contract-template';
 
 export const metadata = {
@@ -13,18 +13,20 @@ export default function OwuPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <ParentPageHeader
+        icon={FileCheck2}
         title="Ogólne Warunki Uczestnictwa"
-        description="Regulamin określający zasady udziału w zajęciach i wyjazdach BiegunSport. Znajdziesz tu m.in. zasady rezygnacji, płatności i bezpieczeństwa."
+        description="Regulamin udziału w zajęciach i wyjazdach BiegunSport."
+        note="Znajdziesz tu zasady rezygnacji, płatności i bezpieczeństwa."
       >
         <Link
           href="/parent/contracts"
-          className="inline-flex items-center gap-2 text-sm bg-white px-3 py-2 rounded-xl transition-colors"
+          className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
         >
           <ArrowLeft className="h-4 w-4" />
           Powrót do umów
         </Link>
-      </PageHeader>
+      </ParentPageHeader>
 
       {/* Dokument OWU */}
       <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
