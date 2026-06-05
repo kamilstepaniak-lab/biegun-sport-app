@@ -48,7 +48,6 @@ export function ChildGuard({ selectedChildId, selectedChildName, childrenList, c
     // 1. Nieprawidłowe dziecko w URL — wyczyść i przekieruj
     if (selectedChildId && !isValidChild) {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem('selectedChild');
       router.replace(`${pathname}?child=${ALL_CHILDREN_ID}`);
       return;
     }

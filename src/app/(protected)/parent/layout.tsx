@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { Sidebar, Header, type SidebarItem } from '@/components/shared';
 import { ChildUrlSync } from '@/components/parent/child-url-sync';
 import { getUserProfile } from '@/lib/actions/auth';
+import { getMessagesForParent } from '@/lib/actions/messages';
 
 const parentNavItems: SidebarItem[] = [
   {
@@ -54,10 +55,19 @@ export default async function ParentLayout({
     redirect('/admin/groups');
   }
 
+  const messages = await getMessagesForParent();
+  const unreadCount = messages.filter((m) => !m.is_read).length;
+
+  const navItems: SidebarItem[] = parentNavItems.map((item) =>
+    item.href === '/parent/children' && unreadCount > 0
+      ? { ...item, badge: unreadCount }
+      : item,
+  );
+
   return (
     <div className="admin-shell flex h-screen overflow-hidden bg-[#f8fafc]">
       <Sidebar
-        items={parentNavItems}
+        items={navItems}
         title="BiegunSport"
         subtitle="Panel rodzica"
       />

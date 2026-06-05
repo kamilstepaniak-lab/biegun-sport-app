@@ -33,11 +33,85 @@ Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 - Jeśli zmiany wymagają migracji bazy — migracja musi być uruchomiona, zanim
   produkcja zostanie zbudowana.
 
+## Design system (źródło prawdy o wyglądzie)
+
+Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
++ lucide-react. Brak pliku `tailwind.config` — tokeny są w `@theme` i `:root`.
+
+### Zasady nadrzędne
+
+1. **Jeden spójny język wizualny** dla panelu admina i rodzica — te same
+   tokeny, komponenty, radius, nagłówki. Różnią się treścią i nawigacją,
+   nie wyglądem.
+2. **Komponenty zawsze z `src/components/ui`** (button, card, dialog, table,
+   badge, input, select...). Najpierw szukaj istniejącego — nowy twórz tylko
+   gdy naprawdę brak. **Zero inline ad-hoc styli** powielających to, co już
+   jest w ui.
+3. **Tylko jasny motyw.** Dark mode ignorujemy — nie dodawaj wariantów
+   `dark:`, nie testuj dark. (Definicja `.dark` w globals.css jest martwa.)
+4. **Oba urządzenia krytyczne.** Każdy ekran musi wyglądać dobrze na telefonie
+   i na desktopie — sprawdzaj obie szerokości zanim powiesz „gotowe". To PWA
+   (safe-area), panel rodzica używany głównie na telefonie.
+
+### Kolory
+
+- **Kolor wiodący (brand): niebieski `#2563eb`** (= `blue-600`). To jest
+  primary aplikacji, mimo że domyślny token shadcn `--primary` jest neutralny
+  (czarny). Docelowo tokeny mają być przepisane na niebieski — do tego czasu
+  używaj `blue-600` świadomie, nie czarnego primary.
+- **Neutralne: slate.** Tekst główny `#0f172a` (slate-900), tekst pomocniczy
+  `#475569` (slate-600), wyciszony `#94a3b8`, linie/obramowania `#e2e8f0`,
+  tło sekcji `#f8fafc`. Zmienne `--admin-*` w globals.css.
+- **Statusy** (ujednolicony standard — używaj konsekwentnie):
+  - sukces / opłacone → **emerald** (`bg-emerald-100` / `text-emerald-700`)
+  - ostrzeżenie / do dopłaty → **amber** (`bg-amber-100` / `text-amber-700`)
+  - błąd / po terminie → **red** (`bg-red-100` / `text-red-700`)
+  - info / akcja → **blue** (`bg-blue-600` / `text-blue-700`)
+  - Uwaga: w kodzie jest jeszcze stare `green-*` dla sukcesu — przy okazji
+    edycji migruj na `emerald`, nie dokładaj nowych `green`.
+
+### Layout i nagłówki
+
+- **`.page-header` to kanon na każdej podstronie** (admin i rodzic): tytuł
+  + krótki opis + akcje. W `.admin-shell` ma jasny gradient z grafiką gór
+  (`/parent-hero-mountains.svg`). Nie wymyślaj alternatywnych nagłówków.
+- Radius: karty `14px` (`rounded-2xl` w admin-shell), mniejsze elementy `10px`.
+  Cienie subtelne (`shadow-sm` = ledwie widoczny). Trzymaj się skali z globals.
+
+### Ton tekstów UI
+
+- **Admin = rzeczowo i krótko**, język produktowy, bez lania wody.
+- **Rodzic = ciepło i przyjaźnie**, zachęcająco, zgodnie z Tone of Voice
+  BiegunSport. Puste stany i komunikaty mają wspierać, nie tylko informować.
+- Zawsze polski. Bez emoji (chyba że wprost poproszę).
+
 ## Notatki z sesji
 
-Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
+**Zawsze na końcu każdej sesji/zadania** (nie tylko przy push/deploy) dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
-(nagłówek z datą, najnowsze wpisy na górze).
+— bez proszenia przez użytkownika. Nagłówek z datą, najnowsze wpisy na górze.
+Jeśli w danym dniu istnieje już nagłówek tego samego tematu, dopisz do niego
+nowe punkty. Nowy temat = nowy nagłówek (mogą być różne tematy z tą samą datą).
+Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
+
+### 2026-06-05 (Panel rodzica — wydajność i porządki)
+
+- „Moje dzieci": dashboard (`getDashboardData`) i wiadomości
+  (`getMessagesForParent`) liczone teraz **serwerowo** w
+  `parent/children/page.tsx` i przekazane w propsach do `children-list.tsx`.
+  Usunięte dwa `useEffect` z fetchami po stronie klienta + wszystkie skeletony
+  (`dashboardLoading`/`messagesLoading`). Przełączanie dziecka = natychmiastowy
+  odczyt z mapy `dashboardByChild`, koniec migotania i N+1 z klienta. Agregat
+  „Wszystkie dzieci" liczony serwerowo (`buildAggregateDashboard`).
+- `getMyChildren` (participants.ts) i `getMessagesForParent` (messages.ts)
+  owinięte w `cache()` — deduplikacja zapytań w obrębie jednego renderu.
+- Layout rodzica: badge liczby **nieprzeczytanych wiadomości** na pozycji
+  „Moje dzieci" w nawigacji (Sidebar `badge`).
+- Bugfix: fallback imienia na „Moje dzieci" był zahardkodowany na „Karol";
+  teraz pierwsza część `full_name` → login z maila → „Witaj".
+- Sprzątanie: usunięty martwy `localStorage.removeItem('selectedChild')`
+  z `child-guard.tsx` (klucz nigdzie nie zapisywany).
+- Pominięte świadomie: ujednolicenie dwóch selektorów dziecka (zostaje).
 
 ### 2026-06-05 (Ikony i kolory grup)
 

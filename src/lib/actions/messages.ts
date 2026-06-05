@@ -1,5 +1,6 @@
 'use server';
 
+import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
@@ -63,7 +64,8 @@ function messageMatchesGroups(
   return targetGroupIds.some((g) => parentGroupIds.has(g));
 }
 
-export async function getMessagesForParent(): Promise<AppMessage[]> {
+// cache() — layout (badge nieprzeczytanych) i strona „Moje dzieci" dzielą jedno zapytanie.
+export const getMessagesForParent = cache(async (): Promise<AppMessage[]> => {
   const { user } = await getAuthUser();
   const supabaseAdmin = createAdminClient();
 
@@ -106,7 +108,7 @@ export async function getMessagesForParent(): Promise<AppMessage[]> {
       is_read: readSet.has(m.id),
     })
   );
-}
+});
 
 export async function markMessageRead(messageId: string): Promise<{ success?: boolean; error?: string }> {
   const { user, role } = await getAuthUser();

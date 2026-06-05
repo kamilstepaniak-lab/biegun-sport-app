@@ -1,12 +1,15 @@
 'use server';
 
+import { cache } from 'react';
 import { revalidatePath } from 'next/cache';
 import { getAuthUser } from './auth-helpers';
 import { participantSchema, type ParticipantInput } from '@/lib/validations/participant';
 import type { Participant, ParticipantWithGroup, ParticipantFull, Group, ParticipationStatus } from '@/types';
 import { logActivity } from './activity-logs';
 
-export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
+// cache() deduplikuje wywołania w ramach jednego renderowania —
+// layout, page i kilka stron rodzica wołają getMyChildren() bez dodatkowych zapytań.
+export const getMyChildren = cache(async (): Promise<ParticipantWithGroup[]> => {
   const { supabase, user } = await getAuthUser();
   if (!user) return [];
 
@@ -43,7 +46,7 @@ export async function getMyChildren(): Promise<ParticipantWithGroup[]> {
   });
 
   return result;
-}
+});
 
 export async function getChildParticipationStatuses(
   tripId: string,

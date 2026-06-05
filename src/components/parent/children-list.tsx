@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -43,8 +43,8 @@ import { saveChildToStorage } from './child-url-sync';
 const STORAGE_KEY = 'biegun_selected_child';
 
 import { deleteParticipant, getParticipantRegistrations } from '@/lib/actions/participants';
-import { getMessagesForParent, markMessageRead, type AppMessage } from '@/lib/actions/messages';
-import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
+import { markMessageRead, type AppMessage } from '@/lib/actions/messages';
+import { type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
 import { getGroupColor } from '@/lib/group-colors';
@@ -52,6 +52,9 @@ import { PaymentDue } from '@/components/shared/payment-due';
 
 interface ChildrenListProps {
   participants: ParticipantWithGroup[];
+  initialMessages: AppMessage[];
+  dashboardByChild: Record<string, DashboardData>;
+  dashboardAll: DashboardData;
 }
 
 interface DeleteDialogState {
@@ -74,15 +77,18 @@ function pluralizeTrips(n: number): string {
   return 'wyjazdów';
 }
 
-export function ChildrenList({ participants }: ChildrenListProps) {
+export function ChildrenList({ participants, initialMessages, dashboardByChild, dashboardAll }: ChildrenListProps) {
   const router = useRouter();
   const [selectedChildId, setSelectedChildId] = useState<string>('all');
-  const [messages, setMessages] = useState<AppMessage[]>([]);
-  const [messagesLoading, setMessagesLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [messages, setMessages] = useState<AppMessage[]>(initialMessages);
   const [expandedMessage, setExpandedMessage] = useState<AppMessage | null>(null);
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+
+  // Dane dashboardu są policzone serwerowo i przekazane w propsach —
+  // przełączenie dziecka to natychmiastowy odczyt z mapy (bez fetchu, bez skeletonów).
+  const dashboardData: DashboardData = selectedChildId === 'all'
+    ? dashboardAll
+    : (dashboardByChild[selectedChildId] ?? dashboardAll);
 
   // useLayoutEffect — runs before browser paints, eliminates CLS from 'all' → child switch
   useLayoutEffect(() => {
@@ -96,57 +102,6 @@ export function ChildrenList({ participants }: ChildrenListProps) {
       }
     } catch { /* ignore */ }
   }, []);
-
-  useEffect(() => {
-    setMessagesLoading(true);
-    getMessagesForParent()
-      .then(setMessages)
-      .catch(console.error)
-      .finally(() => setMessagesLoading(false));
-  }, []);
-
-  useEffect(() => {
-    if (selectedChildId === 'all' && participants.length === 0) {
-      setDashboardData(null);
-      return;
-    }
-    setDashboardLoading(true);
-    const request = selectedChildId === 'all'
-      ? Promise.all(participants.map((child) => getDashboardData(child.id))).then((items): DashboardData => {
-          // Dedup wyjazdów po id — kilkoro dzieci może być na tym samym wyjeździe;
-          // zbieramy imiona dzieci, których dotyczy dany wyjazd.
-          const tripMap = new Map<string, DashboardData['upcomingTrips'][number]>();
-          items.forEach((item, idx) => {
-            const child = participants[idx];
-            const childName = `${child.first_name} ${child.last_name}`;
-            item.upcomingTrips.forEach((trip) => {
-              const existing = tripMap.get(trip.id);
-              if (existing) {
-                existing.childNames = [...(existing.childNames ?? []), childName];
-              } else {
-                tripMap.set(trip.id, { ...trip, childNames: [childName] });
-              }
-            });
-          });
-          return {
-            upcomingTrips: Array.from(tripMap.values())
-              .sort((a, b) => new Date(a.departure_datetime).getTime() - new Date(b.departure_datetime).getTime())
-              .slice(0, 2),
-            overduePayments: items.flatMap((item) => item.overduePayments),
-            upcomingPayments: items.flatMap((item) => item.upcomingPayments),
-            overdueCount: items.reduce((sum, item) => sum + item.overdueCount, 0),
-            attendance: {
-              completed: items.reduce((sum, item) => sum + item.attendance.completed, 0),
-              total: items.reduce((sum, item) => sum + item.attendance.total, 0),
-            },
-          };
-        })
-      : getDashboardData(selectedChildId);
-    request
-      .then(setDashboardData)
-      .catch(console.error)
-      .finally(() => setDashboardLoading(false));
-  }, [selectedChildId, participants]);
 
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
     isOpen: false,
@@ -393,17 +348,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
               </Link>
             </div>
 
-            {dashboardLoading ? (
-              <div className="p-5 animate-pulse space-y-4">
-                {[1, 2].map((i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="h-4 bg-gray-100 rounded w-3/4" />
-                    <div className="h-3 bg-gray-100 rounded w-1/2" />
-                    <div className="h-3 bg-gray-100 rounded w-2/3" />
-                  </div>
-                ))}
-              </div>
-            ) : upcomingTrips.length === 0 ? (
+            {upcomingTrips.length === 0 ? (
               <div className="flex flex-col items-center py-6 text-center px-5">
                 <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
                   <MapPin className="h-5 w-5 text-gray-300" />
@@ -522,19 +467,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
               </div>
             </div>
 
-            {dashboardLoading ? (
-              <div className="p-5 animate-pulse space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3.5 bg-gray-100 rounded w-2/3" />
-                      <div className="h-3 bg-gray-100 rounded w-1/3" />
-                    </div>
-                    <div className="h-5 bg-gray-100 rounded w-16" />
-                  </div>
-                ))}
-              </div>
-            ) : overduePayments.length === 0 && upcomingPayments.length === 0 ? (
+            {overduePayments.length === 0 && upcomingPayments.length === 0 ? (
               <div className="flex flex-col items-center py-6 text-center px-5">
                 <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-3">
                   <CreditCard className="h-5 w-5 text-blue-300" />
@@ -635,9 +568,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
                 </div>
                 <div>
                   <p className="text-base font-semibold text-gray-800">Wiadomości</p>
-                  {!messagesLoading && (
-                    <p className="text-[11px] text-gray-400">{messages.length} wiadomości od organizatora</p>
-                  )}
+                  <p className="text-[11px] text-gray-400">{messages.length} wiadomości od organizatora</p>
                 </div>
               </div>
               <Link href="/parent/children" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
@@ -646,19 +577,7 @@ export function ChildrenList({ participants }: ChildrenListProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
-              {messagesLoading ? (
-                <div className="p-5 space-y-4 animate-pulse">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0" />
-                      <div className="flex-1 space-y-2 pt-1">
-                        <div className="h-3.5 bg-gray-100 rounded w-2/3" />
-                        <div className="h-3 bg-gray-100 rounded w-full" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : messages.length === 0 ? (
+              {messages.length === 0 ? (
                 <div className="m-5 flex items-center gap-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 p-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-gray-300 ring-1 ring-gray-200">
                     <MessageSquare className="h-5 w-5" />
