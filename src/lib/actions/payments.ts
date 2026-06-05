@@ -509,10 +509,17 @@ export async function addPaymentTransaction(
   // Checkbox „zniżka": gdy wpłata nie pokrywa należności, obniżamy kwotę
   // należną do sumy wpłat — płatność zostaje zamknięta jako opłacona.
   // original_amount (cena cennikowa) zostaje, więc widać wielkość zniżki.
-  const newAmount =
-    closeAsDiscount && newAmountPaid < payment.amount ? newAmountPaid : payment.amount;
+  const discountGranted = closeAsDiscount && newAmountPaid < payment.amount;
+  const newAmount = discountGranted ? newAmountPaid : payment.amount;
 
   const newStatus = recomputePaymentStatus(newAmount, newAmountPaid, payment.due_date);
+
+  // discount_applied_at/by ustawiamy TYLKO przy realnej zniżce (checkbox).
+  // To odróżnia zniżkę od zwykłej edycji ceny (updatePaymentAmount) — tylko
+  // zniżka trafia do kolumny „Zniżka" i do sum zniżek w /admin/finance.
+  const discountFields = discountGranted
+    ? { discount_applied_at: new Date().toISOString(), discount_applied_by: user.id }
+    : {};
 
   const { error: updateError } = await supabase
     .from('payments')
@@ -523,6 +530,7 @@ export async function addPaymentTransaction(
       paid_at: newStatus === 'paid' ? new Date(transactionDate).toISOString() : null,
       payment_method_used: paymentMethod,
       updated_at: new Date().toISOString(),
+      ...discountFields,
     })
     .eq('id', paymentId);
 
@@ -1167,8 +1175,13 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
 
   const oldAmount = payment.amount;
 
+  // Edycja kwoty to ustalenie nowej ceny należnej, NIE udzielenie zniżki.
+  // Zerujemy więc znacznik zniżki — różnica original_amount vs amount pokaże
+  // się jako przekreślona cena w kolumnie „Kwota", a nie w kolumnie „Zniżka".
   const updateData: Record<string, unknown> = {
     amount: newAmount,
+    discount_applied_at: null,
+    discount_applied_by: null,
     updated_at: new Date().toISOString(),
   };
 

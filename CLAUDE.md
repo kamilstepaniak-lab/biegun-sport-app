@@ -49,6 +49,35 @@ Jeśli w danym dniu istnieje już nagłówek tego samego tematu, dopisz do niego
 nowe punkty. Nowy temat = nowy nagłówek (mogą być różne tematy z tą samą datą).
 Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
 
+### 2026-06-05 (Płatności + Finanse — zniżki vs edycja ceny, spójność)
+
+- **Rozdzielenie zniżki od edycji ceny** (#14). `addPaymentTransaction`:
+  checkbox „Zniżka" we Wpłacie ustawia teraz `discount_applied_at/by` —
+  to jedyny sygnał realnej zniżki. `updatePaymentAmount` (edycja kwoty
+  w tabeli) zeruje `discount_applied_at/by` — edycja = nowa cena należna,
+  nie zniżka.
+- `/admin/payments` (`payments-list.tsx`): kolumna **Kwota** przy edytowanej
+  cenie pokazuje przekreśloną `original_amount` + nową `amount`. Kolumna
+  **Zniżka** pokazuje wartość **tylko** gdy `discount_applied_at` ustawione
+  (realna zniżka). Wcześniej każde obniżenie kwoty lądowało w „Zniżce".
+- **Widok finansów**: nowa migracja `admin-finance-summary-discount-flag.sql`
+  — `discount_pln/eur` liczone tylko dla płatności z `discount_applied_at IS
+  NOT NULL`. DO RĘCZNEGO URUCHOMIENIA na Supabase (inaczej sumy zniżek na
+  /admin/finance nie zmienią semantyki).
+- **„Za co" dla płatności ręcznych** (#15): zamiast „Płatność ręczna" w
+  kolumnie pokazuje się `manual_title` (opis). Zmiana w admin i parent
+  `payments-list.tsx`. Dialog „Dodaj płatność": pole „Tytuł" → „Za co (opis
+  płatności)" z podpowiedzią, że trafia do kolumny.
+- **Dodaj płatność — wybór dziecka po nazwisku** (#15): `<select>` zamieniony
+  na typeahead (Input + filtrowana lista po nazwisku/rodzicu, wybór = chip
+  z możliwością zmiany). `manual-payment-dialog.tsx`.
+- **Spójność graficzna** (#13): admin status „Do zapłaty" orange → amber
+  (kanon design.md); karta „Nieopłacone" orange → amber. Finanse: karty
+  podsumowania przepisane na styl kart płatności (chip z ikoną + tint).
+- design.md: dopisany kanon **ikon i kolorów grup** (`group-icons.tsx` /
+  `group-colors.tsx` jako źródło prawdy) oraz reguła **auto-wdrażania zmian
+  na bliźniaczych ekranach** admin/rodzic w tej samej turze.
+
 ### 2026-06-05 (Panel rodzica — wydajność i porządki)
 
 - „Moje dzieci": dashboard (`getDashboardData`) i wiadomości

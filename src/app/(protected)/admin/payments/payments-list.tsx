@@ -328,7 +328,11 @@ export function PaymentsList({
   }
 
   function getPaymentLabel(row: AdminPaymentRow): string {
-    if (row.payment_type === 'manual') return 'Płatność ręczna';
+    // Płatność ręczna: w kolumnie „Za co" pokazujemy opis (po co jest
+    // płatność) zamiast generycznego „Płatność ręczna".
+    if (row.payment_type === 'manual') {
+      return row.manual_title?.trim() || row.admin_notes?.trim() || 'Płatność';
+    }
     if (row.payment_type === 'installment') return `Rata ${row.installment_number}`;
     if (row.payment_type === 'season_pass') return 'Karnet';
     return row.payment_type;
@@ -347,7 +351,7 @@ export function PaymentsList({
       case 'cancelled':
         return { label: 'Anulowane', cls: 'bg-gray-100 text-gray-400' };
       default:
-        return { label: 'Do zapłaty', cls: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200' };
+        return { label: 'Do zapłaty', cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' };
     }
   }
 
@@ -372,6 +376,13 @@ export function PaymentsList({
     const isDueDateOverdue = dueDate ? dueDate < today : false;
     const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
     const isSelected = selectedIds.has(row.id);
+
+    // Zniżka realna (checkbox we Wpłacie) vs zwykła edycja ceny.
+    // discount_applied_at ustawiane tylko przy zniżce; edycja kwoty je zeruje.
+    const hasDiscount = !!row.discount_applied_at;
+    const priceDelta = row.original_amount - row.amount;
+    // Cena edytowana w dół bez zniżki → przekreślamy starą cenę w kolumnie Kwota.
+    const priceEdited = !hasDiscount && priceDelta > 0.5;
 
     return (
       <tr
@@ -450,8 +461,13 @@ export function PaymentsList({
                     setEditingPayment(row.id);
                     setEditAmount(row.amount.toString());
                   }}
-                  className="flex items-center gap-1 group"
+                  className="flex items-center gap-1.5 group"
                 >
+                  {priceEdited && (
+                    <span className="text-xs text-gray-400 line-through tabular-nums">
+                      {row.original_amount.toFixed(0)}
+                    </span>
+                  )}
                   <span className="text-sm font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
                     {row.amount.toFixed(0)} {row.currency}
                   </span>
@@ -463,31 +479,20 @@ export function PaymentsList({
           )}
         </td>
 
-        {/* Zniżka */}
+        {/* Zniżka — tylko realna zniżka (checkbox we Wpłacie), nie edycja ceny */}
         <td className="py-3 px-3">
-          {(() => {
-            const discount = row.original_amount - row.amount;
-            if (discount > 0.5) {
-              return (
-                <div className="leading-tight">
-                  <span className="text-sm font-semibold text-amber-600 tabular-nums">
-                    −{discount.toFixed(0)} {row.currency}
-                  </span>
-                  <p className="text-[11px] text-gray-400 tabular-nums">
-                    z {row.original_amount.toFixed(0)} {row.currency}
-                  </p>
-                </div>
-              );
-            }
-            if (discount < -0.5) {
-              return (
-                <span className="text-sm font-semibold text-gray-500 tabular-nums">
-                  +{Math.abs(discount).toFixed(0)} {row.currency}
-                </span>
-              );
-            }
-            return <span className="text-gray-300 text-sm">—</span>;
-          })()}
+          {hasDiscount && priceDelta > 0.5 ? (
+            <div className="leading-tight">
+              <span className="text-sm font-semibold text-amber-600 tabular-nums">
+                −{priceDelta.toFixed(0)} {row.currency}
+              </span>
+              <p className="text-[11px] text-gray-400 tabular-nums">
+                z {row.original_amount.toFixed(0)} {row.currency}
+              </p>
+            </div>
+          ) : (
+            <span className="text-gray-300 text-sm">—</span>
+          )}
         </td>
 
         {/* Status */}
@@ -713,20 +718,20 @@ export function PaymentsList({
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 flex-shrink-0">
-              <CircleDollarSign className="h-5 w-5 text-orange-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0">
+              <CircleDollarSign className="h-5 w-5 text-amber-600" />
             </div>
             <div className="min-w-0">
               <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
               <p className="text-xs text-gray-500">Nieopłacone</p>
               <div className="flex flex-wrap gap-x-2 mt-0.5">
                 {stats.pendingPLN > 0 && (
-                  <span className="text-xs font-semibold text-orange-600">
+                  <span className="text-xs font-semibold text-amber-600">
                     {stats.pendingPLN.toFixed(0)} PLN
                   </span>
                 )}
                 {stats.pendingEUR > 0 && (
-                  <span className="text-xs font-semibold text-orange-600">
+                  <span className="text-xs font-semibold text-amber-600">
                     {stats.pendingEUR.toFixed(0)} EUR
                   </span>
                 )}

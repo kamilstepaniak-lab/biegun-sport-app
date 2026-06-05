@@ -12,6 +12,10 @@ import {
   Search,
   X,
   Download,
+  MapPin,
+  CheckCircle2,
+  AlertTriangle,
+  BadgePercent,
 } from 'lucide-react';
 
 import type { TripFinanceSummary } from '@/lib/actions/payments';
@@ -140,21 +144,34 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
   return (
     <div className="space-y-6">
 
-      {/* Stat cards */}
+      {/* Stat cards — spójne z kartami na /admin/payments (chip z ikoną) */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-          <p className="text-xs text-gray-400 font-medium mb-1">Wyjazdy</p>
-          <p className="text-3xl font-bold text-gray-900">{tripSummaries.length}</p>
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 flex-shrink-0">
+            <MapPin className="h-5 w-5 text-blue-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-gray-900">{tripSummaries.length}</p>
+            <p className="text-xs text-gray-500">Wyjazdy</p>
+          </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-          <p className="text-xs text-gray-400 font-medium mb-1">Zebrano (PLN)</p>
-          <p className="text-3xl font-bold text-emerald-600">{totals.paidPLN.toFixed(0)} zł</p>
-          <p className="text-xs text-gray-400 mt-1">z {totals.totalPLN.toFixed(0)} zł</p>
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-emerald-600">{totals.paidPLN.toFixed(0)} zł</p>
+            <p className="text-xs text-gray-500">Zebrano · z {totals.totalPLN.toFixed(0)} zł</p>
+          </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-          <p className="text-xs text-gray-400 font-medium mb-1">Brakuje (PLN)</p>
-          <p className="text-3xl font-bold text-red-500">{totals.missingPLN.toFixed(0)} zł</p>
-          <p className="text-xs text-gray-400 mt-1">zebrane {totalPct}% kwoty</p>
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-red-500">{totals.missingPLN.toFixed(0)} zł</p>
+            <p className="text-xs text-gray-500">Brakuje · zebrane {totalPct}%</p>
+          </div>
         </div>
       </div>
 
@@ -162,23 +179,36 @@ export function FinanceSummary({ summaries }: FinanceSummaryProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {totals.totalEUR > 0 && (
           <>
-            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-              <p className="text-xs text-gray-400 font-medium mb-1">Zebrano (EUR)</p>
-              <p className="text-3xl font-bold text-emerald-600">{totals.paidEUR.toFixed(0)} €</p>
-              <p className="text-xs text-gray-400 mt-1">z {totals.totalEUR.toFixed(0)} €</p>
+            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold text-emerald-600">{totals.paidEUR.toFixed(0)} €</p>
+                <p className="text-xs text-gray-500">Zebrano · z {totals.totalEUR.toFixed(0)} €</p>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-              <p className="text-xs text-gray-400 font-medium mb-1">Brakuje (EUR)</p>
-              <p className="text-3xl font-bold text-red-500">{totals.missingEUR.toFixed(0)} €</p>
+            <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-2xl font-bold text-red-500">{totals.missingEUR.toFixed(0)} €</p>
+                <p className="text-xs text-gray-500">Brakuje (EUR)</p>
+              </div>
             </div>
           </>
         )}
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5">
-          <p className="text-xs text-gray-400 font-medium mb-1">Udzielone zniżki</p>
-          <p className="text-3xl font-bold text-amber-600">{totals.discountPLN.toFixed(0)} zł</p>
-          {totals.discountEUR > 0 && (
-            <p className="text-xs text-gray-400 mt-1">+ {totals.discountEUR.toFixed(0)} €</p>
-          )}
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0">
+            <BadgePercent className="h-5 w-5 text-amber-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-amber-600">{totals.discountPLN.toFixed(0)} zł</p>
+            <p className="text-xs text-gray-500">
+              Udzielone zniżki{totals.discountEUR > 0 ? ` · + ${totals.discountEUR.toFixed(0)} €` : ''}
+            </p>
+          </div>
         </div>
       </div>
 

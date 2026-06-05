@@ -64,7 +64,7 @@ function isOverduePayment(p: ParentPayment) {
 }
 
 function getPaymentTypeLabel(p: ParentPayment): string {
-  if (p.payment_type === 'manual') return 'Płatność ręczna';
+  if (p.payment_type === 'manual') return p.manual_title?.trim() || 'Płatność';
   if (p.payment_type === 'installment') return `Rata ${p.installment_number}`;
   if (p.payment_type === 'season_pass') return 'Karnet';
   if (p.payment_type === 'full') return 'Pełna opłata';

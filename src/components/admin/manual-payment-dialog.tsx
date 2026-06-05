@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import { useMemo, useRef, useState, useTransition } from 'react';
+import { Plus, Loader2, Search, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -30,6 +30,9 @@ export function ManualPaymentDialog({ participants }: ManualPaymentDialogProps) 
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [participantId, setParticipantId] = useState('');
+  const [childQuery, setChildQuery] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<'PLN' | 'EUR'>('PLN');
@@ -38,8 +41,33 @@ export function ManualPaymentDialog({ participants }: ManualPaymentDialogProps) 
   const [adminNotes, setAdminNotes] = useState('');
   const [pending, startTransition] = useTransition();
 
+  const selectedParticipant = useMemo(
+    () => participants.find((p) => p.id === participantId) ?? null,
+    [participants, participantId],
+  );
+
+  const filteredParticipants = useMemo(() => {
+    const q = childQuery.trim().toLowerCase();
+    if (!q) return participants.slice(0, 8);
+    return participants
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.parentName.toLowerCase().includes(q),
+      )
+      .slice(0, 8);
+  }, [participants, childQuery]);
+
+  function selectParticipant(id: string) {
+    setParticipantId(id);
+    setPickerOpen(false);
+    setChildQuery('');
+  }
+
   function resetForm() {
     setParticipantId('');
+    setChildQuery('');
+    setPickerOpen(false);
     setTitle('');
     setAmount('');
     setCurrency('PLN');
@@ -94,24 +122,80 @@ export function ManualPaymentDialog({ participants }: ManualPaymentDialogProps) 
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
               Dziecko
             </label>
-            <select
-              value={participantId}
-              onChange={(e) => setParticipantId(e.target.value)}
-              className="h-11 w-full rounded-xl bg-white px-3 text-base text-gray-800 ring-1 ring-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 md:text-sm"
-            >
-              <option value="">Wybierz dziecko</option>
-              {participants.map((participant) => (
-                <option key={participant.id} value={participant.id}>
-                  {participant.name} — {participant.parentName}
-                  {participant.groupName ? `, ${participant.groupName}` : ''}
-                </option>
-              ))}
-            </select>
+            {selectedParticipant ? (
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-blue-50 px-3 py-2.5 ring-1 ring-blue-200">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-gray-900">
+                    {selectedParticipant.name}
+                  </p>
+                  <p className="truncate text-xs text-gray-500">
+                    {selectedParticipant.parentName}
+                    {selectedParticipant.groupName ? ` · ${selectedParticipant.groupName}` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setParticipantId('')}
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-white hover:text-gray-600"
+                  aria-label="Zmień dziecko"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  value={childQuery}
+                  onChange={(e) => {
+                    setChildQuery(e.target.value);
+                    setPickerOpen(true);
+                  }}
+                  onFocus={() => setPickerOpen(true)}
+                  onBlur={() => {
+                    blurTimeout.current = setTimeout(() => setPickerOpen(false), 120);
+                  }}
+                  placeholder="Wpisz nazwisko dziecka..."
+                  className="h-11 rounded-xl pl-9"
+                />
+                {pickerOpen && filteredParticipants.length > 0 && (
+                  <ul className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-gray-200">
+                    {filteredParticipants.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            if (blurTimeout.current) clearTimeout(blurTimeout.current);
+                            selectParticipant(p.id);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left hover:bg-blue-50"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-gray-900">{p.name}</p>
+                            <p className="truncate text-xs text-gray-400">
+                              {p.parentName}
+                              {p.groupName ? ` · ${p.groupName}` : ''}
+                            </p>
+                          </div>
+                          <Check className="h-3.5 w-3.5 flex-shrink-0 text-transparent" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {pickerOpen && childQuery.trim() && filteredParticipants.length === 0 && (
+                  <div className="absolute z-50 mt-1 w-full rounded-xl bg-white p-3 text-sm text-gray-400 shadow-lg ring-1 ring-gray-200">
+                    Brak dziecka pasującego do „{childQuery.trim()}”
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Tytuł płatności
+              Za co (opis płatności)
             </label>
             <Input
               value={title}
@@ -119,6 +203,9 @@ export function ManualPaymentDialog({ participants }: ManualPaymentDialogProps) 
               placeholder="np. Dopłata za koszulkę"
               className="h-11 rounded-xl"
             />
+            <p className="mt-1 text-xs text-gray-400">
+              Ten opis pojawi się w kolumnie „Za co” — u admina i u rodzica.
+            </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">

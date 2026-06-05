@@ -27,6 +27,11 @@ Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
      dwóch rozjeżdżających się wersji.
    - Budując/zmieniając ekran po jednej stronie, **zawsze** sprawdź jego
      odpowiednik po drugiej i trzymaj je zgodne (układ, wymiary, wygląd).
+   - **Zmiana na bliźniaczym ekranie = wdrożenie po obu stronach w tej samej
+     turze.** Jeśli poprawiasz wygląd/układ podstrony, która ma odpowiednik
+     w drugim panelu (Płatności, Kalendarz, Umowy/Dokumenty, Wyjazdy), nie
+     zostawiaj drugiej „na potem" — od razu nanieś tę samą zmianę u admina
+     i u rodzica. Nie pytaj o to za każdym razem.
 3. **Komponenty zawsze z `src/components/ui`** (button, card, dialog, table,
    badge, input, select...). Najpierw szukaj istniejącego — nowy twórz tylko
    gdy naprawdę brak. **Zero inline ad-hoc styli** powielających to, co już
@@ -53,6 +58,27 @@ Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
   - info / akcja → **blue** (`bg-blue-600` / `text-blue-700`)
   - Stare `green-*` zostało zmigrowane na `emerald-*` w całym `src/` —
     nie dokładaj nowych `green`.
+
+## Ikony i kolory grup (kanon)
+
+Każda grupa treningowa ma **stałą ikonę i stały kolor** — ten sam wszędzie
+(Wyjazdy u rodzica, Uczestnicy/Grupy u admina, badge, avatary). Źródło prawdy:
+- **Ikony:** `GroupIcon` / `GroupBadge` w `src/lib/group-icons.tsx`.
+- **Kolory:** `getGroupColor` w `src/lib/group-colors.tsx` (bg / text / border / dot).
+
+Mapowanie (po nazwie grupy, case-insensitive):
+
+| Grupa | Ikona |
+|---|---|
+| Beeski | pszczółka (własny SVG) |
+| ProKids | rakieta (`Rocket`) |
+| SemiPRO | narty (własny SVG) |
+| Hero | biceps (`BicepsFlexed`) |
+| Pro | ogień (`Flame`) |
+
+Nie hardkoduj ikon ani kolorów grup w komponentach — zawsze przez te dwa
+helpery. Nowa grupa = dopisz przypadek w `group-icons.tsx` (i kolor w
+`group-colors.tsx`), nie w miejscu użycia.
 
 ## Layout i nagłówki
 
