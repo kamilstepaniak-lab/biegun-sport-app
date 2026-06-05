@@ -14,7 +14,8 @@ Stack: Tailwind v4 (config w CSS, `src/app/globals.css`) + shadcn/ui (Radix)
 2. **Parytet analogicznych ekranów.** Ta sama strona w obu panelach
    (np. Wyjazdy u admina i Wyjazdy u rodzica, podobnie Płatności, Kalendarz,
    Umowy) to **warianty jednego widoku**: ten sam układ, te same karty,
-   nagłówek i kolejność sekcji. Różnią się **tylko zakresem funkcji** —
+   nagłówek, typografia (czcionki, rozmiary, wagi) i kolejność sekcji.
+   Różnią się **tylko zakresem funkcji** —
    admin ma edycję/zarządzanie/akcje masowe, rodzic odczyt i akcje rodzica
    (potwierdzenie, wpłata, akceptacja umowy).
    - **Spójne wymiary.** Bloki, karty i wiersze danych mają mieć **te same
