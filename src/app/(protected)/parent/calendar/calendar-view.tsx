@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/hover-card';
 import { cn } from '@/lib/utils';
 import { getGroupColor } from '@/lib/group-colors';
+import { getCampVisual } from '@/lib/camp-visual';
 import type { TripForParent } from '@/lib/actions/trips';
 
 interface ParentCalendarViewProps {
@@ -172,7 +173,17 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
               return (
                 <Link key={trip.id} href={`/parent/trips?${childQuery}&trip=${trip.id}`} className="block p-4 hover:bg-gray-50/60 transition-colors">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-medium text-gray-900 text-sm leading-snug flex-1 min-w-0">{trip.title}</p>
+                    <div className="flex min-w-0 flex-1 items-start gap-2">
+                      {(() => {
+                        const visual = getCampVisual(trip.category);
+                        return (
+                          <span className={cn('mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                            <visual.Icon className="h-3.5 w-3.5" />
+                          </span>
+                        );
+                      })()}
+                      <p className="font-medium text-gray-900 text-sm leading-snug min-w-0">{trip.title}</p>
+                    </div>
                     <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0', badgeClass)}>{label}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -239,7 +250,17 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                   return (
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
                       <td className="px-5 py-3.5 align-top">
-                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                        <div className="flex items-start gap-2">
+                          {(() => {
+                            const visual = getCampVisual(trip.category);
+                            return (
+                              <span className={cn('mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                                <visual.Icon className="h-3.5 w-3.5" />
+                              </span>
+                            );
+                          })()}
+                          <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                        </div>
                       </td>
                       <td className="px-4 py-3.5 align-top">
                         <div className="flex flex-col gap-0.5 text-sm">

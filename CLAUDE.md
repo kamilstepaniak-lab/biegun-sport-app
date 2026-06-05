@@ -118,12 +118,18 @@ Notatka ma być zwięzła (punkty, pliki, intencja zmiany).
   komunikat.
 - Profil rodzica (`profile/page.tsx`): **wskaźnik kompletności danych do
   umowy** (#19) — amber z listą brakujących pól lub emerald „komplet".
+- **Wizual typu obozu** (#3, `getCampVisual`) dodany na „Moje dzieci"
+  (karty najbliższych wyjazdów) i w kalendarzu (mobile + desktop). `category`
+  dodane do `NearestTrip` i zapytania w `dashboard.ts`.
+- **Badge „Po terminie deklaracji"** (#4, amber) na liście wyjazdów po
+  `declaration_deadline` — tylko informacyjnie, bez blokady potwierdzania
+  (decyzja: deadline nie blokuje zapisów).
+- Zgodność z CLAUDE.md (komponenty z ui): #18 surowy input → `Input`,
+  #19 banner → `Alert`. Sąsiednie `payments-list`/`contracts` zostają surowe
+  (osobny, całościowy cleanup do zrobienia później).
 - Odłożone do zrobienia z testem na żywo: podwójny redirect ChildUrlSync +
   ChildGuard (#13) — celowa defensywa, refaktor wymaga przeklikania wyboru
   dziecka, by nie wprowadzić regresji.
-- Do decyzji biznesowej: badge „Zapisy zamknięte" po `declaration_deadline`
-  (#4) — dziś deadline nie blokuje potwierdzania, więc badge kłamałby; wymaga
-  decyzji czy blokować spóźnione deklaracje.
 - Bugfix: fallback imienia na „Moje dzieci" był zahardkodowany na „Karol";
   teraz pierwsza część `full_name` → login z maila → „Witaj".
 - Sprzątanie: usunięty martwy `localStorage.removeItem('selectedChild')`

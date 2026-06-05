@@ -3,10 +3,12 @@
 import { createAdminClient } from '@/lib/supabase/server';
 import { resolveEffectiveDueDate } from '@/lib/payment-due';
 import { getAuthUser } from './auth-helpers';
+import type { TripCategory } from '@/types/database';
 
 export interface NearestTrip {
   id: string;
   title: string;
+  category: TripCategory | null;
   departure_datetime: string;
   departure_location: string;
   departure_stop2_datetime: string | null;
@@ -49,6 +51,7 @@ export interface DashboardData {
 type TripRecord = {
   id: string;
   title: string;
+  category: TripCategory | null;
   departure_datetime: string;
   departure_location: string;
   departure_stop2_datetime: string | null;
@@ -105,6 +108,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
       trip:trips (
         id,
         title,
+        category,
         departure_datetime,
         departure_location,
         departure_stop2_datetime,
@@ -166,6 +170,7 @@ export async function getDashboardData(participantId: string): Promise<Dashboard
     return {
       id: t.id,
       title: t.title,
+      category: t.category,
       departure_datetime: t.departure_datetime,
       departure_location: t.departure_location,
       departure_stop2_datetime: t.departure_stop2_datetime,

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProfileForm } from '@/components/parent/profile-form';
 import { ChangePasswordForm } from '@/components/parent/change-password-form';
 import { DataExportSection } from '@/components/parent/data-export-section';
@@ -35,18 +36,22 @@ export default async function ParentProfilePage() {
       />
 
       {missingContractFields.length > 0 ? (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <span>
-            Uzupełnij dane do umowy, aby umowy uczestnictwa zawierały Twoje dane. Brakuje:{' '}
-            <span className="font-semibold">{missingContractFields.map((f) => f.label).join(', ')}</span>.
-          </span>
-        </div>
+        <Alert className="rounded-xl border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-600">
+          <AlertTriangle />
+          <AlertDescription className="text-amber-800">
+            <span>
+              Uzupełnij dane do umowy, aby umowy uczestnictwa zawierały Twoje dane. Brakuje:{' '}
+              <span className="font-semibold">{missingContractFields.map((f) => f.label).join(', ')}</span>.
+            </span>
+          </AlertDescription>
+        </Alert>
       ) : (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-          <span>Dane do umowy są kompletne — umowy uczestnictwa wygenerują się z Twoimi danymi.</span>
-        </div>
+        <Alert className="rounded-xl border-emerald-200 bg-emerald-50 text-emerald-800 [&>svg]:text-emerald-600">
+          <CheckCircle2 />
+          <AlertDescription className="text-emerald-800">
+            Dane do umowy są kompletne — umowy uczestnictwa wygenerują się z Twoimi danymi.
+          </AlertDescription>
+        </Alert>
       )}
 
       <ProfileForm profile={profile} />

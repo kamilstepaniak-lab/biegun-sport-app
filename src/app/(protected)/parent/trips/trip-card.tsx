@@ -6,7 +6,6 @@ import { pl } from 'date-fns/locale';
 import {
   Calendar,
   ChevronDown,
-  ChevronUp,
   X,
   HelpCircle,
   Clock,
@@ -156,6 +155,11 @@ function TripCardInner({
   const returnDate = new Date(trip.return_datetime);
   const hasStop2 = !!trip.departure_stop2_location;
   const daysUntilDeparture = Math.max(0, Math.ceil((departureDate.getTime() - renderedAt) / 86400000));
+  const todayStart = new Date(renderedAt);
+  todayStart.setHours(0, 0, 0, 0);
+  const declarationPassed = !isPast
+    && !!trip.declaration_deadline
+    && new Date(trip.declaration_deadline) < todayStart;
   const confirmedChild = trip.children.find((c) => c.participation_status === 'confirmed');
   const paymentDueByTemplate = new Map<string, string | null>();
   (confirmedChild?.payments ?? []).forEach((p) => {
@@ -201,10 +205,15 @@ function TripCardInner({
                 'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
                 isPast
                   ? 'border-slate-200 bg-slate-100 text-slate-500'
-                  : 'border-blue-200 bg-white text-blue-700'
+                  : declarationPassed
+                    ? 'border-amber-200 bg-amber-50 text-amber-700'
+                    : 'border-blue-200 bg-white text-blue-700'
               )}>
-                <span className={cn('h-1.5 w-1.5 rounded-full', isPast ? 'bg-slate-400' : 'bg-blue-600')} />
-                {isPast ? 'Zrealizowany' : 'Zapisy otwarte'}
+                <span className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  isPast ? 'bg-slate-400' : declarationPassed ? 'bg-amber-500' : 'bg-blue-600'
+                )} />
+                {isPast ? 'Zrealizowany' : declarationPassed ? 'Po terminie deklaracji' : 'Zapisy otwarte'}
               </span>
 
               <div className={cn(

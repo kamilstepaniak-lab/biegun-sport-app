@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Calendar as CalendarIcon, ChevronDown, ChevronUp, CheckCircle2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Input } from '@/components/ui/input';
 import { updateParticipationStatusByParent, type TripForParent, type ChildTripStatus } from '@/lib/actions/trips';
 import { TripCard, type ConfirmType, type ParticipationStatus } from './trip-card';
 
@@ -180,13 +181,13 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
     <div className="space-y-6">
       {trips.length > 3 && (
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
+          <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Szukaj wyjazdu po nazwie…"
-            className="h-11 w-full rounded-xl bg-white pl-9 pr-9 text-base md:text-sm text-gray-700 ring-1 ring-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded-xl bg-white pl-9 pr-9"
           />
           {query && (
             <button

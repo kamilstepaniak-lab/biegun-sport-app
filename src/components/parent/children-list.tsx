@@ -48,6 +48,7 @@ import { type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
 import { getGroupColor } from '@/lib/group-colors';
+import { getCampVisual } from '@/lib/camp-visual';
 import { PaymentDue } from '@/components/shared/payment-due';
 
 interface ChildrenListProps {
@@ -249,7 +250,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
   return (
     <>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-stretch">
-      <div className="flex h-full flex-col rounded-xl bg-blue-600 p-4 text-white shadow-sm shadow-blue-600/15 lg:order-1">
+      <div className="flex h-full flex-col rounded-2xl bg-blue-600 p-4 text-white shadow-sm shadow-blue-600/15 lg:order-1">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold leading-tight">Moje dzieci</h2>
@@ -335,7 +336,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
       </div>
 
           {/* Najbliższe wyjazdy */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:order-3">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:order-3">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -362,7 +363,16 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                   <div key={trip.id} className="px-5 py-4 space-y-2.5">
                     {/* Tytuł + badge */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="flex min-w-0 items-start gap-2">
+                        {(() => {
+                          const visual = getCampVisual(trip.category);
+                          return (
+                            <span className={cn('mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                              <visual.Icon className="h-3.5 w-3.5" />
+                            </span>
+                          );
+                        })()}
+                        <div className="min-w-0">
                         <p className="font-semibold text-gray-900 text-sm leading-snug">{trip.title}</p>
                         {trip.childNames && trip.childNames.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
@@ -376,6 +386,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                             ))}
                           </div>
                         )}
+                        </div>
                       </div>
                       <span className={cn(
                         'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold flex-shrink-0',
@@ -447,7 +458,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
           </div>
 
           {/* Płatności */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:order-4">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:order-4">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
@@ -560,7 +571,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
           </div>
 
           {/* Wiadomości */}
-          <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm lg:order-2">
+          <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm lg:order-2">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
