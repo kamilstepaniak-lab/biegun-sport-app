@@ -44,6 +44,12 @@ poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej ses
 
 ### 2026-06-05
 
+- `/parent/trips` i `/admin/trips`: wyrównano badge/kropki grup na niebieskim
+  tle do wysokości tytułu wyjazdu, zmieniono ikonę SemiPRO na pionowe narty
+  oraz zmniejszono odstęp między wyborem dziecka, wyszukiwarką i osią wyjazdów.
+- `/admin/participants`: ustabilizowano szerokości kolumn tabeli uczestników,
+  żeby długie nazwiska nie rozjeżdżały układu, a email rodzica był szerzej
+  widoczny.
 - `/admin/payments`: dodano ręczne płatności przypisane bezpośrednio do dziecka
   bez wyjazdu, z formularzem admina, widocznością w panelu rodzica, obsługą
   przelewów i przypomnień oraz filtrem „Płatności ręczne".

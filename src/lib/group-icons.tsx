@@ -28,7 +28,7 @@ function Bee({ className, ...props }: IconProps) {
   );
 }
 
-// Dwie skrzyżowane narty (SemiPRO) — własna ikona w stylu lucide
+// Dwie pionowe narty (SemiPRO) — własna ikona w stylu lucide
 function Skis({ className, ...props }: IconProps) {
   return (
     <svg
@@ -41,10 +41,12 @@ function Skis({ className, ...props }: IconProps) {
       className={className}
       {...props}
     >
-      <path d="M4.5 20.5 16.5 5.5" />
-      <path d="M16.5 5.5c1.2-1.6 2.6-1.8 3.4-.4" />
-      <path d="M19.5 20.5 7.5 5.5" />
-      <path d="M7.5 5.5C6.3 3.9 4.9 3.7 4.1 5.1" />
+      <path d="M8 4.5v14.8c0 1.4-1.3 2.2-2.5 1.4" />
+      <path d="M16 4.5v14.8c0 1.4 1.3 2.2 2.5 1.4" />
+      <path d="M6.8 8.5h2.4" />
+      <path d="M14.8 8.5h2.4" />
+      <path d="M7 13h2" />
+      <path d="M15 13h2" />
     </svg>
   );
 }

@@ -217,13 +217,13 @@ export function ParticipantsTable({
 
               <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
                 <div className="overflow-x-auto">
-                  <table className="min-w-[1180px] table-fixed border-collapse text-sm">
+                  <table className="min-w-[1280px] table-fixed border-collapse text-sm">
                     <colgroup>
                       <col className="w-10" />
-                      <col />
+                      <col className="w-56" />
                       {!hideGroupColumn && <col className="w-44" />}
                       <col className="w-32" />
-                      <col />
+                      <col className="w-72" />
                       <col className="w-36" />
                       <col className="w-36" />
                       <col className="w-14" />
@@ -286,7 +286,8 @@ export function ParticipantsTable({
                             <td className="px-3 py-2.5">
                               <Link
                                 href={`/admin/participants/${p.id}`}
-                                className="text-sm font-semibold text-slate-900 hover:text-blue-600 hover:underline"
+                                className="block truncate text-sm font-semibold text-slate-900 hover:text-blue-600 hover:underline"
+                                title={`${p.last_name} ${p.first_name}`}
                               >
                                 {p.last_name} {p.first_name}
                               </Link>
@@ -348,7 +349,7 @@ export function ParticipantsTable({
                               )}
                             </td>
 
-                            <td className="px-3 py-2.5 max-w-0">
+                            <td className="px-3 py-2.5">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <button

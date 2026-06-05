@@ -249,6 +249,13 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         WordPress
                       </span>
                     )}
+                    {trip.groups.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        {trip.groups.map((g) => (
+                          <GroupBadge key={g.id} name={g.name} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-5 flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
@@ -261,13 +268,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                   </div>
                 </div>
                 <div className="flex flex-col gap-3 xl:items-end xl:self-stretch xl:justify-between">
-                  {trip.groups.length > 0 && (
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 xl:justify-end">
-                      {trip.groups.map((g) => (
-                        <GroupBadge key={g.id} name={g.name} />
-                      ))}
-                    </div>
-                  )}
                   <div className="flex flex-wrap gap-2 xl:justify-end">
                   <TripMessageGenerator trip={trip} compact />
                   <ContractTemplateEditor

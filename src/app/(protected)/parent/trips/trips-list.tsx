@@ -178,7 +178,7 @@ export function ParentTripsList({ trips }: ParentTripsListProps) {
   const showPast = pastExpanded || trimmedQuery.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {trips.length > 3 && (
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-gray-400" />

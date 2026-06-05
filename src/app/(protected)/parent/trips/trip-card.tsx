@@ -435,6 +435,13 @@ function TripCardInner({
                         Zrealizowany
                       </span>
                     )}
+                    {trip.groups.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                        {trip.groups.map((g) => (
+                          <GroupBadge key={g.id} name={g.name} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="mt-5 flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
@@ -446,13 +453,6 @@ function TripCardInner({
                     </div>
                   </div>
                 </div>
-                {trip.groups.length > 0 && (
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 xl:justify-end">
-                    {trip.groups.map((g) => (
-                      <GroupBadge key={g.id} name={g.name} />
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
