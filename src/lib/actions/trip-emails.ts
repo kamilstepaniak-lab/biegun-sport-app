@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath, revalidateTag as _revalidateTag } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { getAuthUser } from './auth-helpers';
 import {
@@ -11,6 +12,7 @@ import { enqueueSystemEmails, type EnqueueSystemEmailInput } from '@/lib/email-q
 import { logActivity } from './activity-logs';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 
 
 // ─── Podgląd e-maila (do edytora w dialogu wyjazdu) ──────────────────────────
@@ -293,6 +295,32 @@ export async function sendTripInfoEmailToGroup(
     const msg = err instanceof Error ? err.message : String(err);
     return { error: `Nie udało się dodać wiadomości do kolejki: ${msg}` };
   }
+
+  if (queueItems.length > 0) {
+    const { data: registrations } = await supabaseAdmin
+      .from('trip_registrations')
+      .select('id')
+      .eq('trip_id', tripId)
+      .eq('status', 'active')
+      .eq('participation_status', 'confirmed');
+
+    const registrationIds = (registrations || []).map((r: { id: string }) => r.id);
+    if (registrationIds.length > 0) {
+      const { error: visibilityError } = await supabaseAdmin
+        .from('payments')
+        .update({ parent_visible: true, updated_at: new Date().toISOString() })
+        .in('registration_id', registrationIds)
+        .neq('status', 'cancelled');
+
+      if (visibilityError) {
+        return { error: `Wiadomości dodano do kolejki, ale nie udało się opublikować płatności: ${visibilityError.message}` };
+      }
+    }
+  }
+
+  revalidateTag('payments');
+  revalidatePath('/parent/payments');
+  revalidatePath('/parent/trips');
 
   // Activity log
   logActivity(user.id, user.email ?? undefined, 'trip_email_sent', {

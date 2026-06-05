@@ -176,6 +176,7 @@ CREATE TABLE payments (
   currency TEXT NOT NULL CHECK (currency IN ('PLN', 'EUR')),
   due_date DATE,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'partially_paid', 'paid', 'overdue', 'partially_paid_overdue', 'cancelled')),
+  parent_visible BOOLEAN NOT NULL DEFAULT TRUE,
   paid_at TIMESTAMPTZ,
   payment_method_used TEXT CHECK (payment_method_used IN ('cash', 'transfer')),
   admin_notes TEXT,
@@ -188,6 +189,7 @@ CREATE TABLE payments (
 
 CREATE INDEX idx_payments_registration ON payments(registration_id);
 CREATE INDEX idx_payments_status ON payments(status);
+CREATE INDEX idx_payments_parent_visible ON payments(parent_visible);
 CREATE INDEX idx_payments_due_date ON payments(due_date);
 
 -- ====================================

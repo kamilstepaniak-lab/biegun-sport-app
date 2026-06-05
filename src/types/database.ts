@@ -180,6 +180,7 @@ export interface Payment {
   currency: Currency;
   due_date: string | null;
   status: PaymentStatus;
+  parent_visible: boolean;
   paid_at: string | null;
   payment_method_used: 'cash' | 'transfer' | null;
   admin_notes: string | null;
@@ -363,4 +364,3 @@ export interface UpdateProfileInput {
   address_city?: string | null;
   pesel?: string | null;
 }
-

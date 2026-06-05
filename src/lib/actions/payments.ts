@@ -624,6 +624,7 @@ export async function createPaymentsForRegistration(registrationId: string, trip
         currency: template.currency,
         due_date: dueDate,
         status: 'pending',
+        parent_visible: false,
         amount_paid: 0,
       };
     });
@@ -713,6 +714,7 @@ const _fetchParentPaymentsDB = unstable_cache(
       .select('*')
       .in('registration_id', registrationIds)
       .neq('status', 'cancelled')
+      .eq('parent_visible', true)
       .order('due_date', { ascending: true });
 
     if (error || !payments) {

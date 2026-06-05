@@ -501,6 +501,7 @@ async function syncTripPaymentsAfterPricingChange(
             currency: template.currency,
             due_date: effectiveDueDate,
             status: 'pending',
+            parent_visible: false,
             amount_paid: 0,
             payment_method: template.payment_method,
           });

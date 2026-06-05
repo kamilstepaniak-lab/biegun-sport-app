@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       )
     `)
     .in('status', ['pending', 'partially_paid', 'overdue', 'partially_paid_overdue'])
+    .eq('parent_visible', true)
     .eq('due_date', in3daysStr);
 
   if (error) {

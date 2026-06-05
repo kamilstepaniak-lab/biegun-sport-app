@@ -241,7 +241,12 @@ function TripCardInner({
                           <div className="min-w-0">
                             <p className="font-medium text-gray-800 leading-tight">{child.child_name}</p>
                             {currentStatus !== 'unconfirmed' && (
-                              <span className={cn('mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium', status.color)}>
+                              <span className={cn(
+                                'mt-0.5 inline-flex items-center gap-1 text-xs font-medium',
+                                currentStatus === 'confirmed' ? 'text-emerald-600'
+                                  : currentStatus === 'not_going' ? 'text-red-500'
+                                    : 'text-amber-600'
+                              )}>
                                 <StatusIcon className="h-3 w-3" />
                                 {statusLabel}
                               </span>
@@ -410,43 +415,35 @@ function TripCardInner({
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[11px] font-bold text-emerald-50 ring-1 ring-white/20">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                      Zapisy otwarte
-                    </span>
                     {isPast && (
                       <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
                         Zrealizowany
                       </span>
                     )}
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                     {trip.groups.map((g) => {
                       const colors = getGroupColor(g.name);
                       return (
                         <span
                           key={g.id}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-white/10 ring-1 ring-white/25 px-2.5 py-1 text-[11px] font-semibold text-white"
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-white"
                         >
-                          <span className={cn('h-1.5 w-1.5 rounded-full', colors.dot)} />
+                          <span className={cn('h-2 w-2 rounded-full', colors.dot)} />
                           {g.name}
                         </span>
                       );
                     })}
                   </div>
-                  <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-blue-50">
-                    <MapPin className="h-4 w-4" />
-                    Miejsce
-                    <span className="normal-case tracking-normal text-white">{trip.location || trip.departure_location || '—'}</span>
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {trip.children.map((child) => (
-                    <span key={child.child_id} className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white ring-1 ring-white/30">
-                      <Bus className="h-3.5 w-3.5" />
-                      {child.child_name}
-                    </span>
-                  ))}
+                  <div className="mt-5 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+                      <MapPin className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-blue-100">Miejsce</p>
+                      <p className="text-base font-bold text-white">{trip.location || trip.departure_location || '—'}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
