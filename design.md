@@ -117,8 +117,10 @@ helpery. Nowa grupa = dopisz przypadek w `group-icons.tsx` (i kolor w
     przyciski wyboru dziecka stoją zawsze w tym samym miejscu, a grafika gór
     ma zawsze tę samą wysokość i rozmiar (ten sam plik wszędzie). Nie
     nadpisuj `padding`/`min-h`/wysokości per-podstrona — to rozjeżdża pozycje.
-    Admin (`.admin-shell .page-header`) używa `min-height` 285/256/232 — treść
-    admina nigdy nie przekracza, więc wysokość i tak jest stała.
+    Admin (`.admin-shell .page-header`) ma sztywną `height` 285 (desktop) /
+    256 (≤1023) i `min-height: 232` na telefonie (≤767, gdzie akcje stackują
+    się — `height:auto`, żeby nic nie uciąć). Treść admina mieści się w tych
+    wysokościach.
   - Rodzic: dolny pasek na narzędzia (wyszukiwarka) i selektor dziecka
     obok siebie od `sm` (poniżej stackują się), wyrównany do góry
     (`items-start`), etykiety w stylu `text-xs font-black uppercase

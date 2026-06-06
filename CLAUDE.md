@@ -58,6 +58,9 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 - `parent-trips-shell.tsx`: usunięte nadpisania `pb-*` i `lg:min-h-[285px]`
   (rozjeżdżały pozycję dolnego paska względem innych podstron); zostaje tylko
   `parent-trips-hero rounded-none border-0 shadow-none`.
+- Admin analogicznie: `.admin-shell .page-header` z `min-height` → sztywna
+  `height: 285px` (desktop) / `256px` (≤1023). Na telefonie (≤767, akcje
+  stackują się) `height:auto` + `min-height:232px`, żeby nic nie uciąć.
 
 ### 2026-06-06 (Admin — nagłówek w stylu rodzica)
 

@@ -272,7 +272,11 @@
 
 /* ── Jasny nagłówek z grafiką gór (admin + rodzic) ────────── */
 .admin-shell .page-header {
-  min-height: 285px;
+  /* Sztywna wysokość = stała pozycja tytułu/akcji i zawsze ta sama wielkość
+     grafiki gór przy przełączaniu podstron (jak u rodzica). Treść admina
+     mieści się w tej wysokości. Na telefonie (≤767, akcje stackują się)
+     przechodzimy na min-height, żeby nic nie ucięło. */
+  height: 285px;
   align-items: flex-start;
   background: transparent;
   border-bottom: none;
@@ -283,7 +287,7 @@
 
 @media (max-width: 1023px) {
   .admin-shell .page-header {
-    min-height: 256px;
+    height: 256px;
   }
 }
 
@@ -409,6 +413,7 @@
   }
 
   .admin-shell .page-header {
+    height: auto;
     min-height: 232px;
   }
 }
