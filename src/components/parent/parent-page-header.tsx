@@ -38,7 +38,12 @@ export function ParentPageHeader({
   return (
     <section
       className={cn(
-        'parent-page-hero relative min-h-[232px] overflow-hidden px-4 pb-12 pt-6 text-slate-900 sm:min-h-[256px] sm:px-7 sm:pb-14 sm:pt-8 lg:min-h-[285px] lg:px-10 lg:pb-16 lg:pt-10',
+        // STAŁA wysokość (nie min-h) + flex-col: tytuł zawsze na górze,
+        // dolny pasek (wyszukiwarka + wybór dziecka) zawsze przyklejony do dołu
+        // (mt-auto). Dzięki temu przy przełączaniu podstron tytuł, opis i
+        // przyciski stoją w tym samym miejscu, a grafika gór ma zawsze tę samą
+        // wysokość i rozmiar. Mobile wyższy (dolny pasek stackuje się <640px).
+        'parent-page-hero relative flex h-[348px] flex-col overflow-hidden px-4 pb-12 pt-6 text-slate-900 sm:h-[300px] sm:px-7 sm:pb-12 sm:pt-8 lg:h-[320px] lg:px-10 lg:pb-14 lg:pt-10',
         seamlessBottom ? 'bg-transparent' : 'rounded-[16px] border border-blue-100/70 bg-[#eef6ff] shadow-[0_10px_28px_rgba(15,23,42,0.08)]',
         className,
       )}
@@ -86,14 +91,14 @@ export function ParentPageHeader({
       {hasBottomRow && (
         <div
           className={cn(
-            'relative z-10 mt-7 grid gap-4 lg:mt-10 lg:items-start',
+            'relative z-10 mt-auto grid gap-4 sm:items-start',
             tools
-              ? 'lg:grid-cols-[minmax(260px,390px)_1px_minmax(0,1fr)]'
-              : 'lg:grid-cols-1',
+              ? 'sm:grid-cols-[minmax(200px,360px)_1px_minmax(0,1fr)]'
+              : 'grid-cols-1',
           )}
         >
           {tools && <div className="min-w-0">{tools}</div>}
-          {tools && children && <div className="hidden h-full min-h-20 w-px bg-slate-300/80 lg:block" />}
+          {tools && children && <div className="hidden h-full min-h-20 w-px bg-slate-300/80 sm:block" />}
           {children && <div className="min-w-0">{children}</div>}
         </div>
       )}

@@ -42,6 +42,23 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Rodzic — stała pozycja elementów nagłówka)
+
+- Problem: przy przełączaniu podstron tytuł/opis/przyciski wyboru dziecka
+  „skakały", bo nagłówek miał `min-h` (treść top-aligned, nadmiar rósł →
+  różne wysokości, różna wielkość grafiki gór).
+- Fix w `ParentPageHeader`: sekcja to teraz `flex flex-col` ze **sztywną**
+  wysokością `h-[348px] sm:h-[300px] lg:h-[320px]` (zamiast `min-h`). Tytuł
+  na górze, dolny pasek (wyszukiwarka + selektor dziecka) `mt-auto`
+  (przyklejony do dołu). Pozycje tytułu, opisu i przycisków są identyczne na
+  każdej podstronie; grafika gór ma zawsze tę samą wysokość/rozmiar.
+- Dolny pasek: narzędzia i selektor obok siebie od `sm` (było `lg`) — żeby
+  na tablecie nie stackowały się i mieściły w stałej wysokości; poniżej
+  `sm` stack (stąd wyższy mobile 348px).
+- `parent-trips-shell.tsx`: usunięte nadpisania `pb-*` i `lg:min-h-[285px]`
+  (rozjeżdżały pozycję dolnego paska względem innych podstron); zostaje tylko
+  `parent-trips-hero rounded-none border-0 shadow-none`.
+
 ### 2026-06-06 (Admin — nagłówek w stylu rodzica)
 
 - `.admin-shell .page-header` (globals.css) przepisany na ten sam hero co

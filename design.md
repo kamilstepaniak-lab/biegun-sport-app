@@ -109,13 +109,20 @@ helpery. Nowa grupa = dopisz przypadek w `group-icons.tsx` (i kolor w
     `font-weight: 500`, kolor `#475569`. Dłuższy kontekst dawaj jako drugą
     linię opisu (`<br className="hidden sm:block" />`), nie jako osobny
     „note" z ikoną „i".
-  - **Stała wysokość** na wszystkich podstronach (panelu): `min-h`
-    `232px` (mobile) / `256px` (≤1023) / `285px` (desktop), treść
-    top-aligned, nadmiar wysokości wpada w strefę zaniku tła.
-  - Rodzic: dolny pasek na narzędzia (wyszukiwarka) i selektor dziecka,
-    wyrównany do góry (`items-start`), etykiety w stylu
-    `text-xs font-black uppercase text-blue-700`. Admin: akcje w prawym
-    górnym rogu.
+  - **Stała wysokość = stała pozycja elementów.** Nagłówek rodzica ma
+    **sztywną** wysokość (`h-`, nie `min-h`): `348px` (mobile, dolny pasek
+    stackuje się) / `300px` (≥640) / `320px` (desktop). Sekcja to
+    `flex flex-col`: tytuł zawsze na górze, dolny pasek przyklejony do dołu
+    (`mt-auto`). Dzięki temu przy przełączaniu podstron tytuł, opis i
+    przyciski wyboru dziecka stoją zawsze w tym samym miejscu, a grafika gór
+    ma zawsze tę samą wysokość i rozmiar (ten sam plik wszędzie). Nie
+    nadpisuj `padding`/`min-h`/wysokości per-podstrona — to rozjeżdża pozycje.
+    Admin (`.admin-shell .page-header`) używa `min-height` 285/256/232 — treść
+    admina nigdy nie przekracza, więc wysokość i tak jest stała.
+  - Rodzic: dolny pasek na narzędzia (wyszukiwarka) i selektor dziecka
+    obok siebie od `sm` (poniżej stackują się), wyrównany do góry
+    (`items-start`), etykiety w stylu `text-xs font-black uppercase
+    text-blue-700`. Admin: akcje w prawym górnym rogu (`items-start`).
 - Radius: karty `14px` (`rounded-2xl` w admin-shell), mniejsze elementy `10px`.
   Cienie subtelne (`shadow-sm` = ledwie widoczny). Trzymaj się skali z globals.
 
