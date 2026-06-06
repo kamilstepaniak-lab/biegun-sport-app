@@ -83,9 +83,39 @@ helpery. Nowa grupa = dopisz przypadek w `group-icons.tsx` (i kolor w
 
 ## Layout i nagłówki
 
-- **`.page-header` to kanon na każdej podstronie** (admin i rodzic): tytuł
-  + krótki opis + akcje. W `.admin-shell` ma jasny gradient z grafiką gór
-  (`/parent-hero-mountains.svg`). Nie wymyślaj alternatywnych nagłówków.
+- **Nagłówek podstrony to jasny hero z górami** — kanon dla admina i rodzica.
+  Nie wymyślaj alternatywnych nagłówków. Dwie implementacje tego samego
+  wyglądu:
+  - Rodzic: komponent `ParentPageHeader` (`src/components/parent/`).
+  - Admin: komponent `PageHeader` (`src/components/shared/`) stylowany przez
+    `.admin-shell .page-header` w `globals.css`.
+- **Wspólna specyfikacja hero** (trzymaj zgodność po obu stronach):
+  - **Pełny bleed** — nagłówek jest edge-to-edge (wyjątek w `globals.css`
+    wyłącza marginesy dla `.page-header`, `.parent-page-hero`,
+    `.parent-trips-hero`). Bez ramki, zaokrągleń i cienia.
+  - **Tło + góry:** baza `#eef6ff` + gradient `90deg`
+    (`rgba(248,251,255,…)` od 0.98 do 0.12) na grafice
+    `/parent-hero-mountains.svg` (`position: left top, right bottom`).
+  - **Bezszwowa dolna krawędź:** warstwa tła maskowana
+    `mask-image: linear-gradient(to bottom,#000 50%,transparent 100%)`
+    (+ `-webkit-mask-image` dla iOS/PWA) — spod spodu prześwituje gradient
+    `.admin-main`, brak widocznej krawędzi. Maska tylko na warstwie tła;
+    treść (z-10) zostaje ostra. Nie używaj twardego fade do koloru
+    (zostawia szew na gradiencie strony).
+  - **Tytuł:** `font-weight: 900` (`font-black`), `clamp(~34px,5vw,52px)`,
+    `line-height: 1`, kolor `#020617`. **Bez ikony** przy tytule
+    (`hideIcon` domyślnie `true` u rodzica; admin nie ma ikony).
+  - **Opis:** odstęp od tytułu `mt-5` / `margin-top: 20px`, `~15px`,
+    `font-weight: 500`, kolor `#475569`. Dłuższy kontekst dawaj jako drugą
+    linię opisu (`<br className="hidden sm:block" />`), nie jako osobny
+    „note" z ikoną „i".
+  - **Stała wysokość** na wszystkich podstronach (panelu): `min-h`
+    `232px` (mobile) / `256px` (≤1023) / `285px` (desktop), treść
+    top-aligned, nadmiar wysokości wpada w strefę zaniku tła.
+  - Rodzic: dolny pasek na narzędzia (wyszukiwarka) i selektor dziecka,
+    wyrównany do góry (`items-start`), etykiety w stylu
+    `text-xs font-black uppercase text-blue-700`. Admin: akcje w prawym
+    górnym rogu.
 - Radius: karty `14px` (`rounded-2xl` w admin-shell), mniejsze elementy `10px`.
   Cienie subtelne (`shadow-sm` = ledwie widoczny). Trzymaj się skali z globals.
 
