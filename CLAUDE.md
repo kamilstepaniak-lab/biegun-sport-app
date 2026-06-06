@@ -89,6 +89,11 @@ tekstów UI. Nie powielaj tych zasad tutaj.
   zatwierdzony przez użytkownika (Playwright screenshot).
 - Tytuł wyjazdu usunięty z niebieskiego bloku (jest już w nagłówku karty);
   zostaje tylko badge „Zrealizowany" dla przeszłych + wiersze dzieci.
+- Panel wiadomości (po kliknięciu przycisku): usunięte jasne tło/ramka wokół
+  i nagłówek statusu (np. „Nie jedzie"). Zostaje samo białe pole `Textarea`
+  z instrukcją w placeholderze + przyciski Anuluj/Potwierdź bez zmian. Wrapper
+  `ml-11 space-y-2` (przezroczysty). Usunięte nieużywane `stopName/headerLabel/
+  panelCls/headerCls`.
 
 ### 2026-06-06 (Rodzic — przebudowa karty wyjazdu, trip-card.tsx)
 
