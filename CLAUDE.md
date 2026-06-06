@@ -42,6 +42,22 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Wyjazdy rodzic — bezszwowa dolna krawędź nagłówka)
+
+- `ParentPageHeader`: nowy prop `seamlessBottom`. Gdy włączony, sekcja ma
+  `bg-transparent`, a kolor `#eef6ff` + grafika gór trafiają na warstwę
+  dekoracyjną (`inset-0`) z maską `linear-gradient(to_bottom,#000_50%,transparent)`
+  (`-webkit-mask-image` dla iOS/PWA). Dół tła rozpływa się w przezroczystość,
+  więc prześwituje prawdziwy gradient `.admin-main` strony — brak widocznej
+  krawędzi bloku. Maska dotyczy tylko warstwy tła; treść (z-10: tytuł,
+  wyszukiwarka, chipy) zostaje ostra. Twardy fade do `#f8fafc` (overlay)
+  renderuje się tylko dla pozostałych podstron (`!seamlessBottom`).
+- `parent-trips-shell.tsx`: Wyjazdy przekazują `seamlessBottom`; padding dołu
+  zwiększony (`pb-16 sm:pb-20 lg:pb-24`), by treść stała ponad strefą zaniku.
+- Wyszukiwarka wyjazdu już wcześniej spełniała wymóg: etykieta nad polem
+  w stylu „Wybierz dziecko" (`text-xs font-black uppercase text-blue-700`)
+  + input `h-12` = wysokość chipów. Bez zmian.
+
 ### 2026-06-05 (Panel rodzica — jednolity nagłówek na wszystkich podstronach)
 
 - `ParentPageHeader` przepisany ze starego niebieskiego panelu na jasny hero

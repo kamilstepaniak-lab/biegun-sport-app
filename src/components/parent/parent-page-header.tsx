@@ -9,6 +9,12 @@ interface ParentPageHeaderProps {
   description: React.ReactNode;
   note?: string;
   hideIcon?: boolean;
+  /**
+   * Tło nagłówka rozpływa się ku dołowi w przezroczystość (zamiast twardego
+   * fade do koloru) — dolna krawędź wtapia się bezszwowo w tło strony pod
+   * spodem. Dla pełnoszerokościowych nagłówków bez ramki (np. Wyjazdy).
+   */
+  seamlessBottom?: boolean;
   /** Slot na narzędzia specyficzne dla podstrony (np. wyszukiwarka) — po lewej od wyboru dziecka. */
   tools?: React.ReactNode;
   /** Zwykle <ParentChildSelector>. Renderowane w dolnym pasku nagłówka. */
@@ -22,6 +28,7 @@ export function ParentPageHeader({
   description,
   note,
   hideIcon = false,
+  seamlessBottom = false,
   tools,
   children,
   className,
@@ -31,18 +38,28 @@ export function ParentPageHeader({
   return (
     <section
       className={cn(
-        'parent-page-hero relative overflow-hidden rounded-[16px] border border-blue-100/70 bg-[#eef6ff] px-4 pb-5 pt-6 text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-7 sm:pb-7 sm:pt-8 lg:px-10 lg:pb-10 lg:pt-10',
+        'parent-page-hero relative overflow-hidden rounded-[16px] border border-blue-100/70 px-4 pb-5 pt-6 text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-7 sm:pb-7 sm:pt-8 lg:px-10 lg:pb-10 lg:pt-10',
+        seamlessBottom ? 'bg-transparent' : 'bg-[#eef6ff]',
         className,
       )}
     >
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.92)_30%,rgba(248,251,255,0.35)_58%,rgba(248,251,255,0.12)_100%),url('/parent-hero-mountains.svg')] bg-[length:100%_100%,auto_100%] bg-[position:left_top,right_bottom] bg-no-repeat"
+        className={cn(
+          "absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.92)_30%,rgba(248,251,255,0.35)_58%,rgba(248,251,255,0.12)_100%),url('/parent-hero-mountains.svg')] bg-[length:100%_100%,auto_100%] bg-[position:left_top,right_bottom] bg-no-repeat",
+          // Tło (kolor + góry) rozpływa się ku dołowi w przezroczystość, więc
+          // pod spodem widać prawdziwy gradient strony — brak twardej krawędzi.
+          // Maska dotyczy tylko tej warstwy dekoracyjnej; treść (z-10) zostaje ostra.
+          seamlessBottom &&
+            'bg-[#eef6ff] [-webkit-mask-image:linear-gradient(to_bottom,#000_50%,transparent_100%)] [mask-image:linear-gradient(to_bottom,#000_50%,transparent_100%)]',
+        )}
       />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-b from-transparent via-[#f8fbff]/80 to-[#f8fafc]"
-      />
+      {!seamlessBottom && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-b from-transparent via-[#f8fbff]/80 to-[#f8fafc]"
+        />
+      )}
 
       <div className="relative z-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
         {!hideIcon && (

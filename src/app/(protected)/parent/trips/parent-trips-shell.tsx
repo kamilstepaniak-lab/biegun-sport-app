@@ -74,7 +74,8 @@ export function ParentTripsShell({
         }
         tools={searchTool}
         hideIcon
-        className="parent-trips-hero rounded-none border-0 pb-14 shadow-none sm:pb-16 lg:min-h-[285px] lg:pb-20"
+        seamlessBottom
+        className="parent-trips-hero rounded-none border-0 pb-16 shadow-none sm:pb-20 lg:min-h-[285px] lg:pb-24"
       >
         <ParentChildSelector
           selectedChildId={selectedChildId}
