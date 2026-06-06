@@ -42,6 +42,18 @@ Za każdym razem, gdy użytkownik prosi o wdrożenie / push na Vercel, dopisz
 poniżej krótką notatkę z najważniejszymi zmianami wprowadzonymi w danej sesji
 (nagłówek z datą, najnowsze wpisy na górze).
 
+### 2026-06-06
+
+- Sprawdzono flow płatności po kliknięciu „Jedzie" w `/parent/trips`:
+  potwierdzenie rodzica tworzy rejestrację i płatności z cennika wyjazdu tylko
+  wtedy, gdy nie istnieją już nieanulowane płatności dla tej rejestracji.
+- Potwierdzono rozdział walut: każdy szablon cennika tworzy osobny rekord
+  płatności z własną kwotą i walutą (`PLN` / `EUR`), a widok rodzica pokazuje
+  sumy osobno per waluta.
+- Poprawiono synchronizację płatności po edycji cennika wyjazdu: usunięto zapis
+  nieistniejącego pola `payments.payment_method`, bo forma płatności jest
+  pobierana z powiązanego szablonu.
+
 ### 2026-06-05
 
 - `/parent/trips`: dopracowano górski header po podglądzie — zmniejszono

@@ -513,7 +513,6 @@ async function syncTripPaymentsAfterPricingChange(
           discount_percentage: 0,
           due_date: effectiveDueDate,
           template_id: template.id,
-          payment_method: template.payment_method,
           status: newStatus,
         };
         // paid_at: zerujemy gdy status przestaje być 'paid'; gdy pozostaje
@@ -556,7 +555,6 @@ async function syncTripPaymentsAfterPricingChange(
             status: 'pending',
             parent_visible: true,
             amount_paid: 0,
-            payment_method: template.payment_method,
           });
 
         if (insertPaymentError) {
