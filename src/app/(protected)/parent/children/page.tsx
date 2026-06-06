@@ -64,8 +64,13 @@ export default async function ParentChildrenPage() {
       <ParentPageHeader
         icon={Users}
         title={`Dzień dobry, ${firstName}`}
-        description={`${today}. Sprawdź najbliższe wyjazdy swoich dzieci, opłać raty i zaakceptuj umowy.`}
-        note="Najważniejsze sprawy do załatwienia znajdziesz na kartach poniżej."
+        description={
+          <>
+            {`${today}. Sprawdź najbliższe wyjazdy swoich dzieci, opłać raty i zaakceptuj umowy.`}
+            <br className="hidden sm:block" />
+            Najważniejsze sprawy do załatwienia znajdziesz na kartach poniżej.
+          </>
+        }
       />
 
       <ChildrenList

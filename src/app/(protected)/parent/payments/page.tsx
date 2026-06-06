@@ -35,8 +35,13 @@ export default async function ParentPaymentsPage({ searchParams }: Props) {
       <ParentPageHeader
         icon={CreditCard}
         title="Płatności"
-        description="Sprawdzaj należności, terminy i dane do przelewu dla każdego dziecka."
-        note="Płatności pojawią się po potwierdzeniu udziału i odblokowaniu wyjazdu przez organizatora."
+        description={
+          <>
+            Sprawdzaj należności, terminy i dane do przelewu dla każdego dziecka.
+            <br className="hidden sm:block" />
+            Płatności pojawią się po potwierdzeniu udziału i odblokowaniu wyjazdu przez organizatora.
+          </>
+        }
       >
         <ParentChildSelector
           selectedChildId={selectedChildId}

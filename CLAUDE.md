@@ -72,6 +72,15 @@ tekstów UI. Nie powielaj tych zasad tutaj.
   nadpisywała className, więc Płatności/Kalendarz/Dokumenty/Wiadomości/
   Profil/Moje dzieci/Dodaj-Edytuj dziecko/OWU dostają nowy wygląd
   automatycznie.
+- **Stała wysokość nagłówka** na wszystkich podstronach rodzica:
+  `min-h-[232px] sm:min-h-[256px] lg:min-h-[285px]` w bazie `ParentPageHeader`.
+  Treść top-aligned (tytuł na tej samej wysokości przy nawigacji), nadmiar
+  wysokości wpada w strefę zaniku tła.
+- **Ukryte ikony przy tytule**: `hideIcon` domyślnie `true` (jak w Wyjazdach).
+  Wszystkie podstrony tracą niebieski boks ikony obok tytułu.
+- **Płatności i Moje dzieci**: tekst z `note` (z ikoną „i") przeniesiony do
+  `description` jako druga linia (`<br className="hidden sm:block" />`) —
+  ten sam styl co opis, bez ikony „i". Pozostałe podstrony zachowują `note`.
 
 ### 2026-06-05 (Panel rodzica — jednolity nagłówek na wszystkich podstronach)
 

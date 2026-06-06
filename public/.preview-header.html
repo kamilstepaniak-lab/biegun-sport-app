@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style> body { background:#f8fafc; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; } </style>
+</head>
+<body class="p-8">
+<div class="mx-auto max-w-6xl space-y-12">
+
+  <!-- ============ PŁATNOŚCI (ikona + note + selektor) ============ -->
+  <div>
+    <p class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Płatności — z ikoną i wskazówką</p>
+    <section class="parent-page-hero relative overflow-hidden rounded-[16px] border border-blue-100/70 bg-[#eef6ff] px-4 pb-5 pt-6 text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-7 sm:pb-7 sm:pt-8 lg:px-10 lg:pb-10 lg:pt-10">
+      <div aria-hidden="true" class="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.92)_30%,rgba(248,251,255,0.35)_58%,rgba(248,251,255,0.12)_100%),url('/parent-hero-mountains.svg')] bg-[length:100%_100%,auto_100%] bg-[position:left_top,right_bottom] bg-no-repeat"></div>
+      <div aria-hidden="true" class="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-b from-transparent via-[#f8fbff]/80 to-[#f8fafc]"></div>
+
+      <div class="relative z-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-blue-100/70 text-blue-500 shadow-sm ring-1 ring-blue-200/50 sm:h-16 sm:w-16">
+          <svg class="h-7 w-7 sm:h-8 sm:w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-4xl font-black leading-none tracking-normal text-slate-950 sm:text-5xl lg:text-[52px]">Płatności</h1>
+          <p class="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">Sprawdzaj należności, terminy i dane do przelewu dla każdego dziecka.</p>
+          <p class="mt-3 inline-flex items-start gap-2 text-sm leading-snug text-slate-500">
+            <svg class="mt-0.5 h-4 w-4 shrink-0 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            Płatności pojawią się po potwierdzeniu udziału i odblokowaniu wyjazdu przez organizatora.
+          </p>
+        </div>
+      </div>
+
+      <div class="relative z-10 mt-7 grid gap-4 lg:mt-10 lg:grid-cols-1 lg:items-end">
+        <div class="min-w-0">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-700">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Wybierz dziecko
+            </div>
+            <div class="flex gap-2.5 overflow-x-auto pb-1">
+              <button class="flex h-12 shrink-0 items-center gap-2.5 rounded-[10px] border border-blue-500 bg-blue-50 px-3 text-sm font-bold text-blue-950 shadow-sm">
+                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                <span class="whitespace-nowrap">Lusia Biegun</span>
+              </button>
+              <button class="flex h-12 shrink-0 items-center gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-500 text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                <span class="whitespace-nowrap">Krystian Biegun</span>
+              </button>
+              <button class="flex h-12 shrink-0 items-center gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                <span class="whitespace-nowrap">Jan Biegun</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ WYJAZDY (hideIcon + tools=search) ============ -->
+  <div>
+    <p class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Wyjazdy — z wyszukiwarką (slot tools)</p>
+    <section class="parent-trips-hero relative overflow-hidden rounded-none border-0 bg-[#eef6ff] px-4 pb-14 pt-6 text-slate-900 shadow-none sm:px-7 sm:pb-16 sm:pt-8 lg:min-h-[285px] lg:px-10 lg:pb-20 lg:pt-10">
+      <div aria-hidden="true" class="absolute inset-0 bg-[linear-gradient(90deg,rgba(248,251,255,0.98)_0%,rgba(248,251,255,0.92)_30%,rgba(248,251,255,0.35)_58%,rgba(248,251,255,0.12)_100%),url('/parent-hero-mountains.svg')] bg-[length:100%_100%,auto_100%] bg-[position:left_top,right_bottom] bg-no-repeat"></div>
+      <div aria-hidden="true" class="absolute inset-x-0 bottom-0 z-[1] h-24 bg-gradient-to-b from-transparent via-[#f8fbff]/80 to-[#f8fafc]"></div>
+
+      <div class="relative z-10 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+        <div class="min-w-0">
+          <h1 class="text-4xl font-black leading-none tracking-normal text-slate-950 sm:text-5xl lg:text-[52px]">Wyjazdy</h1>
+          <p class="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">Zarządzaj wyjazdami Twoich dzieci w jednym miejscu.<br class="hidden sm:block" />Przeglądaj listę, sprawdzaj szczegóły i dodawaj nowe zgłoszenia.</p>
+        </div>
+      </div>
+
+      <div class="relative z-10 mt-7 grid gap-4 lg:mt-10 lg:grid-cols-[minmax(260px,390px)_1px_minmax(0,1fr)] lg:items-end">
+        <div class="min-w-0">
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-700">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Wpisz nazwę wyjazdu
+            </label>
+            <div class="relative">
+              <svg class="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input class="h-12 w-full rounded-[10px] border border-slate-200 bg-white/92 pl-10 pr-10 text-sm font-bold text-slate-950 shadow-sm ring-1 ring-white/50 backdrop-blur focus:outline-none" />
+            </div>
+          </div>
+        </div>
+        <div class="hidden h-full min-h-20 w-px bg-slate-300/80 lg:block"></div>
+        <div class="min-w-0">
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-xs font-black uppercase tracking-normal text-blue-700">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Wybierz dziecko
+            </div>
+            <div class="flex gap-2.5 overflow-x-auto pb-1">
+              <button class="flex h-12 shrink-0 items-center gap-2.5 rounded-[10px] border border-blue-500 bg-blue-50 px-3 text-sm font-bold text-blue-950 shadow-sm">
+                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                <span class="whitespace-nowrap">Lusia Biegun</span>
+              </button>
+              <button class="flex h-12 shrink-0 items-center gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-500 text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                <span class="whitespace-nowrap">Krystian Biegun</span>
+              </button>
+              <button class="flex h-12 shrink-0 items-center gap-2.5 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700">
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400 text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></span>
+                <span class="whitespace-nowrap">Jan Biegun</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</div>
+</body>
+</html>
