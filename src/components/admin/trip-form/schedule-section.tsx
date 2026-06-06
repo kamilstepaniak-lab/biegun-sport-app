@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { Plus, Trash2, MapPin, Calendar, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PanelCard, SectionTitle } from '@/components/shared';
+import { cn } from '@/lib/utils';
 
 import { LocationSelect } from './location-select';
 import type { SectionProps } from './types';
@@ -183,16 +184,16 @@ export function ScheduleSection({
     new Date(formData.return_datetime) <= new Date(formData.departure_datetime);
 
   return (
-    <Card className={hasErrors ? 'border-destructive' : ''}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Terminy i lokalizacje
-          {hasErrors && <AlertCircle className="h-4 w-4 text-destructive ml-auto" />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
+    <PanelCard className={cn('p-5 sm:p-6 space-y-6', hasErrors && 'ring-2 ring-red-300')}>
+      <SectionTitle
+        icon={Calendar}
+        title="Terminy i lokalizacje"
+        description="Data, godzina i miejsce wyjazdu oraz powrotu"
+        action={hasErrors ? <AlertCircle className="h-5 w-5 text-red-500" /> : undefined}
+      />
+
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
           <Checkbox
             id="allow_own_transport"
             checked={formData.allow_own_transport}
@@ -301,7 +302,7 @@ export function ScheduleSection({
             onStop2LocationChange={(val) => updateFormData({ return_stop2_location: val })}
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </PanelCard>
   );
 }

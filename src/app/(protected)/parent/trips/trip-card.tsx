@@ -304,32 +304,13 @@ function TripCardInner({
               const pType = confirmPanel.type;
               const isStop = ['stop1', 'stop2', 'own'].includes(pType);
               const isNotGoing = pType === 'not_going';
-              const stopName = pType === 'stop2'
-                ? (trip.departure_stop2_location || 'Przystanek 2')
-                : pType === 'own' ? 'Dojazd własny'
-                  : (trip.departure_location || 'Przystanek 1');
-              const headerLabel = isStop
-                ? `Jedzie – ${stopName}`
-                : isNotGoing ? 'Nie jedzie'
-                  : 'Wiadomość do admina';
-              const panelCls = isStop
-                ? 'bg-emerald-50 border-emerald-100'
-                : isNotGoing ? 'bg-red-50 border-red-100'
-                  : 'bg-amber-50 border-amber-100';
-              const headerCls = isStop ? 'text-emerald-700' : isNotGoing ? 'text-red-700' : 'text-amber-700';
               const confirmBtnCls = isStop
                 ? 'bg-emerald-600 hover:bg-emerald-700'
                 : isNotGoing ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-blue-600 hover:bg-blue-700';
               const confirmLabel = pType === 'other' ? 'Wyślij' : 'Potwierdź';
               return (
-                <div className={cn('ml-11 p-3 rounded-xl border space-y-2', panelCls)}>
-                  <div className={cn('flex items-center gap-1.5', headerCls)}>
-                    {isStop && <CheckCircle2 className="h-3.5 w-3.5" />}
-                    {isNotGoing && <X className="h-3.5 w-3.5" />}
-                    {pType === 'other' && <HelpCircle className="h-3.5 w-3.5" />}
-                    <span className="text-xs font-semibold">{headerLabel}</span>
-                  </div>
+                <div className="ml-11 space-y-2">
                   <Textarea
                     placeholder={pType === 'other' ? 'Wpisz wiadomość do admina…' : 'Wiadomość dla admina (opcjonalna, np. dołączy później)'}
                     value={confirmMessage}

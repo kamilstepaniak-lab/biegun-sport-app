@@ -299,12 +299,7 @@ export function ParticipantsTable({
                                   <DropdownMenuTrigger asChild>
                                     <button
                                       disabled={pendingGroupId === p.id}
-                                      className={cn(
-                                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors hover:opacity-80',
-                                        colors
-                                          ? cn(colors.bg, colors.text, colors.border)
-                                          : 'border-slate-200 bg-slate-100 text-slate-500',
-                                      )}
+                                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 transition-colors hover:text-blue-700"
                                     >
                                       {pendingGroupId === p.id ? (
                                         <Loader2 className="h-3 w-3 animate-spin" />

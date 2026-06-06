@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, SectionTitle } from '@/components/shared';
 import { createTrip, updateTrip } from '@/lib/actions/trips';
 import type { Group, TripWithPaymentTemplates, TripStatus } from '@/types';
 
@@ -191,15 +191,14 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         updateFormData={updateFormData}
         hasErrors={hasDateErrors}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Treść maila do rodziców</CardTitle>
-          <CardDescription>Zaznacz sekcje, które mają pojawić się w mailu wysyłanym do grupy.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <EmailContentFields formData={formData} updateFormData={updateFormData} />
-        </CardContent>
-      </Card>
+      <PanelCard className="p-5 sm:p-6 space-y-5">
+        <SectionTitle
+          icon={Mail}
+          title="Treść maila do rodziców"
+          description="Zaznacz sekcje, które mają pojawić się w mailu wysyłanym do grupy."
+        />
+        <EmailContentFields formData={formData} updateFormData={updateFormData} />
+      </PanelCard>
       <PaymentsSection
         formData={formData}
         updateFormData={updateFormData}
@@ -218,15 +217,15 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
       />
 
       {/* Przyciski akcji */}
-      <div className="sticky bottom-4 bg-background rounded-lg border shadow-lg overflow-hidden">
+      <div className="sticky bottom-4 bg-white rounded-2xl ring-1 ring-slate-200 shadow-lg overflow-hidden">
         {/* Panel błędów walidacji */}
         {submitAttempted && validationErrors.length > 0 && (
-          <div className="p-3 bg-destructive/10 border-b border-destructive/30">
-            <p className="text-sm font-semibold text-destructive mb-1 flex items-center gap-1">
+          <div className="p-3 bg-red-50 border-b border-red-200">
+            <p className="text-sm font-semibold text-red-700 mb-1 flex items-center gap-1">
               <AlertCircle className="h-4 w-4" />
               Uzupełnij brakujące dane:
             </p>
-            <ul className="text-sm text-destructive space-y-0.5 pl-5">
+            <ul className="text-sm text-red-700 space-y-0.5 pl-5">
               {validationErrors.map((err, i) => (
                 <li key={i} className="list-disc">{err}</li>
               ))}

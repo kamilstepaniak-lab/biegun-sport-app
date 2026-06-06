@@ -485,8 +485,8 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                 <CollapsibleTrigger asChild>
                   <div className="grid cursor-pointer gap-4 p-4 lg:grid-cols-[1fr_auto_auto] lg:items-center">
                     <div className="flex items-center gap-3">
-                      <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', colors.bg)}>
-                        <GroupIcon name={group.name} className={cn('h-5 w-5', colors.text)} />
+                      <div className={cn('flex h-11 w-11 items-center justify-center rounded-full text-white', colors.dot)}>
+                        <GroupIcon name={group.name} className="h-5 w-5" />
                       </div>
                       <div>
                         <h3 className="text-base font-semibold text-slate-900">

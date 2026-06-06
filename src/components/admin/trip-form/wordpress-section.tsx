@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Copy, Check, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PanelCard, SectionTitle } from '@/components/shared';
 import type { SectionProps } from './types';
 
 interface Props extends SectionProps {
@@ -29,14 +29,13 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Zapisy zewnętrzne (WordPress)</CardTitle>
-        <CardDescription>
-          Połączenie z formularzem &bdquo;Zapisz dziecko&rdquo; na stronie BiegunSport.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
+    <PanelCard className="p-5 sm:p-6 space-y-5">
+      <SectionTitle
+        icon={Globe}
+        title="Zapisy zewnętrzne (WordPress)"
+        description="Połączenie z formularzem „Zapisz dziecko” na stronie BiegunSport."
+      />
+      <div className="space-y-5">
         {tripId ? (
           <div>
             <label className="text-xs font-medium text-muted-foreground">
@@ -102,7 +101,7 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </PanelCard>
   );
 }

@@ -13,7 +13,7 @@ export function EmailContentFields({ formData, updateFormData }: SectionProps) {
   const [showAdditionalInfo, setShowAdditionalInfo] = useState(!!formData.additional_info);
 
   return (
-    <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
+    <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
       {/* Co zabrać */}
       <div className="space-y-3">
         <div className="flex items-center gap-3">
@@ -38,7 +38,7 @@ export function EmailContentFields({ formData, updateFormData }: SectionProps) {
               placeholder={"- Kask narciarski (obowiązkowy)\n- Gogle narciarskie\n- Rękawice narciarskie\n- Kurtka i spodnie narciarskie\n- Buty narciarskie (jeśli własne)\n- Narty i kijki (jeśli własne)\n- Ubrania na zmianę / bielizna termiczna\n- Środki higieniczne\n- Legitymacja szkolna / dowód tożsamości\n- Karta EKUZ lub ubezpieczenie"}
               rows={8}
             />
-            <p className="text-xs text-muted-foreground">Każda pozycja w nowej linii (ze znakiem - lub bez)</p>
+            <p className="text-xs text-slate-500">Każda pozycja w nowej linii (ze znakiem - lub bez)</p>
           </div>
         )}
       </div>

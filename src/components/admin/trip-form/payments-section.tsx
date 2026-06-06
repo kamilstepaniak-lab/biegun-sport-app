@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronUp, CreditCard, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -22,6 +21,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { PanelCard, PanelIcon } from '@/components/shared';
+import { cn } from '@/lib/utils';
 import type { CreatePaymentTemplateInput } from '@/types';
 
 import { emptyPayment, type SectionProps } from './types';
@@ -86,44 +87,48 @@ export function PaymentsSection({
   }
 
   return (
-    <Card className={hasErrors ? 'border-destructive' : ''}>
+    <PanelCard className={cn('p-5 sm:p-6', hasErrors && 'ring-2 ring-red-300')}>
       <Collapsible open={paymentsOpen} onOpenChange={setPaymentsOpen}>
-        <CardHeader>
-          <CollapsibleTrigger asChild>
-            <div className="flex items-center justify-between cursor-pointer">
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Płatności ({formData.payment_templates.length})
-                {hasErrors && <AlertCircle className="h-4 w-4 text-destructive" />}
-              </CardTitle>
-              {paymentsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between gap-4 cursor-pointer">
+            <div className="flex items-start gap-3">
+              <PanelIcon icon={CreditCard} tone="blue" />
+              <div>
+                <h2 className="text-base font-semibold leading-tight text-slate-900">
+                  Płatności ({formData.payment_templates.length})
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                  Raty i karnety naliczane uczestnikom tego wyjazdu
+                </p>
+              </div>
             </div>
-          </CollapsibleTrigger>
-        </CardHeader>
+            <div className="flex items-center gap-2 shrink-0">
+              {hasErrors && <AlertCircle className="h-5 w-5 text-red-500" />}
+              {paymentsOpen ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+            </div>
+          </div>
+        </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-4">
+          <div className="space-y-4 pt-5">
             {formData.payment_templates.map((payment, index) => {
               const mode = dueMode(payment);
               return (
-                <Card key={index} className="bg-muted/30">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">
-                        {payment.payment_type === 'season_pass'
-                          ? 'Karnet'
-                          : `Rata ${payment.installment_number || index + 1}`}
-                      </CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive h-8 w-8"
-                        onClick={() => removePayment(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      {payment.payment_type === 'season_pass'
+                        ? 'Karnet'
+                        : `Rata ${payment.installment_number || index + 1}`}
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-600 hover:text-red-600 h-8 w-8"
+                      onClick={() => removePayment(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                     {/* Typ płatności */}
                     <div className="space-y-2">
                       <Label>Typ</Label>
@@ -324,8 +329,7 @@ export function PaymentsSection({
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                </div>
               );
             })}
 
@@ -335,20 +339,20 @@ export function PaymentsSection({
             </Button>
 
             {formData.payment_templates.length === 0 && (
-              <p className="text-sm text-destructive text-center">
+              <p className="text-sm text-red-600 text-center">
                 Dodaj przynajmniej jedną płatność
               </p>
             )}
 
             <Separator className="my-4" />
 
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-500">
               Numer konta do przelewu jest wspólny dla wszystkich wyjazdów —
               ustawisz go w <span className="font-medium">Ustawienia → Konta bankowe</span>.
             </p>
-          </CardContent>
+          </div>
         </CollapsibleContent>
       </Collapsible>
-    </Card>
+    </PanelCard>
   );
 }

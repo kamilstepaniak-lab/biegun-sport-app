@@ -42,6 +42,37 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Admin — ikony grup spójne z rodzicem: pełna kuleczka)
+
+- Grupy (`admin/groups/groups-list.tsx`): kafelek ikony z jasnego boksu
+  (`rounded-xl` + `colors.bg` + kolorowa ikona `colors.text`) → pełnokolorowa
+  kuleczka (`rounded-full` + `colors.dot` + biała ikona). Kanon jak u rodzica
+  (`GroupBadge`/`change-group-card`).
+- Uczestnicy (`participants-table.tsx`): usunięta pigułka grupy w dropdownie
+  zmiany grupy (`border`, `rounded-full`, `colors.bg/text/border`). Zostaje:
+  kropka (pełen kolor + biała ikona), nazwa grupy, `ChevronDown`. Przycisk
+  bez tła/ramki, `text-slate-700 hover:text-blue-700`.
+
+### 2026-06-06 (Admin — tworzenie/edycja wyjazdu: kanon PanelCard, trip-form/)
+
+- Wszystkie sekcje formularza (`src/components/admin/trip-form/`) przepięte ze
+  starych `Card/CardHeader/CardTitle` (płaska ikona obok tytułu) na kanon
+  `PanelCard` + `SectionTitle` (niebieski kafelek ikony `PanelIcon`, tytuł
+  `text-base font-semibold`, opis `text-sm text-slate-600`) — spójność z
+  Finanse/Umowy/Płatności. Dotknięte: `basic-info`, `schedule`, `payments`,
+  `groups`, `wordpress`, karta „Treść maila" w `index.tsx`.
+- Stan błędu sekcji: `ring-2 ring-red-300` na `PanelCard` + `AlertCircle`
+  w slocie `action`/przy chevronie (zamiast `border-destructive`).
+- Płatności: nagłówek-collapsible zbudowany ręcznie (PanelIcon+tytuł+opis,
+  chevron w prawym rogu), wewnętrzne karty rat `rounded-xl border-slate-200
+  bg-slate-50` (zamiast zagnieżdżonych `Card bg-muted/30`).
+- Grupy: kafelki z ikoną grupy (`GroupIcon` + dot `getGroupColor().dot`),
+  zaznaczone `border-blue-500 bg-blue-50`.
+- Kolory ujednolicone na slate/red (koniec `text-muted-foreground`/
+  `text-destructive` w tych plikach). Pasek akcji w `index.tsx`:
+  `rounded-2xl ring-1 ring-slate-200`, panel błędów `bg-red-50`.
+- Logika formularza bez zmian — tylko warstwa wizualna.
+
 ### 2026-06-06 (Rodzic — karta wyjazdu: kolory na niebieskim, trip-card.tsx)
 
 - Kuleczki grup w nagłówku mają teraz NAZWĘ obok (dot w kolorze grupy +
