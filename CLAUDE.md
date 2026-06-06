@@ -42,6 +42,19 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Rodzic — opisy nagłówków + wyrównanie ikony obozu)
+
+- Kalendarz/Dokumenty/Wiadomości: `note` (z ikoną „i") przeniesiony do
+  `description` jako druga linia (`<br className="hidden sm:block" />`),
+  ten sam styl co opis. Po wcześniejszych Płatnościach/Moich dzieciach —
+  żadna podstrona rodzica nie używa już `note` z ikoną „i".
+- Moje dzieci: opis to jeden ciąg zdań pod datą (usunięty `<br>`).
+- Wyrównanie ikony typu obozu z tytułem (`getCampVisual`): w `children-list`
+  (najbliższe wyjazdy) i `calendar-view` (mobile + desktop) ikona+tytuł są
+  teraz w wierszu `items-center` (usunięty `mt-0.5` z ikony). W children-list
+  imiona dzieci przeniesione pod tytuł z wcięciem `pl-9` (szerokość ikony
+  + gap), żeby ikona centrowała się względem samej linii tytułu.
+
 ### 2026-06-06 (Rodzic — stała pozycja elementów nagłówka)
 
 - Problem: przy przełączaniu podstron tytuł/opis/przyciski wyboru dziecka

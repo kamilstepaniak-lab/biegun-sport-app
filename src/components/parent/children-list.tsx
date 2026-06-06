@@ -363,19 +363,20 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                   <div key={trip.id} className="px-5 py-4 space-y-2.5">
                     {/* Tytuł + badge */}
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex min-w-0 items-start gap-2">
-                        {(() => {
-                          const visual = getCampVisual(trip.category);
-                          return (
-                            <span className={cn('mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
-                              <visual.Icon className="h-3.5 w-3.5" />
-                            </span>
-                          );
-                        })()}
-                        <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm leading-snug">{trip.title}</p>
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {(() => {
+                            const visual = getCampVisual(trip.category);
+                            return (
+                              <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                                <visual.Icon className="h-3.5 w-3.5" />
+                              </span>
+                            );
+                          })()}
+                          <p className="min-w-0 font-semibold text-gray-900 text-sm leading-snug">{trip.title}</p>
+                        </div>
                         {trip.childNames && trip.childNames.length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
+                          <div className="mt-1 flex flex-wrap gap-1 pl-9">
                             {trip.childNames.map((name) => (
                               <span
                                 key={name}
@@ -386,7 +387,6 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                             ))}
                           </div>
                         )}
-                        </div>
                       </div>
                       <span className={cn(
                         'inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold flex-shrink-0',

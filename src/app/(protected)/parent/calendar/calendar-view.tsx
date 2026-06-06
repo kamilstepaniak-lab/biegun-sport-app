@@ -173,11 +173,11 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
               return (
                 <Link key={trip.id} href={`/parent/trips?${childQuery}&trip=${trip.id}`} className="block p-4 hover:bg-gray-50/60 transition-colors">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-start gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                       {(() => {
                         const visual = getCampVisual(trip.category);
                         return (
-                          <span className={cn('mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                          <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
                             <visual.Icon className="h-3.5 w-3.5" />
                           </span>
                         );
@@ -250,11 +250,11 @@ export function ParentCalendarView({ trips, childQuery }: ParentCalendarViewProp
                   return (
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
                       <td className="px-5 py-3.5 align-top">
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-center gap-2">
                           {(() => {
                             const visual = getCampVisual(trip.category);
                             return (
-                              <span className={cn('mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                              <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
                                 <visual.Icon className="h-3.5 w-3.5" />
                               </span>
                             );

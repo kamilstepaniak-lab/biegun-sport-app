@@ -12,8 +12,13 @@ export default async function ParentMessagesPage() {
       <ParentPageHeader
         icon={MessageSquare}
         title="Wiadomości"
-        description="Powiadomienia i ogłoszenia od organizatora o płatnościach, wyjazdach i sprawach klubu."
-        note="Kliknij wiadomość, aby przeczytać pełną treść."
+        description={
+          <>
+            Powiadomienia i ogłoszenia od organizatora o płatnościach, wyjazdach i sprawach klubu.
+            <br className="hidden sm:block" />
+            Kliknij wiadomość, aby przeczytać pełną treść.
+          </>
+        }
       />
 
       <ParentMessagesList initialMessages={messages} />

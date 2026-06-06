@@ -59,8 +59,13 @@ export default async function ParentContractsPage({ searchParams }: Props) {
       <ParentPageHeader
         icon={FileText}
         title="Dokumenty"
-        description="Dokumenty klubu oraz umowy uczestnictwa dla Twoich dzieci w jednym miejscu."
-        note="Akceptacja umowy jest wymagana przed udziałem dziecka w wyjeździe."
+        description={
+          <>
+            Dokumenty klubu oraz umowy uczestnictwa dla Twoich dzieci w jednym miejscu.
+            <br className="hidden sm:block" />
+            Akceptacja umowy jest wymagana przed udziałem dziecka w wyjeździe.
+          </>
+        }
       >
         <ParentChildSelector
           selectedChildId={selectedChildId}

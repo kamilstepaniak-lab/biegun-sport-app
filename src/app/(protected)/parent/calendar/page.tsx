@@ -42,8 +42,13 @@ export default async function ParentCalendarPage({ searchParams }: Props) {
       <ParentPageHeader
         icon={CalendarDays}
         title="Kalendarz"
-        description="Terminy wyjazdów Twoich dzieci w przejrzystym widoku miesięcznym."
-        note="Kliknij dzień w kalendarzu, żeby przejść do szczegółów wyjazdu."
+        description={
+          <>
+            Terminy wyjazdów Twoich dzieci w przejrzystym widoku miesięcznym.
+            <br className="hidden sm:block" />
+            Kliknij dzień w kalendarzu, żeby przejść do szczegółów wyjazdu.
+          </>
+        }
       >
         <ParentChildSelector
           selectedChildId={selectedChildId}
