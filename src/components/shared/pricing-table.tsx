@@ -43,6 +43,27 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
         return a.amount - b.amount;
     });
 
+    // Rata 1 — źródło terminu dla karnetów płatnych „w terminie raty 1".
+    const firstInstallment = templates.find(
+        (t) => t.payment_type === 'installment' && (t.installment_number === 1 || t.is_first_installment),
+    );
+    // Termin do pokazania dla karnetu „w terminie raty 1": konkretna data raty 1
+    // jeśli znana, inaczej PaymentDue pokaże etykietę „w terminie raty 1".
+    function dueProps(template: TripPaymentTemplate) {
+        if (template.due_with_first_installment && firstInstallment) {
+            return {
+                paymentDueDate:
+                    actualDueDatesByTemplateId?.[firstInstallment.id] ?? firstInstallment.due_date ?? undefined,
+                dueWithFirstInstallment: true as const,
+            };
+        }
+        return {
+            paymentDueDate: actualDueDatesByTemplateId?.[template.id],
+            templateDueDate: template.due_date,
+            dueDaysFromConfirmation: template.due_days_from_confirmation,
+        };
+    }
+
     return (
         <div className="rounded-lg border bg-card">
             {/* Mobile: karty */}
@@ -73,9 +94,7 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                                 </span>
                                 <span className="text-muted-foreground">
                                     <PaymentDue
-                                        paymentDueDate={actualDueDatesByTemplateId?.[template.id]}
-                                        templateDueDate={template.due_date}
-                                        dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                        {...dueProps(template)}
                                         departureDate={departureDate}
                                     />
                                 </span>
@@ -114,9 +133,7 @@ export function PricingTable({ templates, departureDate, actualDueDatesByTemplat
                                     </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                                         <PaymentDue
-                                            paymentDueDate={actualDueDatesByTemplateId?.[template.id]}
-                                            templateDueDate={template.due_date}
-                                            dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                            {...dueProps(template)}
                                             departureDate={departureDate}
                                         />
                                     </td>

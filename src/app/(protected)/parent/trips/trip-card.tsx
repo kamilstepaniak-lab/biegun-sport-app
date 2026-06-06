@@ -540,6 +540,7 @@ function TripCardInner({
                               paymentDueDate={paymentDueByTemplate.get(template.id)}
                               templateDueDate={template.due_date}
                               dueDaysFromConfirmation={template.due_days_from_confirmation}
+                              dueWithFirstInstallment={template.due_with_first_installment}
                               confirmedAt={confirmedChild?.confirmed_at}
                               departureDate={trip.departure_datetime}
                             />
@@ -579,6 +580,7 @@ function TripCardInner({
                                 paymentDueDate={paymentDueByTemplate.get(template.id)}
                                 templateDueDate={template.due_date}
                                 dueDaysFromConfirmation={template.due_days_from_confirmation}
+                                dueWithFirstInstallment={template.due_with_first_installment}
                                 confirmedAt={confirmedChild?.confirmed_at}
                                 departureDate={trip.departure_datetime}
                               />

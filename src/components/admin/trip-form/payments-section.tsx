@@ -27,7 +27,7 @@ import type { CreatePaymentTemplateInput } from '@/types';
 
 import { emptyPayment, type SectionProps } from './types';
 
-type DueMode = 'specific' | 'departure' | 'confirmation';
+type DueMode = 'specific' | 'departure' | 'confirmation' | 'installment1';
 
 export function PaymentsSection({
   formData,
@@ -58,29 +58,44 @@ export function PaymentsSection({
     updateFormData({ payment_templates: newPayments });
   }
 
+  // Czy w cenniku istnieje rata 1 (cel dla trybu „w terminie raty 1")
+  const hasFirstInstallment = formData.payment_templates.some(
+    (p) => p.payment_type === 'installment' && p.installment_number === 1,
+  );
+
   function dueMode(payment: CreatePaymentTemplateInput): DueMode {
+    if (payment.due_with_first_installment) return 'installment1';
     if (departureDate && payment.due_date === departureDate) return 'departure';
     if (payment.due_days_from_confirmation) return 'confirmation';
     return 'specific';
   }
 
   function changeDueMode(index: number, mode: DueMode) {
-    if (mode === 'departure') {
+    if (mode === 'installment1') {
+      updatePayment(index, {
+        due_date: null,
+        due_days_from_confirmation: null,
+        due_with_first_installment: true,
+      });
+    } else if (mode === 'departure') {
       updatePayment(index, {
         due_date: departureDate,
         due_days_from_confirmation: null,
+        due_with_first_installment: false,
         payment_method: 'cash',
       });
     } else if (mode === 'confirmation') {
       updatePayment(index, {
         due_date: null,
         due_days_from_confirmation: 5,
+        due_with_first_installment: false,
         payment_method: 'transfer',
       });
     } else {
       updatePayment(index, {
         due_date: null,
         due_days_from_confirmation: null,
+        due_with_first_installment: false,
         payment_method: 'transfer',
       });
     }
@@ -143,6 +158,11 @@ export function PaymentsSection({
                             category_name: null,
                             birth_year_from: null,
                             birth_year_to: null,
+                            // Karnet domyślnie płatny w terminie raty 1 (zaliczka).
+                            // Ratę zostawiamy z dotychczasowym trybem terminu.
+                            ...(value === 'season_pass'
+                              ? { due_with_first_installment: true, due_date: null, due_days_from_confirmation: null }
+                              : { due_with_first_installment: false }),
                           })
                         }
                         className="flex gap-4"
@@ -307,6 +327,11 @@ export function PaymentsSection({
                                 W dniu wyjazdu
                               </SelectItem>
                               <SelectItem value="confirmation">5 dni od potwierdzenia obozu</SelectItem>
+                              {payment.payment_type === 'season_pass' && (
+                                <SelectItem value="installment1" disabled={!hasFirstInstallment}>
+                                  W terminie raty 1
+                                </SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                           {mode === 'specific' && (

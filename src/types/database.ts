@@ -149,6 +149,7 @@ export interface TripPaymentTemplate {
   currency: Currency;
   due_date: string | null;
   due_days_from_confirmation: number | null;
+  due_with_first_installment: boolean;
   payment_method: PaymentMethod | null;
   created_at: string;
 }
@@ -364,6 +365,7 @@ export interface CreatePaymentTemplateInput {
   currency: Currency;
   due_date?: string | null;
   due_days_from_confirmation?: number | null;
+  due_with_first_installment?: boolean;
   payment_method?: PaymentMethod | null;
 }
 

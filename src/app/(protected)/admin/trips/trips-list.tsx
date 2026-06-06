@@ -175,9 +175,19 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
   const departureDate = new Date(trip.departure_datetime);
   const returnDate = new Date(trip.return_datetime);
   const daysUntilDeparture = Math.max(0, Math.ceil((departureDate.getTime() - renderedAt) / 86400000));
-  const totalAmount =
-    trip.payment_templates?.reduce((sum, template) => sum + Number(template.amount ?? 0), 0) ?? 0;
-  const primaryCurrency = trip.payment_templates?.[0]?.currency ?? 'PLN';
+  // Sumujemy osobno per waluta — wyjazd może mieć raty w PLN i karnet w EUR.
+  const totalsByCurrency = (trip.payment_templates ?? []).reduce<Record<string, number>>(
+    (acc, template) => {
+      const currency = template.currency || 'PLN';
+      acc[currency] = (acc[currency] ?? 0) + Number(template.amount ?? 0);
+      return acc;
+    },
+    {},
+  );
+  const totalLabel =
+    Object.entries(totalsByCurrency)
+      .map(([currency, amount]) => `${amount.toFixed(0)} ${currency}`)
+      .join(' / ') || '0 PLN';
 
   return (
     <Collapsible
@@ -479,8 +489,8 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                         <td colSpan={3} className="px-4 py-3 text-left text-sm font-bold text-slate-900">
                           Razem
                         </td>
-                        <td className="px-4 py-3 text-left text-xl font-black text-slate-950">
-                          {totalAmount.toFixed(0)} {primaryCurrency}
+                        <td className="px-4 py-3 text-left text-xl font-black text-slate-950 whitespace-nowrap">
+                          {totalLabel}
                         </td>
                       </tr>
                     </tfoot>

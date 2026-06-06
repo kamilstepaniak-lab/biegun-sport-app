@@ -40,6 +40,7 @@ export const paymentTemplateSchema = z.object({
   }),
   due_date: z.string().nullable().optional(),
   due_days_from_confirmation: z.number().int().positive().nullable().optional(),
+  due_with_first_installment: z.boolean().default(false),
   payment_method: z.enum(['cash', 'transfer', 'both']).nullable().optional(),
 }).refine((data) => {
   if (data.payment_type === 'installment' && !data.installment_number) {

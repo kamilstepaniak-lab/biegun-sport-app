@@ -5,6 +5,8 @@ interface PaymentTemplateForDue {
   due_date?: string | null;
   // due_days_from_confirmation > 0 always (Zod .positive()), so falsy check is safe
   due_days_from_confirmation?: number | null;
+  // Karnet płatny „w terminie raty 1" — gdy nie znamy jeszcze konkretnej daty
+  due_with_first_installment?: boolean | null;
 }
 
 /**
@@ -18,6 +20,7 @@ export function formatPaymentDueDate(
   if (template.due_days_from_confirmation) {
     return `${template.due_days_from_confirmation} dni od potwierdzenia`;
   }
+  if (template.due_with_first_installment) return 'w terminie raty 1';
   if (!template.due_date) return 'wg ustaleń';
   if (departureDate) {
     const departureDay = new Date(departureDate).toISOString().split('T')[0];

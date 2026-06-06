@@ -258,6 +258,7 @@ export async function createTrip(input: CreateTripInput) {
       currency: template.currency,
       due_date: template.due_date || null,
       due_days_from_confirmation: template.due_days_from_confirmation ?? null,
+      due_with_first_installment: template.due_with_first_installment || false,
       payment_method: template.payment_method || null,
     }));
 
@@ -294,6 +295,7 @@ function paymentTemplatesEqual(
     currency: string;
     due_date: string | null;
     due_days_from_confirmation: number | null;
+    due_with_first_installment: boolean | null;
     payment_method: string | null;
   }[],
   formTemplates: CreatePaymentTemplateInput[]
@@ -311,6 +313,7 @@ function paymentTemplatesEqual(
     currency: string;
     due_date?: string | null;
     due_days_from_confirmation?: number | null;
+    due_with_first_installment?: boolean | null;
     payment_method?: string | null;
   }) =>
     JSON.stringify({
@@ -325,6 +328,7 @@ function paymentTemplatesEqual(
       currency: t.currency,
       due_date: t.due_date ? String(t.due_date).split('T')[0] : null,
       due_days_from_confirmation: t.due_days_from_confirmation ?? null,
+      due_with_first_installment: t.due_with_first_installment || false,
       payment_method: t.payment_method || null,
     });
   const a = dbTemplates.map(norm).sort();
@@ -354,7 +358,7 @@ async function syncTripPaymentsAfterPricingChange(
 ): Promise<{ success: true } | { error: string }> {
   const { data: newTemplates, error: newTemplatesError } = await supabaseAdmin
     .from('trip_payment_templates')
-    .select('id, payment_type, installment_number, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
+    .select('id, payment_type, installment_number, is_first_installment, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, due_with_first_installment, payment_method')
     .eq('trip_id', id);
 
   if (newTemplatesError) {
@@ -376,19 +380,6 @@ async function syncTripPaymentsAfterPricingChange(
 
   if (!activeRegs || activeRegs.length === 0) return { success: true };
 
-  const { data: tripRelease, error: tripReleaseError } = await supabaseAdmin
-    .from('trips')
-    .select('payments_released_at')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (tripReleaseError) {
-    console.error('Fetch trip payment release error:', tripReleaseError);
-    return { error: 'Nie udało się sprawdzić widoczności płatności rodzica' };
-  }
-
-  const parentVisible = Boolean(tripRelease?.payments_released_at);
-
   for (const reg of activeRegs as { id: string; participant_id: string; participation_status: string; confirmed_at: string | null }[]) {
     const { data: participant, error: participantError } = await supabaseAdmin
       .from('participants')
@@ -409,14 +400,29 @@ async function syncTripPaymentsAfterPricingChange(
       id: string;
       payment_type: string;
       installment_number: number | null;
+      is_first_installment: boolean | null;
       birth_year_from: number | null;
       birth_year_to: number | null;
       amount: number;
       currency: string;
       due_date: string | null;
       due_days_from_confirmation: number | null;
+      due_with_first_installment: boolean | null;
       payment_method: string | null;
     }[];
+
+    // Termin raty 1 — cel dla karnetów płatnych „w terminie raty 1".
+    // Zależy od confirmed_at danej rejestracji (reguła „X dni od potwierdzenia").
+    const firstInstallment = templates.find(
+      (t) => t.payment_type === 'installment' && (t.installment_number === 1 || t.is_first_installment),
+    );
+    const firstInstallmentDueDate = firstInstallment
+      ? resolveEffectiveDueDate({
+          templateDueDate: firstInstallment.due_date,
+          dueDaysFromConfirmation: firstInstallment.due_days_from_confirmation,
+          confirmedAt: reg.confirmed_at,
+        })
+      : null;
 
     const applicableTemplates = templates.filter((t) => {
       if (t.payment_type === 'season_pass') {
@@ -478,11 +484,14 @@ async function syncTripPaymentsAfterPricingChange(
     for (const template of applicableTemplates) {
       // Termin: dla reguły „X dni od potwierdzenia" wyliczamy konkretną datę
       // z confirmed_at — inaczej due_date zostałby pusty (template.due_date = null).
-      const effectiveDueDate = resolveEffectiveDueDate({
-        templateDueDate: template.due_date,
-        dueDaysFromConfirmation: template.due_days_from_confirmation,
-        confirmedAt: reg.confirmed_at,
-      });
+      // Karnet „w terminie raty 1" dziedziczy wyliczony termin raty 1.
+      const effectiveDueDate = template.due_with_first_installment
+        ? firstInstallmentDueDate
+        : resolveEffectiveDueDate({
+            templateDueDate: template.due_date,
+            dueDaysFromConfirmation: template.due_days_from_confirmation,
+            confirmedAt: reg.confirmed_at,
+          });
       const match = existing.find(
         (p) =>
           p.payment_type === template.payment_type &&
@@ -545,7 +554,7 @@ async function syncTripPaymentsAfterPricingChange(
             currency: template.currency,
             due_date: effectiveDueDate,
             status: 'pending',
-            parent_visible: parentVisible,
+            parent_visible: true,
             amount_paid: 0,
             payment_method: template.payment_method,
           });
@@ -691,7 +700,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
   if (payment_templates !== undefined) {
     const { data: existingTemplates } = await supabaseAdmin
       .from('trip_payment_templates')
-      .select('id, payment_type, installment_number, is_first_installment, includes_season_pass, category_name, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, payment_method')
+      .select('id, payment_type, installment_number, is_first_installment, includes_season_pass, category_name, birth_year_from, birth_year_to, amount, currency, due_date, due_days_from_confirmation, due_with_first_installment, payment_method')
       .eq('trip_id', id);
 
     pricingChanged = !paymentTemplatesEqual(existingTemplates ?? [], payment_templates);
@@ -738,6 +747,7 @@ export async function updateTrip(id: string, input: Partial<CreateTripInput>) {
           currency: template.currency,
           due_date: template.due_date || null,
           due_days_from_confirmation: template.due_days_from_confirmation ?? null,
+          due_with_first_installment: template.due_with_first_installment || false,
           payment_method: template.payment_method || null,
         }));
 
@@ -1233,6 +1243,7 @@ export interface PaymentTemplateForParent {
   currency: string;
   due_date: string | null;
   due_days_from_confirmation: number | null;
+  due_with_first_installment: boolean | null;
   payment_method: string | null;
 }
 
@@ -1320,6 +1331,7 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
           currency,
           due_date,
           due_days_from_confirmation,
+          due_with_first_installment,
           payment_method
         )
       `)
@@ -1715,6 +1727,7 @@ export async function duplicateTrip(tripId: string) {
       amount: number;
       currency: string;
       due_date: string | null;
+      due_with_first_installment: boolean | null;
       payment_method: string | null;
     }) => ({
       trip_id: newTrip.id,
@@ -1722,6 +1735,7 @@ export async function duplicateTrip(tripId: string) {
       installment_number: pt.installment_number,
       is_first_installment: pt.is_first_installment,
       includes_season_pass: pt.includes_season_pass,
+      due_with_first_installment: pt.due_with_first_installment || false,
       category_name: pt.category_name,
       birth_year_from: pt.birth_year_from ? pt.birth_year_from + 1 : null, // Przesuń roczniki
       birth_year_to: pt.birth_year_to ? pt.birth_year_to + 1 : null,

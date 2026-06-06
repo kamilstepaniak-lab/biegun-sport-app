@@ -38,6 +38,7 @@ export const emptyPayment: CreatePaymentTemplateInput = {
   currency: 'PLN',
   due_date: null,
   due_days_from_confirmation: null,
+  due_with_first_installment: false,
   payment_method: 'transfer',
 };
 

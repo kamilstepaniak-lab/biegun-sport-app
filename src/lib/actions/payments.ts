@@ -715,13 +715,6 @@ export async function createPaymentsForRegistration(registrationId: string, trip
     return { success: true, message: 'Brak szablonów płatności' };
   }
 
-  const { data: tripRelease } = await supabaseAdmin
-    .from('trips')
-    .select('payments_released_at')
-    .eq('id', tripId)
-    .maybeSingle();
-  const parentVisible = Boolean(tripRelease?.payments_released_at);
-
   // Pobierz dane uczestnika (do sprawdzenia rocznika dla karnetów)
   const { data: participant } = await supabaseAdmin
     .from('participants')
@@ -731,6 +724,24 @@ export async function createPaymentsForRegistration(registrationId: string, trip
 
   const birthYear = participant ? new Date(participant.birth_date).getFullYear() : null;
 
+  // Termin raty 1 — cel dla karnetów płatnych „w terminie raty 1" (zaliczka).
+  const firstInstallmentTemplate = (templates as {
+    payment_type: string;
+    installment_number: number | null;
+    is_first_installment: boolean | null;
+    due_date: string | null;
+    due_days_from_confirmation: number | null;
+  }[]).find(
+    (t) => t.payment_type === 'installment' && (t.installment_number === 1 || t.is_first_installment),
+  );
+  const firstInstallmentDueDate = firstInstallmentTemplate
+    ? resolveEffectiveDueDate({
+        templateDueDate: firstInstallmentTemplate.due_date,
+        dueDaysFromConfirmation: firstInstallmentTemplate.due_days_from_confirmation,
+        confirmedAt,
+      })
+    : null;
+
   // Utwórz płatności
   const paymentsToCreate = templates
     .filter((template: {
@@ -739,11 +750,18 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       birth_year_to: number | null;
       category_name: string | null;
     }) => {
-      // Dla karnetów sprawdź czy rocznik się zgadza
-      if (template.payment_type === 'season_pass' && birthYear) {
-        const matchesFrom = !template.birth_year_from || birthYear >= template.birth_year_from;
-        const matchesTo = !template.birth_year_to || birthYear <= template.birth_year_to;
-        return matchesFrom && matchesTo;
+      // Karnet z ograniczeniem rocznikowym — przyznaj tylko gdy znamy rocznik
+      // dziecka i mieści się w przedziale. Bez daty urodzenia nie da się tego
+      // zweryfikować, więc karnetu NIE tworzymy (spójne z synchronizacją cennika).
+      if (template.payment_type === 'season_pass') {
+        if (template.birth_year_from || template.birth_year_to) {
+          if (!birthYear) return false;
+          const matchesFrom = !template.birth_year_from || birthYear >= template.birth_year_from;
+          const matchesTo = !template.birth_year_to || birthYear <= template.birth_year_to;
+          return matchesFrom && matchesTo;
+        }
+        // Karnet bez ograniczeń rocznikowych — dotyczy wszystkich
+        return true;
       }
       return true;
     })
@@ -755,13 +773,16 @@ export async function createPaymentsForRegistration(registrationId: string, trip
       currency: string;
       due_date: string | null;
       due_days_from_confirmation: number | null;
+      due_with_first_installment: boolean | null;
       payment_method: string | null;
     }) => {
-      const dueDate = resolveEffectiveDueDate({
-        templateDueDate: template.due_date,
-        dueDaysFromConfirmation: template.due_days_from_confirmation,
-        confirmedAt,
-      });
+      const dueDate = template.due_with_first_installment
+        ? firstInstallmentDueDate
+        : resolveEffectiveDueDate({
+            templateDueDate: template.due_date,
+            dueDaysFromConfirmation: template.due_days_from_confirmation,
+            confirmedAt,
+          });
       return {
         registration_id: registrationId,
         participant_id: participantId,
@@ -774,7 +795,9 @@ export async function createPaymentsForRegistration(registrationId: string, trip
         currency: template.currency,
         due_date: dueDate,
         status: 'pending',
-        parent_visible: parentVisible,
+        // Widoczne dla rodzica od razu po potwierdzeniu „Jedzie" —
+        // niezależnie od wysłania maila informacyjnego do grupy.
+        parent_visible: true,
         amount_paid: 0,
       };
     });

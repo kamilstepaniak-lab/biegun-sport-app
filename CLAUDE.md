@@ -42,6 +42,54 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Płatności — widoczność u rodzica + suma per waluta)
+
+- **Płatności widoczne od razu po „Jedzie"** (było: dopiero po wysłaniu maila
+  informacyjnego do grupy). Odpięte `parent_visible` od `payments_released_at`:
+  `createPaymentsForRegistration` (`payments.ts`) i insert w
+  `syncTripPaymentsAfterPricingChange` (`trips.ts`) ustawiają teraz
+  `parent_visible: true` na stałe. Usunięte zbędne zapytania o
+  `payments_released_at` i zmienne `parentVisible` w obu ścieżkach.
+  Mechanizm maila (`sendTripInfoEmailToGroup` → flip `parent_visible=true`)
+  zostaje, ale jest już redundantny dla widoczności.
+- UWAGA dane: płatności utworzone PRZED tą zmianą mają w DB
+  `parent_visible=false` i pozostaną ukryte. Jednorazowy backfill (ręcznie na
+  Supabase): `UPDATE payments SET parent_visible=true WHERE registration_id IS
+  NOT NULL AND status <> 'cancelled' AND parent_visible=false;`
+- **Suma cennika per waluta** (`admin/trips/trips-list.tsx`): było sumowanie
+  wszystkich rat do jednej liczby z walutą pierwszej raty (500 PLN + 600 EUR =
+  „1100 PLN"). Teraz `totalsByCurrency` grupuje kwoty po walucie i renderuje
+  np. „500 PLN / 600 EUR". To była też przyczyna wrażenia „EUR nie zadziałało"
+  przy edycji.
+- **Karnet bez `birth_date` — ujednolicone** (#5): `createPaymentsForRegistration`
+  (`payments.ts`) ma teraz tę samą logikę co sync — karnet z ograniczeniem
+  rocznikowym NIE powstaje, gdy dziecko nie ma daty urodzenia (wcześniej
+  createPayments tworzył go mimo braku rocznika).
+- **Karnet w terminie raty 1** (#6/#7): nowa kolumna
+  `trip_payment_templates.due_with_first_installment` (migracja
+  `payment-template-due-with-first-installment.sql` — DO RĘCZNEGO
+  URUCHOMIENIA na Supabase, inaczej INSERT/odczyt szablonów się wywali).
+  Gdy `true`, efektywny termin płatności = termin raty 1
+  (`installment_number=1` / `is_first_installment`), liczony per rejestracja
+  z `confirmed_at`. Karnet zostaje OSOBNĄ pozycją (własna kwota/waluta/rocznik),
+  tylko termin współdzielony — model „zaliczka = rata 1 + karnet" bez sklejania
+  kwot.
+  - Formularz (`payments-section.tsx`): nowy tryb terminu „W terminie raty 1"
+    (tylko dla karnetu, disabled bez raty 1). Przełączenie typu na karnet
+    domyślnie ustawia ten tryb.
+  - Naliczanie: `createPaymentsForRegistration` (`payments.ts`) i
+    `syncTripPaymentsAfterPricingChange` (`trips.ts`) wyliczają termin raty 1
+    i podstawiają go karnetowi z flagą.
+  - Zapis/odczyt/porównanie/duplikacja szablonów + select rodzica rozszerzone
+    o nową kolumnę (`createTrip`, `updateTrip`, `paymentTemplatesEqual`,
+    `duplicateTrip`, `PaymentTemplateForParent`).
+  - Wyświetlanie: `formatPaymentDueDate`/`PaymentDue` znają etykietę
+    „w terminie raty 1"; `PricingTable` i karta rodzica (`trip-card.tsx`)
+    pokazują konkretną datę raty 1, gdy znana, inaczej etykietę.
+- `includes_season_pass` nadal nieużywane w naliczaniu (świadomie pominięte —
+  to była tylko etykieta „zawiera karnet"; realne wiązanie robi teraz
+  `due_with_first_installment`).
+
 ### 2026-06-06 (Admin — ikony grup spójne z rodzicem: pełna kuleczka)
 
 - Grupy (`admin/groups/groups-list.tsx`): kafelek ikony z jasnego boksu

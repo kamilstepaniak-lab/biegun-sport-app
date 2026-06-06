@@ -11,6 +11,8 @@ interface PaymentDueProps {
   templateDueDate?: string | null;
   /** Reguła „X dni od potwierdzenia” z szablonu. */
   dueDaysFromConfirmation?: number | null;
+  /** Karnet płatny „w terminie raty 1” (gdy brak konkretnej daty). */
+  dueWithFirstInstallment?: boolean | null;
   /** Kiedy rodzic potwierdził udział (ISO). */
   confirmedAt?: string | null;
   /** Data wyjazdu — pozwala pokazać „w dniu wyjazdu”. */
@@ -29,6 +31,7 @@ export function PaymentDue({
   paymentDueDate,
   templateDueDate,
   dueDaysFromConfirmation,
+  dueWithFirstInstallment,
   confirmedAt,
   departureDate,
   status,
@@ -45,7 +48,11 @@ export function PaymentDue({
     return (
       <span className={cn('text-gray-500', className)}>
         {formatPaymentDueDate(
-          { due_date: templateDueDate, due_days_from_confirmation: dueDaysFromConfirmation },
+          {
+            due_date: templateDueDate,
+            due_days_from_confirmation: dueDaysFromConfirmation,
+            due_with_first_installment: dueWithFirstInstallment,
+          },
           departureDate ?? undefined,
         )}
       </span>
