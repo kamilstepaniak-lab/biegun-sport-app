@@ -63,6 +63,15 @@ tekstów UI. Nie powielaj tych zasad tutaj.
   w równej linii (góra).
 - Większy odstęp tytuł → opis w `ParentPageHeader`: `mt-3` → `mt-5`
   (dotyczy wszystkich nagłówków rodzica).
+- **Ujednolicenie: wszystkie podstrony rodzica dostają nagłówek w stylu
+  Wyjazdów.** `seamlessBottom` domyślnie `true` w `ParentPageHeader`; baza
+  bez ramki/zaokrąglenia/cienia (pełny bleed + dolne wtopienie). Ramka/karta
+  (`rounded-[16px] border bg-[#eef6ff] shadow`) tylko dla jawnego
+  `seamlessBottom={false}` (nieużywane). Padding dołu bazy podniesiony
+  (`pb-12 sm:pb-14 lg:pb-16`) na strefę zaniku. Żadna podstrona nie
+  nadpisywała className, więc Płatności/Kalendarz/Dokumenty/Wiadomości/
+  Profil/Moje dzieci/Dodaj-Edytuj dziecko/OWU dostają nowy wygląd
+  automatycznie.
 
 ### 2026-06-05 (Panel rodzica — jednolity nagłówek na wszystkich podstronach)
 

@@ -28,7 +28,7 @@ export function ParentPageHeader({
   description,
   note,
   hideIcon = false,
-  seamlessBottom = false,
+  seamlessBottom = true,
   tools,
   children,
   className,
@@ -38,8 +38,8 @@ export function ParentPageHeader({
   return (
     <section
       className={cn(
-        'parent-page-hero relative overflow-hidden rounded-[16px] border border-blue-100/70 px-4 pb-5 pt-6 text-slate-900 shadow-[0_10px_28px_rgba(15,23,42,0.08)] sm:px-7 sm:pb-7 sm:pt-8 lg:px-10 lg:pb-10 lg:pt-10',
-        seamlessBottom ? 'bg-transparent' : 'bg-[#eef6ff]',
+        'parent-page-hero relative overflow-hidden px-4 pb-12 pt-6 text-slate-900 sm:px-7 sm:pb-14 sm:pt-8 lg:px-10 lg:pb-16 lg:pt-10',
+        seamlessBottom ? 'bg-transparent' : 'rounded-[16px] border border-blue-100/70 bg-[#eef6ff] shadow-[0_10px_28px_rgba(15,23,42,0.08)]',
         className,
       )}
     >
