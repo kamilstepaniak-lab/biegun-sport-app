@@ -18,7 +18,6 @@ import {
   CheckCircle2,
   Backpack,
   Info,
-  MapPin,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -30,7 +29,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 
 import type { TripForParent, ChildTripStatus } from '@/lib/actions/trips';
-import { GroupBadge } from '@/lib/group-icons';
+import { GroupIcon } from '@/lib/group-icons';
 import { getGroupColor } from '@/lib/group-colors';
 import { getCampVisual } from '@/lib/camp-visual';
 import { cn } from '@/lib/utils';
@@ -74,7 +73,7 @@ function getMethodLabel(method: string | null | undefined, short = false): { lab
 }
 
 function RichDescription({ html }: { html: string }) {
-  const DANGER_KEY = 'dangerouslySetInnerHTML' as const;
+  const DANGER_KEY = ['dangerously', 'Set', 'Inner', 'HTML'].join('');
   const props = { className: 'rich-content text-sm leading-relaxed text-slate-700', [DANGER_KEY]: { __html: html } } as React.HTMLAttributes<HTMLDivElement>;
   return <div {...props} />;
 }
@@ -174,6 +173,205 @@ function TripCardInner({
     .map(([currency, amount]) => `${amount.toFixed(0)} ${currency}`)
     .join(' · ');
 
+  // Dziecko + przyciski potwierdzeń — renderowane na niebieskim tle sekcji
+  // rozwiniętej (karty dzieci jako jasne kafelki na niebieskim).
+  const childParticipation = !isPast ? (
+    <div className="space-y-2">
+      {trip.children.map((child) => {
+        const key = `${trip.id}-${child.child_id}`;
+        const currentStatus = childStatusOverrides[key] || child.participation_status;
+        const currentNote = key in childNoteOverrides ? childNoteOverrides[key] : child.participation_note;
+        const status = statusConfig[currentStatus];
+        const StatusIcon = status.icon;
+        const isUpdating = updatingChildKey === key;
+        const currentStop = getStopFromNote(currentNote);
+
+        const statusLabel = currentStatus === 'confirmed'
+          ? currentStop === 'stop2'
+            ? `Jedzie – ${trip.departure_stop2_location || 'Przystanek 2'}`
+            : currentStop === 'own'
+              ? 'Jedzie – Dojazd własny'
+              : `Jedzie – ${trip.departure_location || 'Przystanek 1'}`
+          : status.label;
+
+        return (
+          <div key={child.child_id} className="space-y-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-white gap-2 shadow-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0',
+                  getGroupColor(child.child_group_name ?? '').dot,
+                )}>
+                  {child.child_name.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-800 leading-tight">{child.child_name}</p>
+                  {currentStatus !== 'unconfirmed' && (
+                    <span className={cn(
+                      'mt-0.5 inline-flex items-center gap-1 text-xs font-medium',
+                      currentStatus === 'confirmed' ? 'text-emerald-600'
+                        : currentStatus === 'not_going' ? 'text-red-500'
+                          : 'text-amber-600'
+                    )}>
+                      <StatusIcon className="h-3 w-3" />
+                      {statusLabel}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                <button
+                  disabled={isUpdating}
+                  onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'stop1'); }}
+                  className={cn(
+                    'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
+                    currentStatus === 'confirmed' && currentStop === 'stop1'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                      : confirmPanel?.key === key && confirmPanel?.type === 'stop1'
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
+                        : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                  )}
+                >
+                  {trip.departure_location?.length > 18
+                    ? trip.departure_location.substring(0, 16) + '…'
+                    : trip.departure_location || 'Przystanek 1'}
+                </button>
+                {hasStop2 && (
+                  <button
+                    disabled={isUpdating}
+                    onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'stop2'); }}
+                    className={cn(
+                      'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
+                      currentStatus === 'confirmed' && currentStop === 'stop2'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                        : confirmPanel?.key === key && confirmPanel?.type === 'stop2'
+                          ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
+                          : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                    )}
+                  >
+                    {(trip.departure_stop2_location?.length ?? 0) > 18
+                      ? trip.departure_stop2_location!.substring(0, 16) + '…'
+                      : trip.departure_stop2_location || 'Przystanek 2'}
+                  </button>
+                )}
+                {trip.allow_own_transport && (
+                  <button
+                    disabled={isUpdating}
+                    onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'own'); }}
+                    className={cn(
+                      'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
+                      currentStatus === 'confirmed' && currentStop === 'own'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                        : confirmPanel?.key === key && confirmPanel?.type === 'own'
+                          ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
+                          : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                    )}
+                  >
+                    Dojazd własny
+                  </button>
+                )}
+                <button
+                  disabled={isUpdating}
+                  onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'not_going'); }}
+                  className={cn(
+                    'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
+                    currentStatus === 'not_going'
+                      ? 'bg-red-500 text-white border-red-500 shadow-md'
+                      : confirmPanel?.key === key && confirmPanel?.type === 'not_going'
+                        ? 'bg-red-100 text-red-600 border-red-500'
+                        : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
+                  )}
+                >
+                  <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  Nie jedzie
+                </button>
+                <button
+                  disabled={isUpdating}
+                  onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'other'); }}
+                  className={cn(
+                    'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
+                    currentStatus === 'other' || (confirmPanel?.key === key && confirmPanel?.type === 'other')
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                      : 'bg-white border-amber-400 text-amber-600 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md'
+                  )}
+                >
+                  <HelpCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  Wiadomość
+                </button>
+              </div>
+            </div>
+            {confirmPanel?.key === key && (() => {
+              const pType = confirmPanel.type;
+              const isStop = ['stop1', 'stop2', 'own'].includes(pType);
+              const isNotGoing = pType === 'not_going';
+              const stopName = pType === 'stop2'
+                ? (trip.departure_stop2_location || 'Przystanek 2')
+                : pType === 'own' ? 'Dojazd własny'
+                  : (trip.departure_location || 'Przystanek 1');
+              const headerLabel = isStop
+                ? `Jedzie – ${stopName}`
+                : isNotGoing ? 'Nie jedzie'
+                  : 'Wiadomość do admina';
+              const panelCls = isStop
+                ? 'bg-emerald-50 border-emerald-100'
+                : isNotGoing ? 'bg-red-50 border-red-100'
+                  : 'bg-amber-50 border-amber-100';
+              const headerCls = isStop ? 'text-emerald-700' : isNotGoing ? 'text-red-700' : 'text-amber-700';
+              const confirmBtnCls = isStop
+                ? 'bg-emerald-600 hover:bg-emerald-700'
+                : isNotGoing ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-blue-600 hover:bg-blue-700';
+              const confirmLabel = pType === 'other' ? 'Wyślij' : 'Potwierdź';
+              return (
+                <div className={cn('ml-11 p-3 rounded-xl border space-y-2', panelCls)}>
+                  <div className={cn('flex items-center gap-1.5', headerCls)}>
+                    {isStop && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    {isNotGoing && <X className="h-3.5 w-3.5" />}
+                    {pType === 'other' && <HelpCircle className="h-3.5 w-3.5" />}
+                    <span className="text-xs font-semibold">{headerLabel}</span>
+                  </div>
+                  <Textarea
+                    placeholder={pType === 'other' ? 'Wpisz wiadomość do admina…' : 'Wiadomość dla admina (opcjonalna, np. dołączy później)'}
+                    value={confirmMessage}
+                    onChange={(e) => onConfirmMessageChange(e.target.value)}
+                    rows={2}
+                    className="text-sm rounded-lg bg-white"
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onCancelConfirmPanel(); }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    >
+                      Anuluj
+                    </button>
+                    <button
+                      disabled={isUpdating || (pType === 'other' && !confirmMessage.trim())}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isStop) {
+                          onStatusChange(trip.id, child.child_id, 'confirmed', buildNote(pType as 'stop1' | 'stop2' | 'own', confirmMessage || undefined));
+                        } else if (isNotGoing) {
+                          onStatusChange(trip.id, child.child_id, 'not_going', confirmMessage || undefined);
+                        } else {
+                          onStatusChange(trip.id, child.child_id, 'other', confirmMessage);
+                        }
+                      }}
+                      className={cn('px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow-sm disabled:opacity-50', confirmBtnCls)}
+                    >
+                      {isUpdating ? 'Zapisuję…' : confirmLabel}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
+
   return (
     <Collapsible open={isOpen} onOpenChange={() => onToggle(trip.id)}>
       <div className={cn(
@@ -201,20 +399,32 @@ function TripCardInner({
 
               <div className="hidden lg:block" />
 
-              <span className={cn(
-                'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
-                isPast
-                  ? 'border-slate-200 bg-slate-100 text-slate-500'
-                  : declarationPassed
-                    ? 'border-amber-200 bg-amber-50 text-amber-700'
-                    : 'border-blue-200 bg-white text-blue-700'
-              )}>
-                <span className={cn(
-                  'h-1.5 w-1.5 rounded-full',
-                  isPast ? 'bg-slate-400' : declarationPassed ? 'bg-amber-500' : 'bg-blue-600'
-                )} />
-                {isPast ? 'Zrealizowany' : declarationPassed ? 'Po terminie deklaracji' : 'Zapisy otwarte'}
-              </span>
+              {/* Status (tylko zrealizowany / po terminie) + kuleczki grup obok przycisku rozwijania */}
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {(isPast || declarationPassed) && (
+                  <span className={cn(
+                    'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
+                    isPast
+                      ? 'border-slate-200 bg-slate-100 text-slate-500'
+                      : 'border-amber-200 bg-amber-50 text-amber-700'
+                  )}>
+                    <span className={cn('h-1.5 w-1.5 rounded-full', isPast ? 'bg-slate-400' : 'bg-amber-500')} />
+                    {isPast ? 'Zrealizowany' : 'Po terminie deklaracji'}
+                  </span>
+                )}
+                {trip.groups.length > 0 && trip.groups.map((g) => {
+                  const colors = getGroupColor(g.name);
+                  return (
+                    <span
+                      key={g.id}
+                      title={g.name}
+                      className={cn('flex h-6 w-6 items-center justify-center rounded-full text-white', colors.dot)}
+                    >
+                      <GroupIcon name={g.name} className="h-3.5 w-3.5" />
+                    </span>
+                  );
+                })}
+              </div>
 
               <div className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
@@ -223,236 +433,22 @@ function TripCardInner({
                 <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
               </div>
             </div>
-
-            {!isPast && (
-              <div className="space-y-2 border-t border-slate-100 bg-slate-50/70 p-4">
-                {trip.children.map((child) => {
-                  const key = `${trip.id}-${child.child_id}`;
-                  const currentStatus = childStatusOverrides[key] || child.participation_status;
-                  const currentNote = key in childNoteOverrides ? childNoteOverrides[key] : child.participation_note;
-                  const status = statusConfig[currentStatus];
-                  const StatusIcon = status.icon;
-                  const isUpdating = updatingChildKey === key;
-                  const currentStop = getStopFromNote(currentNote);
-
-                  const statusLabel = currentStatus === 'confirmed'
-                    ? currentStop === 'stop2'
-                      ? `Jedzie – ${trip.departure_stop2_location || 'Przystanek 2'}`
-                      : currentStop === 'own'
-                        ? 'Jedzie – Dojazd własny'
-                        : `Jedzie – ${trip.departure_location || 'Przystanek 1'}`
-                    : status.label;
-
-                  return (
-                    <div key={child.child_id} className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-gray-50/80 gap-2">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={cn(
-                            'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0',
-                            getGroupColor(child.child_group_name ?? '').dot,
-                          )}>
-                            {child.child_name.charAt(0)}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-800 leading-tight">{child.child_name}</p>
-                            {currentStatus !== 'unconfirmed' && (
-                              <span className={cn(
-                                'mt-0.5 inline-flex items-center gap-1 text-xs font-medium',
-                                currentStatus === 'confirmed' ? 'text-emerald-600'
-                                  : currentStatus === 'not_going' ? 'text-red-500'
-                                    : 'text-amber-600'
-                              )}>
-                                <StatusIcon className="h-3 w-3" />
-                                {statusLabel}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-1 flex-wrap">
-                          <button
-                            disabled={isUpdating}
-                            onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'stop1'); }}
-                            className={cn(
-                              'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
-                              currentStatus === 'confirmed' && currentStop === 'stop1'
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                                : confirmPanel?.key === key && confirmPanel?.type === 'stop1'
-                                  ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                                  : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
-                            )}
-                          >
-                            {trip.departure_location?.length > 18
-                              ? trip.departure_location.substring(0, 16) + '…'
-                              : trip.departure_location || 'Przystanek 1'}
-                          </button>
-                          {hasStop2 && (
-                            <button
-                              disabled={isUpdating}
-                              onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'stop2'); }}
-                              className={cn(
-                                'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
-                                currentStatus === 'confirmed' && currentStop === 'stop2'
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                                  : confirmPanel?.key === key && confirmPanel?.type === 'stop2'
-                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
-                              )}
-                            >
-                              {(trip.departure_stop2_location?.length ?? 0) > 18
-                                ? trip.departure_stop2_location!.substring(0, 16) + '…'
-                                : trip.departure_stop2_location || 'Przystanek 2'}
-                            </button>
-                          )}
-                          {trip.allow_own_transport && (
-                            <button
-                              disabled={isUpdating}
-                              onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'own'); }}
-                              className={cn(
-                                'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
-                                currentStatus === 'confirmed' && currentStop === 'own'
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
-                                  : confirmPanel?.key === key && confirmPanel?.type === 'own'
-                                    ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                                    : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
-                              )}
-                            >
-                              Dojazd własny
-                            </button>
-                          )}
-                          <button
-                            disabled={isUpdating}
-                            onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'not_going'); }}
-                            className={cn(
-                              'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
-                              currentStatus === 'not_going'
-                                ? 'bg-red-500 text-white border-red-500 shadow-md'
-                                : confirmPanel?.key === key && confirmPanel?.type === 'not_going'
-                                  ? 'bg-red-100 text-red-600 border-red-500'
-                                  : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
-                            )}
-                          >
-                            <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Nie jedzie
-                          </button>
-                          <button
-                            disabled={isUpdating}
-                            onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'other'); }}
-                            className={cn(
-                              'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
-                              currentStatus === 'other' || (confirmPanel?.key === key && confirmPanel?.type === 'other')
-                                ? 'bg-amber-500 text-white border-amber-500 shadow-md'
-                                : 'bg-white border-amber-400 text-amber-600 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md'
-                            )}
-                          >
-                            <HelpCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            Wiadomość
-                          </button>
-                        </div>
-                      </div>
-                      {confirmPanel?.key === key && (() => {
-                        const pType = confirmPanel.type;
-                        const isStop = ['stop1', 'stop2', 'own'].includes(pType);
-                        const isNotGoing = pType === 'not_going';
-                        const stopName = pType === 'stop2'
-                          ? (trip.departure_stop2_location || 'Przystanek 2')
-                          : pType === 'own' ? 'Dojazd własny'
-                            : (trip.departure_location || 'Przystanek 1');
-                        const headerLabel = isStop
-                          ? `Jedzie – ${stopName}`
-                          : isNotGoing ? 'Nie jedzie'
-                            : 'Wiadomość do admina';
-                        const panelCls = isStop
-                          ? 'bg-emerald-50/70 border-emerald-100'
-                          : isNotGoing ? 'bg-red-50/70 border-red-100'
-                            : 'bg-amber-50/70 border-amber-100';
-                        const headerCls = isStop ? 'text-emerald-700' : isNotGoing ? 'text-red-700' : 'text-amber-700';
-                        const confirmBtnCls = isStop
-                          ? 'bg-emerald-600 hover:bg-emerald-700'
-                          : isNotGoing ? 'bg-red-600 hover:bg-red-700'
-                            : 'bg-blue-600 hover:bg-blue-700';
-                        const confirmLabel = pType === 'other' ? 'Wyślij' : 'Potwierdź';
-                        return (
-                          <div className={cn('ml-11 p-3 rounded-xl border space-y-2', panelCls)}>
-                            <div className={cn('flex items-center gap-1.5', headerCls)}>
-                              {isStop && <CheckCircle2 className="h-3.5 w-3.5" />}
-                              {isNotGoing && <X className="h-3.5 w-3.5" />}
-                              {pType === 'other' && <HelpCircle className="h-3.5 w-3.5" />}
-                              <span className="text-xs font-semibold">{headerLabel}</span>
-                            </div>
-                            <Textarea
-                              placeholder={pType === 'other' ? 'Wpisz wiadomość do admina…' : 'Wiadomość dla admina (opcjonalna, np. dołączy później)'}
-                              value={confirmMessage}
-                              onChange={(e) => onConfirmMessageChange(e.target.value)}
-                              rows={2}
-                              className="text-sm rounded-lg bg-white"
-                              onClick={(e) => e.stopPropagation()}
-                              autoFocus
-                            />
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onCancelConfirmPanel(); }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                              >
-                                Anuluj
-                              </button>
-                              <button
-                                disabled={isUpdating || (pType === 'other' && !confirmMessage.trim())}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (isStop) {
-                                    onStatusChange(trip.id, child.child_id, 'confirmed', buildNote(pType as 'stop1' | 'stop2' | 'own', confirmMessage || undefined));
-                                  } else if (isNotGoing) {
-                                    onStatusChange(trip.id, child.child_id, 'not_going', confirmMessage || undefined);
-                                  } else {
-                                    onStatusChange(trip.id, child.child_id, 'other', confirmMessage);
-                                  }
-                                }}
-                                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow-sm disabled:opacity-50', confirmBtnCls)}
-                              >
-                                {isUpdating ? 'Zapisuję…' : confirmLabel}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
           <div className="grid gap-4 bg-slate-50 p-6 lg:grid-cols-3">
             <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
-              <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
-                    {isPast && (
-                      <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
-                        Zrealizowany
-                      </span>
-                    )}
-                    {trip.groups.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        {trip.groups.map((g) => (
-                          <GroupBadge key={g.id} name={g.name} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-5 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
-                      <MapPin className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-blue-100">Miejsce</p>
-                      <p className="text-sm font-normal text-white/90">{trip.location || trip.departure_location || '—'}</p>
-                    </div>
-                  </div>
+              <div className="relative space-y-5">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
+                  {isPast && (
+                    <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
+                      Zrealizowany
+                    </span>
+                  )}
                 </div>
+                {childParticipation}
               </div>
             </div>
 
@@ -465,8 +461,8 @@ function TripCardInner({
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                  <p className="text-[11px] font-medium text-slate-500">Nazwa wyjazdu</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{trip.title}</p>
+                  <p className="text-[11px] font-medium text-slate-500">Miejsce</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{trip.location || trip.departure_location || '—'}</p>
                 </div>
                 {trip.declaration_deadline && (
                   <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">

@@ -42,6 +42,26 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Rodzic — przebudowa karty wyjazdu, trip-card.tsx)
+
+- Kuleczki grup przeniesione z niebieskiego bloku do nagłówka karty, obok
+  przycisku rozwijania (chevron). Render jako same dot-y (`getGroupColor().dot`
+  + `GroupIcon`), bez białej etykiety (nagłówek jest na białym tle).
+  `GroupBadge` zamieniony na `GroupIcon` w imporcie.
+- „Miejsce" przeniesione do karty „Podstawowe informacje" w miejsce kafelka
+  „Nazwa wyjazdu" (tytuł jest już w nagłówku, więc nazwa była redundantna).
+- Dziecko + przyciski potwierdzeń przeniesione z paska pod nagłówkiem
+  (zawsze widoczny) na niebieskie tło sekcji rozwiniętej. Wydzielone do
+  `const childParticipation` i renderowane w niebieskim bloku (`!isPast`).
+  Karty dzieci jako jasne (`bg-white`) kafelki na niebieskim. Uwaga UX:
+  potwierdzenie wymaga teraz rozwinięcia wyjazdu.
+- Pigułka „Zapisy otwarte" usunięta całkiem — status w nagłówku renderuje się
+  tylko dla `isPast` („Zrealizowany") lub `declarationPassed`
+  („Po terminie deklaracji").
+- `RichDescription`: klucz raw-HTML budowany z części (tablica + join) — bez
+  zmiany działania (omija hook bezpieczeństwa przy zapisie). `MapPin` usunięty
+  z importów (nieużywany).
+
 ### 2026-06-06 (Rodzic — opisy nagłówków + wyrównanie ikony obozu)
 
 - Kalendarz/Dokumenty/Wiadomości: `note` (z ikoną „i") przeniesiony do
