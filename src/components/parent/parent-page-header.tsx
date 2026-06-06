@@ -71,7 +71,7 @@ export function ParentPageHeader({
           <h1 className="text-4xl font-black leading-none tracking-normal text-slate-950 sm:text-5xl lg:text-[52px]">
             {title}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
+          <p className="mt-5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600 sm:text-[15px]">
             {description}
           </p>
           {note && (
@@ -86,7 +86,7 @@ export function ParentPageHeader({
       {hasBottomRow && (
         <div
           className={cn(
-            'relative z-10 mt-7 grid gap-4 lg:mt-10 lg:items-end',
+            'relative z-10 mt-7 grid gap-4 lg:mt-10 lg:items-start',
             tools
               ? 'lg:grid-cols-[minmax(260px,390px)_1px_minmax(0,1fr)]'
               : 'lg:grid-cols-1',

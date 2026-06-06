@@ -57,6 +57,12 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 - Wyszukiwarka wyjazdu już wcześniej spełniała wymóg: etykieta nad polem
   w stylu „Wybierz dziecko" (`text-xs font-black uppercase text-blue-700`)
   + input `h-12` = wysokość chipów. Bez zmian.
+- Wyrównanie dolnego paska: `lg:items-end` → `lg:items-start`. Chipy mają
+  `pb-1`, więc przy `items-end` etykieta selektora lądowała wyżej niż etykieta
+  wyszukiwarki. Po zmianie oba napisy oraz input i przyciski dzieci stoją
+  w równej linii (góra).
+- Większy odstęp tytuł → opis w `ParentPageHeader`: `mt-3` → `mt-5`
+  (dotyczy wszystkich nagłówków rodzica).
 
 ### 2026-06-05 (Panel rodzica — jednolity nagłówek na wszystkich podstronach)
 
