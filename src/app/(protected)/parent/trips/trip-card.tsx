@@ -439,14 +439,11 @@ function TripCardInner({
           <div className="grid gap-4 bg-slate-50 p-6 lg:grid-cols-3">
             <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
               <div className="relative space-y-5">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
-                  {isPast && (
-                    <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
-                      Zrealizowany
-                    </span>
-                  )}
-                </div>
+                {isPast && (
+                  <span className="inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
+                    Zrealizowany
+                  </span>
+                )}
                 {childParticipation}
               </div>
             </div>

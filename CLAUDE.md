@@ -56,6 +56,8 @@ tekstów UI. Nie powielaj tych zasad tutaj.
   „Wiadomość" `border-white/55`; tekst biały. Wybrany/aktywny stan
   wypełniony kolorem (emerald-600 / red-500 / amber-500). Podgląd
   zatwierdzony przez użytkownika (Playwright screenshot).
+- Tytuł wyjazdu usunięty z niebieskiego bloku (jest już w nagłówku karty);
+  zostaje tylko badge „Zrealizowany" dla przeszłych + wiersze dzieci.
 
 ### 2026-06-06 (Rodzic — przebudowa karty wyjazdu, trip-card.tsx)
 
