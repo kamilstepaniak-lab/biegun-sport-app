@@ -272,34 +272,60 @@
 
 /* ── Jasny nagłówek z grafiką gór (admin + rodzic) ────────── */
 .admin-shell .page-header {
-  min-height: 210px;
-  background: linear-gradient(180deg, #eaf3fe 0%, #f1f7fe 50%, #f8fafc 100%);
+  min-height: 285px;
+  align-items: flex-start;
+  background: transparent;
   border-bottom: none;
   overflow: hidden;
+  padding-top: 40px;
+  padding-bottom: 64px;
+}
+
+@media (max-width: 1023px) {
+  .admin-shell .page-header {
+    min-height: 256px;
+  }
 }
 
 .admin-shell .page-header::after {
   content: "";
   position: absolute;
   inset: 0;
-  /* warstwa 1 (na wierzchu): gradient wygaszający dół do koloru sekcji poniżej,
-     warstwa 2: grafika gór przy dolnej krawędzi */
+  /* Warstwa dekoracyjna jak u rodzica: kolor #eef6ff + gradient rozjaśniający
+     w lewo + grafika gór, całość maskowana do przezroczystości u dołu, więc
+     spod spodu prześwituje gradient .admin-main — brak widocznej krawędzi. */
+  background-color: #eef6ff;
   background-image:
-    linear-gradient(to bottom, rgba(248, 250, 252, 0) 55%, #f8fafc 100%),
+    linear-gradient(
+      90deg,
+      rgba(248, 251, 255, 0.98) 0%,
+      rgba(248, 251, 255, 0.92) 30%,
+      rgba(248, 251, 255, 0.35) 58%,
+      rgba(248, 251, 255, 0.12) 100%
+    ),
     url("/parent-hero-mountains.svg");
   background-repeat: no-repeat, no-repeat;
-  background-position: bottom, center bottom;
-  background-size: 100% 100%, 100% auto;
+  background-position: left top, right bottom;
+  background-size: 100% 100%, auto 100%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
   pointer-events: none;
   z-index: 0;
 }
 
 .admin-shell .page-header h1 {
-  color: #0f172a;
+  color: #020617;
+  font-size: clamp(34px, 5vw, 52px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
 }
 
 .admin-shell .page-header p {
+  margin-top: 20px;
   color: #475569;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .admin-shell .page-header a.bg-blue-600,
@@ -383,7 +409,7 @@
   }
 
   .admin-shell .page-header {
-    min-height: 180px;
+    min-height: 232px;
   }
 }
 

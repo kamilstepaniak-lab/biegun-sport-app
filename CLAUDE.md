@@ -42,6 +42,19 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Admin — nagłówek w stylu rodzica)
+
+- `.admin-shell .page-header` (globals.css) przepisany na ten sam hero co
+  rodzic: tło `transparent` + warstwa `::after` z `#eef6ff` + gradient 90deg
+  + góry, maskowana `linear-gradient(to bottom,#000 50%,transparent)`
+  (`-webkit-mask-image` dla iOS) → dolna krawędź wtapia się bezszwowo w
+  gradient `.admin-main`. Tytuł `font-weight:900`, `clamp(34px,5vw,52px)`,
+  `line-height:1`, kolor `#020617`. Opis: `margin-top:20px`, `15px`, `500`.
+  Wysokość spójna: `285px` (≤1023: `256px`, ≤767: `232px`), treść top-aligned
+  (`align-items:flex-start`), `padding-top:40px; padding-bottom:64px`.
+  Komponent `PageHeader` bez zmian (używany tylko w adminie, 22 podstrony) —
+  dostają nowy wygląd automatycznie; akcje zostają w prawym górnym rogu.
+
 ### 2026-06-06 (Wyjazdy rodzic — bezszwowa dolna krawędź nagłówka)
 
 - `ParentPageHeader`: nowy prop `seamlessBottom`. Gdy włączony, sekcja ma
