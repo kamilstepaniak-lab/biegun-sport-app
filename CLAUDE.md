@@ -42,6 +42,21 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-06 (Rodzic — karta wyjazdu: kolory na niebieskim, trip-card.tsx)
+
+- Kuleczki grup w nagłówku mają teraz NAZWĘ obok (dot w kolorze grupy +
+  `GroupIcon` + nazwa, tekst `text-slate-700`).
+- Niebieski blok sekcji rozwiniętej: wiersz dziecka bez białego tła — biała
+  ramka (`border-white/40`), przezroczyste tło, biała czcionka. Avatar
+  pozostaje w kolorze grupy z pierwszą literą imienia.
+- Podpis statusu pod imieniem: `text-emerald-300` (jedzie) / `text-red-300`
+  (nie jedzie) / `text-white` (inne).
+- Przyciski na niebieskim: przezroczyste tło. Ramki kolorem akcji —
+  przystanki/dojazd `border-emerald-400`, „Nie jedzie" `border-red-400`,
+  „Wiadomość" `border-white/55`; tekst biały. Wybrany/aktywny stan
+  wypełniony kolorem (emerald-600 / red-500 / amber-500). Podgląd
+  zatwierdzony przez użytkownika (Playwright screenshot).
+
 ### 2026-06-06 (Rodzic — przebudowa karty wyjazdu, trip-card.tsx)
 
 - Kuleczki grup przeniesione z niebieskiego bloku do nagłówka karty, obok

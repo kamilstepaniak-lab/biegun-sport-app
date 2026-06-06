@@ -196,7 +196,7 @@ function TripCardInner({
 
         return (
           <div key={child.child_id} className="space-y-2" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl bg-white gap-2 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-xl border border-white/40 gap-2">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0',
@@ -205,13 +205,13 @@ function TripCardInner({
                   {child.child_name.charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-800 leading-tight">{child.child_name}</p>
+                  <p className="font-medium text-white leading-tight">{child.child_name}</p>
                   {currentStatus !== 'unconfirmed' && (
                     <span className={cn(
                       'mt-0.5 inline-flex items-center gap-1 text-xs font-medium',
-                      currentStatus === 'confirmed' ? 'text-emerald-600'
-                        : currentStatus === 'not_going' ? 'text-red-500'
-                          : 'text-amber-600'
+                      currentStatus === 'confirmed' ? 'text-emerald-300'
+                        : currentStatus === 'not_going' ? 'text-red-300'
+                          : 'text-white'
                     )}>
                       <StatusIcon className="h-3 w-3" />
                       {statusLabel}
@@ -228,8 +228,8 @@ function TripCardInner({
                     currentStatus === 'confirmed' && currentStop === 'stop1'
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                       : confirmPanel?.key === key && confirmPanel?.type === 'stop1'
-                        ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                        : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                        ? 'bg-emerald-500/30 text-white border-emerald-400'
+                        : 'bg-transparent border-emerald-400 text-white hover:bg-emerald-500/30'
                   )}
                 >
                   {trip.departure_location?.length > 18
@@ -245,8 +245,8 @@ function TripCardInner({
                       currentStatus === 'confirmed' && currentStop === 'stop2'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                         : confirmPanel?.key === key && confirmPanel?.type === 'stop2'
-                          ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                          : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                          ? 'bg-emerald-500/30 text-white border-emerald-400'
+                          : 'bg-transparent border-emerald-400 text-white hover:bg-emerald-500/30'
                     )}
                   >
                     {(trip.departure_stop2_location?.length ?? 0) > 18
@@ -263,8 +263,8 @@ function TripCardInner({
                       currentStatus === 'confirmed' && currentStop === 'own'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                         : confirmPanel?.key === key && confirmPanel?.type === 'own'
-                          ? 'bg-emerald-100 text-emerald-700 border-emerald-500'
-                          : 'bg-white border-emerald-400 text-emerald-700 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md'
+                          ? 'bg-emerald-500/30 text-white border-emerald-400'
+                          : 'bg-transparent border-emerald-400 text-white hover:bg-emerald-500/30'
                     )}
                   >
                     Dojazd własny
@@ -278,8 +278,8 @@ function TripCardInner({
                     currentStatus === 'not_going'
                       ? 'bg-red-500 text-white border-red-500 shadow-md'
                       : confirmPanel?.key === key && confirmPanel?.type === 'not_going'
-                        ? 'bg-red-100 text-red-600 border-red-500'
-                        : 'bg-white border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-md'
+                        ? 'bg-red-500/30 text-white border-red-400'
+                        : 'bg-transparent border-red-400 text-white hover:bg-red-500/30'
                   )}
                 >
                   <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -292,7 +292,7 @@ function TripCardInner({
                     'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
                     currentStatus === 'other' || (confirmPanel?.key === key && confirmPanel?.type === 'other')
                       ? 'bg-amber-500 text-white border-amber-500 shadow-md'
-                      : 'bg-white border-amber-400 text-amber-600 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md'
+                      : 'bg-transparent border-white/55 text-white hover:bg-white/10'
                   )}
                 >
                   <HelpCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -415,12 +415,11 @@ function TripCardInner({
                 {trip.groups.length > 0 && trip.groups.map((g) => {
                   const colors = getGroupColor(g.name);
                   return (
-                    <span
-                      key={g.id}
-                      title={g.name}
-                      className={cn('flex h-6 w-6 items-center justify-center rounded-full text-white', colors.dot)}
-                    >
-                      <GroupIcon name={g.name} className="h-3.5 w-3.5" />
+                    <span key={g.id} className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+                      <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-white', colors.dot)}>
+                        <GroupIcon name={g.name} className="h-3.5 w-3.5" />
+                      </span>
+                      {g.name}
                     </span>
                   );
                 })}
