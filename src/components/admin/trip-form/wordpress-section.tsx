@@ -38,7 +38,7 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
       <div className="space-y-5">
         {tripId ? (
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className="text-xs font-medium text-slate-500">
               ID wyjazdu (referencja techniczna, np. do logów / supportu)
             </label>
             <div className="mt-1 flex items-center gap-2">
@@ -46,7 +46,7 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
                 readOnly
                 value={tripId}
                 onFocus={(e) => e.currentTarget.select()}
-                className="flex-1 rounded border border-input bg-muted px-2 py-1.5 font-mono text-xs"
+                className="flex-1 rounded border border-input bg-slate-50 px-2 py-1.5 font-mono text-xs"
               />
               <Button type="button" variant="outline" size="sm" onClick={() => copy(tripId, 'id')}>
                 {copiedField === 'id' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
@@ -55,7 +55,7 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-500">
             ID wyjazdu pojawi się po jego zapisaniu.
           </p>
         )}
@@ -69,7 +69,7 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
           />
           <span>
             <span className="font-medium">Przyjmuj zgłoszenia z formularza WP</span>
-            <span className="block text-xs text-muted-foreground">
+            <span className="block text-xs text-slate-500">
               Gdy zaznaczone, publiczne API akceptuje zgłoszenia dzieci na ten wyjazd. Zgłoszenia
               trafiają do moderacji w sekcji &bdquo;Zgłoszenia&rdquo;. Domyślnie wyłączone.
             </span>
@@ -78,7 +78,7 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
 
         {tripId && (
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className="text-xs font-medium text-slate-500">
               Kod do wklejenia w stronę WordPress (pod opisem wyjazdu)
             </label>
             <div className="mt-1 flex items-start gap-2">
@@ -87,14 +87,14 @@ export function WordpressSection({ formData, updateFormData, tripId }: Props) {
                 value={embedSnippet}
                 onFocus={(e) => e.currentTarget.select()}
                 rows={3}
-                className="flex-1 rounded border border-input bg-muted px-2 py-1.5 font-mono text-[11px] leading-tight"
+                className="flex-1 rounded border border-input bg-slate-50 px-2 py-1.5 font-mono text-[11px] leading-tight"
               />
               <Button type="button" variant="outline" size="sm" onClick={() => copy(embedSnippet, 'embed')}>
                 {copiedField === 'embed' ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 <span className="ml-1">{copiedField === 'embed' ? 'Skopiowano' : 'Kopiuj'}</span>
               </Button>
             </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
               Wklej w bloku &bdquo;HTML niestandardowy&rdquo; (Gutenberg) lub w edytorze HTML wpisu wyjazdu.
               Formularz załaduje się automatycznie. Działa tylko na domenach, które admin dopisał do whitelisty
               (zmienna <code className="font-mono text-[10px]">WIDGET_ALLOWED_ORIGINS</code>).

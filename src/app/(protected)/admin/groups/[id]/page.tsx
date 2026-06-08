@@ -97,13 +97,13 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
                           {format(birthDate, 'dd.MM.yyyy')}
                         </TableCell>
                         <TableCell>{group.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground truncate max-w-[240px]">
+                        <TableCell className="text-sm text-slate-500 truncate max-w-[240px]">
                           {participant.parent.email || '—'}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        <TableCell className="text-sm text-slate-500 whitespace-nowrap">
                           {participant.parent.phone || '—'}
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-[280px] truncate">
+                        <TableCell className="text-sm text-slate-500 max-w-[280px] truncate">
                           {participant.notes?.trim() || '—'}
                         </TableCell>
                       </TableRow>

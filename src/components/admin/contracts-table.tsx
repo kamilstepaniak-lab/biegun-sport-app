@@ -149,7 +149,7 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b text-muted-foreground">
+            <tr className="border-b text-slate-500">
               <th className="py-2 pr-3 w-8">
                 <Checkbox
                   checked={allSelected}
@@ -189,7 +189,7 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
                     )}
                   </td>
                   <td className="py-2.5 pr-4 font-medium">{contract.childName}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground">
+                  <td className="py-2.5 pr-4 text-slate-500">
                     <div className="text-sm">{contract.parentName}</div>
                     <div className="text-xs text-gray-400">{contract.parentEmail}</div>
                   </td>
@@ -206,7 +206,7 @@ export function ContractsTable({ contracts }: ContractsTableProps) {
                       </Badge>
                     )}
                   </td>
-                  <td className="py-2.5 pr-4 text-muted-foreground text-sm">
+                  <td className="py-2.5 pr-4 text-slate-500 text-sm">
                     {contract.accepted_at
                       ? format(new Date(contract.accepted_at), 'd MMM yyyy, HH:mm', { locale: pl })
                       : '—'}

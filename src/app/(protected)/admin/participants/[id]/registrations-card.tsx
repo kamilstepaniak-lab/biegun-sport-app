@@ -82,7 +82,7 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
       </CardHeader>
       <CardContent>
         {registrations.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
+          <p className="py-8 text-center text-sm text-slate-500">
             Brak zapisów na wyjazdy
           </p>
         ) : (
@@ -108,7 +108,7 @@ export function RegistrationsCard({ registrations }: RegistrationsCardProps) {
                         <p className="truncate text-sm font-semibold text-gray-950">
                           {trip?.title ?? 'Nieznany wyjazd'}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground lg:hidden">
+                        <p className="mt-1 text-xs text-slate-500 lg:hidden">
                           {formatShortDate(trip?.departure_datetime)}
                         </p>
                       </div>

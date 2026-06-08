@@ -100,7 +100,7 @@ export default async function AdminContractsPage() {
       {/* ── SEKCJA: Lista umów pogrupowana per wyjazd ── */}
       {contracts.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
+          <CardContent className="py-12 text-center text-slate-500">
             <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p className="font-medium">Brak umów w systemie</p>
             <p className="text-sm">

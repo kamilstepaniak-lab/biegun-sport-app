@@ -371,7 +371,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
         {/* Filtry */}
         <div className="flex flex-wrap gap-3">
           <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <Input
               placeholder="Szukaj po nazwisku..."
               value={searchQuery}
@@ -428,7 +428,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
           </Select>
 
           <div className="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-slate-500">
               Wyświetlono: {filteredParticipants.length} z {participants.length}
             </span>
             {/* Eksport do Excel */}
@@ -486,7 +486,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
 
         {/* Sekcje pogrupowane wg statusu */}
         {filteredParticipants.length === 0 ? (
-          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-12 text-center text-muted-foreground text-sm">
+          <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-12 text-center text-slate-500 text-sm">
             Brak uczestników spełniających kryteria
           </div>
         ) : (
@@ -691,7 +691,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                                 {payment.amount} {payment.currency}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">-</span>
+                              <span className="text-slate-500">-</span>
                             )}
                           </td>
                         );
@@ -702,7 +702,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                             <Button
                               variant="ghost"
                               size="icon"
-                              className={`h-8 w-8 ${participant.participation_note ? 'text-amber-500' : 'text-muted-foreground'}`}
+                              className={`h-8 w-8 ${participant.participation_note ? 'text-amber-500' : 'text-slate-500'}`}
                               onClick={() => openNoteDialog(participant)}
                             >
                               <MessageSquare className="h-4 w-4" />

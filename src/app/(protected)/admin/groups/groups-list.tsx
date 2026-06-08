@@ -725,23 +725,23 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           <div className="grid grid-cols-4 gap-3">
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold">{importStats.total}</p>
-              <p className="text-xs text-muted-foreground">Łącznie</p>
+              <p className="text-xs text-slate-500">Łącznie</p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold text-amber-600">{importStats.oczekuje}</p>
-              <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <p className="flex items-center justify-center gap-1 text-xs text-slate-500">
                 <Clock className="h-3 w-3" /> Oczekujące
               </p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold text-emerald-600">{importStats.zaimportowano}</p>
-              <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <p className="flex items-center justify-center gap-1 text-xs text-slate-500">
                 <CheckCircle2 className="h-3 w-3" /> Zaimportowane
               </p>
             </div>
             <div className="rounded-lg border p-3 text-center">
               <p className="text-2xl font-bold text-red-600">{importStats.blad}</p>
-              <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+              <p className="flex items-center justify-center gap-1 text-xs text-slate-500">
                 <XCircle className="h-3 w-3" /> Błędy
               </p>
             </div>
@@ -781,7 +781,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
           {importData.length > 0 && (
             <div className="max-h-[300px] overflow-y-auto rounded-md border">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-muted/50">
+                <thead className="sticky top-0 bg-slate-50">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium">#</th>
                     <th className="px-3 py-2 text-left font-medium">Nazwisko</th>
@@ -804,7 +804,7 @@ export function GroupsList({ groups, importStats }: GroupsListProps) {
                             : ''
                       }
                     >
-                      <td className="px-3 py-1.5 text-muted-foreground">{row.id}</td>
+                      <td className="px-3 py-1.5 text-slate-500">{row.id}</td>
                       <td className="px-3 py-1.5 font-medium">{row.nazwisko_dziecka}</td>
                       <td className="px-3 py-1.5">{row.imie_dziecka}</td>
                       <td className="px-3 py-1.5">{row.data_urodzenia}</td>

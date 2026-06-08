@@ -96,7 +96,7 @@ export function ParticipantNotesCard({ participantId, initialNotes, compact = fa
                 <p className="whitespace-pre-wrap text-sm">{notes}</p>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-6">
+              <p className="text-sm text-slate-500 text-center py-6">
                 Brak notatek. Kliknij &quot;Dodaj notatkę&quot; aby dodać informacje o uczestniku.
               </p>
             )}

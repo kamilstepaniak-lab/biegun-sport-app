@@ -348,7 +348,7 @@ export function PaymentsSection({
                           )}
                         </div>
                         {!departureDate && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-slate-500">
                             Opcja &bdquo;W dniu wyjazdu&rdquo; będzie dostępna po ustawieniu daty wyjazdu.
                           </p>
                         )}

@@ -42,6 +42,29 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-08 (Ujednolicenie admina do designu rodzica — desktop priorytet)
+
+- Audyt parytetu admin↔rodzic: nagłówki (`.admin-shell .page-header` =
+  `ParentPageHeader`), `shared/panel.tsx`, sidebar i ikony grup są już wspólne
+  i zgodne — bez zmian. Realny rozjazd: bliźniaczy **Kalendarz** i resztki
+  off-kanon kolorów w adminie.
+- **Kalendarz admina zrównany z rodzicem** (`admin/calendar/calendar-view.tsx`):
+  ikona typu obozu (`getCampVisual(trip.category)`) przy tytule w tabeli
+  desktop (wcześniej tylko rodzic ją miał); mobile przerobione z poziomo
+  przewijanej tabeli („przesuń palcem…") na karty + modal ze szczegółami
+  (Wyjazd/Powrót/grupy/„Szczegóły wyjazdu" → `/admin/trips`) — kopia układu
+  z `parent/calendar/calendar-view.tsx`. Dodany stan `selectedTrip`, importy
+  `X`, `getCampVisual`. Filtr grup admina (którego rodzic nie ma) zostaje.
+- **Cleanup off-kanon kolorów w całym adminie** (design.md slate/red):
+  `text-muted-foreground` → `text-slate-500` (50 wystąpień, 15 plików admin +
+  trip-form), `bg-muted*` → `bg-slate-50`, `text-destructive` → `text-red-600`.
+  `bg-destructive` (akcje usuwania) zostawione — semantyczny czerwony.
+- Decyzja użytkownika: admin na mobile używany rzadko (głównie desktop), więc
+  priorytet to spójność desktopu; mobilne karty admina robione tylko tam, gdzie
+  to czysty bliźniak (kalendarz). `tsc --noEmit` czysty. Bez migracji DB.
+  NIEZWERYFIKOWANE na żywo (brak sesji logowania w Playwright) — sprawdzić
+  wygląd na preview/po deploy.
+
 ### 2026-06-08 (Audyt przepływu auth — login/rejestracja/reset)
 
 - Przegląd całości auth (`actions/auth.ts`, `validations/auth.ts`, `rate-limit.ts`,

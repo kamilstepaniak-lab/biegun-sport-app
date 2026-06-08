@@ -141,7 +141,7 @@ export function TripsImportClient() {
         <CardHeader>
           <CardTitle className="text-base">Jak to działa</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
+        <CardContent className="space-y-3 text-sm text-slate-500">
           <ol className="list-decimal list-inside space-y-1">
             <li>Pobierz szablon CSV i wypełnij go w Excelu (jeden wyjazd = jeden wiersz).</li>
             <li>Zapisz plik w formacie CSV i wgraj go poniżej.</li>
@@ -170,7 +170,7 @@ export function TripsImportClient() {
             <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-8 cursor-pointer hover:bg-gray-50 transition-colors">
               <Upload className="h-8 w-8 text-gray-400" />
               <span className="text-sm font-medium text-gray-700">Kliknij, aby wybrać plik CSV</span>
-              <span className="text-xs text-muted-foreground">Obsługiwany jest plik z szablonu</span>
+              <span className="text-xs text-slate-500">Obsługiwany jest plik z szablonu</span>
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
             </label>
           ) : (
@@ -178,7 +178,7 @@ export function TripsImportClient() {
               <div className="flex items-center gap-2 min-w-0">
                 <FileSpreadsheet className="h-5 w-5 text-emerald-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-gray-700 truncate">{fileName}</span>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <span className="text-xs text-slate-500 whitespace-nowrap">
                   ({rows.length} wierszy)
                 </span>
               </div>
@@ -272,7 +272,7 @@ export function TripsImportClient() {
               )}
             </div>
             {result.details.length > 0 && (
-              <ul className="space-y-1 text-sm text-muted-foreground">
+              <ul className="space-y-1 text-sm text-slate-500">
                 {result.details.map((d, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <AlertTriangle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-amber-500" />

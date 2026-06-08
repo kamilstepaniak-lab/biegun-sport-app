@@ -61,7 +61,7 @@ export default async function TripContractsPage({ params }: PageProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold">{contracts.length}</p>
-                <p className="text-sm text-muted-foreground">Wszystkie umowy</p>
+                <p className="text-sm text-slate-500">Wszystkie umowy</p>
               </div>
             </div>
           </CardContent>
@@ -74,7 +74,7 @@ export default async function TripContractsPage({ params }: PageProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-700">{accepted.length}</p>
-                <p className="text-sm text-muted-foreground">Zaakceptowane</p>
+                <p className="text-sm text-slate-500">Zaakceptowane</p>
               </div>
             </div>
           </CardContent>
@@ -87,7 +87,7 @@ export default async function TripContractsPage({ params }: PageProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-700">{pending.length}</p>
-                <p className="text-sm text-muted-foreground">Oczekuje</p>
+                <p className="text-sm text-slate-500">Oczekuje</p>
               </div>
             </div>
           </CardContent>
@@ -104,7 +104,7 @@ export default async function TripContractsPage({ params }: PageProps) {
         </CardHeader>
         <CardContent>
           {contracts.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-12 text-slate-500">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">Brak wygenerowanych umów</p>
               <p className="text-sm">Umowy tworzą się automatycznie gdy rodzic potwierdzi wyjazd — pod warunkiem że wzór umowy jest aktywny (przycisk &quot;Wzór umowy&quot; na liście wyjazdów).</p>
@@ -113,7 +113,7 @@ export default async function TripContractsPage({ params }: PageProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-muted-foreground">
+                  <tr className="border-b text-slate-500">
                     <th className="text-left py-3 pr-4 font-medium">Nr</th>
                     <th className="text-left py-3 pr-4 font-medium">Dziecko</th>
                     <th className="text-left py-3 pr-4 font-medium">Rodzic (email)</th>
@@ -154,7 +154,7 @@ export default async function TripContractsPage({ params }: PageProps) {
                           )}
                         </td>
                         <td className="py-3 pr-4 font-medium">{childName}</td>
-                        <td className="py-3 pr-4 text-muted-foreground">
+                        <td className="py-3 pr-4 text-slate-500">
                           <div>{parentName}</div>
                           <div className="text-xs">{parentEmail}</div>
                         </td>
@@ -171,7 +171,7 @@ export default async function TripContractsPage({ params }: PageProps) {
                             </Badge>
                           )}
                         </td>
-                        <td className="py-3 pr-4 text-muted-foreground">
+                        <td className="py-3 pr-4 text-slate-500">
                           {contract.accepted_at
                             ? format(new Date(contract.accepted_at), 'd MMMM yyyy, HH:mm', { locale: pl })
                             : '—'}

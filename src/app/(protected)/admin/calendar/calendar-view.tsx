@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, startOfDay, endOfDay, differenceInCalendarDays } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, ArrowRight, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, ArrowRight, ArrowUpRight, ArrowDownLeft, X } from 'lucide-react';
 
 import {
   HoverCard,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getGroupColor } from '@/lib/group-colors';
+import { getCampVisual } from '@/lib/camp-visual';
 import type { TripWithPaymentTemplates } from '@/types';
 
 interface CalendarViewProps {
@@ -29,6 +30,7 @@ function stripHtml(html: string): string {
 export function CalendarView({ trips }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [selectedTrip, setSelectedTrip] = useState<TripWithPaymentTemplates | null>(null);
 
   // Extract unique groups from trips
   const availableGroups = useMemo(() => {
@@ -220,9 +222,71 @@ export function CalendarView({ trips }: CalendarViewProps) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <p className="md:hidden text-xs text-gray-400 px-5 pt-2 pb-0.5">Przesuń palcem w bok, żeby zobaczyć całą tabelkę</p>
-            <table className="w-full min-w-[560px]">
+          <>
+          {/* Mobile: karty */}
+          <div className="md:hidden divide-y divide-gray-100">
+            {monthTrips.map((trip) => {
+              const { label, variant } = getDaysLabel(trip);
+              const badgeClass = {
+                done: 'bg-gray-100 text-gray-500',
+                active: 'bg-emerald-100 text-emerald-700',
+                today: 'bg-blue-600 text-white',
+                soon: 'bg-amber-100 text-amber-700',
+                medium: 'bg-amber-100 text-amber-700',
+                far: 'bg-gray-100 text-gray-600',
+              }[variant];
+              const dep = new Date(trip.departure_datetime);
+              const ret = new Date(trip.return_datetime);
+              return (
+                <button
+                  key={trip.id}
+                  type="button"
+                  onClick={() => setSelectedTrip(trip)}
+                  className="block w-full text-left p-4 hover:bg-gray-50/60 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      {(() => {
+                        const visual = getCampVisual(trip.category);
+                        return (
+                          <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                            <visual.Icon className="h-3.5 w-3.5" />
+                          </span>
+                        );
+                      })()}
+                      <p className="font-medium text-gray-900 text-sm leading-snug min-w-0">{trip.title}</p>
+                    </div>
+                    <span className={cn('inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0', badgeClass)}>{label}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                        <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                        Wyjazd
+                      </div>
+                      <p className="font-semibold text-gray-900">{format(dep, 'd.MM.yyyy', { locale: pl })}</p>
+                      {(trip.departure_time_known ?? true) && (
+                        <p className="text-xs text-gray-600">{format(dep, 'HH:mm', { locale: pl })}{trip.departure_location ? ` · ${trip.departure_location}` : ''}</p>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
+                        <ArrowDownLeft className="h-3 w-3 text-red-400" />
+                        Powrót
+                      </div>
+                      <p className="font-semibold text-gray-900">{format(ret, 'd.MM.yyyy', { locale: pl })}</p>
+                      {(trip.return_time_known ?? true) && (
+                        <p className="text-xs text-gray-600">{format(ret, 'HH:mm', { locale: pl })}{trip.return_location ? ` · ${trip.return_location}` : ''}</p>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {/* Desktop: tabela */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
               <thead>
                 <tr className="bg-gray-50/60 border-b border-gray-100">
                   <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider px-5 py-3">Tytuł wyjazdu</th>
@@ -261,7 +325,17 @@ export function CalendarView({ trips }: CalendarViewProps) {
                     <tr key={trip.id} className="hover:bg-gray-50/60 transition-colors group">
                       {/* Tytuł */}
                       <td className="px-5 py-3.5 align-top">
-                        <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const visual = getCampVisual(trip.category);
+                            return (
+                              <span className={cn('flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg', visual.iconBox)}>
+                                <visual.Icon className="h-3.5 w-3.5" />
+                              </span>
+                            );
+                          })()}
+                          <span className="font-medium text-gray-900 text-sm leading-snug">{trip.title}</span>
+                        </div>
                       </td>
 
                       {/* Wyjazd */}
@@ -321,6 +395,7 @@ export function CalendarView({ trips }: CalendarViewProps) {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
@@ -442,6 +517,120 @@ export function CalendarView({ trips }: CalendarViewProps) {
           })}
         </div>
       </div>
+
+      {/* Modal mobilny - szczegóły wyjazdu */}
+      {selectedTrip && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setSelectedTrip(null)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm shadow-xl max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 p-4 border-b border-gray-100">
+              <div className="flex items-start gap-2 min-w-0">
+                <h3 className="font-semibold text-gray-900 text-base leading-snug">{selectedTrip.title}</h3>
+              </div>
+              <button
+                onClick={() => setSelectedTrip(null)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 flex-shrink-0 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3">
+              {/* Wyjazd */}
+              <div className="flex items-start gap-3 bg-emerald-50 rounded-xl p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 flex-shrink-0">
+                  <ArrowUpRight className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-sm space-y-0.5">
+                  <p className="font-semibold text-gray-900">Wyjazd</p>
+                  <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.departure_datetime), 'd MMMM yyyy', { locale: pl })}</p>
+                  {(selectedTrip.departure_time_known ?? true) ? (
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <span className="font-medium">{format(new Date(selectedTrip.departure_datetime), 'HH:mm', { locale: pl })}</span>
+                      {selectedTrip.departure_location && <span className="text-gray-500">· {selectedTrip.departure_location}</span>}
+                    </div>
+                  ) : (
+                    selectedTrip.departure_location && <div className="text-gray-600">{selectedTrip.departure_location}</div>
+                  )}
+                  {selectedTrip.departure_stop2_datetime && selectedTrip.departure_stop2_location && (() => {
+                    const stop2Time = format(new Date(selectedTrip.departure_stop2_datetime), 'HH:mm', { locale: pl });
+                    return (
+                      <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-emerald-100">
+                        {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                        <span className="text-gray-500">{stop2Time !== '00:00' ? '· ' : ''}{selectedTrip.departure_stop2_location}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Powrót */}
+              <div className="flex items-start gap-3 bg-red-50 rounded-xl p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500 flex-shrink-0">
+                  <ArrowDownLeft className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-sm space-y-0.5">
+                  <p className="font-semibold text-gray-900">Powrót</p>
+                  <p className="text-gray-700 font-medium">{format(new Date(selectedTrip.return_datetime), 'd MMMM yyyy', { locale: pl })}</p>
+                  {(selectedTrip.return_time_known ?? true) ? (
+                    <div className="flex items-center gap-1.5 text-gray-600">
+                      <span className="font-medium">{format(new Date(selectedTrip.return_datetime), 'HH:mm', { locale: pl })}</span>
+                      {selectedTrip.return_location && <span className="text-gray-500">· {selectedTrip.return_location}</span>}
+                    </div>
+                  ) : (
+                    selectedTrip.return_location && <div className="text-gray-600">{selectedTrip.return_location}</div>
+                  )}
+                  {selectedTrip.return_stop2_datetime && selectedTrip.return_stop2_location && (() => {
+                    const stop2Time = format(new Date(selectedTrip.return_stop2_datetime), 'HH:mm', { locale: pl });
+                    return (
+                      <div className="flex items-center gap-1.5 text-gray-600 pt-1 border-t border-red-100">
+                        {stop2Time !== '00:00' && <span className="font-medium">{stop2Time}</span>}
+                        <span className="text-gray-500">{stop2Time !== '00:00' ? '· ' : ''}{selectedTrip.return_stop2_location}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Grupy */}
+              {selectedTrip.groups.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedTrip.groups.map((g) => {
+                    const colors = getGroupColor(g.name);
+                    return (
+                      <span
+                        key={g.id}
+                        className={cn(
+                          'inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border',
+                          colors.bg, colors.text, colors.border
+                        )}
+                      >
+                        {g.name}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Przycisk szczegóły */}
+              <Link
+                href="/admin/trips"
+                onClick={() => setSelectedTrip(null)}
+                className="flex items-center justify-center gap-2 w-full py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors"
+              >
+                Szczegóły wyjazdu
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

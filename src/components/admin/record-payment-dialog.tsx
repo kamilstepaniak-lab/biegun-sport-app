@@ -117,7 +117,7 @@ export function RecordPaymentDialog({
         </DialogHeader>
         <div className="space-y-4">
           {/* Lista wcześniejszych wpłat — żeby admin widział co już zostało zarejestrowane */}
-          <div className="rounded-lg border bg-muted/20 p-3">
+          <div className="rounded-lg border bg-slate-50 p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Wpłaty zarejestrowane
@@ -194,7 +194,7 @@ export function RecordPaymentDialog({
           {/* Checkbox „zniżka" — zawsze widoczny. Aktywny tylko gdy wpłata < należność. */}
           <div
             className={cn(
-              'flex items-start gap-2 rounded-lg border bg-muted/30 p-3',
+              'flex items-start gap-2 rounded-lg border bg-slate-50 p-3',
               !discountApplicable && 'opacity-60',
             )}
           >

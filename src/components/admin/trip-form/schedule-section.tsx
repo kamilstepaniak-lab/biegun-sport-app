@@ -89,7 +89,7 @@ function DirectionBlock({
             placeholder="nieznana"
             onChange={(e) => onTimeChange(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">Opcjonalna — jeśli nieznana, nie będzie wyświetlana</p>
+          <p className="text-xs text-slate-500">Opcjonalna — jeśli nieznana, nie będzie wyświetlana</p>
         </div>
       </div>
       <LocationSelect
@@ -259,7 +259,7 @@ export function ScheduleSection({
             time={returnTime}
             dateError={
               returnBeforeDeparture ? (
-                <p className="text-sm text-destructive">
+                <p className="text-sm text-red-600">
                   Data powrotu musi być późniejsza niż data wyjazdu
                 </p>
               ) : undefined

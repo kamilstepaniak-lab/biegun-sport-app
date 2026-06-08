@@ -75,7 +75,7 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
         <CardContent className="pt-5 pb-5">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Status</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wide">Status</p>
               {isAccepted ? (
                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
                   <CheckCircle className="mr-1 h-3 w-3" />
@@ -91,20 +91,20 @@ export default async function AdminContractDetailPage({ params }: PageProps) {
 
             {contractNumber && (
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Nr umowy</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Nr umowy</p>
                 <p className="font-mono font-semibold text-gray-900">{contractNumber}</p>
               </div>
             )}
 
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+              <p className="text-xs text-slate-500 uppercase tracking-wide flex items-center gap-1">
                 <User className="h-3 w-3" /> Opiekun
               </p>
               <p className="text-sm font-medium text-gray-900">{parentName}</p>
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+              <p className="text-xs text-slate-500 uppercase tracking-wide flex items-center gap-1">
                 <Mail className="h-3 w-3" /> E-mail
               </p>
               <p className="text-sm text-gray-700">{parentEmail}</p>

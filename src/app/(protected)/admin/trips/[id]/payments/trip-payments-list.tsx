@@ -183,7 +183,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
               </div>
               <div>
                 <p className="text-xl font-bold">{formatByCurrency(stats.totalByCur)}</p>
-                <p className="text-xs text-muted-foreground">Do zapłaty łącznie</p>
+                <p className="text-xs text-slate-500">Do zapłaty łącznie</p>
               </div>
             </div>
           </CardContent>
@@ -196,7 +196,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
               </div>
               <div>
                 <p className="text-xl font-bold text-emerald-700">{formatByCurrency(stats.paidByCur)}</p>
-                <p className="text-xs text-muted-foreground">Wpłacono ({stats.countPaid} opłaconych)</p>
+                <p className="text-xs text-slate-500">Wpłacono ({stats.countPaid} opłaconych)</p>
               </div>
             </div>
           </CardContent>
@@ -209,7 +209,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
               </div>
               <div>
                 <p className="text-xl font-bold text-amber-700">{formatByCurrency(stats.remainingByCur)}</p>
-                <p className="text-xs text-muted-foreground">Pozostało do zapłaty</p>
+                <p className="text-xs text-slate-500">Pozostało do zapłaty</p>
               </div>
             </div>
           </CardContent>
@@ -222,7 +222,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
               </div>
               <div>
                 <p className="text-xl font-bold text-red-700">{stats.countOverdue}</p>
-                <p className="text-xs text-muted-foreground">Po terminie</p>
+                <p className="text-xs text-slate-500">Po terminie</p>
               </div>
             </div>
           </CardContent>
@@ -256,7 +256,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
         </CardHeader>
         <CardContent className="p-0">
           {payments.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground">
+            <div className="py-12 text-center text-slate-500">
               <CreditCard className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="font-medium">Brak płatności</p>
               <p className="text-sm">Płatności pojawią się po zapisaniu uczestników na wyjazd.</p>
@@ -265,7 +265,7 @@ export function TripPaymentsList({ payments, tripTitle }: TripPaymentsListProps)
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-gray-50/60 text-xs text-muted-foreground uppercase tracking-wide">
+                  <tr className="border-b bg-gray-50/60 text-xs text-slate-500 uppercase tracking-wide">
                     <th className="text-left py-2.5 px-4 font-medium">Uczestnik</th>
                     <th className="text-left py-2.5 px-3 font-medium">Typ</th>
                     <th className="text-right py-2.5 px-3 font-medium">Kwota</th>

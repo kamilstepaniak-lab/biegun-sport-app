@@ -175,7 +175,7 @@ export function ContractTemplateEditor({
                 )}
               </DialogTitle>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-500">
               Każdy rodzic który potwierdzi wyjazd automatycznie otrzyma umowę wypełnioną jego danymi
             </p>
           </DialogHeader>
@@ -193,7 +193,7 @@ export function ContractTemplateEditor({
                   className="font-mono text-xs leading-relaxed min-h-[420px] resize-y"
                   placeholder="Wklej treść wzoru umowy..."
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-slate-500">
                   Placeholdery:{' '}
                   {[
                     '{{trip_title}}', '{{trip_location}}', '{{trip_departure}}', '{{trip_return}}',
