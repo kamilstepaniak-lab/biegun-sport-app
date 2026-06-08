@@ -42,6 +42,27 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-08 (Wydajność panelu rodzica — auth round-tripy + waterfall)
+
+- **`getAuthUser` owinięty w React `cache()`** (`auth-helpers.ts`). Wcześniej
+  każda akcja serwerowa wołała `supabase.auth.getUser()` (weryfikacja JWT po
+  sieci, ~200–400 ms) osobno — na jednym renderze strony rodzica nawet
+  kilka–kilkanaście razy (getMyChildren, getMessagesForParent, getDashboardData
+  × dziecko, getPaymentsForParent…). `cache()` deduplikuje w obrębie jednego
+  żądania: getUser leci RAZ, klient tworzony RAZ. Reset między żądaniami
+  (render/mutacja = świeży cache), więc semantyka bezpieczeństwa bez zmian.
+  Największy pojedynczy zysk na czasie ładowania i przełączania stron.
+- **`getDashboardData` (`dashboard.ts`): check własności równolegle z pobraniem
+  rejestracji** (były sekwencyjne — ownership → registrations → payments).
+  Teraz `Promise.all([ownershipCheck, registrations])`, payments po nich
+  (zależą od reg ids). Oszczędza 1 round-trip na dziecko (przy 2–3 dzieciach
+  realna różnica na stronie „Moje dzieci"). `createAdminClient()` przeniesiony
+  za guard `if (!user)`. Logika i RLS bez zmian.
+- Do rozważenia (nie zrobione): batch dashboardu wszystkich dzieci w 2
+  zapytania zamiast 2×N; spłaszczenie waterfalla w
+  `getTripsForParentWithChildren` (4 hopy: children → trip_groups+groups →
+  trips+registrations). Oba to większe refaktory.
+
 ### 2026-06-08 (Sidebar — kafelki ikon w stylu referencyjnym)
 
 - `shared/sidebar.tsx` (`NavItem`): przebudowa pozycji nawigacji na styl

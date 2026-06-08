@@ -1291,21 +1291,19 @@ export async function getTripsForParentWithChildren(parentId: string, selectedCh
 
   if (groupIds.length === 0) return [];
 
-  // 2. Pobierz wyjazdy dla tych grup
-  const { data: tripGroups } = await supabase
-    .from('trip_groups')
-    .select('trip_id')
-    .in('group_id', groupIds);
+  // 2. trip_groups (wyjazdy dla grup) i nazwy grup zależą tylko od groupIds —
+  // lecą równolegle (jeden hop mniej w waterfallu).
+  const [tripGroupsRes, groupRowsRes] = await Promise.all([
+    supabase.from('trip_groups').select('trip_id').in('group_id', groupIds),
+    supabase.from('groups').select('id, name').in('id', groupIds),
+  ]);
 
+  const tripGroups = tripGroupsRes.data;
   if (!tripGroups || tripGroups.length === 0) return [];
 
   // Nazwy grup (do koloru/awatara dziecka)
-  const { data: groupRows } = await supabase
-    .from('groups')
-    .select('id, name')
-    .in('id', groupIds);
   const groupNameById = new Map<string, string>(
-    (groupRows || []).map((g: { id: string; name: string }) => [g.id, g.name]),
+    (groupRowsRes.data || []).map((g: { id: string; name: string }) => [g.id, g.name]),
   );
 
   const tripIds = [...new Set(tripGroups.map((tg: { trip_id: string }) => tg.trip_id))];

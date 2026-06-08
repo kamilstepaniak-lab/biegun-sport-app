@@ -7,7 +7,7 @@ import { ChildrenList } from '@/components/parent';
 import { getUserProfile } from '@/lib/actions/auth';
 import { getMyChildren } from '@/lib/actions/participants';
 import { getMessagesForParent } from '@/lib/actions/messages';
-import { getDashboardData, type DashboardData } from '@/lib/actions/dashboard';
+import { getDashboardDataForChildren, type DashboardData } from '@/lib/actions/dashboard';
 
 function buildAggregateDashboard(
   items: DashboardData[],
@@ -49,11 +49,11 @@ export default async function ParentChildrenPage() {
     getMessagesForParent(),
   ]);
 
-  // Dashboard liczony serwerowo dla każdego dziecka naraz — klient nie robi
-  // już fetchy w useEffect (koniec migotania skeletonów przy przełączaniu).
-  const perChild = await Promise.all(children.map((child) => getDashboardData(child.id)));
-  const dashboardByChild: Record<string, DashboardData> = {};
-  children.forEach((child, idx) => { dashboardByChild[child.id] = perChild[idx]; });
+  // Dashboard liczony serwerowo dla wszystkich dzieci jednym kompletem zapytań
+  // (batch) — klient nie robi fetchy w useEffect, a liczba dzieci nie mnoży
+  // round-tripów do bazy.
+  const dashboardByChild = await getDashboardDataForChildren(children.map((c) => c.id));
+  const perChild = children.map((c) => dashboardByChild[c.id]);
   const dashboardAll = buildAggregateDashboard(perChild, children);
 
   const firstName = profile?.first_name?.trim() || 'Rodzicu';
