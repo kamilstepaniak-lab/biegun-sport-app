@@ -42,6 +42,19 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-08 (Moje dzieci + Płatności — drobne UI)
+
+- **Moje dzieci** (`children-list.tsx`): usunięte strzałki „→" z trzech linków
+  „Wszystkie" (Najbliższe wyjazdy / Płatności / Wiadomości). Avatar dziecka
+  w selektorze grup zmieniony z pierwszej litery imienia na `GroupIcon`
+  (spójne per grupa, jak w wyjazdach) — tło nadal `getGroupColor().dot`.
+- **Ikona grupy SemiPRO**: własna ikona `Skis` zastąpiona lucide `Snowflake`
+  w `group-icons.tsx` (`GroupIcon` to źródło prawdy — zmiana propaguje wszędzie:
+  rodzic, admin, badge). Usunięta nieużywana funkcja `Skis`.
+- **Płatności rodzic** (`payments/payments-list.tsx`): w kolumnie „Płatność"
+  dla pozycji z `payment_method === 'cash'` zamiast przycisku „Przelew" jest
+  napis „Gotówka" (`text-amber-600`). Dotyczy tabeli desktop i karty mobile.
+
 ### 2026-06-08 (Płatności — mail przy „Wpłata" + sprzątanie)
 
 - **Mail potwierdzenia przy domknięciu płatności przez wpłatę** (`addPaymentTransaction`,

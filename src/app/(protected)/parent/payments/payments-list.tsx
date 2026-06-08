@@ -408,6 +408,8 @@ function PaymentRow({
       <td className="py-3 pl-3 pr-4 text-left whitespace-nowrap">
         {payment.status === 'paid' ? (
           <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
+        ) : payment.payment_method === 'cash' ? (
+          <span className="text-xs font-semibold text-amber-600">Gotówka</span>
         ) : (
           <PaymentDialog
             payment={payment}
@@ -554,6 +556,8 @@ function PaymentCard({
       <div className="flex justify-end pt-1">
         {payment.status === 'paid' ? (
           <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
+        ) : payment.payment_method === 'cash' ? (
+          <span className="text-xs font-semibold text-amber-600">Gotówka</span>
         ) : (
           <PaymentDialog
             payment={payment}

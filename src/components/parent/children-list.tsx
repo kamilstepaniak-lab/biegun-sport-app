@@ -48,6 +48,7 @@ import { type DashboardData } from '@/lib/actions/dashboard';
 import type { ParticipantWithGroup } from '@/types';
 import { cn } from '@/lib/utils';
 import { getGroupColor } from '@/lib/group-colors';
+import { GroupIcon } from '@/lib/group-icons';
 import { getCampVisual } from '@/lib/camp-visual';
 import { PaymentDue } from '@/components/shared/payment-due';
 
@@ -302,8 +303,8 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                   onClick={() => handleSelectChild(child)}
                   className="inline-flex min-w-0 items-center gap-2"
                 >
-                  <span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-bold text-white', groupColor.dot)}>
-                    {child.first_name.charAt(0)}
+                  <span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-white', groupColor.dot)}>
+                    <GroupIcon name={child.group?.name ?? ''} className="h-3.5 w-3.5" />
                   </span>
                   <span className="truncate">{child.first_name} {child.last_name}</span>
                   {isSelected && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
@@ -345,7 +346,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                 <p className="text-base font-semibold text-gray-800">Najbliższe wyjazdy</p>
               </div>
               <Link href={`/parent/trips${childSlug}`} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                Wszystkie →
+                Wszystkie
               </Link>
             </div>
 
@@ -473,7 +474,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                   </span>
                 )}
                 <Link href={`/parent/payments${childSlug}`} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                  Wszystkie →
+                  Wszystkie
                 </Link>
               </div>
             </div>
@@ -583,7 +584,7 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                 </div>
               </div>
               <Link href="/parent/messages" className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
-                Wszystkie →
+                Wszystkie
               </Link>
             </div>
 
