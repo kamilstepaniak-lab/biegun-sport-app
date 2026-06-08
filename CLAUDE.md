@@ -42,6 +42,18 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-08 (Sidebar — kafelki ikon w stylu referencyjnym)
+
+- `shared/sidebar.tsx` (`NavItem`): przebudowa pozycji nawigacji na styl
+  z kafelkiem ikony. Każda pozycja ma kwadratowy kafelek (`h-9 w-9 rounded-xl`)
+  z ikoną. Aktywna: tło `bg-blue-50`, lewy pasek `bg-blue-600` (rounded-r-full),
+  kafelek biały z `shadow-sm ring-blue-100` i niebieską ikoną, tekst
+  `text-blue-700`, bez chevrona. Nieaktywna: kafelek `bg-slate-50 ring-slate-100`,
+  ikona slate, tekst `text-slate-600`, chevron „>" po prawej (`text-slate-300`).
+  Badge (np. nieprzeczytane wiadomości) ma priorytet nad chevronem. Trzymany
+  brandowy niebieski (#2563eb / blue-600). Odstęp pozycji `space-y-0.5` →
+  `space-y-1`. Dotyczy admina i rodzica (wspólny komponent).
+
 ### 2026-06-08 (Moje dzieci + Płatności — drobne UI)
 
 - **Moje dzieci** (`children-list.tsx`): usunięte strzałki „→" z trzech linków

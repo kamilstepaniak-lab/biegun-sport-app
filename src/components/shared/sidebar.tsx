@@ -70,29 +70,40 @@ function NavItem({ item, isActive, isCollapsed, onClick }: { item: SidebarItem; 
       href={item.href}
       onClick={onClick}
       className={cn(
-        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-        isCollapsed ? 'justify-center px-2' : '',
+        'group relative flex items-center gap-3 rounded-xl py-2 pr-3 text-sm font-semibold transition-all duration-200',
+        isCollapsed ? 'justify-center px-1.5' : 'pl-3',
         isActive
-          ? 'bg-blue-600 text-white shadow-sm'
-          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+          ? 'bg-blue-50 text-blue-700'
+          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
       )}
       title={isCollapsed ? item.title : undefined}
     >
-      <Icon className={cn(
-        'h-4 w-4 flex-shrink-0 transition-colors',
-        isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
-      )} />
+      {/* Lewy pasek aktywności */}
+      {isActive && !isCollapsed && (
+        <span className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-blue-600" />
+      )}
+      {/* Kafelek ikony */}
+      <span className={cn(
+        'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition-colors',
+        isActive
+          ? 'bg-white text-blue-600 shadow-sm ring-1 ring-blue-100'
+          : 'bg-slate-50 text-slate-400 ring-1 ring-slate-100 group-hover:text-slate-600'
+      )}>
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
       {!isCollapsed && (
         <>
           <span className="truncate">{item.title}</span>
-          {item.badge && (
+          {item.badge ? (
             <span className={cn(
-              'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full text-xs font-semibold px-1.5',
-              isActive ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600'
+              'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold',
+              isActive ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-600'
             )}>
               {item.badge}
             </span>
-          )}
+          ) : !isActive ? (
+            <ChevronRight className="ml-auto h-4 w-4 flex-shrink-0 text-slate-300 transition-colors group-hover:text-slate-400" />
+          ) : null}
         </>
       )}
     </Link>
@@ -155,7 +166,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
               {renderLogo()}
             </div>
             <ScrollArea className="flex-1 px-3 py-3">
-              <nav className="space-y-0.5">
+              <nav className="space-y-1">
                 {items.map((item) => {
                   const isActive = item.href === activeHref;
                   return <NavItem key={item.href} item={item} isActive={isActive} onClick={() => setSheetOpen(false)} />;
@@ -184,7 +195,7 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
 
         {/* Nav items */}
         <ScrollArea className="flex-1 px-3 py-3">
-          <nav className="space-y-0.5">
+          <nav className="space-y-1">
             {items.map((item) => {
               const isActive = item.href === activeHref;
               return <NavItem key={item.href} item={item} isActive={isActive} isCollapsed={isCollapsed} />;
