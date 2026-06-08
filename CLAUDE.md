@@ -58,10 +58,19 @@ tekstów UI. Nie powielaj tych zasad tutaj.
   (zależą od reg ids). Oszczędza 1 round-trip na dziecko (przy 2–3 dzieciach
   realna różnica na stronie „Moje dzieci"). `createAdminClient()` przeniesiony
   za guard `if (!user)`. Logika i RLS bez zmian.
-- Do rozważenia (nie zrobione): batch dashboardu wszystkich dzieci w 2
-  zapytania zamiast 2×N; spłaszczenie waterfalla w
-  `getTripsForParentWithChildren` (4 hopy: children → trip_groups+groups →
-  trips+registrations). Oba to większe refaktory.
+- **Batch dashboardu wszystkich dzieci** (`dashboard.ts`): nowa
+  `getDashboardDataForChildren(participantIds)` — jeden komplet zapytań
+  (check własności ∥ rejestracje, potem płatności) na CAŁY zestaw dzieci
+  zamiast `getDashboardData × dziecko`. Logika per-dziecko wyniesiona do
+  czystej `computeDashboard(regs, payments, now)` (bez I/O), współdzielonej
+  przez obie ścieżki. `Registration` dostał `participant_id`; stałe
+  `REGISTRATION_SELECT` / `PAYMENT_SELECT`. `children/page.tsx` woła wersję
+  batch. Strona „Moje dzieci" płaska pod round-tripami niezależnie od liczby
+  dzieci.
+- **`getTripsForParentWithChildren` (`trips.ts`): trip_groups + nazwy grup
+  równolegle** (`Promise.all`) — były sekwencyjne, a oba zależą tylko od
+  groupIds. Jeden hop mniej na Wyjazdach i Kalendarzu (waterfall 4 → 3).
+- Wdrożone na produkcję (commit `6f7af62`, push na main). Bez migracji DB.
 
 ### 2026-06-08 (Sidebar — kafelki ikon w stylu referencyjnym)
 
