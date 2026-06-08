@@ -3,6 +3,18 @@
 Wskazówki dla Claude przy pracy nad projektem `biegun-sport-app`
 (Next.js App Router + Supabase + Vercel).
 
+## Architektura docelowa — NIE przebudowuj
+
+- **Wyjazdy są (i będą) połączone ze stroną internetową firmy.** Aplikacja
+  tworzy/wystawia pod wyjazdy formularze zapisów zintegrowane z firmową stroną
+  WWW (WordPress) — to docelowy, świadomy kierunek, nie tymczasowe rozwiązanie.
+  Ślady w kodzie: `wordpress-section.tsx` w formularzu wyjazdu, integracja
+  rejestracji WP (`wp-registration-integration`).
+- **Nie refaktoruj ani nie usuwaj tej integracji** „bo wygląda na zbędną".
+  Wyjazd ↔ strona WWW ↔ formularz zapisu to fundament architektury. Zanim
+  ruszysz cokolwiek w warstwie wyjazdów/rejestracji/WordPress, załóż, że to
+  celowe i zapytaj, jeśli zmiana mogłaby zerwać to powiązanie.
+
 ## Sposób pracy
 
 - Pracuj **bezpośrednio na gałęzi `main`** — nie twórz nowych branchy.
