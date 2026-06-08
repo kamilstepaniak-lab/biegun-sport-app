@@ -223,10 +223,12 @@ function PaymentDialog({
   payment,
   bankAccounts,
   relatedPayments,
+  fullWidth = false,
 }: {
   payment: ParentPayment;
   bankAccounts: BankAccountInfo;
   relatedPayments: ParentPayment[];
+  fullWidth?: boolean;
 }) {
   const transferPayments = relatedPayments.length > 0 ? relatedPayments : [payment];
 
@@ -235,7 +237,7 @@ function PaymentDialog({
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="h-9 rounded-xl bg-blue-600 px-3 text-white hover:bg-blue-700"
+          className={cn('h-9 rounded-xl bg-blue-600 px-3 text-white hover:bg-blue-700', fullWidth && 'w-full')}
         >
           <CreditCard className="h-4 w-4" />
           Przelew
@@ -491,7 +493,7 @@ function PaymentCard({
   return (
     <div
       className={cn(
-        'p-4 space-y-3',
+        'p-4',
         payment.status === 'paid'
           ? 'bg-emerald-50/20'
           : isOverdue
@@ -499,70 +501,85 @@ function PaymentCard({
             : '',
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">{getChildDisplayName(payment)}</p>
-          <p className="mt-0.5 text-sm text-gray-700 truncate">{payment.trip_title}</p>
-          <p className="mt-0.5 text-xs text-gray-500">{getPaymentTypeLabel(payment)}</p>
-        </div>
-        <div className="text-right shrink-0">
-          {payment.status === 'paid' ? (
-            <span className="text-sm font-semibold text-emerald-600 tabular-nums">
-              {payment.amount.toFixed(0)} {payment.currency}
-            </span>
-          ) : (
-            <>
-              <span className={cn('text-base font-bold tabular-nums', isOverdue ? 'text-red-600' : 'text-gray-900')}>
-                {remaining.toFixed(0)} {payment.currency}
-              </span>
-              {payment.amount_paid > 0 && (
-                <span className="block text-xs text-gray-400">
-                  {payment.amount_paid.toFixed(0)} {payment.currency} wpłacono
-                </span>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={cn('inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold', cfg.bgClass)}>
+      {/* Nagłówek: dziecko + status */}
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 flex-1 text-sm font-semibold text-gray-900">{getChildDisplayName(payment)}</p>
+        <span className={cn('inline-flex flex-shrink-0 items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold', cfg.bgClass)}>
           <StatusIcon className="h-3 w-3" />
           {cfg.label}
         </span>
-        {isOverdue && payment.status !== 'overdue' && payment.status !== 'partially_paid_overdue' && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-            Po terminie
-          </span>
-        )}
-        <span className="ml-auto text-xs text-gray-600">
-          <PaymentDue
-            paymentDueDate={payment.due_date}
-            departureDate={payment.trip_departure_date}
-            status={payment.status}
-          />
-        </span>
       </div>
 
-      <button
-        className="flex w-full items-center gap-1 group"
-        onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
-        title="Kopiuj tytuł przelewu"
-      >
-        <span className="text-xs text-gray-400 truncate group-hover:text-blue-500 transition-colors">{transferTitle}</span>
-        <Copy className="h-3 w-3 text-blue-500 flex-shrink-0" />
-      </button>
+      {/* Wyjazd + za co */}
+      <p className="mt-1 text-sm font-medium text-gray-700">{payment.trip_title}</p>
+      <p className="text-xs text-gray-500">{getPaymentTypeLabel(payment)}</p>
 
-      <div className="flex justify-end pt-1">
+      {/* Dane — linijka pod linijką */}
+      <dl className="mt-3 space-y-2 border-t border-gray-100 pt-3 text-sm">
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-gray-500">Kwota</dt>
+          <dd className="text-right">
+            {payment.status === 'paid' ? (
+              <span className="font-semibold text-emerald-600 tabular-nums">
+                {payment.amount.toFixed(0)} {payment.currency}
+              </span>
+            ) : (
+              <>
+                <span className={cn('text-base font-bold tabular-nums', isOverdue ? 'text-red-600' : 'text-gray-900')}>
+                  {remaining.toFixed(0)} {payment.currency}
+                </span>
+                {payment.amount_paid > 0 && (
+                  <span className="block text-xs font-normal text-gray-400">
+                    wpłacono {payment.amount_paid.toFixed(0)} {payment.currency}
+                  </span>
+                )}
+              </>
+            )}
+          </dd>
+        </div>
+
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-gray-500">Termin</dt>
+          <dd className="text-right text-gray-700">
+            <PaymentDue
+              paymentDueDate={payment.due_date}
+              departureDate={payment.trip_departure_date}
+              status={payment.status}
+            />
+          </dd>
+        </div>
+
+        {payment.status !== 'paid' && (
+          <button
+            className="flex w-full items-baseline justify-between gap-3 text-left group"
+            onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
+            title="Kopiuj tytuł przelewu"
+          >
+            <dt className="flex-shrink-0 text-gray-500">Tytuł przelewu</dt>
+            <dd className="flex min-w-0 items-center gap-1 text-gray-700">
+              <span className="truncate group-hover:text-blue-600 transition-colors">{transferTitle}</span>
+              <Copy className="h-3 w-3 flex-shrink-0 text-blue-500" />
+            </dd>
+          </button>
+        )}
+      </dl>
+
+      {/* Akcja */}
+      <div className="mt-3">
         {payment.status === 'paid' ? (
-          <span className="text-xs font-semibold text-emerald-600">Opłacone</span>
+          <span className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-semibold text-emerald-600">
+            <Check className="h-4 w-4" /> Opłacone
+          </span>
         ) : payment.payment_method === 'cash' ? (
-          <span className="text-xs font-semibold text-amber-600">Gotówka</span>
+          <span className="flex items-center justify-center gap-1.5 rounded-xl bg-amber-50 py-2 text-xs font-semibold text-amber-600">
+            <Banknote className="h-4 w-4" /> Płatność gotówką
+          </span>
         ) : (
           <PaymentDialog
             payment={payment}
             bankAccounts={bankAccounts}
             relatedPayments={relatedTransferPayments}
+            fullWidth
           />
         )}
       </div>
