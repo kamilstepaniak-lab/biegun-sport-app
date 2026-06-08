@@ -562,115 +562,49 @@ export async function addPaymentTransaction(
     }).catch(console.error);
   }).catch(console.error);
 
-  revalidateTag('payments');
-  revalidatePath('/admin/payments');
-  revalidatePath('/admin/trips');
-  revalidatePath('/parent/payments');
+  // E-mail potwierdzenia — gdy wpłata domyka płatność (przejście na 'paid').
+  // Spójne z updatePaymentStatus('paid'): rodzic dostaje potwierdzenie też
+  // wtedy, gdy admin księguje realną wpłatę, nie tylko klikając „Tak".
+  if (newStatus === 'paid' && payment.status !== 'paid') {
+    (async () => {
+      try {
+        const { data: fullPayment } = await supabase
+          .from('payments')
+          .select(`
+            amount, currency, payment_type, installment_number,
+            registration:trip_registrations (
+              participant:participants (first_name, last_name, parent:profiles!parent_id (email, first_name)),
+              trip:trips (title)
+            )
+          `)
+          .eq('id', paymentId)
+          .single();
 
-  return { success: true };
-}
+        const reg = fullPayment?.registration as unknown as {
+          participant: { first_name: string; last_name: string; parent: { email: string; first_name: string } };
+          trip: { title: string };
+        } | null;
 
-export async function markPaymentAsPaid(
-  paymentId: string,
-  paymentMethod: 'cash' | 'transfer'
-) {
-  const supabase = await createClient();
+        if (reg && fullPayment) {
+          const paymentLabel = fullPayment.payment_type === 'installment'
+            ? `Rata ${fullPayment.installment_number}`
+            : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
 
-  const { user, error: authError } = await requireAdmin(supabase);
-  if (authError) return { error: authError };
-
-  const { data: payment, error: paymentError } = await supabase
-    .from('payments')
-    .select('*')
-    .eq('id', paymentId)
-    .single();
-
-  if (paymentError || !payment) {
-    return { error: 'Nie znaleziono płatności' };
-  }
-
-  const remainingAmount = payment.amount - (payment.amount_paid || 0);
-
-  if (remainingAmount > 0) {
-    // Dodaj transakcję na pozostałą kwotę
-    await supabase.from('payment_transactions').insert({
-      payment_id: paymentId,
-      amount: remainingAmount,
-      currency: payment.currency,
-      transaction_date: new Date().toISOString().split('T')[0],
-      payment_method: paymentMethod,
-      notes: 'Oznaczone jako opłacone przez admina',
-      recorded_by: user.id,
-    });
-  }
-
-  // Zaktualizuj płatność
-  const { error: updateError } = await supabase
-    .from('payments')
-    .update({
-      amount_paid: payment.amount,
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-      payment_method_used: paymentMethod,
-      marked_by: user.id,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', paymentId);
-
-  if (updateError) {
-    console.error('Payment update error:', updateError);
-    return { error: 'Nie udało się oznaczyć jako opłacone' };
-  }
-
-  // Audit log
-  logPaymentChange({
-    paymentId,
-    userId: user.id,
-    oldStatus: payment.status,
-    newStatus: 'paid',
-    oldAmountPaid: payment.amount_paid || 0,
-    newAmountPaid: payment.amount,
-    action: 'marked_paid',
-    note: `Oznaczone ręcznie jako opłacone (${paymentMethod === 'cash' ? 'gotówka' : 'przelew'})`,
-  }).catch(console.error);
-
-  // Wyślij e-mail potwierdzenia płatności
-  try {
-    const { data: fullPayment } = await supabase
-      .from('payments')
-      .select(`
-        amount, currency, payment_type, installment_number,
-        registration:trip_registrations (
-          participant:participants (first_name, last_name, parent:profiles!parent_id (email, first_name)),
-          trip:trips (title)
-        )
-      `)
-      .eq('id', paymentId)
-      .single();
-
-    const reg = fullPayment?.registration as unknown as {
-      participant: { first_name: string; last_name: string; parent: { email: string; first_name: string } };
-      trip: { title: string };
-    } | null;
-
-    if (reg && fullPayment) {
-      const paymentLabel = fullPayment.payment_type === 'installment'
-        ? `Rata ${fullPayment.installment_number}`
-        : fullPayment.payment_type === 'season_pass' ? 'Karnet' : 'Pełna opłata';
-
-      queuePaymentConfirmedEmail(
-        reg.participant.parent.email,
-        reg.participant.parent.first_name,
-        `${reg.participant.first_name} ${reg.participant.last_name}`,
-        reg.trip.title,
-        fullPayment.amount,
-        fullPayment.currency,
-        paymentLabel,
-        { paymentId },
-      ).catch(console.error);
-    }
-  } catch {
-    // e-mail nie blokuje aktualizacji
+          await queuePaymentConfirmedEmail(
+            reg.participant.parent.email,
+            reg.participant.parent.first_name,
+            `${reg.participant.first_name} ${reg.participant.last_name}`,
+            reg.trip.title,
+            fullPayment.amount,
+            fullPayment.currency,
+            paymentLabel,
+            { paymentId },
+          );
+        }
+      } catch {
+        // e-mail nie blokuje rejestracji wpłaty
+      }
+    })().catch(console.error);
   }
 
   revalidateTag('payments');

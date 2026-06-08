@@ -42,6 +42,21 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-08 (Płatności — mail przy „Wpłata" + sprzątanie)
+
+- **Mail potwierdzenia przy domknięciu płatności przez wpłatę** (`addPaymentTransaction`,
+  `payments.ts`): gdy zarejestrowana wpłata przeprowadza płatność na status
+  `paid` (i wcześniej nie była `paid`), leci teraz `queuePaymentConfirmedEmail`
+  — fire-and-forget, w try/catch, nie blokuje rejestracji. Wcześniej mail
+  wychodził tylko przez przycisk „Tak" (`updatePaymentStatus`), więc
+  najczęstsza ścieżka realnego rozliczenia (księgowanie wpłaty) nie
+  powiadamiała rodzica. Warunek `newStatus === 'paid' && payment.status !== 'paid'`
+  chroni przed ponownym mailem przy edycji już opłaconej pozycji.
+- **Usunięty martwy `markPaymentAsPaid`** (`payments.ts`) — funkcja nieużywana
+  w żadnym UI (per-trip `trip-payments-list.tsx` jest tylko do odczytu + CSV).
+  Logika wysyłki maila z niej została przeniesiona do `addPaymentTransaction`
+  (patrz wyżej). `tsc --noEmit` czysty, brak referencji w repo.
+
 ### 2026-06-06 (Płatności — widoczność u rodzica + suma per waluta)
 
 - **Płatności widoczne od razu po „Jedzie"** (było: dopiero po wysłaniu maila
