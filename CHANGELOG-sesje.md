@@ -3,6 +3,21 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-08 (Audyt gotowości produkcyjnej + fix krytyczny: cron maili)
+
+- Audyt stanu aplikacji pod kątem wypuszczenia. Aplikacja dojrzała:
+  oba panele kompletne, RLS + rola z JWT, error/loading/not-found pokryte,
+  walidacja Zod, dedup zgłoszeń WP, cron chroniony `CRON_SECRET`,
+  `tsc --noEmit` czysty, polityka prywatności + OWU obecne.
+- **KRYTYCZNY fix:** kolejka maili (`system_email_queue`) nie była
+  opróżniana — `/api/cron/email-queue` istniał, ale nie był w `vercel.json`
+  (tylko `payment-reminders`). Maile enqueue'owane z `trips.ts`,
+  `registrations.ts`, `payments.ts`, `trip-emails.ts` nigdy nie wychodziły.
+  Dodany cron `email-queue` `*/5 * * * *` (wymaga planu Vercel Pro).
+- Zidentyfikowane (nie blokery, do rozważenia): brak monitoringu błędów
+  (Sentry), brak rate-limitingu na publicznym zapisie WP, testy `.mjs` bez
+  skryptu `test`/CI.
+
 ### 2026-06-08 (Ujednolicenie admina do designu rodzica — desktop priorytet)
 
 - Audyt parytetu admin↔rodzic: nagłówki (`.admin-shell .page-header` =
