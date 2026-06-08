@@ -42,6 +42,50 @@ tekstów UI. Nie powielaj tych zasad tutaj.
 
 ## Notatki z sesji
 
+### 2026-06-08 (Audyt przepływu auth — login/rejestracja/reset)
+
+- Przegląd całości auth (`actions/auth.ts`, `validations/auth.ts`, `rate-limit.ts`,
+  `api/auth/callback`, `middleware`, formularze login/register/forgot/reset) +
+  weryfikacja na żywo przez Playwright na koncie rodzica. Logowanie email+hasło,
+  Google OAuth, magic link, redirect wg roli, panel rodzica z realnymi danymi,
+  menu i wylogowanie → wszystko działa, 0 błędów w konsoli. Walidacja
+  rejestracji (wszystkie pola + RODO) i logowania renderuje się poprawnie.
+  `tsc --noEmit` czysty.
+- **Fix**: `reset-password/page.tsx` — placeholder hasła „Minimum 6 znaków" →
+  „Minimum 8 znaków" (walidacja i `updatePassword` wymagają 8). Commit `257594a`,
+  push na main. Bez migracji.
+- Uwagi odłożone (nie blokujące, do decyzji): `sendMagicLink` zwraca „Nie
+  znaleziono konta…" = wektor enumeracji maili (reset robi to bezpiecznie,
+  zawsze sukces); `/reset-password` dostępne bez sesji recovery (formularz się
+  pokazuje, zapis i tak się nie powiedzie — ogólny błąd, można dodać guard).
+
+### 2026-06-08 (Panel rodzica — czytelność i spójność na mobile)
+
+- **Przycisk menu (hamburger)** (`shared/sidebar.tsx`): był biały na białym
+  nagłówku — słabo widoczny. Teraz brandowy `bg-blue-600` + biała ikona,
+  `shadow-lg` z niebieskim cieniem, `ring-blue-700/50`, `h-11 w-11`,
+  `active:scale-95`, `aria-label`. Mocny kontrast, dotyczy admina i rodzica
+  (wspólny komponent).
+- **Karta wyjazdu — chevron rozwijania na wysokości tytułu (mobile)**
+  (`parent/trips/trip-card.tsx`): nagłówek był jednokolumnowym gridem na
+  mobile (ikona→tytuł→data→grupy→chevron w pionie, chevron lądował na dole).
+  Teraz na mobile `flex items-start`: `[ikona] [tytuł/data/grupy flex-1]
+  [chevron]` — chevron wyrównany do góry, na wysokości tytułu. Środkowa
+  kolumna owinięta wrapperem `lg:contents`, więc od `lg` wraca dotychczasowy
+  grid `grid-cols-[auto_18rem_auto_1fr_auto_auto]` bez zmian. Desktop
+  niezmieniony.
+- **Płatności rodzic — karta mobile linijka pod linijką**
+  (`parent/payments/payments-list.tsx`, `PaymentCard`): przebudowa z układu
+  „lewo/prawo ściśnięte" na czytelne, etykietowane wiersze: nagłówek
+  (dziecko + badge statusu), wyjazd + „za co", potem `dl` z wierszami
+  „Kwota" i „Termin" (etykieta z lewej, wartość z prawej), osobny wiersz
+  „Tytuł przelewu" (kopiowanie), akcja na pełną szerokość (Przelew /
+  „Płatność gotówką" amber / „Opłacone" emerald jako pełne paski). `PaymentDialog`
+  dostał prop `fullWidth`. Tabela desktop bez zmian.
+- Kalendarz i „Moje dzieci" na mobile już były czytelne (karty Wyjazd/Powrót,
+  jedna kolumna) — bez zmian. `tsc` czysty dla dotkniętych plików (błędy w
+  `admin/trip-form/index.tsx` są wcześniejsze, niezwiązane).
+
 ### 2026-06-08 (Wydajność panelu rodzica — auth round-tripy + waterfall)
 
 - **`getAuthUser` owinięty w React `cache()`** (`auth-helpers.ts`). Wcześniej

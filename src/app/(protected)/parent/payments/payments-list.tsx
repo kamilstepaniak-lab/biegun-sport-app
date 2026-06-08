@@ -549,20 +549,21 @@ function PaymentCard({
           </dd>
         </div>
 
-        {payment.status !== 'paid' && (
-          <button
-            className="flex w-full items-baseline justify-between gap-3 text-left group"
-            onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
-            title="Kopiuj tytuł przelewu"
-          >
-            <dt className="flex-shrink-0 text-gray-500">Tytuł przelewu</dt>
-            <dd className="flex min-w-0 items-center gap-1 text-gray-700">
-              <span className="truncate group-hover:text-blue-600 transition-colors">{transferTitle}</span>
-              <Copy className="h-3 w-3 flex-shrink-0 text-blue-500" />
-            </dd>
-          </button>
-        )}
       </dl>
+
+      {payment.status !== 'paid' && (
+        <button
+          className="mt-2 flex w-full items-baseline justify-between gap-3 text-left text-sm group"
+          onClick={() => copyToClipboard(transferTitle, 'Tytuł przelewu')}
+          title="Kopiuj tytuł przelewu"
+        >
+          <span className="flex-shrink-0 text-gray-500">Tytuł przelewu</span>
+          <span className="flex min-w-0 items-center gap-1 text-gray-700">
+            <span className="truncate group-hover:text-blue-600 transition-colors">{transferTitle}</span>
+            <Copy className="h-3 w-3 flex-shrink-0 text-blue-500" />
+          </span>
+        </button>
+      )}
 
       {/* Akcja */}
       <div className="mt-3">
