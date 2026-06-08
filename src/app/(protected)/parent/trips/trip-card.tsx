@@ -364,24 +364,26 @@ function TripCardInner({
       )}>
         <CollapsibleTrigger asChild>
           <div className="cursor-pointer">
-            <div className="grid gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_18rem_auto_1fr_auto_auto] lg:items-center">
-              <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', campVisual.iconBox)}>
+            <div className="flex items-start gap-3 p-4 lg:grid lg:gap-x-4 lg:gap-y-1 lg:grid-cols-[auto_18rem_auto_1fr_auto_auto] lg:items-center">
+              <div className={cn('flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl', campVisual.iconBox)}>
                 <campVisual.Icon className="h-5 w-5" />
               </div>
 
-              <h3 className="min-w-0 truncate text-base font-bold text-slate-900">
-                {trip.title}
-              </h3>
+              {/* Mobile: tytuł/data/grupy w kolumnie; na lg wrapper znika (contents) i wraca grid */}
+              <div className="min-w-0 flex-1 space-y-1.5 lg:contents lg:space-y-0">
+                <h3 className="min-w-0 truncate text-base font-bold text-slate-900">
+                  {trip.title}
+                </h3>
 
-              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
-                <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
-              </p>
+                <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
+                  <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                  {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
+                </p>
 
-              <div className="hidden lg:block" />
+                <div className="hidden lg:block" />
 
-              {/* Status (tylko zrealizowany / po terminie) + kuleczki grup obok przycisku rozwijania */}
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {/* Status (tylko zrealizowany / po terminie) + kuleczki grup obok przycisku rozwijania */}
+                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
                 {(isPast || declarationPassed) && (
                   <span className={cn(
                     'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
@@ -401,13 +403,14 @@ function TripCardInner({
                         <GroupIcon name={g.name} className="h-3.5 w-3.5" />
                       </span>
                       {g.name}
-                    </span>
-                  );
-                })}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
+                'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-all',
                 isOpen ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-500'
               )}>
                 <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />

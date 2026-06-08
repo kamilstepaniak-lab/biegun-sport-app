@@ -151,8 +151,11 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
       {/* Mobile Sidebar */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetTrigger asChild>
-          <button className="md:hidden fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md border border-gray-100 text-gray-500 hover:text-gray-800 transition-colors">
-            <Menu className="h-5 w-5" />
+          <button
+            aria-label="Otwórz menu"
+            className="md:hidden fixed top-3 left-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/25 ring-1 ring-blue-700/50 hover:bg-blue-700 active:scale-95 transition-all"
+          >
+            <Menu className="h-[22px] w-[22px]" />
           </button>
         </SheetTrigger>
         <SheetContent

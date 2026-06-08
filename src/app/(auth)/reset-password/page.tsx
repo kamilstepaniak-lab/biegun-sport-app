@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Minimum 6 znaków"
+                      placeholder="Minimum 8 znaków"
                       autoComplete="new-password"
                       disabled={isLoading}
                       value={password}

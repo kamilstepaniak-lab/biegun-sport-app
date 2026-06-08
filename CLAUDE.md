@@ -71,6 +71,19 @@ tekstów UI. Nie powielaj tych zasad tutaj.
   równolegle** (`Promise.all`) — były sekwencyjne, a oba zależą tylko od
   groupIds. Jeden hop mniej na Wyjazdach i Kalendarzu (waterfall 4 → 3).
 - Wdrożone na produkcję (commit `6f7af62`, push na main). Bez migracji DB.
+- **`getAuthUser`: `getUser()` → `getClaims()`** (`auth-helpers.ts`). getClaims
+  weryfikuje JWT lokalnie, gdy w Supabase włączone są klucze ASYMMETRIC
+  (ES256/RS256) — JWKS pobierany raz i cache'owany, zero round-tripów do Auth
+  API na render. Dla kluczy SYMMETRIC (legacy HS256) getClaims sam robi
+  fallback na getUser() po sieci, więc zmiana jest bezpieczna od razu i
+  przyspiesza automatycznie po migracji kluczy w panelu Supabase. `user`
+  budowany z `claims` (id=sub, email, app_metadata, user_metadata) —
+  kompatybilny z wszystkimi callerami (tsc czysty). Rola dalej wyłącznie z
+  app_metadata. WARUNEK pełnego zysku: w Supabase Settings → JWT Keys
+  przełączyć projekt na asymmetric signing keys.
+- Region Vercel = Supabase (oba Frankfurt) — potwierdzone przez użytkownika.
+  Connection pooler NIE dotyczy tej apki: brak sterownika Postgres/connection
+  stringa, całość idzie przez PostgREST (REST API), który sam pooluje.
 
 ### 2026-06-08 (Sidebar — kafelki ikon w stylu referencyjnym)
 
