@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/email-queue",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }

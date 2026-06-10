@@ -3,6 +3,14 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-10 (vercel.json: cron email-queue tymczasowo dzienny — Hobby)
+
+- `email-queue` cron `*/5 * * * *` → `0 8 * * *`: plan Vercel Hobby nie
+  dopuszcza cronów częstszych niż dzienne i taki config blokował wdrożenia
+  (od `14cba6b` Vercel nie zbudował żadnego commita). **Po wykupieniu
+  Vercel Pro przywrócić `*/5 * * * *`** — wtedy kolejka maili będzie
+  opróżniana co 5 minut, a nie raz dziennie o 8:00.
+
 ### 2026-06-10 (Selektor dzieci: zawijanie zamiast przewijania w bok)
 
 - `parent-child-selector.tsx`: na mobile chipy zawijają się do kolejnej
