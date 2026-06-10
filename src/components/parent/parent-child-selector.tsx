@@ -48,11 +48,13 @@ export function ParentChildSelector({
   const isCompact = variant === 'compact';
   const buttonClassName = cn(
     'flex shrink-0 items-center rounded-[10px] border text-left text-sm font-bold transition-colors',
-    isCompact ? 'h-10 gap-2 px-2.5' : 'h-12 gap-2.5 px-3',
+    // Mobile zawsze kompaktowo (chipy mieszczą się bez przewijania),
+    // wariant default rośnie dopiero od sm
+    isCompact ? 'h-10 gap-2 px-2.5' : 'h-10 gap-2 px-2.5 sm:h-12 sm:gap-2.5 sm:px-3',
   );
-  const avatarClassName = isCompact ? 'h-6 w-6' : 'h-8 w-8';
-  const iconClassName = isCompact ? 'h-3.5 w-3.5' : 'h-4 w-4';
-  const checkClassName = isCompact ? 'h-4 w-4' : 'h-5 w-5';
+  const avatarClassName = isCompact ? 'h-6 w-6' : 'h-6 w-6 sm:h-8 sm:w-8';
+  const iconClassName = isCompact ? 'h-3.5 w-3.5' : 'h-3.5 w-3.5 sm:h-4 sm:w-4';
+  const checkClassName = isCompact ? 'h-4 w-4' : 'h-4 w-4 sm:h-5 sm:w-5';
 
   return (
     <div className="space-y-2">
@@ -75,7 +77,9 @@ export function ParentChildSelector({
             <span className={cn('flex items-center justify-center rounded-full bg-blue-100 text-blue-600', avatarClassName)}>
               <Users className={iconClassName} />
             </span>
-            <span className="whitespace-nowrap">Wszystkie dzieci</span>
+            {/* Mobile: krótka etykieta — chipy mają się mieścić bez przewijania */}
+            <span className="whitespace-nowrap sm:hidden">Wszystkie</span>
+            <span className="hidden whitespace-nowrap sm:inline">Wszystkie dzieci</span>
           </button>
         )}
 
@@ -95,14 +99,16 @@ export function ParentChildSelector({
               )}
             >
               {isSelected && (
-                <span className={cn('flex items-center justify-center rounded-full bg-blue-600 text-white', checkClassName)}>
+                <span className={cn('hidden items-center justify-center rounded-full bg-blue-600 text-white sm:flex', checkClassName)}>
                   <Check className="h-3 w-3" strokeWidth={3} />
                 </span>
               )}
               <span className={cn('flex items-center justify-center rounded-full text-white', avatarClassName, colors.dot)}>
                 <GroupIcon name={child.groupName ?? ''} className={iconClassName} />
               </span>
-              <span className="whitespace-nowrap">{child.name}</span>
+              {/* Mobile: samo imię (zaznaczenie widać po tle/ramce) */}
+              <span className="whitespace-nowrap sm:hidden">{child.name.split(' ')[0]}</span>
+              <span className="hidden whitespace-nowrap sm:inline">{child.name}</span>
             </button>
           );
         })}

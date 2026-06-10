@@ -5,6 +5,10 @@ Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
 ### 2026-06-10 (Mobile: Wyjazdy rodzica — pełna szerokość, przyciski potwierdzeń)
 
+- `parent-child-selector.tsx`: na mobile kompaktowe chipy z samymi imionami
+  („Wszystkie" zamiast „Wszystkie dzieci", bez znaczka ✓) — selektor mieści
+  się bez przewijania poziomego; od `sm` dotychczasowy wygląd.
+
 - `parent/trips/trips-list.tsx`: oś czasu miesięcy (kółko z kalendarzem +
   pionowa linia + `pl-10`) tylko od `sm` — na telefonie karty wyjazdów
   zajmują pełną szerokość ekranu.
