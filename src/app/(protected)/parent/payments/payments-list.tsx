@@ -109,31 +109,66 @@ function SummaryBlocks({
   const sortedPending = Object.entries(pendingByCurrency).sort((a, b) => currencyOrder(a[0]) - currencyOrder(b[0]));
   const sortedOverdue = Object.entries(overdueByCurrency).sort((a, b) => currencyOrder(a[0]) - currencyOrder(b[0]));
 
+  const pendingLabel = hasPending
+    ? sortedPending.map(([currency, sum]) => `${sum.toFixed(0)} ${currency}`).join(' · ')
+    : '0 PLN';
+  const overdueLabel = hasOverdue
+    ? sortedOverdue.map(([currency, sum]) => `${sum.toFixed(0)} ${currency}`).join(' · ')
+    : '0 PLN';
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <MetricCard
-        icon={Clock}
-        label="Do zapłaty"
-        value={
-          hasPending
-            ? sortedPending.map(([currency, sum]) => `${sum.toFixed(0)} ${currency}`).join(' · ')
-            : '0 PLN'
-        }
-        description={hasPending ? 'razem z płatnościami po terminie' : 'Wszystko opłacone'}
-        tone="amber"
-      />
-      <MetricCard
-        icon={AlertCircle}
-        label="Po terminie"
-        value={
-          hasOverdue
-            ? sortedOverdue.map(([currency, sum]) => `${sum.toFixed(0)} ${currency}`).join(' · ')
-            : '0 PLN'
-        }
-        description={hasOverdue ? 'wymaga uwagi' : 'Brak zaległości'}
-        tone={hasOverdue ? 'red' : 'slate'}
-      />
-    </div>
+    <>
+      {/* Mobile: przyklejona pigułka z kwotami — zostaje u góry przy
+          przewijaniu listy rat (musi być bezpośrednim dzieckiem wysokiego
+          kontenera strony, żeby sticky działało przez całą listę). */}
+      <div className="sticky top-2 z-30 md:hidden">
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/95 px-4 py-2.5 shadow-md ring-1 ring-slate-200 backdrop-blur">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className={cn(
+              'flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl',
+              hasPending ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700',
+            )}>
+              {hasPending ? <Clock className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase leading-none text-slate-400">Do zapłaty</p>
+              <p className="mt-1 truncate text-sm font-black leading-none text-slate-900">
+                {hasPending ? pendingLabel : 'Wszystko opłacone'}
+              </p>
+            </div>
+          </div>
+          {hasOverdue && (
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                <AlertCircle className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase leading-none text-red-500">Po terminie</p>
+                <p className="mt-1 truncate text-sm font-black leading-none text-red-700">{overdueLabel}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop: dotychczasowe kafle */}
+      <div className="hidden grid-cols-2 gap-3 md:grid">
+        <MetricCard
+          icon={Clock}
+          label="Do zapłaty"
+          value={pendingLabel}
+          description={hasPending ? 'razem z płatnościami po terminie' : 'Wszystko opłacone'}
+          tone="amber"
+        />
+        <MetricCard
+          icon={AlertCircle}
+          label="Po terminie"
+          value={overdueLabel}
+          description={hasOverdue ? 'wymaga uwagi' : 'Brak zaległości'}
+          tone={hasOverdue ? 'red' : 'slate'}
+        />
+      </div>
+    </>
   );
 }
 

@@ -93,8 +93,16 @@ export function ParentTripsList({ trips, searchQuery = '' }: ParentTripsListProp
   const toggleTrip = useCallback((tripId: string) => {
     setOpenTrips(prev => {
       const next = new Set(prev);
-      if (next.has(tripId)) next.delete(tripId);
-      else next.add(tripId);
+      if (next.has(tripId)) {
+        next.delete(tripId);
+      } else {
+        next.add(tripId);
+        // Dosuń otwieraną kartę do góry ekranu (scroll-mt-24 na wrapperze),
+        // żeby rozwinięta treść była od razu widoczna — szczególnie na mobile.
+        setTimeout(() => {
+          document.getElementById(`trip-${tripId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+      }
       return next;
     });
   }, []);

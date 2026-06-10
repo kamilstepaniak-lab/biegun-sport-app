@@ -423,7 +423,7 @@ function TripCardInner({
           </div>
         </CollapsibleTrigger>
 
-        <CollapsibleContent>
+        <CollapsibleContent className="overflow-hidden data-[state=open]:animate-[collapsible-down_250ms_ease-out] data-[state=closed]:animate-[collapsible-up_200ms_ease-in]">
           <div className="grid gap-4 bg-slate-50 p-4 sm:p-6 lg:grid-cols-3">
             <div className="relative -m-4 mb-2 overflow-hidden bg-blue-600 p-4 text-white shadow-sm sm:-m-6 sm:mb-2 sm:p-6 lg:col-span-3">
               <div className="relative space-y-5">

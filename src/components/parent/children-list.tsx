@@ -310,24 +310,25 @@ export function ChildrenList({ participants, initialMessages, dashboardByChild, 
                   {isSelected && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
                 </button>
                 <span className={cn('h-5 w-px', isSelected ? 'bg-blue-200' : 'bg-white/20')} />
+                {/* Mobile: większe touch targety edycji/usuwania (sm wraca do kompaktu) */}
                 <Link
                   href={`/parent/children/${child.id}`}
-                  className={cn('flex h-6 w-6 items-center justify-center rounded-md transition-colors', isSelected ? 'hover:bg-blue-50' : 'hover:bg-white/15')}
+                  className={cn('flex h-9 w-9 items-center justify-center rounded-md transition-colors sm:h-6 sm:w-6', isSelected ? 'hover:bg-blue-50' : 'hover:bg-white/15')}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={`Edytuj ${child.first_name} ${child.last_name}`}
                 >
-                  <Edit className="h-3 w-3" />
+                  <Edit className="h-4 w-4 sm:h-3 sm:w-3" />
                 </Link>
                 <button
                   onClick={(e) => handleDeleteClick(e, child.id)}
                   disabled={deleteLoadingId === child.id}
                   aria-label={`Usuń ${child.first_name} ${child.last_name}`}
-                  className={cn('flex h-6 w-6 items-center justify-center rounded-md transition-colors disabled:opacity-60', isSelected ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-white/15')}
+                  className={cn('flex h-9 w-9 items-center justify-center rounded-md transition-colors disabled:opacity-60 sm:h-6 sm:w-6', isSelected ? 'hover:bg-red-50 hover:text-red-600' : 'hover:bg-white/15')}
                 >
                   {deleteLoadingId === child.id ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin sm:h-3 sm:w-3" />
                   ) : (
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4 sm:h-3 sm:w-3" />
                   )}
                 </button>
               </div>

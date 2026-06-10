@@ -3,6 +3,31 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-10 (Rodzic: płynne karty wyjazdów + sticky podsumowanie płatności)
+
+- `trip-card.tsx` + `globals.css`: animowane rozwijanie karty wyjazdu
+  (keyframes `collapsible-down/up` na `--radix-collapsible-content-height`);
+  `trips-list.tsx`: otwierana karta dosuwana do góry ekranu
+  (`scrollIntoView`, `scroll-mt-24`).
+- `parent/payments/payments-list.tsx`: na mobile dwa kafle podsumowania
+  zastąpione przyklejoną pigułką (sticky top-2) „Do zapłaty / Po terminie" —
+  kwoty widoczne podczas przewijania listy rat; desktop bez zmian
+  (`SummaryBlocks` zwraca fragment: pigułka `md:hidden` + kafle `hidden md:grid`).
+
+### 2026-06-10 (Rodzic: szlify mobile — Moje dzieci, Profil, Dokumenty)
+
+- Przegląd Wiadomości/Dokumenty/Moje dzieci/Profil pod kątem mobile;
+  świadomie zostawione: `text-base` na selectach (ochrona przed auto-zoomem
+  iOS), etykiety `text-[11px]` (wzorzec design systemu), wysokość hero
+  (użytkownik nie wybrał).
+- `children-list.tsx`: przyciski edycji/usuwania dziecka w chipach
+  `h-6` → `h-9` na mobile (touch target), ikony `h-4` (od `sm` kompakt).
+- `profile-form.tsx`, `change-password-form.tsx`: przyciski Zapisz/Zmień
+  hasło `w-full sm:w-auto`.
+- `contracts/contract-card.tsx`: nagłówek karty stackuje się na mobile
+  (tytuł nad badge'ami zamiast ściskania w jednym rzędzie), chevron
+  `h-9` na mobile, badge'y wyrównane do lewej.
+
 ### 2026-06-10 (Mobile: Wyjazdy rodzica — pełna szerokość, przyciski potwierdzeń)
 
 - `parent-child-selector.tsx`: na mobile kompaktowe chipy z samymi imionami

@@ -142,6 +142,7 @@ export function ChangePasswordForm() {
           <Button
             type="submit"
             disabled={!isValid || isPending}
+            className="w-full sm:w-auto"
           >
             {isPending ? 'Zmieniam...' : 'Zmień hasło'}
           </Button>

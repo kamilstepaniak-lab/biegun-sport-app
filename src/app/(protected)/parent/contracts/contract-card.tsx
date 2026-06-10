@@ -59,7 +59,7 @@ export function ContractCard({ contract, parentName }: ContractCardProps) {
     <div className="space-y-0 rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
       {/* Nagłówek karty — zawsze widoczny */}
       <div
-        className={`px-5 py-4 flex items-center justify-between gap-4 cursor-pointer transition-colors ${
+        className={`px-4 py-4 sm:px-5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 cursor-pointer transition-colors ${
           isAccepted
             ? 'bg-emerald-50/40 hover:bg-emerald-50/70 border-b border-emerald-100'
             : 'bg-amber-50/30 hover:bg-amber-50/60 border-b border-amber-100'
@@ -78,7 +78,7 @@ export function ContractCard({ contract, parentName }: ContractCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap sm:justify-end">
           {contractNumber && (
             <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded hidden sm:inline">
               {contractNumber}
@@ -103,7 +103,7 @@ export function ContractCard({ contract, parentName }: ContractCardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600"
+            className="h-9 w-9 sm:h-7 sm:w-7 p-0 text-gray-400 hover:text-gray-600"
             onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
           >
             {expanded
