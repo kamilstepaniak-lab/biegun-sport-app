@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, LogOut, User, Settings, ChevronDown } from 'lucide-react';
@@ -47,9 +48,11 @@ export function Header({ user }: HeaderProps) {
 
   return (
     <header className="app-header h-16 bg-white/80 backdrop-blur-sm border-b border-gray-200/60 flex items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-4 md:hidden">
-        {/* Space for mobile menu button */}
-        <div className="w-10" />
+      <div className="flex items-center gap-2.5 md:hidden">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden flex-shrink-0">
+          <Image src="/logo.png" alt="BiegunSport" width={32} height={32} className="object-cover rounded-lg" priority />
+        </div>
+        <span className="text-sm font-bold text-gray-900">BiegunSport</span>
       </div>
 
       <div className="hidden md:flex items-center flex-1">

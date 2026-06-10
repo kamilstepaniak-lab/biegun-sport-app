@@ -7,17 +7,18 @@ import { countPendingRegistrationRequests } from '@/lib/actions/trip-registratio
 
 function buildNavItems(pendingRegistrations: number): SidebarItem[] {
   return [
-    { title: 'Uczestnicy', href: '/admin/participants', icon: 'Users' },
+    { title: 'Uczestnicy', href: '/admin/participants', icon: 'Users', mobile: true },
     { title: 'Grupy', href: '/admin/groups', icon: 'UsersRound' },
     {
       title: 'Zgłoszenia',
       href: '/admin/registrations',
       icon: 'ClipboardList',
       badge: pendingRegistrations > 0 ? pendingRegistrations : undefined,
+      mobile: true,
     },
-    { title: 'Wyjazdy', href: '/admin/trips', icon: 'MapPin' },
+    { title: 'Wyjazdy', href: '/admin/trips', icon: 'MapPin', mobile: true },
     { title: 'Kalendarz', href: '/admin/calendar', icon: 'CalendarDays' },
-    { title: 'Płatności', href: '/admin/payments', icon: 'CreditCard' },
+    { title: 'Płatności', href: '/admin/payments', icon: 'CreditCard', mobile: true },
     { title: 'Finanse', href: '/admin/finance', icon: 'BarChart2' },
     { title: 'Dokumenty', href: '/admin/contracts', icon: 'FileText' },
     { title: 'E-maile', href: '/admin/settings/email-templates', icon: 'Mail' },

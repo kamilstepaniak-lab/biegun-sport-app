@@ -3,6 +3,31 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-10 (Mobile: bottom nav, tap feedback, skeletony hero)
+
+- Audyt mobile („native app feel"): PWA/manifest/safe-area/touch targets już
+  dobre; braki: bottom nav, tap feedback, skeletony niedopasowane do hero.
+- **Bottom navigation bar** (`shared/sidebar.tsx`): stały dolny pasek na
+  mobile (`md:hidden`, safe-area) — 4 główne sekcje + „Menu" otwierające
+  dotychczasowy drawer (Sheet). Pozycje oznaczane flagą `mobile: true`
+  w `SidebarItem` (layouty admin + parent). Usunięty pływający hamburger
+  (lewy górny róg); w headerze na mobile logo + „BiegunSport"
+  (`shared/header.tsx`), `padding-left` headera 64→16px. `admin-main`
+  dostaje na mobile `padding-bottom` pod pasek (globals.css).
+- **Tap feedback + drobiazgi CSS** (globals.css, `ui/button.tsx`):
+  `active:scale-[0.98]` na Button, `active:bg-slate-100`+`select-none` na
+  linkach sidebara, `-webkit-tap-highlight-color: transparent`,
+  `overscroll-behavior: none` (też pionowo — bez pull-to-refresh),
+  `touch-action: manipulation` na elementach interaktywnych.
+- **Skeleton screens** (`shared/loading.tsx` → `PageSkeleton`): wspólny
+  szkielet podstrony z placeholderem hero (góry, te same sztywne wysokości
+  co prawdziwe nagłówki — wariant `admin`/`parent`) + bloki treści.
+  Wszystkie 34 route-level `loading.tsx` przepisane na `PageSkeleton`
+  (wcześniej małe szare paski → układ „skakał" przy ładowaniu).
+- `tsc --noEmit`: czysty dla dotkniętych plików; 2 istniejące błędy
+  w `trip-form/index.tsx` (niezwiązane). Bez migracji DB.
+- Gałąź: `claude/mobile-view-improvements-6aqcf6` (preview Vercel).
+
 ### 2026-06-08 (Audyt gotowości produkcyjnej + fix krytyczny: cron maili)
 
 - Audyt stanu aplikacji pod kątem wypuszczenia. Aplikacja dojrzała:

@@ -122,12 +122,26 @@
   }
   html {
     overflow-x: hidden;
-    overscroll-behavior-x: none;
+    /* Bez rubber-band w bok i bez pull-to-refresh przeglądarki (native feel) */
+    overscroll-behavior: none;
   }
   body {
     @apply bg-background text-foreground;
     overflow-x: hidden;
-    overscroll-behavior-x: none;
+    overscroll-behavior: none;
+    /* Bez szarego błysku przy tapnięciu na iOS/Android */
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Bez opóźnienia double-tap-zoom na elementach interaktywnych
+     (pinch-zoom dalej działa) */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
   }
 }
 
@@ -403,8 +417,14 @@
 
 @media (max-width: 767px) {
   .admin-shell .app-header {
-    padding-left: 64px;
+    padding-left: 16px;
     padding-right: 16px;
+  }
+
+  /* Miejsce na dolny pasek nawigacji (bottom nav) + home indicator —
+     treść nie chowa się pod paskiem przy przewinięciu do końca. */
+  .admin-shell .admin-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 
   .admin-shell .admin-main > div > *:not(.page-header):not(.parent-trips-hero):not(.parent-page-hero) {

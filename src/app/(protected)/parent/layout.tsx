@@ -11,11 +11,13 @@ const parentNavItems: SidebarItem[] = [
     title: 'Moje dzieci',
     href: '/parent/children',
     icon: 'Users',
+    mobile: true,
   },
   {
     title: 'Wyjazdy',
     href: '/parent/trips',
     icon: 'MapPin',
+    mobile: true,
   },
   {
     title: 'Kalendarz',
@@ -26,6 +28,7 @@ const parentNavItems: SidebarItem[] = [
     title: 'Płatności',
     href: '/parent/payments',
     icon: 'CreditCard',
+    mobile: true,
   },
   {
     title: 'Dokumenty',
@@ -36,6 +39,7 @@ const parentNavItems: SidebarItem[] = [
     title: 'Wiadomości',
     href: '/parent/messages',
     icon: 'MessageSquare',
+    mobile: true,
   },
   {
     title: 'Profil',

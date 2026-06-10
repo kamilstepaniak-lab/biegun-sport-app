@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   ChevronLeft,
@@ -54,6 +54,8 @@ export interface SidebarItem {
   href: string;
   icon: string;
   badge?: string | number;
+  /** Pokazuj w dolnym pasku nawigacji na mobile (max 4 pozycje). */
+  mobile?: boolean;
 }
 
 interface SidebarProps {
@@ -70,11 +72,11 @@ function NavItem({ item, isActive, isCollapsed, onClick }: { item: SidebarItem; 
       href={item.href}
       onClick={onClick}
       className={cn(
-        'group relative flex items-center gap-3 rounded-xl py-2 pr-3 text-sm font-semibold transition-all duration-200',
+        'group relative flex select-none items-center gap-3 rounded-xl py-2 pr-3 text-sm font-semibold transition-all duration-200',
         isCollapsed ? 'justify-center px-1.5' : 'pl-3',
         isActive
           ? 'bg-blue-50 text-blue-700'
-          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
       )}
       title={isCollapsed ? item.title : undefined}
     >
@@ -146,18 +148,12 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
     )
   );
 
+  const mobileItems = items.filter((item) => item.mobile).slice(0, 4);
+
   return (
     <>
-      {/* Mobile Sidebar */}
+      {/* Mobile: pełne menu w drawerze (otwierane z dolnego paska) */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetTrigger asChild>
-          <button
-            aria-label="Otwórz menu"
-            className="md:hidden fixed top-3 left-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/25 ring-1 ring-blue-700/50 hover:bg-blue-700 active:scale-95 transition-all"
-          >
-            <Menu className="h-[22px] w-[22px]" />
-          </button>
-        </SheetTrigger>
         <SheetContent
           side="left"
           className="p-0 w-72 bg-white border-r border-gray-100"
@@ -215,6 +211,66 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
           {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
       </aside>
+
+      {/* Mobile: dolny pasek nawigacji (jak w natywnych aplikacjach) */}
+      <nav
+        aria-label="Nawigacja dolna"
+        className="md:hidden fixed inset-x-0 bottom-0 z-40 select-none border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur supports-[backdrop-filter]:bg-white/90"
+      >
+        <div
+          className="grid"
+          style={{ gridTemplateColumns: `repeat(${mobileItems.length + 1}, 1fr)` }}
+        >
+          {mobileItems.map((item) => (
+            <BottomNavItem
+              key={item.href}
+              item={item}
+              isActive={item.href === activeHref}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="flex flex-col items-center gap-0.5 pb-1.5 pt-2 text-slate-500 transition-opacity active:opacity-60"
+            aria-label="Otwórz pełne menu"
+          >
+            <span className="flex h-7 w-12 items-center justify-center rounded-full">
+              <Menu className="h-[21px] w-[21px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-semibold leading-none">Menu</span>
+          </button>
+        </div>
+      </nav>
     </>
+  );
+}
+
+function BottomNavItem({ item, isActive }: { item: SidebarItem; isActive: boolean }) {
+  const Icon = iconMap[item.icon] || LayoutDashboard;
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        'flex flex-col items-center gap-0.5 pb-1.5 pt-2 transition-opacity active:opacity-60',
+        isActive ? 'text-blue-700' : 'text-slate-500'
+      )}
+      aria-current={isActive ? 'page' : undefined}
+    >
+      <span
+        className={cn(
+          'relative flex h-7 w-12 items-center justify-center rounded-full transition-colors',
+          isActive && 'bg-blue-100/80'
+        )}
+      >
+        <Icon className="h-[21px] w-[21px]" strokeWidth={isActive ? 2.4 : 2} />
+        {item.badge ? (
+          <span className="absolute -top-1 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold leading-none text-white ring-2 ring-white">
+            {item.badge}
+          </span>
+        ) : null}
+      </span>
+      <span className="text-[10px] font-semibold leading-none">{item.title}</span>
+    </Link>
   );
 }
