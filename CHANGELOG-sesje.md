@@ -3,6 +3,22 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-10 (Mobile: Wyjazdy rodzica — pełna szerokość, przyciski potwierdzeń)
+
+- `parent/trips/trips-list.tsx`: oś czasu miesięcy (kółko z kalendarzem +
+  pionowa linia + `pl-10`) tylko od `sm` — na telefonie karty wyjazdów
+  zajmują pełną szerokość ekranu.
+- `parent/trips/trip-card.tsx`:
+  - chipy grup w nagłówku karty: na mobile mała kropka koloru + nazwa
+    `text-xs` (duże kółko `h-6` z ikoną dopiero od `sm`),
+  - przyciski potwierdzeń („jedzie"/przystanki/„nie jedzie"/„wiadomość"):
+    na mobile siatka 2 kolumn, przystanki na pełną szerokość, `py-2.5`
+    (duże touch targets) — od `sm` kompaktowy rząd jak dotąd,
+  - paddingi rozwiniętej sekcji `p-6`/`p-5` → `p-4` na mobile (sekcja
+    niebieska, Podstawowe informacje, Terminy, Cennik, Co zabrać, przelewy),
+  - panel potwierdzenia bez wcięcia `ml-11` na mobile, większe
+    Anuluj/Potwierdź.
+
 ### 2026-06-10 (Mobile: bottom nav, tap feedback, skeletony hero)
 
 - Audyt mobile („native app feel"): PWA/manifest/safe-area/touch targets już

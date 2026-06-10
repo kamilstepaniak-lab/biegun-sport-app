@@ -90,7 +90,7 @@ function DetailCard({
   className?: string;
 }) {
   return (
-    <section className={cn('rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200', className)}>
+    <section className={cn('rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5', className)}>
       <div className="mb-4 flex items-center gap-2">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
           <Icon className="h-3.5 w-3.5" />
@@ -219,12 +219,14 @@ function TripCardInner({
                   )}
                 </div>
               </div>
-              <div className="flex gap-1 flex-wrap">
+              {/* Mobile: duże przyciski w siatce (przystanki na pełną szerokość) —
+                  to kluczowa akcja rodzica; od sm kompaktowy rząd jak dotąd */}
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-1">
                 <button
                   disabled={isUpdating}
                   onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'stop1'); }}
                   className={cn(
-                    'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
+                    'col-span-2 flex items-center justify-center gap-1 px-2 py-2.5 sm:col-span-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                     currentStatus === 'confirmed' && currentStop === 'stop1'
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                       : confirmPanel?.key === key && confirmPanel?.type === 'stop1'
@@ -241,7 +243,7 @@ function TripCardInner({
                     disabled={isUpdating}
                     onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'stop2'); }}
                     className={cn(
-                      'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
+                      'col-span-2 flex items-center justify-center gap-1 px-2 py-2.5 sm:col-span-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                       currentStatus === 'confirmed' && currentStop === 'stop2'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                         : confirmPanel?.key === key && confirmPanel?.type === 'stop2'
@@ -259,7 +261,7 @@ function TripCardInner({
                     disabled={isUpdating}
                     onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'own'); }}
                     className={cn(
-                      'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2',
+                      'col-span-2 flex items-center justify-center gap-1 px-2 py-2.5 sm:col-span-1 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                       currentStatus === 'confirmed' && currentStop === 'own'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
                         : confirmPanel?.key === key && confirmPanel?.type === 'own'
@@ -274,7 +276,7 @@ function TripCardInner({
                   disabled={isUpdating}
                   onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'not_going'); }}
                   className={cn(
-                    'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
+                    'flex items-center justify-center gap-1 px-2 py-2.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                     currentStatus === 'not_going'
                       ? 'bg-red-500 text-white border-red-500 shadow-md'
                       : confirmPanel?.key === key && confirmPanel?.type === 'not_going'
@@ -289,7 +291,7 @@ function TripCardInner({
                   disabled={isUpdating}
                   onClick={(e) => { e.stopPropagation(); onOpenConfirmPanel(key, 'other'); }}
                   className={cn(
-                    'px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all duration-200 border-2 flex items-center gap-1',
+                    'flex items-center justify-center gap-1 px-2 py-2.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg text-xs font-semibold transition-all duration-200 border-2',
                     currentStatus === 'other' || (confirmPanel?.key === key && confirmPanel?.type === 'other')
                       ? 'bg-amber-500 text-white border-amber-500 shadow-md'
                       : 'bg-transparent border-white/55 text-white hover:bg-white/10'
@@ -310,7 +312,7 @@ function TripCardInner({
                   : 'bg-blue-600 hover:bg-blue-700';
               const confirmLabel = pType === 'other' ? 'Wyślij' : 'Potwierdź';
               return (
-                <div className="ml-11 space-y-2">
+                <div className="space-y-2 sm:ml-11">
                   <Textarea
                     placeholder={pType === 'other' ? 'Wpisz wiadomość do admina…' : 'Wiadomość dla admina (opcjonalna, np. dołączy później)'}
                     value={confirmMessage}
@@ -323,7 +325,7 @@ function TripCardInner({
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); onCancelConfirmPanel(); }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                      className="px-4 py-2 sm:px-3 sm:py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
                     >
                       Anuluj
                     </button>
@@ -339,7 +341,7 @@ function TripCardInner({
                           onStatusChange(trip.id, child.child_id, 'other', confirmMessage);
                         }
                       }}
-                      className={cn('px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow-sm disabled:opacity-50', confirmBtnCls)}
+                      className={cn('px-4 py-2 sm:px-3 sm:py-1.5 rounded-lg text-xs font-medium text-white shadow-sm disabled:opacity-50', confirmBtnCls)}
                     >
                       {isUpdating ? 'Zapisuję…' : confirmLabel}
                     </button>
@@ -398,8 +400,10 @@ function TripCardInner({
                 {trip.groups.length > 0 && trip.groups.map((g) => {
                   const colors = getGroupColor(g.name);
                   return (
-                    <span key={g.id} className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                      <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-white', colors.dot)}>
+                    <span key={g.id} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 sm:text-sm sm:text-slate-700">
+                      {/* Mobile: dyskretna kropka koloru grupy; od sm pełne kółko z ikoną */}
+                      <span className={cn('h-2 w-2 rounded-full sm:hidden', colors.dot)} />
+                      <span className={cn('hidden h-6 w-6 items-center justify-center rounded-full text-white sm:flex', colors.dot)}>
                         <GroupIcon name={g.name} className="h-3.5 w-3.5" />
                       </span>
                       {g.name}
@@ -420,8 +424,8 @@ function TripCardInner({
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="grid gap-4 bg-slate-50 p-6 lg:grid-cols-3">
-            <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
+          <div className="grid gap-4 bg-slate-50 p-4 sm:p-6 lg:grid-cols-3">
+            <div className="relative -m-4 mb-2 overflow-hidden bg-blue-600 p-4 text-white shadow-sm sm:-m-6 sm:mb-2 sm:p-6 lg:col-span-3">
               <div className="relative space-y-5">
                 {isPast && (
                   <span className="inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-blue-50 ring-1 ring-white/20">
@@ -432,7 +436,7 @@ function TripCardInner({
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-1 lg:col-span-2">
+            <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-1 lg:col-span-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                   <Info className="h-3.5 w-3.5 text-white" />
@@ -514,7 +518,7 @@ function TripCardInner({
             </DetailCard>
 
             {trip.payment_templates && trip.payment_templates.length > 0 && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-3 lg:col-span-2">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-3 lg:col-span-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Receipt className="h-3.5 w-3.5 text-white" />
@@ -670,7 +674,7 @@ function TripCardInner({
             )}
 
             {trip.packing_list && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-5 lg:col-span-2">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-5 lg:col-span-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Backpack className="h-3.5 w-3.5 text-white" />

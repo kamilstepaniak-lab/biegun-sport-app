@@ -187,14 +187,16 @@ export function ParentTripsList({ trips, searchQuery = '' }: ParentTripsListProp
       )}
 
       {upcomingByMonth.length > 0 && (
-        <div className="relative space-y-6 pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200">
+        // Oś czasu (kółko + pionowa linia) tylko od sm — na telefonie karty
+        // dostają pełną szerokość ekranu (kluczowa podstrona, każdy px się liczy).
+        <div className="relative space-y-6 sm:pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200 before:hidden sm:before:block">
           {upcomingByMonth.map((group) => (
             <div key={group.monthKey} className="relative space-y-3">
               <div className="flex items-center gap-3">
-                <div className="absolute -left-10 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/25">
+                <div className="absolute -left-10 hidden h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm shadow-blue-600/25 sm:flex">
                   <CalendarIcon className="h-4 w-4" />
                 </div>
-                <span className="ml-4 text-xs font-black uppercase tracking-[0.16em] text-slate-700">
+                <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-700 sm:ml-4">
                   {group.month} {group.year}
                 </span>
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
@@ -226,14 +228,14 @@ export function ParentTripsList({ trips, searchQuery = '' }: ParentTripsListProp
           </button>
 
           {showPast && (
-            <div className="relative space-y-6 pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200">
+            <div className="relative space-y-6 sm:pl-10 before:absolute before:bottom-0 before:left-[18px] before:top-5 before:w-px before:bg-slate-200 before:hidden sm:before:block">
               {pastByMonth.map((group) => (
                 <div key={group.monthKey} className="relative space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="absolute -left-10 flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+                    <div className="absolute -left-10 hidden h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-500 sm:flex">
                       <CalendarIcon className="h-4 w-4" />
                     </div>
-                    <span className="ml-4 text-xs font-black uppercase tracking-[0.16em] text-slate-600">
+                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-600 sm:ml-4">
                       {group.month} {group.year}
                     </span>
                     <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-slate-500 ring-1 ring-slate-200">
