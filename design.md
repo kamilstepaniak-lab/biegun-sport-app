@@ -110,8 +110,12 @@ helpery. Nowa grupa = dopisz przypadek w `group-icons.tsx` (i kolor w
     linię opisu (`<br className="hidden sm:block" />`), nie jako osobny
     „note" z ikoną „i".
   - **Stała wysokość = stała pozycja elementów.** Nagłówek rodzica ma
-    **sztywną** wysokość (`h-`, nie `min-h`): `348px` (mobile, dolny pasek
-    stackuje się) / `300px` (≥640) / `320px` (desktop). Sekcja to
+    **sztywną** wysokość (`h-`, nie `min-h`): `300px` (≥640) / `320px`
+    (desktop). Na mobile (<640, dolny pasek stackuje się) jest
+    `min-h-[348px]`: przy jednej linii chipów selektora dziecka to nadal
+    dokładnie 348px, a przy 3+ dzieciach chipy **zawijają się do drugiej
+    linii** (nie przewijają w bok) i hero rośnie zamiast ucinać treść
+    (`overflow-hidden`). Sekcja to
     `flex flex-col`: tytuł zawsze na górze, dolny pasek przyklejony do dołu
     (`mt-auto`). Dzięki temu przy przełączaniu podstron tytuł, opis i
     przyciski wyboru dziecka stoją zawsze w tym samym miejscu, a grafika gór

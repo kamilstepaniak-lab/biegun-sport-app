@@ -3,6 +3,17 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-10 (Selektor dzieci: zawijanie zamiast przewijania w bok)
+
+- `parent-child-selector.tsx`: na mobile chipy zawijają się do kolejnej
+  linii (`flex-wrap`), zero poziomego scrolla; od `sm` jeden rząd jak dotąd.
+- `parent-page-header.tsx` + `design.md`: hero rodzica na mobile
+  `min-h-[348px]` zamiast sztywnego `h` — przy jednej linii chipów nadal
+  równe 348px, przy 3+ dzieciach rośnie zamiast ucinać (overflow-hidden).
+- Diagnoza wdrożeń: push na `main` dochodzi do GitHuba, ale integracja
+  GitHub→Vercel nie tworzy buildów od commita `14cba6b` (cron `*/5`
+  w `vercel.json` wymaga planu Vercel Pro) — deployment wyzwalany ręcznie.
+
 ### 2026-06-10 (Rodzic: płynne karty wyjazdów + sticky podsumowanie płatności)
 
 - `trip-card.tsx` + `globals.css`: animowane rozwijanie karty wyjazdu

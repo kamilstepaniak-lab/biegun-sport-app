@@ -42,8 +42,11 @@ export function ParentPageHeader({
         // dolny pasek (wyszukiwarka + wybór dziecka) zawsze przyklejony do dołu
         // (mt-auto). Dzięki temu przy przełączaniu podstron tytuł, opis i
         // przyciski stoją w tym samym miejscu, a grafika gór ma zawsze tę samą
-        // wysokość i rozmiar. Mobile wyższy (dolny pasek stackuje się <640px).
-        'parent-page-hero relative flex h-[348px] flex-col overflow-hidden px-4 pb-12 pt-6 text-slate-900 sm:h-[300px] sm:px-7 sm:pb-12 sm:pt-8 lg:h-[320px] lg:px-10 lg:pb-14 lg:pt-10',
+        // wysokość i rozmiar. Mobile wyższy (dolny pasek stackuje się <640px)
+        // i z min-h zamiast h: przy jednej linii chipów selektora wysokość to
+        // nadal dokładnie 348px, a gdy chipy zawiną się do drugiej linii
+        // (3+ dzieci), hero rośnie zamiast ucinać treść (overflow-hidden).
+        'parent-page-hero relative flex min-h-[348px] flex-col overflow-hidden px-4 pb-12 pt-6 text-slate-900 sm:h-[300px] sm:min-h-0 sm:px-7 sm:pb-12 sm:pt-8 lg:h-[320px] lg:px-10 lg:pb-14 lg:pt-10',
         seamlessBottom ? 'bg-transparent' : 'rounded-[16px] border border-blue-100/70 bg-[#eef6ff] shadow-[0_10px_28px_rgba(15,23,42,0.08)]',
         className,
       )}

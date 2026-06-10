@@ -62,7 +62,9 @@ export function ParentChildSelector({
         <Users className="h-3.5 w-3.5" />
         Wybierz dziecko
       </div>
-      <div className="flex gap-2.5 overflow-x-auto pb-1">
+      {/* Mobile: chipy zawijają się do kolejnej linii (zero przewijania w bok);
+          od sm jeden rząd z przewijaniem jak dotąd */}
+      <div className="flex flex-wrap gap-2 pb-1 sm:flex-nowrap sm:gap-2.5 sm:overflow-x-auto">
         {showAllOption && (
           <button
             type="button"
