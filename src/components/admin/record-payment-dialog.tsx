@@ -33,6 +33,12 @@ interface RecordPaymentDialogProps {
   amountRemaining: number; // amount - amount_paid (>0 = do zapłaty)
   onDone: () => void;
   children: React.ReactNode; // element wyzwalający (trigger)
+  /** Wstępnie wypełnij kwotę przy otwarciu (np. pozostała należność). */
+  prefillAmount?: number;
+  /** Domyślna metoda płatności (np. 'cash' w trybie zbiórki). */
+  defaultMethod?: 'cash' | 'transfer';
+  /** Kontekst w tytule, np. „Kowalski Jan · Rata 1". */
+  contextLabel?: string;
 }
 
 export function RecordPaymentDialog({
@@ -41,10 +47,13 @@ export function RecordPaymentDialog({
   amountRemaining,
   onDone,
   children,
+  prefillAmount,
+  defaultMethod = 'transfer',
+  contextLabel,
 }: RecordPaymentDialogProps) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'cash' | 'transfer'>('transfer');
+  const [method, setMethod] = useState<'cash' | 'transfer'>(defaultMethod);
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [closeAsDiscount, setCloseAsDiscount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +69,11 @@ export function RecordPaymentDialog({
   // Pobierz listę wcześniejszych wpłat dla tej płatności po otwarciu dialogu.
   useEffect(() => {
     if (!open) return;
+    // Prefill kwoty przy każdym otwarciu (po zaksięgowaniu wpłaty rodzic
+    // przekaże już nową pozostałą kwotę po router.refresh()).
+    if (prefillAmount && prefillAmount > 0) {
+      setAmount(String(Math.round(prefillAmount * 100) / 100));
+    }
     let cancelled = false;
     setLoadingTx(true);
     getPaymentTransactions(paymentId)
@@ -72,7 +86,7 @@ export function RecordPaymentDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, paymentId]);
+  }, [open, paymentId, prefillAmount]);
 
   const totalPaid = transactions.reduce((s, t) => s + (t.amount ?? 0), 0);
 
@@ -114,6 +128,9 @@ export function RecordPaymentDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Zarejestruj wpłatę</DialogTitle>
+          {contextLabel && (
+            <p className="text-sm text-slate-600">{contextLabel}</p>
+          )}
         </DialogHeader>
         <div className="space-y-4">
           {/* Lista wcześniejszych wpłat — żeby admin widział co już zostało zarejestrowane */}
