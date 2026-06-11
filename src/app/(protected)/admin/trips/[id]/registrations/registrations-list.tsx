@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -15,6 +15,8 @@ import {
   Search,
   Download,
   MapPin,
+  HandCoins,
+  Columns3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,7 +45,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/shared';
+import { RecordPaymentDialog } from '@/components/admin/record-payment-dialog';
+import { cn } from '@/lib/utils';
 
 import { updateParticipationStatus, type TripParticipant, type ParticipantPayment } from '@/lib/actions/trips';
 import type { Group } from '@/types';
@@ -88,6 +100,28 @@ function parseStopFromNote(note: string | null | undefined, stop1Name?: string |
   return null;
 }
 
+// Etykieta typu płatności (Rata N / Karnet / Pełna opłata)
+function paymentLabel(payment: ParticipantPayment): string {
+  return payment.payment_type === 'installment'
+    ? `Rata ${payment.installment_number}`
+    : payment.payment_type === 'season_pass'
+    ? 'Karnet'
+    : payment.payment_type === 'full'
+    ? 'Pełna opłata'
+    : payment.payment_type;
+}
+
+// Sortowanie: raty wg numeru, reszta na końcu
+function paymentSortOrder(payment: ParticipantPayment): number {
+  return payment.payment_type === 'installment'
+    ? (payment.installment_number || 0)
+    : payment.payment_type === 'full'
+    ? 100
+    : payment.payment_type === 'season_pass'
+    ? 200
+    : 300;
+}
+
 // Pobierz unikalne kwoty płatności dla wyjazdu (do nagłówków kolumn)
 function getPaymentColumns(participants: TripParticipant[]): { key: string; label: string; currency: string; amount: number; sortOrder: number }[] {
   const paymentMap = new Map<string, { label: string; currency: string; amount: number; sortOrder: number }>();
@@ -96,28 +130,11 @@ function getPaymentColumns(participants: TripParticipant[]): { key: string; labe
     p.payments.forEach(payment => {
       const key = `${payment.payment_type}-${payment.installment_number || 0}-${payment.currency}`;
       if (!paymentMap.has(key)) {
-        const label = payment.payment_type === 'installment'
-          ? `Rata ${payment.installment_number}`
-          : payment.payment_type === 'season_pass'
-          ? 'Karnet'
-          : payment.payment_type === 'full'
-          ? 'Pełna opłata'
-          : payment.payment_type;
-
-        // Sortowanie: raty wg numeru, reszta na końcu
-        const sortOrder = payment.payment_type === 'installment'
-          ? (payment.installment_number || 0)
-          : payment.payment_type === 'full'
-          ? 100
-          : payment.payment_type === 'season_pass'
-          ? 200
-          : 300;
-
         paymentMap.set(key, {
-          label: `${label} (${payment.amount} ${payment.currency})`,
+          label: `${paymentLabel(payment)} (${payment.amount} ${payment.currency})`,
           currency: payment.currency,
           amount: payment.amount,
-          sortOrder,
+          sortOrder: paymentSortOrder(payment),
         });
       }
     });
@@ -127,6 +144,16 @@ function getPaymentColumns(participants: TripParticipant[]): { key: string; labe
     .map(([key, value]) => ({ key, ...value }))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
+
+// Kolumny tabeli, które można ukryć (nazwisko i zaznaczanie zawsze widoczne)
+const HIDEABLE_COLUMNS = [
+  { key: 'birth', label: 'Data ur.' },
+  { key: 'group', label: 'Grupa' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Telefon' },
+  { key: 'status', label: 'Status' },
+  { key: 'note', label: 'Notatka' },
+] as const;
 
 // Sprawdź czy płatność pasuje do kolumny
 function getPaymentForColumn(payments: ParticipantPayment[], columnKey: string): ParticipantPayment | undefined {
@@ -230,8 +257,45 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
+  // Tryb zbiórki — uproszczona lista do oznaczania wpłat na żywo (np. gotówka)
+  const [collectionMode, setCollectionMode] = useState(false);
+
+  // Ukryte kolumny tabeli — zapamiętywane per wyjazd w localStorage
+  const columnsStorageKey = `registrations-hidden-cols:${tripId}`;
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(columnsStorageKey);
+      if (raw) setHiddenCols(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      // uszkodzony zapis — zostają domyślne (wszystkie widoczne)
+    }
+  }, [columnsStorageKey]);
+
+  function toggleColumn(key: string) {
+    setHiddenCols(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try {
+        localStorage.setItem(columnsStorageKey, JSON.stringify([...next]));
+      } catch {
+        // brak localStorage — kolumny działają tylko w tej sesji
+      }
+      return next;
+    });
+  }
+
+  const isColVisible = (key: string) => !hiddenCols.has(key);
+
   // Kolumny płatności
   const paymentColumns = useMemo(() => getPaymentColumns(participants), [participants]);
+  const visiblePaymentColumns = useMemo(
+    () => paymentColumns.filter(col => isColVisible(`pay:${col.key}`)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [paymentColumns, hiddenCols]
+  );
 
   // Filtruj uczestników (bez sortowania — będziemy grupować)
   const filteredParticipants = useMemo(() => {
@@ -264,6 +328,37 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
 
     return groups;
   }, [filteredParticipants]);
+
+  // Tryb zbiórki: tylko potwierdzeni („Jedzie"), z filtrem grupy i wyszukiwarką
+  const collectionParticipants = useMemo(() => {
+    return participants
+      .filter(p => p.participation_status === 'confirmed')
+      .filter(p => groupFilter === 'all' || p.group_name === groupFilter)
+      .filter(p =>
+        !searchQuery.trim() ||
+        p.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.first_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => a.last_name.localeCompare(b.last_name, 'pl'));
+  }, [participants, groupFilter, searchQuery]);
+
+  // Podsumowanie trybu zbiórki: ilu rozliczonych + ile zostało do zebrania
+  const collectionSummary = useMemo(() => {
+    let fullyPaid = 0;
+    const remainingByCurrency = new Map<string, number>();
+    collectionParticipants.forEach(p => {
+      if (p.payments.length > 0 && p.payments.every(x => x.status === 'paid')) {
+        fullyPaid += 1;
+      }
+      p.payments.forEach(x => {
+        const remaining = x.amount - x.amount_paid;
+        if (x.status !== 'paid' && remaining > 0) {
+          remainingByCurrency.set(x.currency, (remainingByCurrency.get(x.currency) || 0) + remaining);
+        }
+      });
+    });
+    return { fullyPaid, remainingByCurrency };
+  }, [collectionParticipants]);
 
   // Bulk selection helpers
   const allFilteredIds = filteredParticipants.map(p => p.participant_id);
@@ -380,6 +475,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
             />
           </div>
 
+          {!collectionMode && (
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filtruj po statusie" />
@@ -412,6 +508,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
               </SelectItem>
             </SelectContent>
           </Select>
+          )}
 
           <Select value={groupFilter} onValueChange={setGroupFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -427,10 +524,58 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
             </SelectContent>
           </Select>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto sm:ml-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:ml-auto">
             <span className="text-sm text-slate-500">
-              Wyświetlono: {filteredParticipants.length} z {participants.length}
+              Wyświetlono: {collectionMode ? collectionParticipants.length : filteredParticipants.length} z {participants.length}
             </span>
+            {/* Tryb zbiórki — szybkie oznaczanie wpłat (np. gotówka na zbiórce) */}
+            <button
+              onClick={() => setCollectionMode(v => !v)}
+              className={cn(
+                'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors',
+                collectionMode
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              <HandCoins className="h-4 w-4" />
+              Tryb zbiórki
+            </button>
+            {/* Widoczność kolumn tabeli */}
+            {!collectionMode && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium rounded-xl transition-colors">
+                    <Columns3 className="h-4 w-4" />
+                    Kolumny
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel>Widoczne kolumny</DropdownMenuLabel>
+                  {HIDEABLE_COLUMNS.map(col => (
+                    <DropdownMenuCheckboxItem
+                      key={col.key}
+                      checked={isColVisible(col.key)}
+                      onCheckedChange={() => toggleColumn(col.key)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {col.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  {paymentColumns.length > 0 && <DropdownMenuSeparator />}
+                  {paymentColumns.map(col => (
+                    <DropdownMenuCheckboxItem
+                      key={col.key}
+                      checked={isColVisible(`pay:${col.key}`)}
+                      onCheckedChange={() => toggleColumn(`pay:${col.key}`)}
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      {col.label}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {/* Eksport do Excel */}
             <button
               onClick={() => exportToExcel(filteredParticipants, paymentColumns, tripTitle, stop1Name, stop2Name)}
@@ -443,7 +588,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
         </div>
 
         {/* Pasek bulk actions */}
-        {someSelected && (
+        {!collectionMode && someSelected && (
           <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 rounded-2xl text-white">
             <span className="text-sm font-medium">
               Zaznaczono: {selectedIds.size}
@@ -484,6 +629,140 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
           </div>
         )}
 
+        {/* Tryb zbiórki — lista potwierdzonych z szybkim księgowaniem wpłat */}
+        {collectionMode ? (
+          <div className="space-y-4">
+            {/* Podsumowanie zbiórki */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3 rounded-2xl border border-blue-100 bg-blue-50/60 text-sm">
+              <span className="inline-flex items-center gap-2 font-semibold text-blue-700">
+                <HandCoins className="h-4 w-4" />
+                Zbiórka — kliknij płatność, aby zapisać wpłatę
+              </span>
+              <span className="text-slate-600">
+                Rozliczeni w całości:{' '}
+                <span className="font-semibold text-emerald-700">
+                  {collectionSummary.fullyPaid} z {collectionParticipants.length}
+                </span>
+              </span>
+              {collectionSummary.remainingByCurrency.size > 0 && (
+                <span className="text-slate-600">
+                  Do zebrania:{' '}
+                  <span className="font-semibold text-slate-900 tabular-nums">
+                    {[...collectionSummary.remainingByCurrency.entries()]
+                      .map(([cur, sum]) => `${Math.round(sum * 100) / 100} ${cur}`)
+                      .join(' + ')}
+                  </span>
+                </span>
+              )}
+            </div>
+
+            {collectionParticipants.length === 0 ? (
+              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-12 text-center text-slate-500 text-sm">
+                Brak potwierdzonych uczestników spełniających kryteria
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-gray-100 bg-white shadow-sm divide-y divide-gray-100 overflow-hidden">
+                {collectionParticipants.map((participant) => {
+                  const sortedPayments = [...participant.payments].sort(
+                    (a, b) => paymentSortOrder(a) - paymentSortOrder(b)
+                  );
+                  const allPaid = sortedPayments.length > 0 && sortedPayments.every(p => p.status === 'paid');
+                  const stopLabel = parseStopFromNote(participant.participation_note, stop1Name, stop2Name);
+
+                  return (
+                    <div
+                      key={participant.id}
+                      className={cn(
+                        'flex flex-col sm:flex-row sm:items-center gap-3 p-4 sm:px-5',
+                        allPaid && 'bg-emerald-50/40'
+                      )}
+                    >
+                      <div className="min-w-0 sm:w-72 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {participant.last_name} {participant.first_name}
+                          </p>
+                          {allPaid && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 shrink-0">
+                              <Check className="h-3 w-3" />
+                              Opłacone
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-slate-600">
+                          <Badge variant="outline" className="text-xs">{participant.group_name}</Badge>
+                          {stopLabel && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {stopLabel}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 sm:ml-auto sm:justify-end">
+                        {sortedPayments.length === 0 ? (
+                          <span className="text-xs text-slate-500">Brak płatności</span>
+                        ) : (
+                          sortedPayments.map((payment) => {
+                            const remaining = Math.round((payment.amount - payment.amount_paid) * 100) / 100;
+                            const label = paymentLabel(payment);
+
+                            if (payment.status === 'paid') {
+                              return (
+                                <span
+                                  key={payment.id}
+                                  className="inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-xl text-sm font-medium bg-emerald-100 text-emerald-700"
+                                >
+                                  <Check className="h-4 w-4" />
+                                  {label} · {payment.amount} {payment.currency}
+                                </span>
+                              );
+                            }
+
+                            const isPartial = payment.amount_paid > 0;
+                            const isOverdue = payment.status === 'overdue';
+
+                            return (
+                              <RecordPaymentDialog
+                                key={payment.id}
+                                paymentId={payment.id}
+                                currency={payment.currency as 'PLN' | 'EUR'}
+                                amountRemaining={remaining}
+                                prefillAmount={remaining}
+                                defaultMethod="cash"
+                                contextLabel={`${participant.last_name} ${participant.first_name} · ${label}`}
+                                onDone={() => router.refresh()}
+                              >
+                                <button
+                                  className={cn(
+                                    'inline-flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-xl text-sm font-medium ring-1 transition-colors',
+                                    isOverdue
+                                      ? 'bg-red-50 text-red-700 ring-red-200 hover:bg-red-100'
+                                      : isPartial
+                                      ? 'bg-amber-50 text-amber-700 ring-amber-200 hover:bg-amber-100'
+                                      : 'bg-white text-gray-900 ring-gray-200 hover:bg-gray-50'
+                                  )}
+                                >
+                                  <HandCoins className="h-4 w-4" />
+                                  {label} ·{' '}
+                                  <span className="font-bold tabular-nums">
+                                    {isPartial ? `do dopłaty ${remaining}` : remaining} {payment.currency}
+                                  </span>
+                                </button>
+                              </RecordPaymentDialog>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {/* Sekcje pogrupowane wg statusu */}
         {filteredParticipants.length === 0 ? (
           <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-12 text-center text-slate-500 text-sm">
@@ -533,24 +812,24 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="min-w-[1180px] text-sm">
+                    <table className={cn('w-full text-sm', hiddenCols.size === 0 && 'min-w-[1180px]')}>
                       <thead className="bg-gray-50/50">
                         <tr>
                           <th className="p-3 w-10">
                             {/* Pusty — checkbox w wierszu */}
                           </th>
                           <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Nazwisko i imię</th>
-                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Data ur.</th>
-                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Grupa</th>
-                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Email</th>
-                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Telefon</th>
-                          <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Status</th>
-                          {paymentColumns.map(col => (
+                          {isColVisible('birth') && <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Data ur.</th>}
+                          {isColVisible('group') && <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Grupa</th>}
+                          {isColVisible('email') && <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Email</th>}
+                          {isColVisible('phone') && <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Telefon</th>}
+                          {isColVisible('status') && <th className="text-left p-3 font-medium text-gray-400 text-xs uppercase tracking-wider">Status</th>}
+                          {visiblePaymentColumns.map(col => (
                             <th key={col.key} className="text-center p-3 font-medium text-gray-400 text-xs uppercase tracking-wider whitespace-nowrap">
                               {col.label}
                             </th>
                           ))}
-                          <th className="text-center p-3 font-medium text-gray-400 text-xs uppercase tracking-wider w-[50px]">Notatka</th>
+                          {isColVisible('note') && <th className="text-center p-3 font-medium text-gray-400 text-xs uppercase tracking-wider w-[50px]">Notatka</th>}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -579,10 +858,13 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                       <td className="p-3 font-medium text-gray-900">
                         {participant.last_name} {participant.first_name}
                       </td>
-                      <td className="p-3 text-gray-600 whitespace-nowrap">{birthDate}</td>
+                      {isColVisible('birth') && <td className="p-3 text-gray-600 whitespace-nowrap">{birthDate}</td>}
+                      {isColVisible('group') && (
                       <td className="p-3">
                         <Badge variant="outline" className="text-xs">{participant.group_name}</Badge>
                       </td>
+                      )}
+                      {isColVisible('email') && (
                       <td className="p-3">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -601,6 +883,8 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                           <TooltipContent>Kliknij aby skopiować</TooltipContent>
                         </Tooltip>
                       </td>
+                      )}
+                      {isColVisible('phone') && (
                       <td className="p-3">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -619,6 +903,8 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                           <TooltipContent>Kliknij aby skopiować</TooltipContent>
                         </Tooltip>
                       </td>
+                      )}
+                      {isColVisible('status') && (
                       <td className="p-3">
                         <div className="flex flex-col gap-1">
                           <Select
@@ -667,35 +953,52 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                           )}
                         </div>
                       </td>
-                      {/* Komórki płatności */}
-                      {paymentColumns.map(col => {
+                      )}
+                      {/* Komórki płatności — klik otwiera rejestrację wpłaty */}
+                      {visiblePaymentColumns.map(col => {
                         const payment = getPaymentForColumn(participant.payments, col.key);
                         const isPaid = payment && payment.status === 'paid';
                         const isPartiallyPaid = payment && payment.amount_paid > 0 && payment.status !== 'paid';
+                        const remaining = payment
+                          ? Math.round((payment.amount - payment.amount_paid) * 100) / 100
+                          : 0;
 
                         return (
                           <td key={col.key} className="p-3 text-center">
                             {payment ? (
-                              <span
-                                className={`inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium ${
-                                  isPaid
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : isPartiallyPaid
-                                    ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-gray-100 text-gray-600'
-                                }`}
+                              <RecordPaymentDialog
+                                paymentId={payment.id}
+                                currency={payment.currency as 'PLN' | 'EUR'}
+                                amountRemaining={remaining}
+                                prefillAmount={isPaid ? undefined : remaining}
+                                contextLabel={`${participant.last_name} ${participant.first_name} · ${paymentLabel(payment)}`}
+                                onDone={() => router.refresh()}
                               >
-                                {isPaid ? (
-                                  <Check className="h-3 w-3 mr-1" />
-                                ) : null}
-                                {payment.amount} {payment.currency}
-                              </span>
+                                <button
+                                  className={`inline-flex items-center justify-center px-2 py-1 rounded text-xs font-medium cursor-pointer transition-colors ${
+                                    isPaid
+                                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                      : isPartiallyPaid
+                                      ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                  }`}
+                                  title={isPaid
+                                    ? 'Opłacona — kliknij, aby zobaczyć wpłaty'
+                                    : 'Kliknij, aby zarejestrować wpłatę'}
+                                >
+                                  {isPaid ? (
+                                    <Check className="h-3 w-3 mr-1" />
+                                  ) : null}
+                                  {payment.amount} {payment.currency}
+                                </button>
+                              </RecordPaymentDialog>
                             ) : (
                               <span className="text-slate-500">-</span>
                             )}
                           </td>
                         );
                       })}
+                      {isColVisible('note') && (
                       <td className="p-3 text-center">
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -718,6 +1021,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
                           </TooltipContent>
                         </Tooltip>
                       </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -728,6 +1032,8 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
               );
             })}
           </div>
+        )}
+        </>
         )}
 
         {/* Dialog notatki */}

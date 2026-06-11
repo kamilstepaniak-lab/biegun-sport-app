@@ -3,6 +3,28 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Zapisani: wpłaty z tabeli, tryb zbiórki, ukrywanie kolumn)
+
+- `admin/trips/[id]/registrations/registrations-list.tsx`: kwoty płatności
+  w tabeli są klikalne — otwierają istniejący `RecordPaymentDialog`
+  (rejestracja wpłaty + historia transakcji) z prefillowaną pozostałą
+  kwotą; opłacone też klikalne (podgląd historii wpłat).
+- **Tryb zbiórki** (przycisk przy filtrach): uproszczona, mobilna lista
+  tylko potwierdzonych („Jedzie") z dużymi przyciskami per płatność —
+  domyślnie gotówka, kwota = pozostała należność (instruktor na zbiórce
+  księguje wpłatę w 2 kliknięcia); pasek podsumowania (rozliczeni w
+  całości, suma do zebrania per waluta); kolory statusów wg design.md
+  (zaległa red, częściowa amber, opłacona emerald).
+- **Ukrywanie kolumn**: dropdown „Kolumny" (checkboxy: data ur., grupa,
+  email, telefon, status, notatka + dynamiczne kolumny płatności),
+  zapamiętywane w localStorage per wyjazd
+  (`registrations-hidden-cols:<tripId>`).
+- `components/admin/record-payment-dialog.tsx`: opcjonalne propsy
+  `prefillAmount` (wstępna kwota przy otwarciu), `defaultMethod`
+  (gotówka w trybie zbiórki), `contextLabel` (dziecko · rata w nagłówku)
+  — wstecznie kompatybilne, dotychczasowe użycia bez zmian.
+- Bez zmian w bazie (wykorzystany istniejący `addPaymentTransaction`).
+
 ### 2026-06-11 (Porządki UI /admin/payments — mobile + desktop)
 
 - `admin/payments/payments-list.tsx`: wspólne fragmenty wiersza (kwota,
