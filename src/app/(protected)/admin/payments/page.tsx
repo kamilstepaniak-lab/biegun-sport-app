@@ -8,9 +8,11 @@ import {
   getAdminPaymentsStats,
   getAdminPaymentsTrips,
   type AdminPaymentsStatusFilter,
+  type AdminPaymentsSort,
 } from '@/lib/actions/payments';
 import { PaymentsList } from './payments-list';
 import { ManualPaymentDialog } from '@/components/admin/manual-payment-dialog';
+import { RecordTransferDialog } from '@/components/admin/record-transfer-dialog';
 
 const PAGE_SIZES = [25, 50, 100];
 
@@ -25,23 +27,27 @@ export default async function AdminPaymentsPage({
   const pageSize = PAGE_SIZES.includes(Number(sp.size)) ? Number(sp.size) : 50;
   const search = sp.q ?? '';
   const tripId = sp.trip ?? 'all';
+  // Domyślnie „Do zapłaty" — admin wchodzi tu rozliczać, nie przeglądać archiwum.
   const status: AdminPaymentsStatusFilter = (['all', 'pending', 'overdue', 'paid'].includes(
     sp.status ?? ''
   )
     ? sp.status
-    : 'all') as AdminPaymentsStatusFilter;
+    : 'pending') as AdminPaymentsStatusFilter;
+  const sort: AdminPaymentsSort = sp.sort === 'created' ? 'created' : 'due';
   const dateFrom = sp.from ?? '';
   const dateTo = sp.to ?? '';
 
+  const filterParams = { search, tripId, dateFrom, dateTo };
+
   const [{ rows, total }, stats, trips, participants] = await Promise.all([
-    getAdminPaymentsPage({ page, pageSize, search, tripId, status, dateFrom, dateTo }),
-    getAdminPaymentsStats(),
+    getAdminPaymentsPage({ page, pageSize, status, sort, ...filterParams }),
+    getAdminPaymentsStats(filterParams),
     getAdminPaymentsTrips(),
     getAdminPaymentParticipants(),
   ]);
 
   const hasActiveFilter =
-    !!search || tripId !== 'all' || status !== 'all' || !!dateFrom || !!dateTo;
+    !!search || tripId !== 'all' || status !== 'pending' || !!dateFrom || !!dateTo;
 
   return (
     <div className="space-y-6">
@@ -49,6 +55,7 @@ export default async function AdminPaymentsPage({
         title="Płatności"
         description="Zarządzaj wszystkimi płatnościami w systemie"
       >
+        <RecordTransferDialog participants={participants} />
         <ManualPaymentDialog participants={participants} />
         <Link
           href="/admin/payments/history"
@@ -59,7 +66,7 @@ export default async function AdminPaymentsPage({
         </Link>
       </PageHeader>
 
-      {total === 0 && !hasActiveFilter ? (
+      {total === 0 && !hasActiveFilter && stats.paid === 0 ? (
         <EmptyState
           icon={CreditCard}
           title="Brak płatności"
@@ -76,6 +83,7 @@ export default async function AdminPaymentsPage({
           search={search}
           tripId={tripId}
           status={status}
+          sort={sort}
           dateFrom={dateFrom}
           dateTo={dateTo}
         />

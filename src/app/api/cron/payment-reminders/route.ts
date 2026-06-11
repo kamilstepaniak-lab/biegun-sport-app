@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
   let sent = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const sentIds: string[] = [];
 
   for (const payment of (payments || [])) {
     const reg = payment.registration as unknown as {
@@ -112,11 +113,22 @@ export async function GET(request: NextRequest) {
         paymentLabel,
         { paymentId: payment.id },
       );
+      sentIds.push(payment.id);
       sent++;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`${parent.email}: ${msg}`);
     }
+  }
+
+  // Znacznik widoczny na /admin/payments („przyp. wysłano d.MM") — wspólny
+  // z ręcznym przyciskiem przypomnienia (sendPaymentReminders).
+  if (sentIds.length > 0) {
+    const { error: markError } = await supabase
+      .from('payments')
+      .update({ last_reminder_sent_at: new Date().toISOString() })
+      .in('id', sentIds);
+    if (markError) console.error('Cron payment-reminders: mark error', markError);
   }
 
   console.log(`Cron payment-reminders [${todayStr}]: sent=${sent}, skipped=${skipped}, errors=${errors.length}`);

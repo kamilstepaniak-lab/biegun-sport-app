@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag as _revalidateTag, unstable_cache } from 
 const revalidateTag = (tag: string) => (_revalidateTag as unknown as (tag: string) => void)(tag);
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { PaymentWithDetails, PaymentTransaction, AdminPaymentRow, PaymentStatus } from '@/types';
-import { queuePaymentConfirmedEmail } from '@/lib/system-email';
+import { queuePaymentConfirmedEmail, queuePaymentReminderEmail } from '@/lib/system-email';
 import { logPaymentChange } from './payment-history';
 import { logActivity } from './activity-logs';
 import { format } from 'date-fns';
@@ -130,15 +130,47 @@ export async function getAllPayments(): Promise<PaymentWithDetails[]> {
 // Wymaga widoku admin_payments_view (migracja: supabase/migrations/admin-payments-view.sql).
 
 export type AdminPaymentsStatusFilter = 'all' | 'pending' | 'overdue' | 'paid';
+export type AdminPaymentsSort = 'due' | 'created';
 
-export interface AdminPaymentsPageParams {
-  page: number;
-  pageSize: number;
+export interface AdminPaymentsFilterParams {
   search: string;
   tripId: string;
-  status: AdminPaymentsStatusFilter;
   dateFrom: string;
   dateTo: string;
+}
+
+export interface AdminPaymentsPageParams extends AdminPaymentsFilterParams {
+  page: number;
+  pageSize: number;
+  status: AdminPaymentsStatusFilter;
+  sort: AdminPaymentsSort;
+}
+
+// Wspólne filtry (wyjazd / szukaj / zakres terminów) dla listy, statystyk
+// i eksportu CSV — żeby kafle i tabela zawsze mówiły o tym samym zbiorze.
+// Zakres dat działa na effective_due_date (terminie płatności), nie na dacie
+// utworzenia — admin myśli terminami rat.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyAdminPaymentsFilters<Q extends { eq: any; is: any; or: any; gte: any; lte: any }>(
+  query: Q,
+  params: AdminPaymentsFilterParams,
+): Q {
+  let q = query;
+  if (params.tripId === 'manual') {
+    q = q.is('trip_id', null);
+  } else if (params.tripId && params.tripId !== 'all') {
+    q = q.eq('trip_id', params.tripId);
+  }
+  if (params.search.trim()) {
+    // Usuń znaki specjalne PostgREST (zapobiega rozbiciu składni .or)
+    const s = params.search.trim().replace(/[%,()*]/g, ' ');
+    // parent_name — przelewy przychodzą z nazwiskiem rodzica, które bywa
+    // inne niż dziecka (wymaga widoku z migracji admin-payments-parent-reminders.sql).
+    q = q.or(`participant_name.ilike.%${s}%,parent_name.ilike.%${s}%,trip_title.ilike.%${s}%`);
+  }
+  if (params.dateFrom) q = q.gte('effective_due_date', params.dateFrom);
+  if (params.dateTo) q = q.lte('effective_due_date', params.dateTo);
+  return q;
 }
 
 export async function getAdminPaymentsPage(
@@ -154,41 +186,35 @@ export async function getAdminPaymentsPage(
     .select('*', { count: 'exact' })
     .neq('status', 'cancelled');
 
-  if (params.tripId === 'manual') {
-    query = query.is('trip_id', null);
-  } else if (params.tripId && params.tripId !== 'all') {
-    query = query.eq('trip_id', params.tripId);
-  }
-
+  // Status liczony z effective_due_date, nie z zapisanej w bazie wartości —
+  // status w kolumnie przelicza się dopiero przy zapisie, więc bywa
+  // nieaktualny („pending" mimo minionego terminu).
   const today = format(new Date(), 'yyyy-MM-dd');
   if (params.status === 'pending') {
-    query = query.in('status', ['pending', 'partially_paid']);
+    // Wszystkie nieopłacone — razem z tymi po terminie (jak suma „Do zapłaty"
+    // w kaflu i w panelu rodzica).
+    query = query.neq('status', 'paid');
   } else if (params.status === 'paid') {
     query = query.eq('status', 'paid');
   } else if (params.status === 'overdue') {
-    // effective_due_date uwzględnia regułę „X dni od potwierdzenia",
-    // dla której payments.due_date jest puste.
-    query = query.or(
-      `status.in.(overdue,partially_paid_overdue),and(effective_due_date.lt.${today},status.not.in.(paid,cancelled))`
-    );
+    query = query.neq('status', 'paid').lt('effective_due_date', today);
   }
 
-  if (params.search.trim()) {
-    // Usuń znaki specjalne PostgREST (zapobiega rozbiciu składni .or)
-    const s = params.search.trim().replace(/[%,()*]/g, ' ');
-    query = query.or(`participant_name.ilike.%${s}%,trip_title.ilike.%${s}%`);
-  }
-
-  if (params.dateFrom) query = query.gte('created_at', params.dateFrom);
-  if (params.dateTo) query = query.lte('created_at', `${params.dateTo}T23:59:59.999Z`);
+  query = applyAdminPaymentsFilters(query, params);
 
   const fromIdx = (params.page - 1) * params.pageSize;
-  query = query
-    // id jako tiebreaker — płatności z jednej partii mają identyczny created_at;
-    // bez tego kolejność jest niestabilna i wiersze skaczą między stronami.
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .range(fromIdx, fromIdx + params.pageSize - 1);
+  // id jako tiebreaker — płatności z jednej partii mają identyczny created_at;
+  // bez tego kolejność jest niestabilna i wiersze skaczą między stronami.
+  if (params.sort === 'created') {
+    query = query.order('created_at', { ascending: false }).order('id', { ascending: false });
+  } else {
+    // Domyślnie: najbliższy termin u góry; bez terminu („wg ustaleń") na końcu.
+    query = query
+      .order('effective_due_date', { ascending: true, nullsFirst: false })
+      .order('participant_name', { ascending: true })
+      .order('id', { ascending: false });
+  }
+  query = query.range(fromIdx, fromIdx + params.pageSize - 1);
 
   const { data, error, count } = await query;
   if (error) {
@@ -198,7 +224,7 @@ export async function getAdminPaymentsPage(
   return { rows: (data ?? []) as AdminPaymentRow[], total: count ?? 0 };
 }
 
-export async function getAdminPaymentsStats(): Promise<{
+export async function getAdminPaymentsStats(filters: AdminPaymentsFilterParams): Promise<{
   pending: number;
   paid: number;
   overdue: number;
@@ -212,10 +238,14 @@ export async function getAdminPaymentsStats(): Promise<{
   const admin = createAdminClient();
   // Czytamy z widoku — effective_due_date uwzględnia regułę „X dni od
   // potwierdzenia", więc „po terminie" liczy się tak samo jak w tabeli.
-  const { data, error } = await admin
-    .from('admin_payments_view')
-    .select('status, amount, amount_paid, currency, effective_due_date')
-    .neq('status', 'cancelled');
+  // Kafle respektują aktywne filtry (wyjazd / szukaj / zakres terminów).
+  const { data, error } = await applyAdminPaymentsFilters(
+    admin
+      .from('admin_payments_view')
+      .select('status, amount, amount_paid, currency, effective_due_date')
+      .neq('status', 'cancelled'),
+    filters,
+  );
 
   if (error || !data) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
 
@@ -810,8 +840,11 @@ const _fetchParentPaymentsDB = unstable_cache(
         )
       `)
       .in('participant_id', childIds)
-      .eq('status', 'active')
-      .eq('participation_status', 'confirmed');
+      .eq('status', 'active');
+    // Celowo BEZ filtra participation_status: po cofnięciu potwierdzenia
+    // („nie jedzie") nieopłacone płatności są anulowane, ale częściowo
+    // opłacone zostają aktywne — rodzic musi je dalej widzieć (saldo do
+    // rozliczenia), tak samo jak widzi je admin.
 
     const registrationRows = registrations ?? [];
     const registrationIds = registrationRows.map((r: { id: string }) => r.id);
@@ -999,7 +1032,7 @@ export async function updatePaymentStatus(
   // Pobierz płatność (wraz ze starym statusem do audit logu)
   const { data: payment } = await supabase
     .from('payments')
-    .select('amount, status, amount_paid, due_date')
+    .select('amount, status, amount_paid, due_date, currency')
     .eq('id', paymentId)
     .single();
 
@@ -1025,7 +1058,33 @@ export async function updatePaymentStatus(
     updateData.amount_paid = newAmountPaid;
     updateData.status = computed;
     updateData.paid_at = computed === 'paid' ? new Date().toISOString() : null;
-    if (status === 'paid') updateData.marked_by = user.id;
+    if (status === 'paid') {
+      updateData.marked_by = user.id;
+      updateData.payment_method_used = 'transfer';
+    }
+  }
+
+  // Niezmiennik: suma payment_transactions == amount_paid.
+  // „Tak" dopisuje transakcję na brakującą kwotę (jak masowe oznaczanie),
+  // „Nie" (cofnięcie do pending) usuwa transakcje — wpłata zostaje wyzerowana,
+  // więc wpisy o wpłatach przestają być prawdziwe. Ślad zostaje w payment_history.
+  if (status === 'paid' && payment.amount - oldAmountPaid > 0) {
+    const { error: txError } = await supabase.from('payment_transactions').insert({
+      payment_id: paymentId,
+      amount: payment.amount - oldAmountPaid,
+      currency: payment.currency,
+      transaction_date: new Date().toISOString().split('T')[0],
+      payment_method: 'transfer' as const,
+      notes: 'Oznaczone jako opłacone przez admina',
+      recorded_by: user.id,
+    });
+    if (txError) console.error('Mark-paid transaction insert error:', txError);
+  } else if (status === 'pending' && oldAmountPaid > 0) {
+    const { error: txDeleteError } = await supabase
+      .from('payment_transactions')
+      .delete()
+      .eq('payment_id', paymentId);
+    if (txDeleteError) console.error('Revert-pending transactions delete error:', txDeleteError);
   }
 
   const { error } = await supabase
@@ -1146,7 +1205,13 @@ export async function updatePaymentAmount(paymentId: string, newAmount: number) 
   if (payment.status !== 'cancelled') {
     const newStatus = recomputePaymentStatus(newAmount, payment.amount_paid || 0, payment.due_date);
     updateData.status = newStatus;
-    updateData.paid_at = newStatus === 'paid' ? new Date().toISOString() : null;
+    // paid_at: zachowaj pierwotną datę gdy płatność już była opłacona;
+    // ustaw tylko przy przejściu na 'paid', wyzeruj gdy przestaje być 'paid'.
+    if (newStatus !== 'paid') {
+      updateData.paid_at = null;
+    } else if (payment.status !== 'paid') {
+      updateData.paid_at = new Date().toISOString();
+    }
   }
 
   const { error } = await supabase
@@ -1309,6 +1374,19 @@ export async function bulkUpdatePaymentStatus(
 
     if (error) return { error: `Błąd: ${error.message}` };
 
+    // Wpłata wyzerowana — usuń transakcje, żeby ich suma zgadzała się
+    // z amount_paid (ślad zmiany zostaje w payment_history poniżej).
+    const idsWithPayments = (rows as Row[])
+      .filter((r) => (r.amount_paid || 0) > 0)
+      .map((r) => r.id);
+    if (idsWithPayments.length > 0) {
+      const { error: txDeleteError } = await supabase
+        .from('payment_transactions')
+        .delete()
+        .in('payment_id', idsWithPayments);
+      if (txDeleteError) console.error('Bulk revert transactions delete error:', txDeleteError);
+    }
+
     (rows as Row[]).forEach((r) => {
       logPaymentChange({
         paymentId: r.id,
@@ -1378,15 +1456,284 @@ export async function bulkUpdatePaymentStatus(
   return { success: true };
 }
 
+// ── „Zaksięguj przelew" — wpłata od rodzica rozbita na raty ────────────────
+
+export interface UnpaidPaymentRow {
+  id: string;
+  label: string;
+  trip_title: string;
+  currency: string;
+  amount: number;
+  amount_paid: number;
+  remaining: number;
+  effective_due_date: string | null;
+}
+
+function paymentRowLabel(row: {
+  payment_type: string;
+  installment_number: number | null;
+  manual_title: string | null;
+}): string {
+  if (row.payment_type === 'manual') return row.manual_title?.trim() || 'Płatność';
+  if (row.payment_type === 'installment') return `Rata ${row.installment_number}`;
+  if (row.payment_type === 'season_pass') return 'Karnet';
+  return 'Pełna opłata';
+}
+
+export async function getUnpaidPaymentsForParticipant(
+  participantId: string,
+): Promise<UnpaidPaymentRow[]> {
+  const supabase = await createClient();
+  const { user } = await requireAdmin(supabase);
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('admin_payments_view')
+    .select('id, payment_type, installment_number, manual_title, trip_title, currency, amount, amount_paid, effective_due_date')
+    .eq('participant_id', participantId)
+    .not('status', 'in', '(paid,cancelled)')
+    .order('effective_due_date', { ascending: true, nullsFirst: false });
+
+  if (error) {
+    console.error('getUnpaidPaymentsForParticipant error:', error);
+    return [];
+  }
+
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    label: paymentRowLabel(r),
+    trip_title: r.trip_title,
+    currency: r.currency,
+    amount: r.amount,
+    amount_paid: r.amount_paid ?? 0,
+    remaining: r.amount - (r.amount_paid ?? 0),
+    effective_due_date: r.effective_due_date,
+  }));
+}
+
+/**
+ * Księguje jeden przelew od rodzica jako serię wpłat na wskazane płatności
+ * (rozbicie po ratach). Każda pozycja przechodzi przez addPaymentTransaction,
+ * więc statusy, audit log i maile potwierdzające działają jak przy
+ * pojedynczej wpłacie.
+ */
+export async function recordAllocatedTransfer(input: {
+  participantId: string;
+  allocations: { paymentId: string; amount: number }[];
+  currency: 'PLN' | 'EUR';
+  transactionDate: string;
+  paymentMethod: 'cash' | 'transfer';
+  notes?: string;
+}) {
+  const supabase = await createClient();
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
+
+  const allocations = input.allocations.filter((a) => Number.isFinite(a.amount) && a.amount > 0);
+  if (allocations.length === 0) {
+    return { error: 'Brak kwot do zaksięgowania' };
+  }
+
+  const errors: string[] = [];
+  let booked = 0;
+  for (const alloc of allocations) {
+    const result = await addPaymentTransaction(
+      alloc.paymentId,
+      alloc.amount,
+      input.currency,
+      input.transactionDate,
+      input.paymentMethod,
+      input.notes?.trim() || 'Przelew rozksięgowany na raty',
+    );
+    if (result.error) errors.push(result.error);
+    else booked++;
+  }
+
+  const totalAmount = allocations.reduce((s, a) => s + a.amount, 0);
+  logActivity(user.id, user.email ?? null, 'transfer_allocated', {
+    participantId: input.participantId,
+    amount: totalAmount,
+    currency: input.currency,
+    paymentsCount: booked,
+    paymentMethod: input.paymentMethod,
+  }).catch(console.error);
+
+  if (errors.length > 0) {
+    return {
+      error: booked > 0
+        ? `Zaksięgowano ${booked} z ${allocations.length} pozycji. Błędy: ${errors.join('; ')}`
+        : errors.join('; '),
+    };
+  }
+  return { success: true };
+}
+
+// ── Ręczne przypomnienia o płatności ────────────────────────────────────────
+
+/**
+ * Wysyła (kolejkuje) przypomnienie mailowe o nieopłaconych płatnościach
+ * i zapisuje last_reminder_sent_at. Wymaga migracji
+ * admin-payments-parent-reminders.sql (kolumna + parent_* w widoku).
+ */
+export async function sendPaymentReminders(paymentIds: string[]) {
+  if (!paymentIds.length) return { success: true as const, sent: 0, skipped: 0 };
+
+  const supabase = await createClient();
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
+
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from('admin_payments_view')
+    .select('id, payment_type, installment_number, manual_title, trip_title, amount, amount_paid, currency, effective_due_date, participant_first_name, participant_last_name, parent_email, parent_first_name')
+    .in('id', paymentIds)
+    .not('status', 'in', '(paid,cancelled)');
+
+  if (error) {
+    console.error('sendPaymentReminders fetch error:', error);
+    return { error: 'Nie udało się pobrać płatności (czy migracja widoku została uruchomiona?)' };
+  }
+
+  let sent = 0;
+  let skipped = 0;
+  const sentIds: string[] = [];
+  for (const row of rows ?? []) {
+    // Bez adresu rodzica lub konkretnego terminu nie ma czego wysłać.
+    if (!row.parent_email || !row.effective_due_date) {
+      skipped++;
+      continue;
+    }
+    try {
+      await queuePaymentReminderEmail(
+        row.parent_email,
+        row.parent_first_name || '',
+        `${row.participant_first_name} ${row.participant_last_name}`,
+        row.trip_title,
+        row.amount - (row.amount_paid ?? 0),
+        row.currency,
+        row.effective_due_date,
+        paymentRowLabel(row),
+        { paymentId: row.id },
+      );
+      sentIds.push(row.id);
+      sent++;
+    } catch (err) {
+      console.error('sendPaymentReminders queue error:', err);
+      skipped++;
+    }
+  }
+
+  if (sentIds.length > 0) {
+    const { error: updateError } = await admin
+      .from('payments')
+      .update({ last_reminder_sent_at: new Date().toISOString() })
+      .in('id', sentIds);
+    if (updateError) console.error('sendPaymentReminders mark error:', updateError);
+
+    logActivity(user.id, user.email ?? null, 'payment_reminders_sent', {
+      paymentIds: sentIds,
+      count: sentIds.length,
+    }).catch(console.error);
+  }
+
+  revalidateTag('payments');
+  revalidatePath('/admin/payments');
+
+  return { success: true as const, sent, skipped };
+}
+
+// ── Eksport CSV (dla księgowości) ───────────────────────────────────────────
+
+export async function exportAdminPaymentsCsv(
+  params: AdminPaymentsFilterParams & { status: AdminPaymentsStatusFilter },
+): Promise<{ csv: string } | { error: string }> {
+  const supabase = await createClient();
+  const { user, error: authError } = await requireAdmin(supabase);
+  if (authError) return { error: authError };
+  if (!user) return { error: 'Brak uprawnień' };
+
+  const admin = createAdminClient();
+  let query = admin
+    .from('admin_payments_view')
+    .select('*')
+    .neq('status', 'cancelled');
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  if (params.status === 'pending') {
+    query = query.neq('status', 'paid');
+  } else if (params.status === 'paid') {
+    query = query.eq('status', 'paid');
+  } else if (params.status === 'overdue') {
+    query = query.neq('status', 'paid').lt('effective_due_date', today);
+  }
+  query = applyAdminPaymentsFilters(query, params);
+  query = query
+    .order('effective_due_date', { ascending: true, nullsFirst: false })
+    .order('participant_name', { ascending: true })
+    .limit(10000);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('exportAdminPaymentsCsv error:', error);
+    return { error: 'Nie udało się wyeksportować płatności' };
+  }
+
+  const statusLabels: Record<string, string> = {
+    pending: 'Do zapłaty',
+    partially_paid: 'Do dopłaty',
+    overdue: 'Po terminie',
+    partially_paid_overdue: 'Po terminie (częściowo opłacone)',
+    paid: 'Opłacone',
+  };
+
+  // Średnik jako separator — polski Excel otwiera taki plik bez importu.
+  const esc = (v: string | number | null | undefined) => {
+    const s = v === null || v === undefined ? '' : String(v);
+    return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const num = (v: number) => v.toFixed(2).replace('.', ',');
+
+  const header = [
+    'Uczestnik', 'Rodzic', 'Wyjazd', 'Za co', 'Kwota', 'Wpłacono', 'Pozostało',
+    'Waluta', 'Status', 'Termin', 'Opłacono dnia', 'Notatka',
+  ].join(';');
+
+  const lines = ((data ?? []) as (AdminPaymentRow & { parent_name?: string | null })[]).map((r) =>
+    [
+      esc(r.participant_name),
+      esc(r.parent_name ?? ''),
+      esc(r.trip_title),
+      esc(paymentRowLabel(r)),
+      num(r.amount),
+      num(r.amount_paid ?? 0),
+      num(r.amount - (r.amount_paid ?? 0)),
+      esc(r.currency),
+      esc(statusLabels[r.status] ?? r.status),
+      esc(r.effective_due_date ?? ''),
+      esc(r.paid_at ? format(new Date(r.paid_at), 'yyyy-MM-dd') : ''),
+      esc(r.admin_notes ?? ''),
+    ].join(';'),
+  );
+
+  // BOM — żeby Excel poprawnie rozpoznał UTF-8 (polskie znaki).
+  return { csv: `\uFEFF${header}\n${lines.join('\n')}` };
+}
+
 // Jedyne źródło prawdy dla statusu płatności. Wyliczany ze stosunku
 // kwoty wpłaconej do należnej oraz terminu. NIE zwraca 'cancelled' —
 // nie wolno jej wołać dla płatności anulowanych.
+// „Po terminie" = termin minął wczoraj lub wcześniej (porównanie do północy) —
+// spójne z UI (PaymentDue, isOverduePayment) i widokiem admin_payments_view,
+// gdzie płatność z terminem DZIŚ nie jest jeszcze zaległa.
 function recomputePaymentStatus(
   amount: number,
   amountPaid: number,
   dueDate: string | null,
 ): PaymentStatus {
-  const isOverdue = dueDate !== null && new Date(dueDate) < new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isOverdue = dueDate !== null && new Date(dueDate) < today;
   if (amountPaid >= amount) return 'paid';
   if (amountPaid > 0) return isOverdue ? 'partially_paid_overdue' : 'partially_paid';
   return isOverdue ? 'overdue' : 'pending';

@@ -53,7 +53,8 @@ Encje i relacje (typy: `src/types/database.ts`):
   udział = `confirmed` („jedzie") — `createPaymentsForRegistration`, wołane
   tą samą logiką po stronie rodzica i admina (`trips.ts`), idempotentnie
   (tylko jeśli jeszcze nie ma). `not_going`/`unconfirmed` anuluje pozycje
-  `pending`; `other` (sama wiadomość do admina) NIE tworzy płatności.
+  nieopłacone (`pending`/`overdue`); częściowo opłacone zostają do ręcznego
+  rozliczenia; `other` (sama wiadomość do admina) NIE tworzy płatności.
 - **TripContractTemplate / TripContract** — wzór umowy wyjazdu i wygenerowane
   umowy (PDF na żądanie, `/api/contracts/[id]/pdf`).
 - Wspierające: **Message/MessageRead** (wiadomości + odczyty),
