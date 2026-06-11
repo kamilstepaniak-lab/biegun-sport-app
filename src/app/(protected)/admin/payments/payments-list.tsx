@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useOptimistic, useTransition, useEffect } from 'react';
+import { Fragment, useState, useMemo, useRef, useOptimistic, useTransition, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Search,
@@ -17,9 +17,14 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Loader2,
   Trash2,
   AlertTriangle,
+  Bell,
+  Download,
+  ArrowDownUp,
+  Receipt,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -40,10 +45,14 @@ import {
   bulkUpdatePaymentStatus,
   deletePayment,
   bulkDeletePayments,
+  sendPaymentReminders,
+  exportAdminPaymentsCsv,
+  getPaymentTransactions,
   type AdminPaymentsStatusFilter,
+  type AdminPaymentsSort,
 } from '@/lib/actions/payments';
 import { RecordPaymentDialog } from '@/components/admin/record-payment-dialog';
-import type { AdminPaymentRow, PaymentStatus } from '@/types';
+import type { AdminPaymentRow, PaymentStatus, PaymentTransaction } from '@/types';
 import { formatPaymentDueDate } from '@/lib/payment-due';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +60,8 @@ import { cn } from '@/lib/utils';
 const SALDO_EPSILON = 0.5;
 
 type PageSize = 25 | 50 | 100;
+
+const COLUMN_COUNT = 8;
 
 interface PaymentsListProps {
   rows: AdminPaymentRow[];
@@ -62,6 +73,7 @@ interface PaymentsListProps {
   search: string;
   tripId: string;
   status: AdminPaymentsStatusFilter;
+  sort: AdminPaymentsSort;
   dateFrom: string;
   dateTo: string;
 }
@@ -76,6 +88,7 @@ export function PaymentsList({
   search,
   tripId,
   status,
+  sort,
   dateFrom,
   dateTo,
 }: PaymentsListProps) {
@@ -91,9 +104,18 @@ export function PaymentsList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [deletingConfirm, setDeletingConfirm] = useState<string | null>(null);
+  const [revertConfirm, setRevertConfirm] = useState<string | null>(null);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [isBulkReminding, setIsBulkReminding] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  // Rozwinięta historia wpłat per płatność (lazy load)
+  const [expandedTx, setExpandedTx] = useState<string | null>(null);
+  const [txRows, setTxRows] = useState<PaymentTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
   const lastCheckedIndexRef = useRef<number | null>(null);
   const [, startTransition] = useTransition();
   const [isNavPending, startNavTransition] = useTransition();
@@ -119,11 +141,43 @@ export function PaymentsList({
     [optimisticRows, deletedIds]
   );
 
+  // ── Grupowanie: dziecko + wyjazd (kolejność pierwszego wystąpienia) ──────
+  interface PaymentGroup {
+    key: string;
+    participantName: string;
+    tripTitle: string;
+    isManual: boolean;
+    rows: { row: AdminPaymentRow; flatIndex: number }[];
+  }
+
+  const groups = useMemo<PaymentGroup[]>(() => {
+    const map = new Map<string, PaymentGroup>();
+    const list: PaymentGroup[] = [];
+    displayedRows.forEach((row, flatIndex) => {
+      const isManual = !row.trip_id;
+      const key = `${row.participant_id ?? row.participant_name}|${row.trip_id ?? 'manual'}`;
+      let group = map.get(key);
+      if (!group) {
+        group = {
+          key,
+          participantName: row.participant_name,
+          tripTitle: isManual ? 'Płatności ręczne' : row.trip_title,
+          isManual,
+          rows: [],
+        };
+        map.set(key, group);
+        list.push(group);
+      }
+      group.rows.push({ row, flatIndex });
+    });
+    return list;
+  }, [displayedRows]);
+
   // ── Filtry sterowane przez URL ────────────────────────────────────────────
   function pushParams(updates: Record<string, string | number | null>) {
     const next = new URLSearchParams(searchParams.toString());
     for (const [k, v] of Object.entries(updates)) {
-      if (v === null || v === '' || v === 'all') next.delete(k);
+      if (v === null || v === '') next.delete(k);
       else next.set(k, String(v));
     }
     // Zmiana dowolnego filtra resetuje stronę (chyba że to sama zmiana strony)
@@ -175,6 +229,16 @@ export function PaymentsList({
         router.refresh();
       }
     });
+  }
+
+  // „Nie" przy zarejestrowanych wpłatach jest destrukcyjne (zeruje wpłaty
+  // i usuwa transakcje) — wymaga potwierdzenia.
+  function requestRevert(row: AdminPaymentRow) {
+    if ((row.amount_paid ?? 0) > 0) {
+      setRevertConfirm(row.id);
+      return;
+    }
+    handleStatusChange(row.id, 'pending');
   }
 
   async function saveAmount(paymentId: string) {
@@ -289,6 +353,73 @@ export function PaymentsList({
     }
   }
 
+  async function handleSendReminder(paymentIds: string[]) {
+    const isBulk = paymentIds.length > 1;
+    if (isBulk) setIsBulkReminding(true);
+    else setSendingReminder(paymentIds[0]);
+    try {
+      const result = await sendPaymentReminders(paymentIds);
+      if ('error' in result && result.error) {
+        toast.error(result.error);
+      } else if ('sent' in result) {
+        if (result.sent === 0) {
+          toast.info('Nie wysłano przypomnień (płatności opłacone lub bez terminu/adresu)');
+        } else {
+          toast.success(
+            result.sent === 1
+              ? 'Przypomnienie wysłane'
+              : `Wysłano ${result.sent} przypomnień${result.skipped ? ` (${result.skipped} pominiętych)` : ''}`
+          );
+        }
+        if (isBulk) setSelectedIds(new Set());
+        router.refresh();
+      }
+    } catch {
+      toast.error('Wystąpił błąd');
+    } finally {
+      setIsBulkReminding(false);
+      setSendingReminder(null);
+    }
+  }
+
+  async function handleExportCsv() {
+    setIsExporting(true);
+    try {
+      const result = await exportAdminPaymentsCsv({ search, tripId, dateFrom, dateTo, status });
+      if ('error' in result) {
+        toast.error(result.error);
+      } else {
+        const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `platnosci-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      toast.error('Wystąpił błąd');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function toggleTransactions(paymentId: string) {
+    if (expandedTx === paymentId) {
+      setExpandedTx(null);
+      return;
+    }
+    setExpandedTx(paymentId);
+    setTxRows([]);
+    setTxLoading(true);
+    try {
+      const transactions = await getPaymentTransactions(paymentId);
+      setTxRows(transactions);
+    } finally {
+      setTxLoading(false);
+    }
+  }
+
   function toggleSelect(id: string, index: number, shiftKey: boolean) {
     if (shiftKey && lastCheckedIndexRef.current !== null) {
       const from = Math.min(lastCheckedIndexRef.current, index);
@@ -327,6 +458,26 @@ export function PaymentsList({
     });
   }
 
+  function toggleSelectGroup(group: PaymentGroup) {
+    const ids = group.rows.map(({ row }) => row.id);
+    const allSelected = ids.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) ids.forEach((id) => next.delete(id));
+      else ids.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
+  function toggleGroupCollapsed(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   function getPaymentLabel(row: AdminPaymentRow): string {
     // Płatność ręczna: w kolumnie „Za co" pokazujemy opis (po co jest
     // płatność) zamiast generycznego „Płatność ręczna".
@@ -356,26 +507,93 @@ export function PaymentsList({
   }
 
   const statusFilters: { key: AdminPaymentsStatusFilter; label: string }[] = [
-    { key: 'all', label: 'Wszystkie' },
     { key: 'pending', label: 'Do zapłaty' },
     { key: 'overdue', label: 'Po terminie' },
     { key: 'paid', label: 'Opłacone' },
+    { key: 'all', label: 'Wszystkie' },
   ];
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // Saldo grupy: ile brakuje per waluta (tylko nieopłacone pozycje).
+  function groupRemaining(group: PaymentGroup): { currency: string; sum: number }[] {
+    const sums: Record<string, number> = {};
+    group.rows.forEach(({ row }) => {
+      if (row.status === 'paid' || row.status === 'cancelled') return;
+      const rem = row.amount - (row.amount_paid ?? 0);
+      if (rem > SALDO_EPSILON) sums[row.currency] = (sums[row.currency] ?? 0) + rem;
+    });
+    return Object.entries(sums)
+      .sort((a, b) => (a[0] === 'PLN' ? -1 : 1) - (b[0] === 'PLN' ? -1 : 1))
+      .map(([currency, sum]) => ({ currency, sum }));
+  }
+
+  function renderGroupHeader(group: PaymentGroup) {
+    const ids = group.rows.map(({ row }) => row.id);
+    const allSelected = ids.every((id) => selectedIds.has(id));
+    const collapsed = collapsedGroups.has(group.key);
+    const remaining = groupRemaining(group);
+    const paidCount = group.rows.filter(({ row }) => row.status === 'paid').length;
+
+    return (
+      <tr key={`group-${group.key}`} className="border-b border-gray-100 bg-gray-50/80">
+        <td className="py-2 pl-4 pr-2 w-8">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={() => toggleSelectGroup(group)}
+            className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+          />
+        </td>
+        <td colSpan={COLUMN_COUNT - 1} className="py-2 pl-2 pr-5">
+          <button
+            onClick={() => toggleGroupCollapsed(group.key)}
+            className="flex w-full items-center gap-2 text-left group"
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            ) : (
+              <ChevronDown className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            )}
+            <span className="text-sm font-bold text-gray-900">{group.participantName}</span>
+            <span className="text-sm text-gray-400 truncate max-w-[320px]">{group.tripTitle}</span>
+            <span className="text-xs text-gray-400 whitespace-nowrap">
+              {paidCount}/{group.rows.length} opłaconych
+            </span>
+            <span className="ml-auto flex items-center gap-2 whitespace-nowrap">
+              {remaining.length === 0 ? (
+                <span className="text-xs font-semibold text-emerald-600">Rozliczone</span>
+              ) : (
+                remaining.map(({ currency, sum }) => (
+                  <span key={currency} className="text-xs font-semibold text-amber-700">
+                    brakuje {sum.toFixed(0)} {currency}
+                  </span>
+                ))
+              )}
+            </span>
+          </button>
+        </td>
+      </tr>
+    );
+  }
+
   function renderRow(row: AdminPaymentRow, index: number) {
     const isPaid = row.status === 'paid';
     const isCancelled = row.status === 'cancelled';
-    const isOverdue = row.status === 'overdue' || row.status === 'partially_paid_overdue';
     // effective_due_date z widoku uwzględnia regułę „X dni od potwierdzenia"
     // (confirmed_at + X dni), więc termin pokazuje się też gdy payments.due_date
     // jest puste.
     const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
     const isDueDateOverdue = dueDate ? dueDate < today : false;
+    const daysOverdue = dueDate && isDueDateOverdue
+      ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000)
+      : 0;
+    const isOverdue =
+      row.status === 'overdue' || row.status === 'partially_paid_overdue' || (isDueDateOverdue && !isPaid && !isCancelled);
     const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
     const isSelected = selectedIds.has(row.id);
+    const amountPaid = row.amount_paid ?? 0;
 
     // Zniżka realna (checkbox we Wpłacie) vs zwykła edycja ceny.
     // discount_applied_at ustawiane tylko przy zniżce; edycja kwoty je zeruje.
@@ -384,323 +602,416 @@ export function PaymentsList({
     // Cena edytowana w dół bez zniżki → przekreślamy starą cenę w kolumnie Kwota.
     const priceEdited = !hasDiscount && priceDelta > 0.5;
 
+    const isExpanded = expandedTx === row.id;
+
     return (
-      <tr
-        key={row.id}
-        className={cn(
-          'border-b border-gray-100 transition-colors',
-          isPaid
-            ? 'bg-emerald-50/20 hover:bg-emerald-50/40'
-            : isOverdue
-              ? 'bg-red-50/10 hover:bg-red-50/20'
-              : 'hover:bg-gray-50/60',
-          isSelected && 'ring-inset ring-1 ring-blue-300 bg-blue-50/40'
-        )}
-      >
-        {/* Checkbox */}
-        <td className="py-3 pl-4 pr-2 w-8">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => toggleSelect(row.id, index, (e.nativeEvent as MouseEvent).shiftKey)}
-            className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
-          />
-        </td>
-
-        {/* Uczestnik + wyjazd */}
-        <td className="py-3 pl-2 pr-3">
-          <p className="text-sm font-semibold text-gray-900 leading-tight">
-            {row.participant_name}
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[180px]">{row.trip_title}</p>
-        </td>
-
-        {/* Za co */}
-        <td className="py-3 px-3">
-          <span className="text-sm text-gray-700 font-medium">{getPaymentLabel(row)}</span>
-        </td>
-
-        {/* Kwota */}
-        <td className="py-3 px-3">
-          {editingPayment === row.id ? (
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                value={editAmount}
-                onChange={(e) => setEditAmount(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveAmount(row.id);
-                  if (e.key === 'Escape') setEditingPayment(null);
-                }}
-                className="h-9 w-20 text-xs rounded-lg"
-                min="0"
-                step="0.01"
-                placeholder="kwota"
-                autoFocus
-              />
-              <span className="text-xs text-gray-400">{row.currency}</span>
-              <button
-                className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                onClick={() => saveAmount(row.id)}
-                disabled={isUpdating === row.id}
-              >
-                <Save className="h-3.5 w-3.5 text-gray-500" />
-              </button>
-              <button
-                className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                onClick={() => setEditingPayment(null)}
-              >
-                <X className="h-3.5 w-3.5 text-gray-500" />
-              </button>
-            </div>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => {
-                    setEditingPayment(row.id);
-                    setEditAmount(row.amount.toString());
-                  }}
-                  className="flex items-center gap-1.5 group"
-                >
-                  {priceEdited && (
-                    <span className="text-xs text-gray-400 line-through tabular-nums">
-                      {row.original_amount.toFixed(0)}
-                    </span>
-                  )}
-                  <span className="text-sm font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
-                    {row.amount.toFixed(0)} {row.currency}
-                  </span>
-                  <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
-            </Tooltip>
+      <Fragment key={row.id}>
+        <tr
+          className={cn(
+            'border-b border-gray-100 transition-colors',
+            isPaid
+              ? 'bg-emerald-50/20 hover:bg-emerald-50/40'
+              : isOverdue
+                ? 'bg-red-50/10 hover:bg-red-50/20'
+                : 'hover:bg-gray-50/60',
+            isSelected && 'ring-inset ring-1 ring-blue-300 bg-blue-50/40'
           )}
-        </td>
+        >
+          {/* Checkbox */}
+          <td className="py-3 pl-4 pr-2 w-8">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => toggleSelect(row.id, index, (e.nativeEvent as MouseEvent).shiftKey)}
+              className="h-4 w-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+            />
+          </td>
 
-        {/* Zniżka — tylko realna zniżka (checkbox we Wpłacie), nie edycja ceny */}
-        <td className="py-3 px-3">
-          {hasDiscount && priceDelta > 0.5 ? (
-            <div className="leading-tight">
-              <span className="text-sm font-semibold text-amber-600 tabular-nums">
-                −{priceDelta.toFixed(0)} {row.currency}
-              </span>
-              <p className="text-[11px] text-gray-400 tabular-nums">
-                z {row.original_amount.toFixed(0)} {row.currency}
-              </p>
-            </div>
-          ) : (
-            <span className="text-gray-300 text-sm">—</span>
-          )}
-        </td>
-
-        {/* Status */}
-        <td className="py-3 px-3">
-          <div className="flex flex-col items-start gap-1">
-            {(() => {
-              const rem = row.amount_remaining ?? (row.amount - (row.amount_paid ?? 0));
-              const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
-              const showDoplata =
-                row.status !== 'cancelled' &&
-                rem > SALDO_EPSILON &&
-                (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
-              // „Do dopłaty X zł" zastępuje pill „Do dopłaty" przy partially_paid
-              // (nie chcemy dwóch identycznych etykiet). Dla partially_paid_overdue
-              // zostawiamy pill „Po terminie" + kwotę „Do dopłaty X" — uzupełniają się.
-              const hideStatusPill = showDoplata && row.status === 'partially_paid';
-              return (
-                <>
-                  {!hideStatusPill && (
-                    <span
-                      className={cn(
-                        'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
-                        statusCls
-                      )}
-                    >
-                      {statusLabel}
-                    </span>
-                  )}
-                  {showNadplata && (
-                    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-                      Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
-                    </span>
-                  )}
-                  {showDoplata && (
-                    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-                      Do dopłaty {rem.toFixed(0)} {row.currency}
-                    </span>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-        </td>
-
-        {/* Termin */}
-        <td className="py-3 px-3">
-          {dueDate ? (
-            <div className="flex flex-col gap-0.5">
-              <span
-                className={cn(
-                  'text-sm tabular-nums',
-                  isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500'
-                )}
-              >
-                {format(dueDate, 'd.MM.yyyy', { locale: pl })}
-              </span>
-              {isDueDateOverdue && !isPaid && (
-                <span className="text-[11px] font-semibold text-red-600">PO TERMINIE</span>
-              )}
-            </div>
-          ) : (
-            <span className="text-gray-500 text-sm">
-              {formatPaymentDueDate(
-                {
-                  due_date: row.due_date,
-                  due_days_from_confirmation: row.due_days_from_confirmation,
-                },
-                row.trip_departure_datetime ?? undefined,
-              )}
-            </span>
-          )}
-        </td>
-
-        {/* Notatka */}
-        <td className="py-3 px-3 max-w-[180px]">
-          {editingNote === row.id ? (
-            <div className="flex items-center gap-1">
-              <Input
-                value={editNote}
-                onChange={(e) => setEditNote(e.target.value)}
-                className="h-9 text-xs rounded-lg w-36"
-                placeholder="Notatka..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveNote(row.id);
-                  if (e.key === 'Escape') setEditingNote(null);
-                }}
-                autoFocus
-              />
+          {/* Za co */}
+          <td className="py-3 pl-8 pr-3">
+            <span className="text-sm text-gray-700 font-medium">{getPaymentLabel(row)}</span>
+            {amountPaid > 0 && (
               <button
-                className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                onClick={() => saveNote(row.id)}
-                disabled={isUpdating === row.id}
+                onClick={() => toggleTransactions(row.id)}
+                className="mt-0.5 flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-600 transition-colors"
               >
-                <Save className="h-3.5 w-3.5 text-gray-500" />
+                <Receipt className="h-3 w-3" />
+                wpłaty
+                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
-              <button
-                className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                onClick={() => setEditingNote(null)}
-              >
-                <X className="h-3.5 w-3.5 text-gray-500" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setEditingNote(row.id);
-                setEditNote(row.admin_notes || '');
-              }}
-              className="flex items-center gap-1.5 text-xs group w-full text-left"
-            >
-              <MessageSquare
-                className={cn(
-                  'h-3.5 w-3.5 flex-shrink-0 transition-colors',
-                  row.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
-                )}
-              />
-              {row.admin_notes ? (
-                <span className="text-amber-700 truncate group-hover:text-amber-900">
-                  {row.admin_notes}
-                </span>
-              ) : (
-                <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
-              )}
-            </button>
-          )}
-        </td>
-
-        {/* Opłacono? + Usuń */}
-        <td className="py-3 pl-3 pr-5">
-          <div className="flex gap-1.5 items-center">
-            {!isCancelled && (
-              <>
-                <RecordPaymentDialog
-                  paymentId={row.id}
-                  currency={row.currency as 'PLN' | 'EUR'}
-                  amountRemaining={row.amount_remaining ?? (row.amount - (row.amount_paid ?? 0))}
-                  onDone={() => router.refresh()}
-                >
-                  <button
-                    className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
-                  >
-                    <CircleDollarSign className="h-3 w-3" />
-                    Wpłata
-                  </button>
-                </RecordPaymentDialog>
-                <button
-                  className={cn(
-                    'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                    isPaid
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                      : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
-                  )}
-                  onClick={() => handleStatusChange(row.id, 'paid')}
-                  disabled={isUpdating === row.id}
-                >
-                  <Check className="h-3 w-3" />
-                  Tak
-                </button>
-                <button
-                  className={cn(
-                    'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                    !isPaid
-                      ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
-                      : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
-                  )}
-                  onClick={() => handleStatusChange(row.id, 'pending')}
-                  disabled={isUpdating === row.id}
-                >
-                  <X className="h-3 w-3" />
-                  Nie
-                </button>
-              </>
             )}
-            {/* Usuń */}
-            <div className="ml-1 pl-1.5 border-l border-gray-200 flex items-center gap-1">
-              {deletingConfirm === row.id ? (
-                <>
-                  <span className="text-xs text-red-600 font-medium">Usuń?</span>
+          </td>
+
+          {/* Kwota */}
+          <td className="py-3 px-3">
+            {editingPayment === row.id ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveAmount(row.id);
+                    if (e.key === 'Escape') setEditingPayment(null);
+                  }}
+                  className="h-9 w-20 text-xs rounded-lg"
+                  min="0"
+                  step="0.01"
+                  placeholder="kwota"
+                  autoFocus
+                />
+                <span className="text-xs text-gray-400">{row.currency}</span>
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                  onClick={() => saveAmount(row.id)}
+                  disabled={isUpdating === row.id}
+                >
+                  <Save className="h-3.5 w-3.5 text-gray-500" />
+                </button>
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                  onClick={() => setEditingPayment(null)}
+                >
+                  <X className="h-3.5 w-3.5 text-gray-500" />
+                </button>
+              </div>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <button
-                    onClick={() => handleDelete(row.id)}
+                    onClick={() => {
+                      setEditingPayment(row.id);
+                      setEditAmount(row.amount.toString());
+                    }}
+                    className="flex items-center gap-1.5 group"
+                  >
+                    {priceEdited && (
+                      <span className="text-xs text-gray-400 line-through tabular-nums">
+                        {row.original_amount.toFixed(0)}
+                      </span>
+                    )}
+                    <span className="text-sm font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
+                      {row.amount.toFixed(0)} {row.currency}
+                    </span>
+                    <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
+              </Tooltip>
+            )}
+          </td>
+
+          {/* Zniżka — tylko realna zniżka (checkbox we Wpłacie), nie edycja ceny */}
+          <td className="py-3 px-3">
+            {hasDiscount && priceDelta > 0.5 ? (
+              <div className="leading-tight">
+                <span className="text-sm font-semibold text-amber-600 tabular-nums">
+                  −{priceDelta.toFixed(0)} {row.currency}
+                </span>
+                <p className="text-[11px] text-gray-400 tabular-nums">
+                  z {row.original_amount.toFixed(0)} {row.currency}
+                </p>
+              </div>
+            ) : (
+              <span className="text-gray-300 text-sm">—</span>
+            )}
+          </td>
+
+          {/* Status */}
+          <td className="py-3 px-3">
+            <div className="flex flex-col items-start gap-1">
+              {(() => {
+                const rem = row.amount_remaining ?? (row.amount - amountPaid);
+                const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
+                const showDoplata =
+                  row.status !== 'cancelled' &&
+                  rem > SALDO_EPSILON &&
+                  (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
+                // „Do dopłaty X zł" zastępuje pill „Do dopłaty" przy partially_paid
+                // (nie chcemy dwóch identycznych etykiet). Dla partially_paid_overdue
+                // zostawiamy pill „Po terminie" + kwotę „Do dopłaty X" — uzupełniają się.
+                const hideStatusPill = showDoplata && row.status === 'partially_paid';
+                return (
+                  <>
+                    {!hideStatusPill && (
+                      <span
+                        className={cn(
+                          'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
+                          statusCls
+                        )}
+                      >
+                        {statusLabel}
+                      </span>
+                    )}
+                    {showNadplata && (
+                      <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                        Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
+                      </span>
+                    )}
+                    {showDoplata && (
+                      <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                        Do dopłaty {rem.toFixed(0)} {row.currency}
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </td>
+
+          {/* Termin */}
+          <td className="py-3 px-3">
+            {dueDate ? (
+              <div className="flex flex-col gap-0.5">
+                <span
+                  className={cn(
+                    'text-sm tabular-nums',
+                    isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500'
+                  )}
+                >
+                  {format(dueDate, 'd.MM.yyyy', { locale: pl })}
+                </span>
+                {isDueDateOverdue && !isPaid && (
+                  <span className="text-[11px] font-semibold text-red-600">
+                    {daysOverdue === 1 ? '1 dzień po terminie' : `${daysOverdue} dni po terminie`}
+                  </span>
+                )}
+                {row.last_reminder_sent_at && !isPaid && (
+                  <span className="text-[11px] text-gray-400">
+                    przyp. {format(new Date(row.last_reminder_sent_at), 'd.MM', { locale: pl })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-500 text-sm">
+                {formatPaymentDueDate(
+                  {
+                    due_date: row.due_date,
+                    due_days_from_confirmation: row.due_days_from_confirmation,
+                  },
+                  row.trip_departure_datetime ?? undefined,
+                )}
+              </span>
+            )}
+          </td>
+
+          {/* Notatka */}
+          <td className="py-3 px-3 max-w-[180px]">
+            {editingNote === row.id ? (
+              <div className="flex items-center gap-1">
+                <Input
+                  value={editNote}
+                  onChange={(e) => setEditNote(e.target.value)}
+                  className="h-9 text-xs rounded-lg w-36"
+                  placeholder="Notatka..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveNote(row.id);
+                    if (e.key === 'Escape') setEditingNote(null);
+                  }}
+                  autoFocus
+                />
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                  onClick={() => saveNote(row.id)}
+                  disabled={isUpdating === row.id}
+                >
+                  <Save className="h-3.5 w-3.5 text-gray-500" />
+                </button>
+                <button
+                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                  onClick={() => setEditingNote(null)}
+                >
+                  <X className="h-3.5 w-3.5 text-gray-500" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditingNote(row.id);
+                  setEditNote(row.admin_notes || '');
+                }}
+                className="flex items-center gap-1.5 text-xs group w-full text-left"
+              >
+                <MessageSquare
+                  className={cn(
+                    'h-3.5 w-3.5 flex-shrink-0 transition-colors',
+                    row.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
+                  )}
+                />
+                {row.admin_notes ? (
+                  <span className="text-amber-700 truncate group-hover:text-amber-900">
+                    {row.admin_notes}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
+                )}
+              </button>
+            )}
+          </td>
+
+          {/* Opłacono? + Przypomnienie + Usuń */}
+          <td className="py-3 pl-3 pr-5">
+            <div className="flex gap-1.5 items-center">
+              {!isCancelled && revertConfirm === row.id ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-red-600 font-medium whitespace-nowrap">
+                    Wyzeruje wpłaty {amountPaid.toFixed(0)} {row.currency}?
+                  </span>
+                  <button
+                    onClick={() => {
+                      setRevertConfirm(null);
+                      handleStatusChange(row.id, 'pending');
+                    }}
                     className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
                   >
                     Tak
                   </button>
                   <button
-                    onClick={() => setDeletingConfirm(null)}
+                    onClick={() => setRevertConfirm(null)}
                     className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                   >
+                    Anuluj
+                  </button>
+                </div>
+              ) : !isCancelled && (
+                <>
+                  <RecordPaymentDialog
+                    paymentId={row.id}
+                    currency={row.currency as 'PLN' | 'EUR'}
+                    amountRemaining={row.amount_remaining ?? (row.amount - amountPaid)}
+                    onDone={() => router.refresh()}
+                  >
+                    <button
+                      className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
+                    >
+                      <CircleDollarSign className="h-3 w-3" />
+                      Wpłata
+                    </button>
+                  </RecordPaymentDialog>
+                  <button
+                    className={cn(
+                      'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                      isPaid
+                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                        : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
+                    )}
+                    onClick={() => handleStatusChange(row.id, 'paid')}
+                    disabled={isUpdating === row.id}
+                  >
+                    <Check className="h-3 w-3" />
+                    Tak
+                  </button>
+                  <button
+                    className={cn(
+                      'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                      !isPaid
+                        ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                        : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
+                    )}
+                    onClick={() => requestRevert(row)}
+                    disabled={isUpdating === row.id}
+                  >
+                    <X className="h-3 w-3" />
                     Nie
                   </button>
+                  {/* Przypomnienie mailowe — tylko nieopłacone z konkretnym terminem */}
+                  {!isPaid && row.effective_due_date && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handleSendReminder([row.id])}
+                          disabled={sendingReminder === row.id || !row.parent_email}
+                          className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-all disabled:opacity-50"
+                        >
+                          {sendingReminder === row.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Bell className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="rounded-lg">
+                        {row.parent_email
+                          ? 'Wyślij przypomnienie mailowe'
+                          : 'Brak adresu e-mail rodzica'}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setDeletingConfirm(row.id)}
-                      className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="rounded-lg">Usuń płatność</TooltipContent>
-                </Tooltip>
               )}
+              {/* Usuń */}
+              <div className="ml-1 pl-1.5 border-l border-gray-200 flex items-center gap-1">
+                {deletingConfirm === row.id ? (
+                  <>
+                    <span className="text-xs text-red-600 font-medium whitespace-nowrap">
+                      {amountPaid > 0
+                        ? `Usuń? (ma wpłaty ${amountPaid.toFixed(0)} ${row.currency})`
+                        : 'Usuń?'}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(row.id)}
+                      className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    >
+                      Tak
+                    </button>
+                    <button
+                      onClick={() => setDeletingConfirm(null)}
+                      className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                      Nie
+                    </button>
+                  </>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setDeletingConfirm(row.id)}
+                        className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="rounded-lg">Usuń płatność</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
             </div>
-          </div>
-        </td>
-      </tr>
+          </td>
+        </tr>
+
+        {/* Historia wpłat — rozwijany wiersz */}
+        {isExpanded && (
+          <tr className="border-b border-gray-100 bg-slate-50/60">
+            <td className="py-2 pl-4 pr-2" />
+            <td colSpan={COLUMN_COUNT - 1} className="py-2 pl-8 pr-5">
+              {txLoading ? (
+                <p className="text-xs text-gray-400 py-1">Ładowanie wpłat…</p>
+              ) : txRows.length === 0 ? (
+                <p className="text-xs text-gray-400 py-1">
+                  Brak zarejestrowanych transakcji (wpłata mogła zostać wyzerowana).
+                </p>
+              ) : (
+                <ul className="space-y-1 py-1">
+                  {txRows.map((tx) => (
+                    <li key={tx.id} className="flex items-center gap-3 text-xs">
+                      <span className="text-gray-500 tabular-nums w-20">
+                        {format(new Date(tx.transaction_date), 'd.MM.yyyy', { locale: pl })}
+                      </span>
+                      <span className="text-gray-400 w-16">
+                        {tx.payment_method === 'cash' ? 'Gotówka' : 'Przelew'}
+                      </span>
+                      <span className="font-semibold text-gray-900 tabular-nums">
+                        {tx.amount.toFixed(2)} {tx.currency}
+                      </span>
+                      {tx.notes && <span className="text-gray-400 truncate">{tx.notes}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </td>
+          </tr>
+        )}
+      </Fragment>
     );
   }
 
@@ -715,9 +1026,16 @@ export function PaymentsList({
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Stat cards */}
+        {/* Stat cards — klikalne (ustawiają filtr statusu) i respektują
+            pozostałe filtry (wyjazd / szukaj / zakres terminów) */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          <button
+            onClick={() => pushParams({ status: 'pending' })}
+            className={cn(
+              'bg-white rounded-2xl shadow-sm ring-1 p-4 flex items-center gap-3 text-left transition-all hover:ring-amber-300',
+              status === 'pending' ? 'ring-2 ring-amber-400' : 'ring-gray-100'
+            )}
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0">
               <CircleDollarSign className="h-5 w-5 text-amber-600" />
             </div>
@@ -737,8 +1055,14 @@ export function PaymentsList({
                 )}
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          </button>
+          <button
+            onClick={() => pushParams({ status: 'overdue' })}
+            className={cn(
+              'bg-white rounded-2xl shadow-sm ring-1 p-4 flex items-center gap-3 text-left transition-all hover:ring-red-300',
+              status === 'overdue' ? 'ring-2 ring-red-400' : 'ring-gray-100'
+            )}
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
@@ -746,8 +1070,14 @@ export function PaymentsList({
               <p className="text-2xl font-bold text-gray-900">{stats.overdue}</p>
               <p className="text-xs text-gray-500">Po terminie</p>
             </div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-4 flex items-center gap-3">
+          </button>
+          <button
+            onClick={() => pushParams({ status: 'paid' })}
+            className={cn(
+              'bg-white rounded-2xl shadow-sm ring-1 p-4 flex items-center gap-3 text-left transition-all hover:ring-emerald-300',
+              status === 'paid' ? 'ring-2 ring-emerald-400' : 'ring-gray-100'
+            )}
+          >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
@@ -755,7 +1085,7 @@ export function PaymentsList({
               <p className="text-2xl font-bold text-gray-900">{stats.paid}</p>
               <p className="text-xs text-gray-500">Opłacone</p>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Filtry */}
@@ -765,7 +1095,7 @@ export function PaymentsList({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
-                placeholder="Szukaj po nazwisku, wyjeździe lub opisie..."
+                placeholder="Szukaj po dziecku, rodzicu lub wyjeździe..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="h-11 pl-10 pr-8 rounded-xl bg-white ring-1 ring-gray-200 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 w-64 transition-all"
@@ -785,7 +1115,7 @@ export function PaymentsList({
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-400" />
               <select
                 value={tripId}
-                onChange={(e) => pushParams({ trip: e.target.value })}
+                onChange={(e) => pushParams({ trip: e.target.value === 'all' ? null : e.target.value })}
                 className={cn(
                   'h-11 appearance-none pl-9 pr-8 rounded-xl text-base md:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors max-w-[70vw] sm:max-w-[240px] truncate',
                   tripId !== 'all'
@@ -830,10 +1160,10 @@ export function PaymentsList({
           </div>
 
           <div className="flex flex-wrap gap-3 items-center">
-            {/* Daty */}
+            {/* Zakres terminów płatności */}
             <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
               <CalendarDays className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-xs text-gray-400">Od</span>
+              <span className="text-xs text-gray-400">Termin od</span>
               <input
                 type="date"
                 value={dateFrom}
@@ -841,7 +1171,7 @@ export function PaymentsList({
                 className="text-base md:text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
               />
               <span className="text-xs text-gray-300">—</span>
-              <span className="text-xs text-gray-400">Do</span>
+              <span className="text-xs text-gray-400">do</span>
               <input
                 type="date"
                 value={dateTo}
@@ -856,6 +1186,31 @@ export function PaymentsList({
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
+            </div>
+
+            {/* Sortowanie */}
+            <div className="flex items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
+              <ArrowDownUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <div className="flex gap-1">
+                <button
+                  onClick={() => pushParams({ sort: null })}
+                  className={cn(
+                    'px-2 py-0.5 rounded-lg text-xs font-medium transition-all',
+                    sort === 'due' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+                  )}
+                >
+                  Termin
+                </button>
+                <button
+                  onClick={() => pushParams({ sort: 'created' })}
+                  className={cn(
+                    'px-2 py-0.5 rounded-lg text-xs font-medium transition-all',
+                    sort === 'created' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+                  )}
+                >
+                  Najnowsze
+                </button>
+              </div>
             </div>
 
             {/* Rozmiar strony */}
@@ -877,6 +1232,20 @@ export function PaymentsList({
                 ))}
               </div>
             </div>
+
+            {/* Eksport CSV — bieżące filtry, bez paginacji */}
+            <button
+              onClick={handleExportCsv}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              {isExporting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              CSV
+            </button>
 
             <span className="text-xs text-gray-400">{total} łącznie</span>
           </div>
@@ -904,6 +1273,18 @@ export function PaymentsList({
               >
                 <X className="h-3.5 w-3.5" />
                 Oznacz jako nieopłacone
+              </button>
+              <button
+                onClick={() => handleSendReminder(Array.from(selectedIds))}
+                disabled={isBulkReminding}
+                className="h-9 px-4 text-xs font-semibold rounded-xl bg-amber-500 text-white hover:bg-amber-600 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                {isBulkReminding ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Bell className="h-3.5 w-3.5" />
+                )}
+                Wyślij przypomnienia
               </button>
               {bulkDeleteConfirm ? (
                 <>
@@ -948,7 +1329,7 @@ export function PaymentsList({
           </div>
         )}
 
-        {/* Tabela płatności */}
+        {/* Tabela płatności — pogrupowana per dziecko + wyjazd */}
         <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -964,10 +1345,7 @@ export function PaymentsList({
                     onChange={toggleSelectAll}
                   />
                 </th>
-                <th className="text-left py-2.5 pl-2 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
-                  Uczestnik
-                </th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left py-2.5 pl-8 pr-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
                   Za co
                 </th>
                 <th className="text-left py-2.5 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wide whitespace-nowrap">
@@ -993,14 +1371,21 @@ export function PaymentsList({
             <tbody>
               {displayedRows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center text-sm text-gray-400">
+                  <td colSpan={COLUMN_COUNT} className="py-16 text-center text-sm text-gray-400">
                     {search || tripId !== 'all' || status !== 'all' || dateFrom || dateTo
                       ? 'Brak płatności pasujących do filtrów'
                       : 'Brak płatności'}
                   </td>
                 </tr>
               ) : (
-                displayedRows.map((row, index) => renderRow(row, index))
+                groups.map((group) => (
+                  <GroupRows
+                    key={group.key}
+                    header={renderGroupHeader(group)}
+                    collapsed={collapsedGroups.has(group.key)}
+                    rows={group.rows.map(({ row, flatIndex }) => renderRow(row, flatIndex))}
+                  />
+                ))
               )}
             </tbody>
           </table>
@@ -1046,5 +1431,24 @@ export function PaymentsList({
         )}
       </div>
     </TooltipProvider>
+  );
+}
+
+// Nagłówek grupy + (zwijane) wiersze płatności — osobny komponent, żeby
+// React nie tracił kluczy fragmentów w tbody.
+function GroupRows({
+  header,
+  collapsed,
+  rows,
+}: {
+  header: React.ReactNode;
+  collapsed: boolean;
+  rows: React.ReactNode[];
+}) {
+  return (
+    <>
+      {header}
+      {!collapsed && rows}
+    </>
   );
 }

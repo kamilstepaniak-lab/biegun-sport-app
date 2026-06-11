@@ -211,6 +211,9 @@ export interface Payment {
   marked_by: string | null;
   discount_applied_by: string | null;
   discount_applied_at: string | null;
+  // Ostatnie przypomnienie mailowe (cron lub ręczne z /admin/payments).
+  // Wymaga migracji admin-payments-parent-reminders.sql.
+  last_reminder_sent_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -273,6 +276,11 @@ export interface AdminPaymentRow extends Payment {
   participant_first_name: string;
   participant_last_name: string;
   participant_name: string;
+  // Dane rodzica (płatnika) — wymagają migracji admin-payments-parent-reminders.sql.
+  parent_id?: string | null;
+  parent_name?: string | null;
+  parent_first_name?: string | null;
+  parent_email?: string | null;
   trip_id: string | null;
   trip_title: string;
   trip_departure_datetime: string | null;

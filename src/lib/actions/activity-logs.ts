@@ -14,6 +14,8 @@ export type ActivityActionType =
   | 'payment_recorded'
   | 'payment_amount_changed'
   | 'payment_status_changed'
+  | 'payment_reminders_sent'
+  | 'transfer_allocated'
   | 'contracts_removed'
   | 'message_created'
   | 'message_updated'

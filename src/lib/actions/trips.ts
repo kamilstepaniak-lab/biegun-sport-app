@@ -344,7 +344,9 @@ function computePaymentStatus(
   amountPaid: number,
   dueDate: string | null,
 ): 'pending' | 'partially_paid' | 'paid' | 'overdue' | 'partially_paid_overdue' {
-  const isOverdue = dueDate !== null && new Date(dueDate) < new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isOverdue = dueDate !== null && new Date(dueDate) < today;
   if (amountPaid >= amount) return 'paid';
   if (amountPaid > 0) return isOverdue ? 'partially_paid_overdue' : 'partially_paid';
   return isOverdue ? 'overdue' : 'pending';
@@ -544,6 +546,9 @@ async function syncTripPaymentsAfterPricingChange(
           .from('payments')
           .insert({
             registration_id: reg.id,
+            // participant_id wymagany do przypomnień crona i filtrów per
+            // dziecko (join po payments_participant_id_fkey).
+            participant_id: reg.participant_id,
             template_id: template.id,
             payment_type: template.payment_type,
             installment_number: template.installment_number,
@@ -1194,12 +1199,15 @@ export async function updateParticipationStatus(
       await createPaymentsForRegistration(registrationId, tripId, participantId, new Date().toISOString());
     }
   } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
-    // Admin ustawia "Nie jedzie" lub "Niepotwierdzony" — anuluj oczekujące płatności
+    // Admin ustawia "Nie jedzie" lub "Niepotwierdzony" — anuluj nieopłacone
+    // płatności. Także 'overdue': to ten sam przypadek co 'pending' (zero
+    // wpłat), tylko z przeliczonym statusem. Częściowo opłacone zostają —
+    // admin rozlicza je ręcznie (zwrot albo zniżka).
     await supabaseAdmin
       .from('payments')
       .update({ status: 'cancelled' })
       .eq('registration_id', registrationId)
-      .eq('status', 'pending');
+      .in('status', ['pending', 'overdue']);
   }
 
   revalidatePath('/admin/trips');
@@ -1539,12 +1547,14 @@ export async function updateParticipationStatusByParent(
       await createPaymentsForRegistration(registrationId, tripId, participantId, new Date().toISOString());
     }
   } else if ((status === 'not_going' || status === 'unconfirmed') && registrationId) {
-    // Dziecko nie jedzie lub cofnięto potwierdzenie — anuluj płatności (pending)
+    // Dziecko nie jedzie lub cofnięto potwierdzenie — anuluj nieopłacone
+    // płatności (pending i overdue; obie oznaczają zero wpłat). Częściowo
+    // opłacone zostają do ręcznego rozliczenia przez admina.
     await supabaseAdmin
       .from('payments')
       .update({ status: 'cancelled' })
       .eq('registration_id', registrationId)
-      .eq('status', 'pending');
+      .in('status', ['pending', 'overdue']);
   }
 
   // Utwórz umowę automatycznie jeśli wyjazd ma włączony system umów

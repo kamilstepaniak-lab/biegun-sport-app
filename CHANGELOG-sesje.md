@@ -3,6 +3,54 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Audyt płatności: poprawki logiki + przebudowa /admin/payments)
+
+Poprawki logiki (po audycie cennik → potwierdzanie → płatności):
+
+- `trips.ts`: „nie jedzie"/„niepotwierdzony" anuluje też nieopłacone raty
+  `overdue` (nie tylko `pending`) — oba miejsca (admin + rodzic); sync
+  cennika ustawia `participant_id` na nowych płatnościach (bez tego cron
+  pomijał je przy przypomnieniach). Aktualizacja opisu w `CLAUDE.md`.
+- `payments.ts` + `trips.ts`: jedna definicja „po terminie" (porównanie do
+  północy — termin DZIŚ nie jest jeszcze zaległy) w `recomputePaymentStatus`
+  i jego kopii `computePaymentStatus`.
+- `updatePaymentStatus`: „Tak" dopisuje transakcję na brakującą kwotę (jak
+  masowe oznaczanie), „Nie" usuwa transakcje — niezmiennik: suma
+  `payment_transactions` == `amount_paid`; analogicznie masowe „nieopłacone".
+- `updatePaymentAmount`: nie nadpisuje już `paid_at` przy każdej edycji kwoty.
+- `getPaymentsForParent`: rodzic widzi też nieanulowane płatności rejestracji
+  bez `confirmed` (częściowo opłacone resztki po rezygnacji).
+- Filtr „Do zapłaty"/„Po terminie" na `/admin/payments` liczony z
+  `effective_due_date` zamiast z (bywającego nieaktualnym) statusu w bazie.
+
+Przebudowa `/admin/payments` (ręczne księgowanie bez bramki płatności):
+
+- **„Zaksięguj przelew"** (`record-transfer-dialog.tsx` + akcje
+  `getUnpaidPaymentsForParticipant`/`recordAllocatedTransfer`): kwota z
+  wyciągu rozbijana FIFO na najstarsze nieopłacone raty dziecka, z ręczną
+  korektą rozbicia; jedna operacja = wiele transakcji.
+- Grupowanie tabeli per dziecko+wyjazd (zwijane, saldo „brakuje X PLN"),
+  kolumna Uczestnik przeniesiona do nagłówka grupy.
+- Sortowanie Termin/Najnowsze; zakres dat filtruje po terminie płatności
+  (nie dacie utworzenia); „X dni po terminie" w kolumnie Termin.
+- Przypomnienia mailowe: dzwonek per rata + masowo z paska zaznaczenia
+  (`sendPaymentReminders`), znacznik „przyp. d.MM"
+  (`payments.last_reminder_sent_at`, ustawiany też przez cron).
+- Klikalne kafle statystyk; statystyki respektują filtry
+  (`getAdminPaymentsStats(filters)`); domyślna zakładka „Do zapłaty";
+  szukanie także po nazwisku rodzica; rozwijana historia wpłat w wierszu;
+  eksport CSV (`exportAdminPaymentsCsv`, średniki + BOM dla Excela);
+  potwierdzenie przy „Nie"/usuwaniu płatności z wpłatami.
+- **MIGRACJA do ręcznego uruchomienia:**
+  `supabase/migrations/admin-payments-parent-reminders.sql` (kolumna
+  `last_reminder_sent_at`, backfill `participant_id`, widok
+  `admin_payments_view` + `parent_name/parent_first_name/parent_email`).
+  Bez niej /admin/payments nie działa (szukanie/przypomnienia używają
+  nowych kolumn widoku).
+- Odnotowane, nienaprawione (istniejące wcześniej): błąd TS w
+  `trip-form/index.tsx:162` (dostęp do `result.error` na unii bez
+  zawężenia) — występuje też na `main`.
+
 ### 2026-06-10 (vercel.json: cron email-queue tymczasowo dzienny — Hobby)
 
 - `email-queue` cron `*/5 * * * *` → `0 8 * * *`: plan Vercel Hobby nie
