@@ -3,6 +3,16 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Płatności admina: termin bez licznika dni, sumy po terminie)
+
+- `admin/payments/payments-list.tsx`: usunięty podpis „X dni po terminie"
+  pod datą — zaległy termin sygnalizuje tylko czerwona data (`daysOverdue`
+  wyleciał z `getRowMeta`).
+- Kafelek „Po terminie" pokazuje sumy zaległości per waluta (PLN i EUR),
+  analogicznie do kafelka „Nieopłacone" — `getAdminPaymentsStats`
+  (`lib/actions/payments.ts`) liczy dodatkowo `overduePLN`/`overdueEUR`
+  (suma pozostałych kwot pozycji po terminie).
+
 ### 2026-06-11 (Wyjazdy admina: układ rozwiniętej karty jak u rodzica)
 
 - `admin/trips/trips-list.tsx`: parytet z kartą rodzica (`parent/trips/trip-card.tsx`):

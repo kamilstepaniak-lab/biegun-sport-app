@@ -66,7 +66,15 @@ const COLUMN_COUNT = 8;
 interface PaymentsListProps {
   rows: AdminPaymentRow[];
   total: number;
-  stats: { pending: number; paid: number; overdue: number; pendingPLN: number; pendingEUR: number };
+  stats: {
+    pending: number;
+    paid: number;
+    overdue: number;
+    pendingPLN: number;
+    pendingEUR: number;
+    overduePLN: number;
+    overdueEUR: number;
+  };
   trips: { id: string; title: string }[];
   page: number;
   pageSize: number;
@@ -543,10 +551,6 @@ export function PaymentsList({
     // jest puste.
     const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
     const isDueDateOverdue = dueDate ? dueDate < today : false;
-    const daysOverdue =
-      dueDate && isDueDateOverdue
-        ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000)
-        : 0;
     const isOverdue =
       row.status === 'overdue' ||
       row.status === 'partially_paid_overdue' ||
@@ -563,7 +567,6 @@ export function PaymentsList({
       isCancelled,
       dueDate,
       isDueDateOverdue,
-      daysOverdue,
       isOverdue,
       amountPaid,
       hasDiscount,
@@ -711,11 +714,6 @@ export function PaymentsList({
         >
           {format(meta.dueDate, 'd.MM.yyyy', { locale: pl })}
         </span>
-        {meta.isDueDateOverdue && !meta.isPaid && (
-          <span className="text-[11px] font-semibold text-red-600">
-            {meta.daysOverdue === 1 ? '1 dzień po terminie' : `${meta.daysOverdue} dni po terminie`}
-          </span>
-        )}
         {row.last_reminder_sent_at && !meta.isPaid && (
           <span className="text-[11px] text-gray-400">
             przyp. {format(new Date(row.last_reminder_sent_at), 'd.MM', { locale: pl })}
@@ -1231,9 +1229,21 @@ export function PaymentsList({
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
               <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.overdue}</p>
               <p className="text-xs text-gray-500">Po terminie</p>
+              <div className="flex flex-wrap gap-x-2 mt-0.5">
+                {stats.overduePLN > 0 && (
+                  <span className="text-xs font-semibold text-red-600">
+                    {stats.overduePLN.toFixed(0)} PLN
+                  </span>
+                )}
+                {stats.overdueEUR > 0 && (
+                  <span className="text-xs font-semibold text-red-600">
+                    {stats.overdueEUR.toFixed(0)} EUR
+                  </span>
+                )}
+              </div>
             </div>
           </button>
           <button

@@ -230,10 +230,21 @@ export async function getAdminPaymentsStats(filters: AdminPaymentsFilterParams):
   overdue: number;
   pendingPLN: number;
   pendingEUR: number;
+  overduePLN: number;
+  overdueEUR: number;
 }> {
+  const emptyStats = {
+    pending: 0,
+    paid: 0,
+    overdue: 0,
+    pendingPLN: 0,
+    pendingEUR: 0,
+    overduePLN: 0,
+    overdueEUR: 0,
+  };
   const supabase = await createClient();
   const { user } = await requireAdmin(supabase);
-  if (!user) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
+  if (!user) return emptyStats;
 
   const admin = createAdminClient();
   // Czytamy z widoku — effective_due_date uwzględnia regułę „X dni od
@@ -247,7 +258,7 @@ export async function getAdminPaymentsStats(filters: AdminPaymentsFilterParams):
     filters,
   );
 
-  if (error || !data) return { pending: 0, paid: 0, overdue: 0, pendingPLN: 0, pendingEUR: 0 };
+  if (error || !data) return emptyStats;
 
   const today = format(new Date(), 'yyyy-MM-dd');
   let pending = 0;
@@ -255,6 +266,8 @@ export async function getAdminPaymentsStats(filters: AdminPaymentsFilterParams):
   let overdue = 0;
   let pendingPLN = 0;
   let pendingEUR = 0;
+  let overduePLN = 0;
+  let overdueEUR = 0;
   for (const p of data) {
     if (p.status === 'paid') {
       paid++;
@@ -263,10 +276,14 @@ export async function getAdminPaymentsStats(filters: AdminPaymentsFilterParams):
       const remaining = (p.amount ?? 0) - (p.amount_paid ?? 0);
       if (p.currency === 'PLN') pendingPLN += remaining;
       else pendingEUR += remaining;
-      if (p.effective_due_date && p.effective_due_date < today) overdue++;
+      if (p.effective_due_date && p.effective_due_date < today) {
+        overdue++;
+        if (p.currency === 'PLN') overduePLN += remaining;
+        else overdueEUR += remaining;
+      }
     }
   }
-  return { pending, paid, overdue, pendingPLN, pendingEUR };
+  return { pending, paid, overdue, pendingPLN, pendingEUR, overduePLN, overdueEUR };
 }
 
 export async function getAdminPaymentsTrips(): Promise<{ id: string; title: string }[]> {
