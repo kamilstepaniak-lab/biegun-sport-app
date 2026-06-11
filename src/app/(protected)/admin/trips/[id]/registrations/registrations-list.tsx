@@ -629,15 +629,15 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
 
         {/* Pasek bulk actions */}
         {someSelected && (
-          <div className="flex items-center gap-3 px-4 py-3 bg-gray-900 rounded-2xl text-white">
+          <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-gray-900 rounded-2xl text-white">
             <span className="text-sm font-medium">
               Zaznaczono: {selectedIds.size}
             </span>
-            <div className="flex gap-2 ml-auto">
+            <div className="flex flex-wrap gap-2 ml-auto">
               <button
                 onClick={() => handleBulkStatus('confirmed')}
                 disabled={isBulkUpdating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 <Check className="h-3.5 w-3.5" />
                 Jedzie
@@ -645,7 +645,7 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
               <button
                 onClick={() => handleBulkStatus('not_going')}
                 disabled={isBulkUpdating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 <X className="h-3.5 w-3.5" />
                 Nie jedzie
@@ -653,14 +653,14 @@ export function RegistrationsList({ tripId, participants, tripTitle = 'Wyjazd', 
               <button
                 onClick={() => handleBulkStatus('unconfirmed')}
                 disabled={isBulkUpdating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 <Clock className="h-3.5 w-3.5" />
                 Niepotwierdzony
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
               >
                 <X className="h-3.5 w-3.5" />
                 Odznacz
