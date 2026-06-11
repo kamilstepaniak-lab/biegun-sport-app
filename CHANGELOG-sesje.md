@@ -5,6 +5,14 @@ Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
 ### 2026-06-11 (Zapisani: wpłaty z tabeli, tryb zbiórki, ukrywanie kolumn)
 
+- **Poprawka po feedbacku:** tryb zbiórki usunięty w całości (przycisk,
+  widok, podsumowanie). Klik w kwotę otwiera teraz mały popover
+  (`QuickPaymentPopover` w `registrations-list.tsx`) zamiast dużego
+  dialogu: przycisk „Tak, opłacone" księguje całą pozostałą kwotę albo
+  pole „Inna kwota" + OK; zawsze gotówka, data = moment zatwierdzenia,
+  bez zniżek/notatek/historii. Opłacone pozycje nieklikalne.
+  `record-payment-dialog.tsx` przywrócony do wersji sprzed zmian
+  (propsy prefill usunięte). Ukrywanie kolumn zostaje bez zmian.
 - `admin/trips/[id]/registrations/registrations-list.tsx`: kwoty płatności
   w tabeli są klikalne — otwierają istniejący `RecordPaymentDialog`
   (rejestracja wpłaty + historia transakcji) z prefillowaną pozostałą
