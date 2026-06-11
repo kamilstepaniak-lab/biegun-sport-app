@@ -110,7 +110,7 @@ function TripCard({
   className?: string;
 }) {
   return (
-    <section className={cn('rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200', className)}>
+    <section className={cn('rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5', className)}>
       <div className="mb-4 flex items-center gap-2">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white">
           <Icon className="h-3.5 w-3.5" />
@@ -202,41 +202,46 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         isSelected && !isOpen && 'border-blue-500'
       )}>
         <CollapsibleTrigger asChild>
-          <div className="grid cursor-pointer gap-x-4 gap-y-1 p-4 lg:grid-cols-[auto_auto_18rem_auto_1fr_auto_auto] lg:items-center">
-            <div onClick={onToggleSelect}>
+          <div className="flex cursor-pointer items-start gap-3 p-4 lg:grid lg:grid-cols-[auto_auto_18rem_auto_1fr_auto_auto] lg:items-center lg:gap-x-4 lg:gap-y-1">
+            <div className="flex h-11 flex-shrink-0 items-center" onClick={onToggleSelect}>
                 <Checkbox
                   checked={isSelected}
                   onCheckedChange={() => { }}
                 />
               </div>
 
-            <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', campVisual.iconBox)}>
+            <div className={cn('flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl', campVisual.iconBox)}>
               <campVisual.Icon className="h-5 w-5" />
             </div>
 
-            <h3 className="min-w-0 truncate text-base font-bold text-slate-900">
-              {trip.title}
-            </h3>
+            {/* Mobile: tytuł/data/status w kolumnie; na lg wrapper znika (contents) i wraca grid */}
+            <div className="min-w-0 flex-1 space-y-1.5 lg:contents lg:space-y-0">
+              <h3 className="min-w-0 truncate text-base font-bold text-slate-900">
+                {trip.title}
+              </h3>
 
-            <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
-              <Calendar className="h-3.5 w-3.5 text-blue-500" />
-              {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
-            </p>
+              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-700 whitespace-nowrap">
+                <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                {format(departureDate, 'dd.MM.yyyy', { locale: pl })} – {format(returnDate, 'dd.MM.yyyy', { locale: pl })}
+              </p>
 
-            <div className="hidden lg:block" />
+              <div className="hidden lg:block" />
 
-            <span className={cn(
-              'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
-              trip.status === 'published'
-                ? 'border-blue-200 bg-white text-blue-700'
-                : statusStyles[trip.status]
-            )}>
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-              {statusLabels[trip.status]}
-            </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={cn(
+                  'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
+                  trip.status === 'published'
+                    ? 'border-blue-200 bg-white text-blue-700'
+                    : statusStyles[trip.status]
+                )}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                  {statusLabels[trip.status]}
+                </span>
+              </div>
+            </div>
 
             <div className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-lg border transition-all',
+              'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-all',
               isOpen ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-500'
             )}>
               <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
@@ -245,8 +250,8 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="grid gap-4 bg-slate-50 p-6 lg:grid-cols-3">
-            <div className="relative -m-6 mb-2 overflow-hidden bg-blue-600 p-6 text-white shadow-sm lg:col-span-3">
+          <div className="grid gap-4 bg-slate-50 p-4 sm:p-6 lg:grid-cols-3">
+            <div className="relative -m-4 mb-2 overflow-hidden bg-blue-600 p-4 text-white shadow-sm sm:-m-6 sm:mb-2 sm:p-6 lg:col-span-3">
               <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -306,7 +311,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
             </div>
 
             {/* Podstawowe informacje */}
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-1 lg:col-span-2">
+            <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-1 lg:col-span-2">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                   <Info className="h-3.5 w-3.5 text-white" />
@@ -392,7 +397,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
             {/* Co zabrać */}
             {trip.packing_list && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-5 lg:col-span-2">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-5 lg:col-span-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Backpack className="h-3.5 w-3.5 text-white" />
@@ -416,7 +421,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
             {/* Dodatkowe informacje */}
             {trip.additional_info && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-6">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-6">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Info className="h-3.5 w-3.5 text-white" />
@@ -440,14 +445,48 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
             {/* Cennik */}
             {trip.payment_templates && trip.payment_templates.length > 0 && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-3 lg:col-span-2">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-3 lg:col-span-2">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Receipt className="h-3.5 w-3.5 text-white" />
                   </div>
                   <h4 className="text-sm font-bold text-slate-900">Cennik</h4>
                 </div>
-                <div className="mt-4 overflow-x-auto rounded-xl ring-1 ring-slate-200">
+                {/* Mobile: karty */}
+                <div className="mt-4 md:hidden space-y-2">
+                  {trip.payment_templates.map((template) => {
+                    const label = getTemplateLabel(template);
+                    const method = getMethodLabel(template.payment_method);
+                    return (
+                      <div key={template.id} className="rounded-xl ring-1 ring-slate-200 p-3 bg-white">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-semibold text-gray-900 text-sm">{label}</p>
+                          <p className="text-sm font-bold text-gray-900 tabular-nums whitespace-nowrap">
+                            {template.amount.toFixed(0)} {template.currency}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${method.className}`}>
+                            {method.label}
+                          </span>
+                          <span className="text-gray-600">
+                            <PaymentDue
+                              templateDueDate={template.due_date}
+                              dueDaysFromConfirmation={template.due_days_from_confirmation}
+                              departureDate={trip.departure_datetime}
+                            />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 ring-1 ring-slate-200">
+                    <span className="text-sm font-bold text-slate-900">Razem</span>
+                    <span className="text-base font-black text-slate-950">{totalLabel}</span>
+                  </div>
+                </div>
+                {/* Desktop: tabela */}
+                <div className="mt-4 hidden md:block overflow-x-auto rounded-xl ring-1 ring-slate-200">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100">
@@ -501,7 +540,7 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
             {/* Dane do przelewu */}
             {(trip.bank_account_pln || trip.bank_account_eur) && (
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 lg:order-4">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:order-4">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600">
                     <Banknote className="h-3.5 w-3.5 text-white" />

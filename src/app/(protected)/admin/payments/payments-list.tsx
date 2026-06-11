@@ -1015,6 +1015,443 @@ export function PaymentsList({
     );
   }
 
+  // ── Widok mobilny (karty) — ten sam wzorzec co płatności rodzica ────────
+  function renderGroupHeaderCard(group: PaymentGroup) {
+    const ids = group.rows.map(({ row }) => row.id);
+    const allSelected = ids.every((id) => selectedIds.has(id));
+    const collapsed = collapsedGroups.has(group.key);
+    const remaining = groupRemaining(group);
+    const paidCount = group.rows.filter(({ row }) => row.status === 'paid').length;
+
+    return (
+      <div className="flex items-center gap-2 bg-gray-50/80 py-2.5 pl-4 pr-3">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          onChange={() => toggleSelectGroup(group)}
+          className="h-4 w-4 flex-shrink-0 rounded border-gray-300 accent-blue-600 cursor-pointer"
+        />
+        <button
+          onClick={() => toggleGroupCollapsed(group.key)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          ) : (
+            <ChevronDown className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold text-gray-900">{group.participantName}</span>
+            <span className="block truncate text-xs text-gray-400">
+              {group.tripTitle} · {paidCount}/{group.rows.length} opłaconych
+            </span>
+          </span>
+          <span className="flex flex-shrink-0 flex-col items-end whitespace-nowrap">
+            {remaining.length === 0 ? (
+              <span className="text-xs font-semibold text-emerald-600">Rozliczone</span>
+            ) : (
+              remaining.map(({ currency, sum }) => (
+                <span key={currency} className="text-xs font-semibold text-amber-700">
+                  brakuje {sum.toFixed(0)} {currency}
+                </span>
+              ))
+            )}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  function renderCard(row: AdminPaymentRow, index: number) {
+    const isPaid = row.status === 'paid';
+    const isCancelled = row.status === 'cancelled';
+    const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
+    const isDueDateOverdue = dueDate ? dueDate < today : false;
+    const daysOverdue = dueDate && isDueDateOverdue
+      ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000)
+      : 0;
+    const isOverdue =
+      row.status === 'overdue' || row.status === 'partially_paid_overdue' || (isDueDateOverdue && !isPaid && !isCancelled);
+    const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
+    const isSelected = selectedIds.has(row.id);
+    const amountPaid = row.amount_paid ?? 0;
+    const hasDiscount = !!row.discount_applied_at;
+    const priceDelta = row.original_amount - row.amount;
+    const priceEdited = !hasDiscount && priceDelta > 0.5;
+    const isExpanded = expandedTx === row.id;
+    const rem = row.amount_remaining ?? (row.amount - amountPaid);
+    const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
+    const showDoplata =
+      row.status !== 'cancelled' &&
+      rem > SALDO_EPSILON &&
+      (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
+    const hideStatusPill = showDoplata && row.status === 'partially_paid';
+
+    return (
+      <div
+        key={row.id}
+        className={cn(
+          'p-4',
+          isPaid ? 'bg-emerald-50/20' : isOverdue ? 'bg-red-50/10' : '',
+          isSelected && 'bg-blue-50/40'
+        )}
+      >
+        {/* Nagłówek: checkbox + za co + status */}
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => toggleSelect(row.id, index, (e.nativeEvent as MouseEvent).shiftKey)}
+            className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 accent-blue-600 cursor-pointer"
+          />
+          <p className="min-w-0 flex-1 text-sm font-semibold text-gray-900">{getPaymentLabel(row)}</p>
+          <div className="flex flex-shrink-0 flex-col items-end gap-1">
+            {!hideStatusPill && (
+              <span className={cn('inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full', statusCls)}>
+                {statusLabel}
+              </span>
+            )}
+            {showNadplata && (
+              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
+              </span>
+            )}
+            {showDoplata && (
+              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                Do dopłaty {rem.toFixed(0)} {row.currency}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Dane — linijka pod linijką */}
+        <dl className="mt-3 space-y-2 border-t border-gray-100 pt-3 text-sm">
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-gray-500">Kwota</dt>
+            <dd className="text-right">
+              {editingPayment === row.id ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveAmount(row.id);
+                      if (e.key === 'Escape') setEditingPayment(null);
+                    }}
+                    className="h-9 w-24 text-base rounded-lg"
+                    min="0"
+                    step="0.01"
+                    placeholder="kwota"
+                    autoFocus
+                  />
+                  <span className="text-xs text-gray-400">{row.currency}</span>
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                    onClick={() => saveAmount(row.id)}
+                    disabled={isUpdating === row.id}
+                  >
+                    <Save className="h-3.5 w-3.5 text-gray-500" />
+                  </button>
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                    onClick={() => setEditingPayment(null)}
+                  >
+                    <X className="h-3.5 w-3.5 text-gray-500" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingPayment(row.id);
+                    setEditAmount(row.amount.toString());
+                  }}
+                  className="inline-flex items-center gap-1.5 group"
+                >
+                  {priceEdited && (
+                    <span className="text-xs text-gray-400 line-through tabular-nums">
+                      {row.original_amount.toFixed(0)}
+                    </span>
+                  )}
+                  <span className="text-base font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
+                    {row.amount.toFixed(0)} {row.currency}
+                  </span>
+                  <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
+                </button>
+              )}
+            </dd>
+          </div>
+
+          {hasDiscount && priceDelta > 0.5 && (
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-gray-500">Zniżka</dt>
+              <dd className="text-right">
+                <span className="text-sm font-semibold text-amber-600 tabular-nums">
+                  −{priceDelta.toFixed(0)} {row.currency}
+                </span>
+                <span className="block text-[11px] text-gray-400 tabular-nums">
+                  z {row.original_amount.toFixed(0)} {row.currency}
+                </span>
+              </dd>
+            </div>
+          )}
+
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-gray-500">Termin</dt>
+            <dd className="text-right">
+              {dueDate ? (
+                <>
+                  <span
+                    className={cn(
+                      'text-sm tabular-nums',
+                      isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-700'
+                    )}
+                  >
+                    {format(dueDate, 'd.MM.yyyy', { locale: pl })}
+                  </span>
+                  {isDueDateOverdue && !isPaid && (
+                    <span className="block text-[11px] font-semibold text-red-600">
+                      {daysOverdue === 1 ? '1 dzień po terminie' : `${daysOverdue} dni po terminie`}
+                    </span>
+                  )}
+                  {row.last_reminder_sent_at && !isPaid && (
+                    <span className="block text-[11px] text-gray-400">
+                      przyp. {format(new Date(row.last_reminder_sent_at), 'd.MM', { locale: pl })}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-gray-500 text-sm">
+                  {formatPaymentDueDate(
+                    {
+                      due_date: row.due_date,
+                      due_days_from_confirmation: row.due_days_from_confirmation,
+                    },
+                    row.trip_departure_datetime ?? undefined,
+                  )}
+                </span>
+              )}
+            </dd>
+          </div>
+
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="flex-shrink-0 text-gray-500">Notatka</dt>
+            <dd className="min-w-0 text-right">
+              {editingNote === row.id ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={editNote}
+                    onChange={(e) => setEditNote(e.target.value)}
+                    className="h-9 text-base rounded-lg w-36"
+                    placeholder="Notatka..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveNote(row.id);
+                      if (e.key === 'Escape') setEditingNote(null);
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                    onClick={() => saveNote(row.id)}
+                    disabled={isUpdating === row.id}
+                  >
+                    <Save className="h-3.5 w-3.5 text-gray-500" />
+                  </button>
+                  <button
+                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+                    onClick={() => setEditingNote(null)}
+                  >
+                    <X className="h-3.5 w-3.5 text-gray-500" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingNote(row.id);
+                    setEditNote(row.admin_notes || '');
+                  }}
+                  className="inline-flex max-w-full items-center gap-1.5 text-xs group"
+                >
+                  <MessageSquare
+                    className={cn(
+                      'h-3.5 w-3.5 flex-shrink-0 transition-colors',
+                      row.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
+                    )}
+                  />
+                  {row.admin_notes ? (
+                    <span className="text-amber-700 truncate group-hover:text-amber-900">
+                      {row.admin_notes}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
+                  )}
+                </button>
+              )}
+            </dd>
+          </div>
+        </dl>
+
+        {/* Historia wpłat */}
+        {amountPaid > 0 && (
+          <button
+            onClick={() => toggleTransactions(row.id)}
+            className="mt-2 flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-600 transition-colors"
+          >
+            <Receipt className="h-3 w-3" />
+            wpłaty
+            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+        )}
+        {isExpanded && (
+          <div className="mt-2 rounded-xl bg-slate-50/60 px-3 py-2">
+            {txLoading ? (
+              <p className="text-xs text-gray-400 py-1">Ładowanie wpłat…</p>
+            ) : txRows.length === 0 ? (
+              <p className="text-xs text-gray-400 py-1">
+                Brak zarejestrowanych transakcji (wpłata mogła zostać wyzerowana).
+              </p>
+            ) : (
+              <ul className="space-y-1 py-1">
+                {txRows.map((tx) => (
+                  <li key={tx.id} className="flex items-center gap-3 text-xs">
+                    <span className="text-gray-500 tabular-nums w-20">
+                      {format(new Date(tx.transaction_date), 'd.MM.yyyy', { locale: pl })}
+                    </span>
+                    <span className="text-gray-400 w-16">
+                      {tx.payment_method === 'cash' ? 'Gotówka' : 'Przelew'}
+                    </span>
+                    <span className="font-semibold text-gray-900 tabular-nums">
+                      {tx.amount.toFixed(2)} {tx.currency}
+                    </span>
+                    {tx.notes && <span className="text-gray-400 truncate">{tx.notes}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Akcje */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          {!isCancelled && (revertConfirm === row.id ? (
+            <>
+              <span className="text-xs text-red-600 font-medium">
+                Wyzeruje wpłaty {amountPaid.toFixed(0)} {row.currency}?
+              </span>
+              <button
+                onClick={() => {
+                  setRevertConfirm(null);
+                  handleStatusChange(row.id, 'pending');
+                }}
+                className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Tak
+              </button>
+              <button
+                onClick={() => setRevertConfirm(null)}
+                className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                Anuluj
+              </button>
+            </>
+          ) : (
+            <>
+              <RecordPaymentDialog
+                paymentId={row.id}
+                currency={row.currency as 'PLN' | 'EUR'}
+                amountRemaining={row.amount_remaining ?? (row.amount - amountPaid)}
+                onDone={() => router.refresh()}
+              >
+                <button
+                  className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
+                >
+                  <CircleDollarSign className="h-3 w-3" />
+                  Wpłata
+                </button>
+              </RecordPaymentDialog>
+              <button
+                className={cn(
+                  'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                  isPaid
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                    : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
+                )}
+                onClick={() => handleStatusChange(row.id, 'paid')}
+                disabled={isUpdating === row.id}
+              >
+                <Check className="h-3 w-3" />
+                Tak
+              </button>
+              <button
+                className={cn(
+                  'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                  !isPaid
+                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                    : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
+                )}
+                onClick={() => requestRevert(row)}
+                disabled={isUpdating === row.id}
+              >
+                <X className="h-3 w-3" />
+                Nie
+              </button>
+              {!isPaid && row.effective_due_date && (
+                <button
+                  onClick={() => handleSendReminder([row.id])}
+                  disabled={sendingReminder === row.id || !row.parent_email}
+                  title={row.parent_email ? 'Wyślij przypomnienie mailowe' : 'Brak adresu e-mail rodzica'}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-all disabled:opacity-50"
+                >
+                  {sendingReminder === row.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Bell className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+            </>
+          ))}
+          <div className="ml-auto flex items-center gap-1">
+            {deletingConfirm === row.id ? (
+              <>
+                <span className="text-xs text-red-600 font-medium">
+                  {amountPaid > 0
+                    ? `Usuń? (ma wpłaty ${amountPaid.toFixed(0)} ${row.currency})`
+                    : 'Usuń?'}
+                </span>
+                <button
+                  onClick={() => handleDelete(row.id)}
+                  className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  Tak
+                </button>
+                <button
+                  onClick={() => setDeletingConfirm(null)}
+                  className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  Nie
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setDeletingConfirm(row.id)}
+                title="Usuń płatność"
+                className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const emptyMessage =
+    search || tripId !== 'all' || status !== 'all' || dateFrom || dateTo
+      ? 'Brak płatności pasujących do filtrów'
+      : 'Brak płatności';
+
   // Numery stron do wyświetlenia w paginacji
   const pageButtons = Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
     if (totalPages <= 7) return i + 1;
@@ -1028,19 +1465,19 @@ export function PaymentsList({
       <div className="space-y-6">
         {/* Stat cards — klikalne (ustawiają filtr statusu) i respektują
             pozostałe filtry (wyjazd / szukaj / zakres terminów) */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <button
             onClick={() => pushParams({ status: 'pending' })}
             className={cn(
-              'bg-white rounded-2xl shadow-sm ring-1 p-4 flex items-center gap-3 text-left transition-all hover:ring-amber-300',
+              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex items-center gap-3 text-left transition-all hover:ring-amber-300',
               status === 'pending' ? 'ring-2 ring-amber-400' : 'ring-gray-100'
             )}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0">
+            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0 sm:flex">
               <CircleDollarSign className="h-5 w-5 text-amber-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.pending}</p>
               <p className="text-xs text-gray-500">Nieopłacone</p>
               <div className="flex flex-wrap gap-x-2 mt-0.5">
                 {stats.pendingPLN > 0 && (
@@ -1059,30 +1496,30 @@ export function PaymentsList({
           <button
             onClick={() => pushParams({ status: 'overdue' })}
             className={cn(
-              'bg-white rounded-2xl shadow-sm ring-1 p-4 flex items-center gap-3 text-left transition-all hover:ring-red-300',
+              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex items-center gap-3 text-left transition-all hover:ring-red-300',
               status === 'overdue' ? 'ring-2 ring-red-400' : 'ring-gray-100'
             )}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
+            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0 sm:flex">
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.overdue}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.overdue}</p>
               <p className="text-xs text-gray-500">Po terminie</p>
             </div>
           </button>
           <button
             onClick={() => pushParams({ status: 'paid' })}
             className={cn(
-              'bg-white rounded-2xl shadow-sm ring-1 p-4 flex items-center gap-3 text-left transition-all hover:ring-emerald-300',
+              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex items-center gap-3 text-left transition-all hover:ring-emerald-300',
               status === 'paid' ? 'ring-2 ring-emerald-400' : 'ring-gray-100'
             )}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
+            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0 sm:flex">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{stats.paid}</p>
+              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.paid}</p>
               <p className="text-xs text-gray-500">Opłacone</p>
             </div>
           </button>
@@ -1092,13 +1529,13 @@ export function PaymentsList({
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-3 items-center">
             {/* Szukaj */}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 placeholder="Szukaj po dziecku, rodzicu lub wyjeździe..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="h-11 pl-10 pr-8 rounded-xl bg-white ring-1 ring-gray-200 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 w-64 transition-all"
+                className="h-11 pl-10 pr-8 rounded-xl bg-white ring-1 ring-gray-200 text-base md:text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full sm:w-64 transition-all"
               />
               {searchInput && (
                 <button
@@ -1253,11 +1690,11 @@ export function PaymentsList({
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 rounded-2xl ring-1 ring-blue-200">
+          <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-blue-50 rounded-2xl ring-1 ring-blue-200">
             <span className="text-sm font-semibold text-blue-800">
               {selectedIds.size} zaznaczonych
             </span>
-            <div className="flex gap-2 ml-auto flex-wrap">
+            <div className="flex gap-2 sm:ml-auto flex-wrap">
               <button
                 onClick={() => handleBulkAction('paid')}
                 disabled={isBulkUpdating}
@@ -1329,8 +1766,27 @@ export function PaymentsList({
           </div>
         )}
 
-        {/* Tabela płatności — pogrupowana per dziecko + wyjazd */}
-        <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-x-auto">
+        {/* Lista płatności — pogrupowana per dziecko + wyjazd */}
+        <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
+          {/* Mobile: karty */}
+          <div className="md:hidden">
+            {displayedRows.length === 0 ? (
+              <p className="py-16 text-center text-sm text-gray-400">{emptyMessage}</p>
+            ) : (
+              groups.map((group) => (
+                <div key={group.key} className="border-b border-gray-100 last:border-b-0">
+                  {renderGroupHeaderCard(group)}
+                  {!collapsedGroups.has(group.key) && (
+                    <div className="divide-y divide-gray-100 border-t border-gray-100">
+                      {group.rows.map(({ row, flatIndex }) => renderCard(row, flatIndex))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+          {/* Desktop: tabela */}
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -1372,9 +1828,7 @@ export function PaymentsList({
               {displayedRows.length === 0 ? (
                 <tr>
                   <td colSpan={COLUMN_COUNT} className="py-16 text-center text-sm text-gray-400">
-                    {search || tripId !== 'all' || status !== 'all' || dateFrom || dateTo
-                      ? 'Brak płatności pasujących do filtrów'
-                      : 'Brak płatności'}
+                    {emptyMessage}
                   </td>
                 </tr>
               ) : (
@@ -1389,11 +1843,12 @@ export function PaymentsList({
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Paginacja */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
             <span className="text-xs text-gray-400">
               Strona {page} z {totalPages}
             </span>

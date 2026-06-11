@@ -3,6 +3,21 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Mobile: Wyjazdy i Płatności u admina wzorem panelu rodzica)
+
+- `admin/trips/trips-list.tsx`: nagłówek karty wyjazdu na mobile jako flex
+  (ikona + kolumna tytuł/data/status, wzorzec `lg:contents` z karty rodzica)
+  zamiast rozsypanego grida; checkbox zaznaczania zostaje; sekcja rozwinięta
+  `p-4 sm:p-6`, niebieski banner `-m-4/p-4 sm:-m-6/p-6`, karty `p-4 sm:p-5`;
+  cennik na mobile jako karty (jak u rodzica), tabela od `md`.
+- `admin/payments/payments-list.tsx`: na mobile lista płatności jako karty
+  (`md:hidden`, wzorzec `PaymentCard` rodzica) z pełnymi akcjami admina —
+  checkbox/bulk, edycja kwoty i notatki, Wpłata/Tak/Nie z potwierdzeniami,
+  przypomnienie, usuwanie, historia wpłat; nagłówki grup (dziecko + wyjazd)
+  zwijane też w widoku kart; tabela od `md` bez zmian. Kafle statystyk
+  kompaktowe na mobile (bez ikony, mniejsza czcionka), wyszukiwarka
+  pełnej szerokości, bulk-bar i paginacja z zawijaniem.
+
 ### 2026-06-11 (Audyt płatności: poprawki logiki + przebudowa /admin/payments)
 
 Poprawki logiki (po audycie cennik → potwierdzanie → płatności):
