@@ -3,6 +3,16 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Płatności mobile: osobne kafelki zamiast linii podziału)
+
+- Karty płatności na mobile zlewały się (rozdzielone tylko `divide-y`) —
+  teraz każda płatność to osobny zaokrąglony kafelek z obrysem (`ring-1`)
+  i odstępem (`space-y-2 p-3`); tinty statusów wzmocnione
+  (opłacone emerald, po terminie red, zaznaczone blue).
+- Parytet: zmiana po obu stronach — `parent/payments/payments-list.tsx`
+  (`PaymentCard` + kontener) i `admin/payments/payments-list.tsx`
+  (`renderRowCard` + kontener mobile; kafelki wewnątrz grup).
+
 ### 2026-06-11 (Płatności admina: termin bez licznika dni, sumy po terminie)
 
 - `admin/payments/payments-list.tsx`: usunięty podpis „X dni po terminie"

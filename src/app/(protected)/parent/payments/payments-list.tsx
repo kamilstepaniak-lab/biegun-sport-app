@@ -481,8 +481,9 @@ function PaymentsTable({
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
         </div>
       )}
-      {/* Mobile: karty */}
-      <div className="md:hidden divide-y divide-gray-100">
+      {/* Mobile: karty — każda płatność jako osobny kafelek z obrysem,
+          żeby transakcje nie zlewały się wizualnie */}
+      <div className="md:hidden space-y-2 p-3">
         {payments.map((p) => (
           <PaymentCard key={p.id} payment={p} bankAccounts={bankAccounts} allPayments={allPayments} />
         ))}
@@ -528,12 +529,12 @@ function PaymentCard({
   return (
     <div
       className={cn(
-        'p-4',
+        'rounded-xl p-4 ring-1',
         payment.status === 'paid'
-          ? 'bg-emerald-50/20'
+          ? 'bg-emerald-50/30 ring-emerald-200/60'
           : isOverdue
-            ? 'bg-red-50/10'
-            : '',
+            ? 'bg-red-50/30 ring-red-200/60'
+            : 'bg-white ring-slate-200',
       )}
     >
       {/* Nagłówek: dziecko + status */}

@@ -1138,9 +1138,13 @@ export function PaymentsList({
       <div
         key={row.id}
         className={cn(
-          'px-4 py-3',
-          meta.isPaid ? 'bg-emerald-50/20' : meta.isOverdue ? 'bg-red-50/10' : '',
-          isSelected && 'bg-blue-50/40'
+          'rounded-xl px-4 py-3 ring-1',
+          meta.isPaid
+            ? 'bg-emerald-50/30 ring-emerald-200/60'
+            : meta.isOverdue
+              ? 'bg-red-50/30 ring-red-200/60'
+              : 'bg-white ring-slate-200',
+          isSelected && 'bg-blue-50/40 ring-blue-300'
         )}
       >
         <div className="flex items-start gap-2.5">
@@ -1507,16 +1511,20 @@ export function PaymentsList({
         {/* Płatności — pogrupowane per dziecko + wyjazd:
             mobile = karty, desktop = tabela */}
         <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
-          {/* Mobile: karty */}
-          <div className="md:hidden divide-y divide-gray-100">
+          {/* Mobile: karty — każda płatność jako osobny kafelek z obrysem,
+              żeby pozycje w grupie nie zlewały się wizualnie */}
+          <div className="md:hidden">
             {displayedRows.length === 0 ? (
               <p className="py-16 text-center text-sm text-gray-400">{emptyMessage}</p>
             ) : (
               groups.map((group) => (
                 <Fragment key={group.key}>
                   {renderGroupCard(group)}
-                  {!collapsedGroups.has(group.key) &&
-                    group.rows.map(({ row, flatIndex }) => renderRowCard(row, flatIndex))}
+                  {!collapsedGroups.has(group.key) && (
+                    <div className="space-y-2 p-3">
+                      {group.rows.map(({ row, flatIndex }) => renderRowCard(row, flatIndex))}
+                    </div>
+                  )}
                 </Fragment>
               ))
             )}
