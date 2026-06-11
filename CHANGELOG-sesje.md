@@ -5,6 +5,8 @@ Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
 ### 2026-06-11 (Zapisani: wpłaty z tabeli, tryb zbiórki, ukrywanie kolumn)
 
+- Pasek „Zaznaczono" (bulk akcje) zawija przyciski na wąskich ekranach
+  (`flex-wrap` + `whitespace-nowrap`) — „Niepotwierdzony" był ucinany.
 - **Poprawka po feedbacku:** tryb zbiórki usunięty w całości (przycisk,
   widok, podsumowanie). Klik w kwotę otwiera teraz mały popover
   (`QuickPaymentPopover` w `registrations-list.tsx`) zamiast dużego
