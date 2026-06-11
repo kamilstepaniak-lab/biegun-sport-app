@@ -3,6 +3,18 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Wyjazdy admina: układ rozwiniętej karty jak u rodzica)
+
+- `admin/trips/trips-list.tsx`: parytet z kartą rodzica (`parent/trips/trip-card.tsx`):
+  - tytuł usunięty z niebieskiego paska sekcji rozwiniętej (zostaje w nagłówku karty),
+  - grupy przeniesione z niebieskiego do zwiniętego nagłówka karty — kolorowe
+    kółka z ikoną + nazwa (`GroupIcon`/`getGroupColor`), jak u rodzica,
+  - „Miejsce" przeniesione z niebieskiego do „Podstawowych informacji"
+    (pierwszy kafelek, w miejsce „Nazwy wyjazdu") — jak u rodzica,
+  - badge statusu (Opublikowany/Szkic…) przeniesiony na niebieski pasek obok
+    badge'a „WordPress", oba w tym samym stylu (`statusStylesOnBlue`),
+  - przyciski (Wiadomość, Umowa, Zapisani, Edytuj) zostają na niebieskim.
+
 ### 2026-06-11 (Zapisani: wpłaty z tabeli, tryb zbiórki, ukrywanie kolumn)
 
 - Pasek „Zaznaczono" (bulk akcje) zawija przyciski na wąskich ekranach

@@ -23,7 +23,6 @@ import {
   Info,
   ArrowRight,
   ArrowLeft,
-  MapPin,
   Search,
   SlidersHorizontal,
   Check,
@@ -53,7 +52,7 @@ import { TripMessageGenerator } from '@/components/admin/trip-message-generator'
 import { ContractTemplateEditor } from '@/components/admin/contract-template-editor';
 import { SanitizedHtml } from '@/components/shared';
 import { getGroupColor } from '@/lib/group-colors';
-import { GroupBadge } from '@/lib/group-icons';
+import { GroupIcon } from '@/lib/group-icons';
 import { getCampVisual } from '@/lib/camp-visual';
 import { cn } from '@/lib/utils';
 import { CONTRACT_TEMPLATE } from '@/lib/contract-template';
@@ -72,11 +71,13 @@ const statusLabels: Record<string, string> = {
   completed: 'Zakończony',
 };
 
-const statusStyles: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  published: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-red-100 text-red-600',
-  completed: 'bg-blue-100 text-blue-700',
+// Wersje badge'y statusu na niebieskim tle sekcji rozwiniętej —
+// ten sam styl co badge "WordPress" (rounded-full, uppercase, ring).
+const statusStylesOnBlue: Record<string, string> = {
+  draft: 'bg-white/15 text-blue-50 ring-white/25',
+  published: 'bg-emerald-400/30 text-emerald-50 ring-emerald-200/40',
+  cancelled: 'bg-red-400/30 text-red-50 ring-red-200/40',
+  completed: 'bg-white/15 text-blue-50 ring-white/25',
 };
 
 function getTemplateLabel(template: { payment_type: string; installment_number?: number | null; category_name?: string | null }) {
@@ -227,16 +228,21 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
 
               <div className="hidden lg:block" />
 
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={cn(
-                  'inline-flex w-max items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
-                  trip.status === 'published'
-                    ? 'border-blue-200 bg-white text-blue-700'
-                    : statusStyles[trip.status]
-                )}>
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
-                  {statusLabels[trip.status]}
-                </span>
+              {/* Kuleczki grup obok przycisku rozwijania — jak u rodzica */}
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {trip.groups.length > 0 && trip.groups.map((g) => {
+                  const colors = getGroupColor(g.name);
+                  return (
+                    <span key={g.id} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 sm:text-sm sm:text-slate-700">
+                      {/* Mobile: dyskretna kropka koloru grupy; od sm pełne kółko z ikoną */}
+                      <span className={cn('h-2 w-2 rounded-full sm:hidden', colors.dot)} />
+                      <span className={cn('hidden h-6 w-6 items-center justify-center rounded-full text-white sm:flex', colors.dot)}>
+                        <GroupIcon name={g.name} className="h-3.5 w-3.5" />
+                      </span>
+                      {g.name}
+                    </span>
+                  );
+                })}
               </div>
             </div>
 
@@ -252,38 +258,24 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
         <CollapsibleContent>
           <div className="grid gap-4 bg-slate-50 p-4 sm:p-6 lg:grid-cols-3">
             <div className="relative -m-4 mb-2 overflow-hidden bg-blue-600 p-4 text-white shadow-sm sm:-m-6 sm:mb-2 sm:p-6 lg:col-span-3">
-              <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <h3 className="text-2xl font-bold leading-tight tracking-tight">{trip.title}</h3>
-                    {trip.registration_form_enabled && (
-                      <span
-                        className="rounded-full bg-amber-400/30 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-50 ring-1 ring-amber-200/40"
-                        title="Wyjazd przyjmuje zgloszenia z formularza WordPress"
-                      >
-                        WordPress
-                      </span>
-                    )}
-                    {trip.groups.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                        {trip.groups.map((g) => (
-                          <GroupBadge key={g.id} name={g.name} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-5 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
-                      <MapPin className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-blue-100">Miejsce</p>
-                      <p className="text-sm font-normal text-white/90">{trip.location || trip.departure_location || '—'}</p>
-                    </div>
-                  </div>
+              <div className="relative flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn(
+                    'rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ring-1',
+                    statusStylesOnBlue[trip.status]
+                  )}>
+                    {statusLabels[trip.status]}
+                  </span>
+                  {trip.registration_form_enabled && (
+                    <span
+                      className="rounded-full bg-amber-400/30 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-50 ring-1 ring-amber-200/40"
+                      title="Wyjazd przyjmuje zgloszenia z formularza WordPress"
+                    >
+                      WordPress
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-col gap-3 xl:items-end xl:self-stretch xl:justify-between">
-                  <div className="flex flex-wrap gap-2 xl:justify-end">
+                <div className="flex flex-wrap gap-2 xl:justify-end">
                   <TripMessageGenerator trip={trip} compact />
                   <ContractTemplateEditor
                     tripId={trip.id}
@@ -305,7 +297,6 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
                     <Edit className="h-3.5 w-3.5" />
                     Edytuj
                   </Link>
-                  </div>
                 </div>
               </div>
             </div>
@@ -320,8 +311,8 @@ function TripBlock({ trip, isOpen, isSelected, onToggle, onToggleSelect, contrac
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                  <p className="text-[11px] font-medium text-slate-500">Nazwa wyjazdu</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{trip.title}</p>
+                  <p className="text-[11px] font-medium text-slate-500">Miejsce</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{trip.location || trip.departure_location || '—'}</p>
                 </div>
                 {trip.declaration_deadline && (
                   <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
