@@ -202,6 +202,11 @@ export function PaymentsList({
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+  const emptyMessage =
+    search || tripId !== 'all' || status !== 'all' || dateFrom || dateTo
+      ? 'Brak płatności pasujących do filtrów'
+      : 'Brak płatności';
+
   // Handlers
   async function handleStatusChange(paymentId: string, newStatus: 'pending' | 'paid') {
     if (selectedIds.has(paymentId) && selectedIds.size > 1) {
@@ -529,6 +534,430 @@ export function PaymentsList({
       .map(([currency, sum]) => ({ currency, sum }));
   }
 
+  // ── Wspólne metadane i fragmenty wiersza (tabela desktop + karty mobile) ──
+  function getRowMeta(row: AdminPaymentRow) {
+    const isPaid = row.status === 'paid';
+    const isCancelled = row.status === 'cancelled';
+    // effective_due_date z widoku uwzględnia regułę „X dni od potwierdzenia"
+    // (confirmed_at + X dni), więc termin pokazuje się też gdy payments.due_date
+    // jest puste.
+    const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
+    const isDueDateOverdue = dueDate ? dueDate < today : false;
+    const daysOverdue =
+      dueDate && isDueDateOverdue
+        ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000)
+        : 0;
+    const isOverdue =
+      row.status === 'overdue' ||
+      row.status === 'partially_paid_overdue' ||
+      (isDueDateOverdue && !isPaid && !isCancelled);
+    const amountPaid = row.amount_paid ?? 0;
+    // Zniżka realna (checkbox we Wpłacie) vs zwykła edycja ceny.
+    // discount_applied_at ustawiane tylko przy zniżce; edycja kwoty je zeruje.
+    const hasDiscount = !!row.discount_applied_at;
+    const priceDelta = row.original_amount - row.amount;
+    // Cena edytowana w dół bez zniżki → przekreślamy starą cenę w kolumnie Kwota.
+    const priceEdited = !hasDiscount && priceDelta > 0.5;
+    return {
+      isPaid,
+      isCancelled,
+      dueDate,
+      isDueDateOverdue,
+      daysOverdue,
+      isOverdue,
+      amountPaid,
+      hasDiscount,
+      priceDelta,
+      priceEdited,
+    };
+  }
+  type RowMeta = ReturnType<typeof getRowMeta>;
+
+  function renderAmount(row: AdminPaymentRow, meta: RowMeta) {
+    if (editingPayment === row.id) {
+      return (
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            value={editAmount}
+            onChange={(e) => setEditAmount(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveAmount(row.id);
+              if (e.key === 'Escape') setEditingPayment(null);
+            }}
+            className="h-9 w-20 text-xs rounded-lg"
+            min="0"
+            step="0.01"
+            placeholder="kwota"
+            autoFocus
+          />
+          <span className="text-xs text-gray-400">{row.currency}</span>
+          <button
+            className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+            onClick={() => saveAmount(row.id)}
+            disabled={isUpdating === row.id}
+          >
+            <Save className="h-3.5 w-3.5 text-gray-500" />
+          </button>
+          <button
+            className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+            onClick={() => setEditingPayment(null)}
+          >
+            <X className="h-3.5 w-3.5 text-gray-500" />
+          </button>
+        </div>
+      );
+    }
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => {
+              setEditingPayment(row.id);
+              setEditAmount(row.amount.toString());
+            }}
+            className="flex items-center gap-1.5 group"
+          >
+            {meta.priceEdited && (
+              <span className="text-xs text-gray-400 line-through tabular-nums">
+                {row.original_amount.toFixed(0)}
+              </span>
+            )}
+            <span className="text-sm font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
+              {row.amount.toFixed(0)} {row.currency}
+            </span>
+            <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  // Zniżka — tylko realna zniżka (checkbox we Wpłacie), nie edycja ceny.
+  function renderDiscountInfo(row: AdminPaymentRow, meta: RowMeta) {
+    if (!(meta.hasDiscount && meta.priceDelta > 0.5)) return null;
+    return (
+      <div className="leading-tight">
+        <span className="text-sm font-semibold text-amber-600 tabular-nums">
+          −{meta.priceDelta.toFixed(0)} {row.currency}
+        </span>
+        <p className="text-[11px] text-gray-400 tabular-nums">
+          z {row.original_amount.toFixed(0)} {row.currency}
+        </p>
+      </div>
+    );
+  }
+
+  function renderStatusPills(row: AdminPaymentRow, meta: RowMeta) {
+    const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
+    const rem = row.amount_remaining ?? row.amount - meta.amountPaid;
+    const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
+    const showDoplata =
+      row.status !== 'cancelled' &&
+      rem > SALDO_EPSILON &&
+      (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
+    // „Do dopłaty X zł" zastępuje pill „Do dopłaty" przy partially_paid
+    // (nie chcemy dwóch identycznych etykiet). Dla partially_paid_overdue
+    // zostawiamy pill „Po terminie" + kwotę „Do dopłaty X" — uzupełniają się.
+    const hideStatusPill = showDoplata && row.status === 'partially_paid';
+    return (
+      <>
+        {!hideStatusPill && (
+          <span
+            className={cn(
+              'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
+              statusCls
+            )}
+          >
+            {statusLabel}
+          </span>
+        )}
+        {showNadplata && (
+          <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+            Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
+          </span>
+        )}
+        {showDoplata && (
+          <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+            Do dopłaty {rem.toFixed(0)} {row.currency}
+          </span>
+        )}
+      </>
+    );
+  }
+
+  function renderDueInfo(row: AdminPaymentRow, meta: RowMeta, align: 'left' | 'right' = 'left') {
+    if (!meta.dueDate) {
+      return (
+        <span className="text-gray-500 text-sm">
+          {formatPaymentDueDate(
+            {
+              due_date: row.due_date,
+              due_days_from_confirmation: row.due_days_from_confirmation,
+            },
+            row.trip_departure_datetime ?? undefined,
+          )}
+        </span>
+      );
+    }
+    return (
+      <div className={cn('flex flex-col gap-0.5', align === 'right' && 'items-end text-right')}>
+        <span
+          className={cn(
+            'text-sm tabular-nums',
+            meta.isDueDateOverdue && !meta.isPaid ? 'text-red-600 font-semibold' : 'text-gray-500'
+          )}
+        >
+          {format(meta.dueDate, 'd.MM.yyyy', { locale: pl })}
+        </span>
+        {meta.isDueDateOverdue && !meta.isPaid && (
+          <span className="text-[11px] font-semibold text-red-600">
+            {meta.daysOverdue === 1 ? '1 dzień po terminie' : `${meta.daysOverdue} dni po terminie`}
+          </span>
+        )}
+        {row.last_reminder_sent_at && !meta.isPaid && (
+          <span className="text-[11px] text-gray-400">
+            przyp. {format(new Date(row.last_reminder_sent_at), 'd.MM', { locale: pl })}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  function renderNote(row: AdminPaymentRow) {
+    if (editingNote === row.id) {
+      return (
+        <div className="flex items-center gap-1">
+          <Input
+            value={editNote}
+            onChange={(e) => setEditNote(e.target.value)}
+            className="h-9 text-xs rounded-lg w-36"
+            placeholder="Notatka..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveNote(row.id);
+              if (e.key === 'Escape') setEditingNote(null);
+            }}
+            autoFocus
+          />
+          <button
+            className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+            onClick={() => saveNote(row.id)}
+            disabled={isUpdating === row.id}
+          >
+            <Save className="h-3.5 w-3.5 text-gray-500" />
+          </button>
+          <button
+            className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
+            onClick={() => setEditingNote(null)}
+          >
+            <X className="h-3.5 w-3.5 text-gray-500" />
+          </button>
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={() => {
+          setEditingNote(row.id);
+          setEditNote(row.admin_notes || '');
+        }}
+        className="flex items-center gap-1.5 text-xs group w-full text-left"
+      >
+        <MessageSquare
+          className={cn(
+            'h-3.5 w-3.5 flex-shrink-0 transition-colors',
+            row.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
+          )}
+        />
+        {row.admin_notes ? (
+          <span className="text-amber-700 truncate group-hover:text-amber-900">
+            {row.admin_notes}
+          </span>
+        ) : (
+          <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
+        )}
+      </button>
+    );
+  }
+
+  function renderTxToggle(row: AdminPaymentRow, meta: RowMeta) {
+    if (meta.amountPaid <= 0) return null;
+    const isExpanded = expandedTx === row.id;
+    return (
+      <button
+        onClick={() => toggleTransactions(row.id)}
+        className="mt-0.5 flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-600 transition-colors"
+      >
+        <Receipt className="h-3 w-3" />
+        wpłaty
+        {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+    );
+  }
+
+  function renderTxContent() {
+    if (txLoading) return <p className="text-xs text-gray-400 py-1">Ładowanie wpłat…</p>;
+    if (txRows.length === 0) {
+      return (
+        <p className="text-xs text-gray-400 py-1">
+          Brak zarejestrowanych transakcji (wpłata mogła zostać wyzerowana).
+        </p>
+      );
+    }
+    return (
+      <ul className="space-y-1 py-1">
+        {txRows.map((tx) => (
+          <li key={tx.id} className="flex items-center gap-3 text-xs">
+            <span className="text-gray-500 tabular-nums w-20">
+              {format(new Date(tx.transaction_date), 'd.MM.yyyy', { locale: pl })}
+            </span>
+            <span className="text-gray-400 w-16">
+              {tx.payment_method === 'cash' ? 'Gotówka' : 'Przelew'}
+            </span>
+            <span className="font-semibold text-gray-900 tabular-nums">
+              {tx.amount.toFixed(2)} {tx.currency}
+            </span>
+            {tx.notes && <span className="text-gray-400 truncate">{tx.notes}</span>}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // Opłacono? (Wpłata / Tak / Nie) + przypomnienie + usuń — wspólny zestaw
+  // akcji; kontener flex daje miejsce wywołania (tabela vs karta).
+  function renderActions(row: AdminPaymentRow, meta: RowMeta) {
+    const { isPaid, isCancelled, amountPaid } = meta;
+    return (
+      <>
+        {!isCancelled && revertConfirm === row.id ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-red-600 font-medium whitespace-nowrap">
+              Wyzeruje wpłaty {amountPaid.toFixed(0)} {row.currency}?
+            </span>
+            <button
+              onClick={() => {
+                setRevertConfirm(null);
+                handleStatusChange(row.id, 'pending');
+              }}
+              className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+            >
+              Tak
+            </button>
+            <button
+              onClick={() => setRevertConfirm(null)}
+              className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            >
+              Anuluj
+            </button>
+          </div>
+        ) : !isCancelled && (
+          <>
+            <RecordPaymentDialog
+              paymentId={row.id}
+              currency={row.currency as 'PLN' | 'EUR'}
+              amountRemaining={row.amount_remaining ?? (row.amount - amountPaid)}
+              onDone={() => router.refresh()}
+            >
+              <button
+                className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
+              >
+                <CircleDollarSign className="h-3 w-3" />
+                Wpłata
+              </button>
+            </RecordPaymentDialog>
+            <button
+              className={cn(
+                'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                isPaid
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                  : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
+              )}
+              onClick={() => handleStatusChange(row.id, 'paid')}
+              disabled={isUpdating === row.id}
+            >
+              <Check className="h-3 w-3" />
+              Tak
+            </button>
+            <button
+              className={cn(
+                'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
+                !isPaid
+                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                  : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
+              )}
+              onClick={() => requestRevert(row)}
+              disabled={isUpdating === row.id}
+            >
+              <X className="h-3 w-3" />
+              Nie
+            </button>
+            {/* Przypomnienie mailowe — tylko nieopłacone z konkretnym terminem */}
+            {!isPaid && row.effective_due_date && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => handleSendReminder([row.id])}
+                    disabled={sendingReminder === row.id || !row.parent_email}
+                    className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-all disabled:opacity-50"
+                  >
+                    {sendingReminder === row.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Bell className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="rounded-lg">
+                  {row.parent_email
+                    ? 'Wyślij przypomnienie mailowe'
+                    : 'Brak adresu e-mail rodzica'}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </>
+        )}
+        {/* Usuń */}
+        <div className="ml-1 pl-1.5 border-l border-gray-200 flex items-center gap-1">
+          {deletingConfirm === row.id ? (
+            <>
+              <span className="text-xs text-red-600 font-medium whitespace-nowrap">
+                {amountPaid > 0
+                  ? `Usuń? (ma wpłaty ${amountPaid.toFixed(0)} ${row.currency})`
+                  : 'Usuń?'}
+              </span>
+              <button
+                onClick={() => handleDelete(row.id)}
+                className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Tak
+              </button>
+              <button
+                onClick={() => setDeletingConfirm(null)}
+                className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                Nie
+              </button>
+            </>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setDeletingConfirm(row.id)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="rounded-lg">Usuń płatność</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </>
+    );
+  }
+
   function renderGroupHeader(group: PaymentGroup) {
     const ids = group.rows.map(({ row }) => row.id);
     const allSelected = ids.every((id) => selectedIds.has(id));
@@ -579,29 +1008,9 @@ export function PaymentsList({
   }
 
   function renderRow(row: AdminPaymentRow, index: number) {
-    const isPaid = row.status === 'paid';
-    const isCancelled = row.status === 'cancelled';
-    // effective_due_date z widoku uwzględnia regułę „X dni od potwierdzenia"
-    // (confirmed_at + X dni), więc termin pokazuje się też gdy payments.due_date
-    // jest puste.
-    const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
-    const isDueDateOverdue = dueDate ? dueDate < today : false;
-    const daysOverdue = dueDate && isDueDateOverdue
-      ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000)
-      : 0;
-    const isOverdue =
-      row.status === 'overdue' || row.status === 'partially_paid_overdue' || (isDueDateOverdue && !isPaid && !isCancelled);
-    const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
+    const meta = getRowMeta(row);
+    const { isPaid, isOverdue } = meta;
     const isSelected = selectedIds.has(row.id);
-    const amountPaid = row.amount_paid ?? 0;
-
-    // Zniżka realna (checkbox we Wpłacie) vs zwykła edycja ceny.
-    // discount_applied_at ustawiane tylko przy zniżce; edycja kwoty je zeruje.
-    const hasDiscount = !!row.discount_applied_at;
-    const priceDelta = row.original_amount - row.amount;
-    // Cena edytowana w dół bez zniżki → przekreślamy starą cenę w kolumnie Kwota.
-    const priceEdited = !hasDiscount && priceDelta > 0.5;
-
     const isExpanded = expandedTx === row.id;
 
     return (
@@ -630,352 +1039,31 @@ export function PaymentsList({
           {/* Za co */}
           <td className="py-3 pl-8 pr-3">
             <span className="text-sm text-gray-700 font-medium">{getPaymentLabel(row)}</span>
-            {amountPaid > 0 && (
-              <button
-                onClick={() => toggleTransactions(row.id)}
-                className="mt-0.5 flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-600 transition-colors"
-              >
-                <Receipt className="h-3 w-3" />
-                wpłaty
-                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </button>
-            )}
+            {renderTxToggle(row, meta)}
           </td>
 
           {/* Kwota */}
-          <td className="py-3 px-3">
-            {editingPayment === row.id ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  value={editAmount}
-                  onChange={(e) => setEditAmount(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveAmount(row.id);
-                    if (e.key === 'Escape') setEditingPayment(null);
-                  }}
-                  className="h-9 w-20 text-xs rounded-lg"
-                  min="0"
-                  step="0.01"
-                  placeholder="kwota"
-                  autoFocus
-                />
-                <span className="text-xs text-gray-400">{row.currency}</span>
-                <button
-                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                  onClick={() => saveAmount(row.id)}
-                  disabled={isUpdating === row.id}
-                >
-                  <Save className="h-3.5 w-3.5 text-gray-500" />
-                </button>
-                <button
-                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                  onClick={() => setEditingPayment(null)}
-                >
-                  <X className="h-3.5 w-3.5 text-gray-500" />
-                </button>
-              </div>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => {
-                      setEditingPayment(row.id);
-                      setEditAmount(row.amount.toString());
-                    }}
-                    className="flex items-center gap-1.5 group"
-                  >
-                    {priceEdited && (
-                      <span className="text-xs text-gray-400 line-through tabular-nums">
-                        {row.original_amount.toFixed(0)}
-                      </span>
-                    )}
-                    <span className="text-sm font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
-                      {row.amount.toFixed(0)} {row.currency}
-                    </span>
-                    <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="rounded-lg">Kliknij aby edytować kwotę</TooltipContent>
-              </Tooltip>
-            )}
-          </td>
+          <td className="py-3 px-3">{renderAmount(row, meta)}</td>
 
-          {/* Zniżka — tylko realna zniżka (checkbox we Wpłacie), nie edycja ceny */}
+          {/* Zniżka */}
           <td className="py-3 px-3">
-            {hasDiscount && priceDelta > 0.5 ? (
-              <div className="leading-tight">
-                <span className="text-sm font-semibold text-amber-600 tabular-nums">
-                  −{priceDelta.toFixed(0)} {row.currency}
-                </span>
-                <p className="text-[11px] text-gray-400 tabular-nums">
-                  z {row.original_amount.toFixed(0)} {row.currency}
-                </p>
-              </div>
-            ) : (
-              <span className="text-gray-300 text-sm">—</span>
-            )}
+            {renderDiscountInfo(row, meta) ?? <span className="text-gray-300 text-sm">—</span>}
           </td>
 
           {/* Status */}
           <td className="py-3 px-3">
-            <div className="flex flex-col items-start gap-1">
-              {(() => {
-                const rem = row.amount_remaining ?? (row.amount - amountPaid);
-                const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
-                const showDoplata =
-                  row.status !== 'cancelled' &&
-                  rem > SALDO_EPSILON &&
-                  (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
-                // „Do dopłaty X zł" zastępuje pill „Do dopłaty" przy partially_paid
-                // (nie chcemy dwóch identycznych etykiet). Dla partially_paid_overdue
-                // zostawiamy pill „Po terminie" + kwotę „Do dopłaty X" — uzupełniają się.
-                const hideStatusPill = showDoplata && row.status === 'partially_paid';
-                return (
-                  <>
-                    {!hideStatusPill && (
-                      <span
-                        className={cn(
-                          'inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full',
-                          statusCls
-                        )}
-                      >
-                        {statusLabel}
-                      </span>
-                    )}
-                    {showNadplata && (
-                      <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-                        Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
-                      </span>
-                    )}
-                    {showDoplata && (
-                      <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-                        Do dopłaty {rem.toFixed(0)} {row.currency}
-                      </span>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
+            <div className="flex flex-col items-start gap-1">{renderStatusPills(row, meta)}</div>
           </td>
 
           {/* Termin */}
-          <td className="py-3 px-3">
-            {dueDate ? (
-              <div className="flex flex-col gap-0.5">
-                <span
-                  className={cn(
-                    'text-sm tabular-nums',
-                    isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-500'
-                  )}
-                >
-                  {format(dueDate, 'd.MM.yyyy', { locale: pl })}
-                </span>
-                {isDueDateOverdue && !isPaid && (
-                  <span className="text-[11px] font-semibold text-red-600">
-                    {daysOverdue === 1 ? '1 dzień po terminie' : `${daysOverdue} dni po terminie`}
-                  </span>
-                )}
-                {row.last_reminder_sent_at && !isPaid && (
-                  <span className="text-[11px] text-gray-400">
-                    przyp. {format(new Date(row.last_reminder_sent_at), 'd.MM', { locale: pl })}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-gray-500 text-sm">
-                {formatPaymentDueDate(
-                  {
-                    due_date: row.due_date,
-                    due_days_from_confirmation: row.due_days_from_confirmation,
-                  },
-                  row.trip_departure_datetime ?? undefined,
-                )}
-              </span>
-            )}
-          </td>
+          <td className="py-3 px-3">{renderDueInfo(row, meta)}</td>
 
           {/* Notatka */}
-          <td className="py-3 px-3 max-w-[180px]">
-            {editingNote === row.id ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  value={editNote}
-                  onChange={(e) => setEditNote(e.target.value)}
-                  className="h-9 text-xs rounded-lg w-36"
-                  placeholder="Notatka..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveNote(row.id);
-                    if (e.key === 'Escape') setEditingNote(null);
-                  }}
-                  autoFocus
-                />
-                <button
-                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                  onClick={() => saveNote(row.id)}
-                  disabled={isUpdating === row.id}
-                >
-                  <Save className="h-3.5 w-3.5 text-gray-500" />
-                </button>
-                <button
-                  className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                  onClick={() => setEditingNote(null)}
-                >
-                  <X className="h-3.5 w-3.5 text-gray-500" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditingNote(row.id);
-                  setEditNote(row.admin_notes || '');
-                }}
-                className="flex items-center gap-1.5 text-xs group w-full text-left"
-              >
-                <MessageSquare
-                  className={cn(
-                    'h-3.5 w-3.5 flex-shrink-0 transition-colors',
-                    row.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
-                  )}
-                />
-                {row.admin_notes ? (
-                  <span className="text-amber-700 truncate group-hover:text-amber-900">
-                    {row.admin_notes}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
-                )}
-              </button>
-            )}
-          </td>
+          <td className="py-3 px-3 max-w-[180px]">{renderNote(row)}</td>
 
           {/* Opłacono? + Przypomnienie + Usuń */}
           <td className="py-3 pl-3 pr-5">
-            <div className="flex gap-1.5 items-center">
-              {!isCancelled && revertConfirm === row.id ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-red-600 font-medium whitespace-nowrap">
-                    Wyzeruje wpłaty {amountPaid.toFixed(0)} {row.currency}?
-                  </span>
-                  <button
-                    onClick={() => {
-                      setRevertConfirm(null);
-                      handleStatusChange(row.id, 'pending');
-                    }}
-                    className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-                  >
-                    Tak
-                  </button>
-                  <button
-                    onClick={() => setRevertConfirm(null)}
-                    className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                  >
-                    Anuluj
-                  </button>
-                </div>
-              ) : !isCancelled && (
-                <>
-                  <RecordPaymentDialog
-                    paymentId={row.id}
-                    currency={row.currency as 'PLN' | 'EUR'}
-                    amountRemaining={row.amount_remaining ?? (row.amount - amountPaid)}
-                    onDone={() => router.refresh()}
-                  >
-                    <button
-                      className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
-                    >
-                      <CircleDollarSign className="h-3 w-3" />
-                      Wpłata
-                    </button>
-                  </RecordPaymentDialog>
-                  <button
-                    className={cn(
-                      'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                      isPaid
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                        : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
-                    )}
-                    onClick={() => handleStatusChange(row.id, 'paid')}
-                    disabled={isUpdating === row.id}
-                  >
-                    <Check className="h-3 w-3" />
-                    Tak
-                  </button>
-                  <button
-                    className={cn(
-                      'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                      !isPaid
-                        ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
-                        : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
-                    )}
-                    onClick={() => requestRevert(row)}
-                    disabled={isUpdating === row.id}
-                  >
-                    <X className="h-3 w-3" />
-                    Nie
-                  </button>
-                  {/* Przypomnienie mailowe — tylko nieopłacone z konkretnym terminem */}
-                  {!isPaid && row.effective_due_date && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => handleSendReminder([row.id])}
-                          disabled={sendingReminder === row.id || !row.parent_email}
-                          className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-all disabled:opacity-50"
-                        >
-                          {sendingReminder === row.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Bell className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent className="rounded-lg">
-                        {row.parent_email
-                          ? 'Wyślij przypomnienie mailowe'
-                          : 'Brak adresu e-mail rodzica'}
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </>
-              )}
-              {/* Usuń */}
-              <div className="ml-1 pl-1.5 border-l border-gray-200 flex items-center gap-1">
-                {deletingConfirm === row.id ? (
-                  <>
-                    <span className="text-xs text-red-600 font-medium whitespace-nowrap">
-                      {amountPaid > 0
-                        ? `Usuń? (ma wpłaty ${amountPaid.toFixed(0)} ${row.currency})`
-                        : 'Usuń?'}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(row.id)}
-                      className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-                    >
-                      Tak
-                    </button>
-                    <button
-                      onClick={() => setDeletingConfirm(null)}
-                      className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                    >
-                      Nie
-                    </button>
-                  </>
-                ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setDeletingConfirm(row.id)}
-                        className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="rounded-lg">Usuń płatność</TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            </div>
+            <div className="flex gap-1.5 items-center">{renderActions(row, meta)}</div>
           </td>
         </tr>
 
@@ -984,30 +1072,7 @@ export function PaymentsList({
           <tr className="border-b border-gray-100 bg-slate-50/60">
             <td className="py-2 pl-4 pr-2" />
             <td colSpan={COLUMN_COUNT - 1} className="py-2 pl-8 pr-5">
-              {txLoading ? (
-                <p className="text-xs text-gray-400 py-1">Ładowanie wpłat…</p>
-              ) : txRows.length === 0 ? (
-                <p className="text-xs text-gray-400 py-1">
-                  Brak zarejestrowanych transakcji (wpłata mogła zostać wyzerowana).
-                </p>
-              ) : (
-                <ul className="space-y-1 py-1">
-                  {txRows.map((tx) => (
-                    <li key={tx.id} className="flex items-center gap-3 text-xs">
-                      <span className="text-gray-500 tabular-nums w-20">
-                        {format(new Date(tx.transaction_date), 'd.MM.yyyy', { locale: pl })}
-                      </span>
-                      <span className="text-gray-400 w-16">
-                        {tx.payment_method === 'cash' ? 'Gotówka' : 'Przelew'}
-                      </span>
-                      <span className="font-semibold text-gray-900 tabular-nums">
-                        {tx.amount.toFixed(2)} {tx.currency}
-                      </span>
-                      {tx.notes && <span className="text-gray-400 truncate">{tx.notes}</span>}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {renderTxContent()}
             </td>
           </tr>
         )}
@@ -1015,8 +1080,8 @@ export function PaymentsList({
     );
   }
 
-  // ── Widok mobilny (karty) — ten sam wzorzec co płatności rodzica ────────
-  function renderGroupHeaderCard(group: PaymentGroup) {
+  // ── Mobile: karta grupy (dziecko + wyjazd) ────────────────────────────────
+  function renderGroupCard(group: PaymentGroup) {
     const ids = group.rows.map(({ row }) => row.id);
     const allSelected = ids.every((id) => selectedIds.has(id));
     const collapsed = collapsedGroups.has(group.key);
@@ -1024,7 +1089,7 @@ export function PaymentsList({
     const paidCount = group.rows.filter(({ row }) => row.status === 'paid').length;
 
     return (
-      <div className="flex items-center gap-2 bg-gray-50/80 py-2.5 pl-4 pr-3">
+      <div className="flex items-center gap-2.5 bg-gray-50/80 py-2.5 pl-4 pr-3">
         <input
           type="checkbox"
           checked={allSelected}
@@ -1041,17 +1106,19 @@ export function PaymentsList({
             <ChevronDown className="h-4 w-4 flex-shrink-0 text-gray-400" />
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold text-gray-900">{group.participantName}</span>
+            <span className="block truncate text-sm font-bold text-gray-900">
+              {group.participantName}
+            </span>
             <span className="block truncate text-xs text-gray-400">
               {group.tripTitle} · {paidCount}/{group.rows.length} opłaconych
             </span>
           </span>
-          <span className="flex flex-shrink-0 flex-col items-end whitespace-nowrap">
+          <span className="flex flex-shrink-0 flex-col items-end">
             {remaining.length === 0 ? (
               <span className="text-xs font-semibold text-emerald-600">Rozliczone</span>
             ) : (
               remaining.map(({ currency, sum }) => (
-                <span key={currency} className="text-xs font-semibold text-amber-700">
+                <span key={currency} className="text-xs font-semibold text-amber-700 whitespace-nowrap">
                   brakuje {sum.toFixed(0)} {currency}
                 </span>
               ))
@@ -1062,395 +1129,56 @@ export function PaymentsList({
     );
   }
 
-  function renderCard(row: AdminPaymentRow, index: number) {
-    const isPaid = row.status === 'paid';
-    const isCancelled = row.status === 'cancelled';
-    const dueDate = row.effective_due_date ? new Date(row.effective_due_date) : null;
-    const isDueDateOverdue = dueDate ? dueDate < today : false;
-    const daysOverdue = dueDate && isDueDateOverdue
-      ? Math.floor((today.getTime() - dueDate.getTime()) / 86400000)
-      : 0;
-    const isOverdue =
-      row.status === 'overdue' || row.status === 'partially_paid_overdue' || (isDueDateOverdue && !isPaid && !isCancelled);
-    const { label: statusLabel, cls: statusCls } = getStatusBadge(row.status);
+  // ── Mobile: karta płatności (te same dane i akcje co wiersz tabeli) ──────
+  function renderRowCard(row: AdminPaymentRow, index: number) {
+    const meta = getRowMeta(row);
     const isSelected = selectedIds.has(row.id);
-    const amountPaid = row.amount_paid ?? 0;
-    const hasDiscount = !!row.discount_applied_at;
-    const priceDelta = row.original_amount - row.amount;
-    const priceEdited = !hasDiscount && priceDelta > 0.5;
     const isExpanded = expandedTx === row.id;
-    const rem = row.amount_remaining ?? (row.amount - amountPaid);
-    const showNadplata = row.status !== 'cancelled' && rem < -SALDO_EPSILON;
-    const showDoplata =
-      row.status !== 'cancelled' &&
-      rem > SALDO_EPSILON &&
-      (row.status === 'partially_paid' || row.status === 'partially_paid_overdue');
-    const hideStatusPill = showDoplata && row.status === 'partially_paid';
+    const discount = renderDiscountInfo(row, meta);
 
     return (
       <div
         key={row.id}
         className={cn(
-          'p-4',
-          isPaid ? 'bg-emerald-50/20' : isOverdue ? 'bg-red-50/10' : '',
+          'px-4 py-3',
+          meta.isPaid ? 'bg-emerald-50/20' : meta.isOverdue ? 'bg-red-50/10' : '',
           isSelected && 'bg-blue-50/40'
         )}
       >
-        {/* Nagłówek: checkbox + za co + status */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2.5">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={(e) => toggleSelect(row.id, index, (e.nativeEvent as MouseEvent).shiftKey)}
             className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-gray-300 accent-blue-600 cursor-pointer"
           />
-          <p className="min-w-0 flex-1 text-sm font-semibold text-gray-900">{getPaymentLabel(row)}</p>
-          <div className="flex flex-shrink-0 flex-col items-end gap-1">
-            {!hideStatusPill && (
-              <span className={cn('inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full', statusCls)}>
-                {statusLabel}
-              </span>
-            )}
-            {showNadplata && (
-              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-                Nadpłata {Math.abs(rem).toFixed(0)} {row.currency}
-              </span>
-            )}
-            {showDoplata && (
-              <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-                Do dopłaty {rem.toFixed(0)} {row.currency}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Dane — linijka pod linijką */}
-        <dl className="mt-3 space-y-2 border-t border-gray-100 pt-3 text-sm">
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-gray-500">Kwota</dt>
-            <dd className="text-right">
-              {editingPayment === row.id ? (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    value={editAmount}
-                    onChange={(e) => setEditAmount(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveAmount(row.id);
-                      if (e.key === 'Escape') setEditingPayment(null);
-                    }}
-                    className="h-9 w-24 text-base rounded-lg"
-                    min="0"
-                    step="0.01"
-                    placeholder="kwota"
-                    autoFocus
-                  />
-                  <span className="text-xs text-gray-400">{row.currency}</span>
-                  <button
-                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                    onClick={() => saveAmount(row.id)}
-                    disabled={isUpdating === row.id}
-                  >
-                    <Save className="h-3.5 w-3.5 text-gray-500" />
-                  </button>
-                  <button
-                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                    onClick={() => setEditingPayment(null)}
-                  >
-                    <X className="h-3.5 w-3.5 text-gray-500" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setEditingPayment(row.id);
-                    setEditAmount(row.amount.toString());
-                  }}
-                  className="inline-flex items-center gap-1.5 group"
-                >
-                  {priceEdited && (
-                    <span className="text-xs text-gray-400 line-through tabular-nums">
-                      {row.original_amount.toFixed(0)}
-                    </span>
-                  )}
-                  <span className="text-base font-bold text-gray-900 tabular-nums group-hover:text-blue-600 transition-colors">
-                    {row.amount.toFixed(0)} {row.currency}
-                  </span>
-                  <Edit2 className="h-3 w-3 text-gray-300 group-hover:text-blue-500 transition-colors" />
-                </button>
-              )}
-            </dd>
-          </div>
-
-          {hasDiscount && priceDelta > 0.5 && (
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-gray-500">Zniżka</dt>
-              <dd className="text-right">
-                <span className="text-sm font-semibold text-amber-600 tabular-nums">
-                  −{priceDelta.toFixed(0)} {row.currency}
-                </span>
-                <span className="block text-[11px] text-gray-400 tabular-nums">
-                  z {row.original_amount.toFixed(0)} {row.currency}
-                </span>
-              </dd>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-sm text-gray-700 font-medium">{getPaymentLabel(row)}</span>
+              <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                {renderStatusPills(row, meta)}
+              </div>
             </div>
-          )}
-
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-gray-500">Termin</dt>
-            <dd className="text-right">
-              {dueDate ? (
-                <>
-                  <span
-                    className={cn(
-                      'text-sm tabular-nums',
-                      isDueDateOverdue && !isPaid ? 'text-red-600 font-semibold' : 'text-gray-700'
-                    )}
-                  >
-                    {format(dueDate, 'd.MM.yyyy', { locale: pl })}
-                  </span>
-                  {isDueDateOverdue && !isPaid && (
-                    <span className="block text-[11px] font-semibold text-red-600">
-                      {daysOverdue === 1 ? '1 dzień po terminie' : `${daysOverdue} dni po terminie`}
-                    </span>
-                  )}
-                  {row.last_reminder_sent_at && !isPaid && (
-                    <span className="block text-[11px] text-gray-400">
-                      przyp. {format(new Date(row.last_reminder_sent_at), 'd.MM', { locale: pl })}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-gray-500 text-sm">
-                  {formatPaymentDueDate(
-                    {
-                      due_date: row.due_date,
-                      due_days_from_confirmation: row.due_days_from_confirmation,
-                    },
-                    row.trip_departure_datetime ?? undefined,
-                  )}
-                </span>
-              )}
-            </dd>
-          </div>
-
-          <div className="flex items-baseline justify-between gap-3">
-            <dt className="flex-shrink-0 text-gray-500">Notatka</dt>
-            <dd className="min-w-0 text-right">
-              {editingNote === row.id ? (
-                <div className="flex items-center gap-1">
-                  <Input
-                    value={editNote}
-                    onChange={(e) => setEditNote(e.target.value)}
-                    className="h-9 text-base rounded-lg w-36"
-                    placeholder="Notatka..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveNote(row.id);
-                      if (e.key === 'Escape') setEditingNote(null);
-                    }}
-                    autoFocus
-                  />
-                  <button
-                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                    onClick={() => saveNote(row.id)}
-                    disabled={isUpdating === row.id}
-                  >
-                    <Save className="h-3.5 w-3.5 text-gray-500" />
-                  </button>
-                  <button
-                    className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100"
-                    onClick={() => setEditingNote(null)}
-                  >
-                    <X className="h-3.5 w-3.5 text-gray-500" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setEditingNote(row.id);
-                    setEditNote(row.admin_notes || '');
-                  }}
-                  className="inline-flex max-w-full items-center gap-1.5 text-xs group"
-                >
-                  <MessageSquare
-                    className={cn(
-                      'h-3.5 w-3.5 flex-shrink-0 transition-colors',
-                      row.admin_notes ? 'text-amber-500' : 'text-gray-300 group-hover:text-gray-400'
-                    )}
-                  />
-                  {row.admin_notes ? (
-                    <span className="text-amber-700 truncate group-hover:text-amber-900">
-                      {row.admin_notes}
-                    </span>
-                  ) : (
-                    <span className="text-gray-300 group-hover:text-gray-400">Dodaj</span>
-                  )}
-                </button>
-              )}
-            </dd>
-          </div>
-        </dl>
-
-        {/* Historia wpłat */}
-        {amountPaid > 0 && (
-          <button
-            onClick={() => toggleTransactions(row.id)}
-            className="mt-2 flex items-center gap-1 text-[11px] text-gray-400 hover:text-blue-600 transition-colors"
-          >
-            <Receipt className="h-3 w-3" />
-            wpłaty
-            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
-        )}
-        {isExpanded && (
-          <div className="mt-2 rounded-xl bg-slate-50/60 px-3 py-2">
-            {txLoading ? (
-              <p className="text-xs text-gray-400 py-1">Ładowanie wpłat…</p>
-            ) : txRows.length === 0 ? (
-              <p className="text-xs text-gray-400 py-1">
-                Brak zarejestrowanych transakcji (wpłata mogła zostać wyzerowana).
-              </p>
-            ) : (
-              <ul className="space-y-1 py-1">
-                {txRows.map((tx) => (
-                  <li key={tx.id} className="flex items-center gap-3 text-xs">
-                    <span className="text-gray-500 tabular-nums w-20">
-                      {format(new Date(tx.transaction_date), 'd.MM.yyyy', { locale: pl })}
-                    </span>
-                    <span className="text-gray-400 w-16">
-                      {tx.payment_method === 'cash' ? 'Gotówka' : 'Przelew'}
-                    </span>
-                    <span className="font-semibold text-gray-900 tabular-nums">
-                      {tx.amount.toFixed(2)} {tx.currency}
-                    </span>
-                    {tx.notes && <span className="text-gray-400 truncate">{tx.notes}</span>}
-                  </li>
-                ))}
-              </ul>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <div>
+                {renderAmount(row, meta)}
+                {discount && <div className="mt-1">{discount}</div>}
+              </div>
+              {renderDueInfo(row, meta, 'right')}
+            </div>
+            <div className="mt-2">{renderNote(row)}</div>
+            {renderTxToggle(row, meta)}
+            {isExpanded && (
+              <div className="mt-2 rounded-xl bg-slate-50 px-3 py-1.5">{renderTxContent()}</div>
             )}
-          </div>
-        )}
-
-        {/* Akcje */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {!isCancelled && (revertConfirm === row.id ? (
-            <>
-              <span className="text-xs text-red-600 font-medium">
-                Wyzeruje wpłaty {amountPaid.toFixed(0)} {row.currency}?
-              </span>
-              <button
-                onClick={() => {
-                  setRevertConfirm(null);
-                  handleStatusChange(row.id, 'pending');
-                }}
-                className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-              >
-                Tak
-              </button>
-              <button
-                onClick={() => setRevertConfirm(null)}
-                className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-              >
-                Anuluj
-              </button>
-            </>
-          ) : (
-            <>
-              <RecordPaymentDialog
-                paymentId={row.id}
-                currency={row.currency as 'PLN' | 'EUR'}
-                amountRemaining={row.amount_remaining ?? (row.amount - amountPaid)}
-                onDone={() => router.refresh()}
-              >
-                <button
-                  className="h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all bg-blue-50 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-100"
-                >
-                  <CircleDollarSign className="h-3 w-3" />
-                  Wpłata
-                </button>
-              </RecordPaymentDialog>
-              <button
-                className={cn(
-                  'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                  isPaid
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                    : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100'
-                )}
-                onClick={() => handleStatusChange(row.id, 'paid')}
-                disabled={isUpdating === row.id}
-              >
-                <Check className="h-3 w-3" />
-                Tak
-              </button>
-              <button
-                className={cn(
-                  'h-9 px-3 text-xs font-semibold rounded-lg flex items-center gap-1 transition-all',
-                  !isPaid
-                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
-                    : 'bg-red-50 text-red-700 ring-1 ring-red-200 hover:bg-red-100'
-                )}
-                onClick={() => requestRevert(row)}
-                disabled={isUpdating === row.id}
-              >
-                <X className="h-3 w-3" />
-                Nie
-              </button>
-              {!isPaid && row.effective_due_date && (
-                <button
-                  onClick={() => handleSendReminder([row.id])}
-                  disabled={sendingReminder === row.id || !row.parent_email}
-                  title={row.parent_email ? 'Wyślij przypomnienie mailowe' : 'Brak adresu e-mail rodzica'}
-                  className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-amber-500 hover:bg-amber-50 transition-all disabled:opacity-50"
-                >
-                  {sendingReminder === row.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Bell className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              )}
-            </>
-          ))}
-          <div className="ml-auto flex items-center gap-1">
-            {deletingConfirm === row.id ? (
-              <>
-                <span className="text-xs text-red-600 font-medium">
-                  {amountPaid > 0
-                    ? `Usuń? (ma wpłaty ${amountPaid.toFixed(0)} ${row.currency})`
-                    : 'Usuń?'}
-                </span>
-                <button
-                  onClick={() => handleDelete(row.id)}
-                  className="h-8 px-2 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
-                >
-                  Tak
-                </button>
-                <button
-                  onClick={() => setDeletingConfirm(null)}
-                  className="h-8 px-2 text-xs font-medium rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                >
-                  Nie
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setDeletingConfirm(row.id)}
-                title="Usuń płatność"
-                className="h-9 w-9 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              {renderActions(row, meta)}
+            </div>
           </div>
         </div>
       </div>
     );
   }
-
-  const emptyMessage =
-    search || tripId !== 'all' || status !== 'all' || dateFrom || dateTo
-      ? 'Brak płatności pasujących do filtrów'
-      : 'Brak płatności';
 
   // Numery stron do wyświetlenia w paginacji
   const pageButtons = Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
@@ -1469,15 +1197,15 @@ export function PaymentsList({
           <button
             onClick={() => pushParams({ status: 'pending' })}
             className={cn(
-              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex items-center gap-3 text-left transition-all hover:ring-amber-300',
+              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-left transition-all hover:ring-amber-300',
               status === 'pending' ? 'ring-2 ring-amber-400' : 'ring-gray-100'
             )}
           >
-            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0 sm:flex">
-              <CircleDollarSign className="h-5 w-5 text-amber-600" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-amber-100 flex-shrink-0">
+              <CircleDollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.pending}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.pending}</p>
               <p className="text-xs text-gray-500">Nieopłacone</p>
               <div className="flex flex-wrap gap-x-2 mt-0.5">
                 {stats.pendingPLN > 0 && (
@@ -1496,30 +1224,30 @@ export function PaymentsList({
           <button
             onClick={() => pushParams({ status: 'overdue' })}
             className={cn(
-              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex items-center gap-3 text-left transition-all hover:ring-red-300',
+              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-left transition-all hover:ring-red-300',
               status === 'overdue' ? 'ring-2 ring-red-400' : 'ring-gray-100'
             )}
           >
-            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0 sm:flex">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-red-100 flex-shrink-0">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.overdue}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.overdue}</p>
               <p className="text-xs text-gray-500">Po terminie</p>
             </div>
           </button>
           <button
             onClick={() => pushParams({ status: 'paid' })}
             className={cn(
-              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex items-center gap-3 text-left transition-all hover:ring-emerald-300',
+              'bg-white rounded-2xl shadow-sm ring-1 p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-left transition-all hover:ring-emerald-300',
               status === 'paid' ? 'ring-2 ring-emerald-400' : 'ring-gray-100'
             )}
           >
-            <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0 sm:flex">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0">
+              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.paid}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.paid}</p>
               <p className="text-xs text-gray-500">Opłacone</p>
             </div>
           </button>
@@ -1527,7 +1255,7 @@ export function PaymentsList({
 
         {/* Filtry */}
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
             {/* Szukaj */}
             <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1548,13 +1276,13 @@ export function PaymentsList({
             </div>
 
             {/* Filtr wyjazdu */}
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-400" />
               <select
                 value={tripId}
                 onChange={(e) => pushParams({ trip: e.target.value === 'all' ? null : e.target.value })}
                 className={cn(
-                  'h-11 appearance-none pl-9 pr-8 rounded-xl text-base md:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors max-w-[70vw] sm:max-w-[240px] truncate',
+                  'h-11 w-full appearance-none pl-9 pr-8 rounded-xl text-base md:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors sm:w-auto sm:max-w-[240px] truncate',
                   tripId !== 'all'
                     ? 'bg-blue-600 text-white ring-1 ring-blue-700'
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
@@ -1582,7 +1310,7 @@ export function PaymentsList({
                   key={f.key}
                   onClick={() => pushParams({ status: f.key })}
                   className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+                    'inline-flex h-11 items-center px-4 rounded-xl text-sm font-medium transition-all',
                     status === f.key
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
@@ -1596,16 +1324,16 @@ export function PaymentsList({
             {isNavPending && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
           </div>
 
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
             {/* Zakres terminów płatności */}
-            <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2">
+            <div className="flex w-full flex-wrap items-center gap-2 bg-white rounded-xl ring-1 ring-gray-200 px-3 py-2 sm:w-auto">
               <CalendarDays className="h-4 w-4 text-gray-400 flex-shrink-0" />
               <span className="text-xs text-gray-400">Termin od</span>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => pushParams({ from: e.target.value || null })}
-                className="text-base md:text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
+                className="min-w-0 flex-1 text-base md:text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer sm:flex-initial"
               />
               <span className="text-xs text-gray-300">—</span>
               <span className="text-xs text-gray-400">do</span>
@@ -1613,7 +1341,7 @@ export function PaymentsList({
                 type="date"
                 value={dateTo}
                 onChange={(e) => pushParams({ to: e.target.value || null })}
-                className="text-base md:text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer"
+                className="min-w-0 flex-1 text-base md:text-sm text-gray-700 border-0 outline-none bg-transparent cursor-pointer sm:flex-initial"
               />
               {(dateFrom || dateTo) && (
                 <button
@@ -1684,7 +1412,7 @@ export function PaymentsList({
               CSV
             </button>
 
-            <span className="text-xs text-gray-400">{total} łącznie</span>
+            <span className="ml-auto text-xs text-gray-400">{total} łącznie</span>
           </div>
         </div>
 
@@ -1694,7 +1422,7 @@ export function PaymentsList({
             <span className="text-sm font-semibold text-blue-800">
               {selectedIds.size} zaznaczonych
             </span>
-            <div className="flex gap-2 sm:ml-auto flex-wrap">
+            <div className="flex gap-2 ml-auto flex-wrap">
               <button
                 onClick={() => handleBulkAction('paid')}
                 disabled={isBulkUpdating}
@@ -1766,28 +1494,27 @@ export function PaymentsList({
           </div>
         )}
 
-        {/* Lista płatności — pogrupowana per dziecko + wyjazd */}
+        {/* Płatności — pogrupowane per dziecko + wyjazd:
+            mobile = karty, desktop = tabela */}
         <div className="bg-white rounded-2xl ring-1 ring-gray-100 overflow-hidden">
           {/* Mobile: karty */}
-          <div className="md:hidden">
+          <div className="md:hidden divide-y divide-gray-100">
             {displayedRows.length === 0 ? (
               <p className="py-16 text-center text-sm text-gray-400">{emptyMessage}</p>
             ) : (
               groups.map((group) => (
-                <div key={group.key} className="border-b border-gray-100 last:border-b-0">
-                  {renderGroupHeaderCard(group)}
-                  {!collapsedGroups.has(group.key) && (
-                    <div className="divide-y divide-gray-100 border-t border-gray-100">
-                      {group.rows.map(({ row, flatIndex }) => renderCard(row, flatIndex))}
-                    </div>
-                  )}
-                </div>
+                <Fragment key={group.key}>
+                  {renderGroupCard(group)}
+                  {!collapsedGroups.has(group.key) &&
+                    group.rows.map(({ row, flatIndex }) => renderRowCard(row, flatIndex))}
+                </Fragment>
               ))
             )}
           </div>
+
           {/* Desktop: tabela */}
           <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[920px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="py-2.5 pl-4 pr-2 w-8">

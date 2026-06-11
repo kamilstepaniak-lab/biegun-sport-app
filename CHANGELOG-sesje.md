@@ -3,6 +3,25 @@
 Kronika zmian wprowadzanych w kolejnych sesjach (najnowsze na górze).
 Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
 
+### 2026-06-11 (Porządki UI /admin/payments — mobile + desktop)
+
+- `admin/payments/payments-list.tsx`: wspólne fragmenty wiersza (kwota,
+  zniżka, statusy, termin, notatka, akcje, historia wpłat) wyniesione do
+  helperów (`getRowMeta` + `render*`) — jedno źródło dla tabeli i kart.
+  (Zastępuje równoległą implementację kart mobile z sesji niżej, która
+  duplikowała markup wiersza.)
+- **Mobile: układ kart zamiast przewijanej w bok tabeli** (wzorzec jak
+  u rodzica): karta grupy (dziecko + wyjazd + saldo) i karty płatności
+  z pełnym zestawem akcji admina; desktop bez zmian (tabela,
+  `min-w-[920px]` w kontenerze ze scrollem).
+- Kafle statystyk responsywne (3 kolumny też na telefonie — mniejsze
+  ikony/typografia), pasek filtrów uporządkowany: wyszukiwarka i filtr
+  wyjazdu pełnej szerokości na mobile, zakładki statusu wyrównane do
+  `h-11`, zakres dat nie rozjeżdża się na wąskim ekranie, licznik „X
+  łącznie" dobity do prawej; bulk-bar i paginacja zawijają się na mobile.
+- Parytet u rodzica (`parent/payments/payments-list.tsx`): te same
+  poprawki filtrów (select wyjazdu `w-full` na mobile, zakładki `h-11`).
+
 ### 2026-06-11 (Mobile: Wyjazdy i Płatności u admina wzorem panelu rodzica)
 
 - `admin/trips/trips-list.tsx`: nagłówek karty wyjazdu na mobile jako flex
@@ -17,6 +36,7 @@ Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
   zwijane też w widoku kart; tabela od `md` bez zmian. Kafle statystyk
   kompaktowe na mobile (bez ikony, mniejsza czcionka), wyszukiwarka
   pełnej szerokości, bulk-bar i paginacja z zawijaniem.
+  (Implementacja kart zastąpiona refaktorem z sesji wyżej.)
 
 ### 2026-06-11 (Audyt płatności: poprawki logiki + przebudowa /admin/payments)
 
