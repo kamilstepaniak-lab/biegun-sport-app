@@ -723,13 +723,13 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
         {/* Filtry */}
         <div className="flex flex-wrap items-center gap-2">
           {availableTrips.length > 1 && (
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-gray-400" />
               <select
                 value={tripFilter}
                 onChange={(e) => { setTripFilter(e.target.value); setPage(1); }}
                 className={cn(
-                  'h-11 appearance-none pl-9 pr-8 rounded-xl text-base md:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                  'h-11 w-full appearance-none pl-9 pr-8 rounded-xl text-base md:text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors sm:w-auto',
                   tripFilter !== 'all'
                     ? 'bg-blue-600 text-white ring-1 ring-blue-700'
                     : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
@@ -749,7 +749,7 @@ export function ParentPaymentsList({ pendingPayments, paidPayments, bankAccounts
               key={tab.id}
               onClick={() => { setFilter(tab.id); setPage(1); }}
               className={cn(
-                'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+                'inline-flex h-11 items-center px-4 rounded-xl text-sm font-medium transition-all',
                 filter === tab.id
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:bg-gray-50'
