@@ -159,7 +159,7 @@ export function TripForm({ groups, trip, mode }: TripFormProps) {
         ? await createTrip(data)
         : await updateTrip(trip!.id, data);
 
-      if (result.error) {
+      if ('error' in result) {
         toast.error(result.error);
       } else {
         toast.success(

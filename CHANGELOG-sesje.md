@@ -14,6 +14,9 @@ Reguła prowadzenia dziennika jest w `CLAUDE.md` (sekcja "Dziennik sesji").
   - badge statusu (Opublikowany/Szkic…) przeniesiony na niebieski pasek obok
     badge'a „WordPress", oba w tym samym stylu (`statusStylesOnBlue`),
   - przyciski (Wiadomość, Umowa, Zapisani, Edytuj) zostają na niebieskim.
+- **Poprawka TS:** `admin/trip-form/index.tsx` — zawężenie uniona wyniku
+  `createTrip`/`updateTrip` przez `'error' in result` (dwa istniejące błędy
+  `tsc`); `npx tsc --noEmit` czysty w całym projekcie.
 
 ### 2026-06-11 (Zapisani: wpłaty z tabeli, tryb zbiórki, ukrywanie kolumn)
 
